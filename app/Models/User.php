@@ -11,30 +11,42 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
-        'name', 'email', 'password',
+        'password',
+        'role_id',
+        'master_karyawan_id',
+        'toko_id',
+        'foto'
     ];
 
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
-     */
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
+    public function karyawan()
+    {
+        return $this->belongsTo(KaryawanMasterKaryawan::class, 'master_karyawan_id', 'employee_id');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
     /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
+     * Check if user has specific permission for a menu
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
+    public function hasPermission($menuName, $permission)
+    {
+        if (!$this->role)
+            return false;
+
+        $menu = $this->role->menus()->where('name', $menuName)->first();
+        if (!$menu)
+            return false;
+
+        $permissions = json_decode($menu->pivot->permissions, true) ?? [];
+        return in_array($permission, $permissions);
+    }
 }

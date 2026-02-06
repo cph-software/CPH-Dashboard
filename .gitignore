@@ -14,3 +14,16 @@ yarn-error.log
 !/public/uploads/.gitkeep
 /public/sql/*
 !/public/sql/.gitkeep
+# Admin Template Ignores
+/public/template/full-version/html/
+/public/template/full-version/html-starter/
+/public/template/full-version/scss/
+/public/template/full-version/tasks/
+/public/template/full-version/dist/
+/public/template/full-version/.vscode/
+/public/template/full-version/*.html
+/public/template/full-version/*.js
+/public/template/full-version/*.json
+/public/template/full-version/*.lock
+/public/template/full-version/.*
+!/public/template/full-version/.gitkeep
