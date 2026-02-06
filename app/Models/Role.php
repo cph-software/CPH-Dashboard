@@ -15,4 +15,15 @@ class Role extends Model
             ->withPivot('permissions')
             ->withTimestamps();
     }
+
+    public function aplikasi()
+    {
+        return $this->belongsToMany(Aplikasi::class, 'aplikasi_role', 'role_id', 'aplikasi_id')
+            ->withTimestamps();
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'role_id');
+    }
 }

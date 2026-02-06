@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formAuthentication && typeof FormValidation !== 'undefined') {
       FormValidation.formValidation(formAuthentication, {
         fields: {
+          employee_id: {
+            validators: {
+              notEmpty: {
+                message: 'Please enter ID Karyawan'
+              }
+            }
+          },
           username: {
             validators: {
               notEmpty: {

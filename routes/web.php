@@ -14,8 +14,8 @@ Route::get('/', function () {
 });
 
 // Authentication Routes
-Route::get('login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
-Route::post('login', [LoginController::class, 'login']);
+Route::get('login/{type?}', [LoginController::class, 'login'])->name('login')->middleware('guest');
+Route::post('login', [LoginController::class, 'postLogin']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 // Dashboard & Protected Routes
@@ -23,6 +23,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    // CPH Dashboard Aplikasi Routes
+    Route::prefix('cph_dashboard')->group(function () {
+        Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
+        Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
+        Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
+    });
 
     // Example of using permission middleware
     // Route::get('/tyre', [TyreController::class, 'index'])->middleware('permission:Tyre Master,view');
