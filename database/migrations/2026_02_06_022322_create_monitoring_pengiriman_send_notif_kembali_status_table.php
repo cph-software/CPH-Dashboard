@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateMonitoringPengirimanSendNotifKembaliStatusTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('monitoring_pengiriman_send_notif_kembali_status', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('id_surat_jalan');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('monitoring_pengiriman_send_notif_kembali_status');
+    }
+}
