@@ -24,6 +24,13 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // CPH Dashboard Aplikasi Routes
+    Route::prefix('cph_dashboard')->group(function () {
+        Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
+        Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
+        Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
+    });
+
     // Example of using permission middleware
     // Route::get('/tyre', [TyreController::class, 'index'])->middleware('permission:Tyre Master,view');
 });
