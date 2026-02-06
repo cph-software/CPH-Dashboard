@@ -18,9 +18,28 @@ abstract class BaseRepository
         return $this->model->all();
     }
 
-    public function paginate($perPage = 10)
+    /**
+     * Paginate records with optional search and ordering.
+     *
+     * @param int $perPage
+     * @param array $search (e.g. ['column' => 'value'])
+     * @param string $orderBy
+     * @param string $sortBy
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function paginate($perPage = 10, array $search = [], $orderBy = 'id', $sortBy = 'desc')
     {
-        return $this->model->paginate($perPage);
+        $query = $this->model->newQuery();
+
+        if (!empty($search)) {
+            foreach ($search as $column => $value) {
+                if ($value) {
+                    $query->where($column, 'LIKE', "%{$value}%");
+                }
+            }
+        }
+
+        return $query->orderBy($orderBy, $sortBy)->paginate($perPage);
     }
 
     public function create(array $data)

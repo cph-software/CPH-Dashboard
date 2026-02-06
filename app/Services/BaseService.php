@@ -18,9 +18,9 @@ abstract class BaseService
         return $this->repository->all();
     }
 
-    public function getPaginated($perPage = 10)
+    public function getPaginated($perPage = 10, array $search = [], $orderBy = 'id', $sortBy = 'desc')
     {
-        return $this->repository->paginate($perPage);
+        return $this->repository->paginate($perPage, $search, $orderBy, $sortBy);
     }
 
     public function store(array $data)
