@@ -101,3 +101,25 @@
   text-align: center;
   margin-top: 1.25rem;
 }
+
+/* Theme Primary Color Overrides */
+:root,
+[data-bs-theme=light] {
+  --bs-primary: #FC544B;
+  --bs-primary-rgb: 252, 84, 75;
+  --bs-indigo: #FC544B;
+  --bs-link-color: #FC544B;
+  --bs-link-hover-color: #e34b43;
+  --bs-primary-bg-subtle: #ffeeed;
+  --bs-primary-border-subtle: #ffbab8;
+  --bs-primary-text-emphasis: #8e2f2a;
+}
+
+[data-bs-theme=dark] {
+  --bs-primary: #FC544B;
+  --bs-primary-rgb: 252, 84, 75;
+  --bs-link-color: #ff7c74;
+  --bs-link-hover-color: #ff8c85;
+  --bs-primary-bg-subtle: #51374d; /* Mixed with dark background */
+  --bs-primary-border-subtle: #b7444b;
+}
