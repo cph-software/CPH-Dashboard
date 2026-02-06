@@ -13,3 +13,14 @@ if (!function_exists('format_date')) {
         return \Carbon\Carbon::parse($date)->format($format);
     }
 }
+
+if (!function_exists('setLogActivity')) {
+    function setLogActivity($userId, $message)
+    {
+        // For now, we can just log to laravel.log or ignore if table doesn't exist
+        \Log::info("User ID {$userId}: {$message}");
+
+        // If you have an ActivityLog model, you can do:
+        // \App\Models\ActivityLog::create(['user_id' => $userId, 'activity' => $message]);
+    }
+}

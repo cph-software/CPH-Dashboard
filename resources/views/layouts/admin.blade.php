@@ -36,6 +36,7 @@
 
     <!-- Helpers -->
     <script src="{{ asset('template/full-version/assets/vendor/js/helpers.js') }}"></script>
+    <script src="{{ asset('template/full-version/assets/vendor/libs/pickr/pickr.js') }}"></script>
     <script src="{{ asset('template/full-version/assets/vendor/js/template-customizer.js') }}"></script>
     <script src="{{ asset('template/full-version/assets/js/config.js') }}"></script>
 </head>

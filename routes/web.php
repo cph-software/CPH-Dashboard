@@ -14,8 +14,8 @@ Route::get('/', function () {
 });
 
 // Authentication Routes
-Route::get('login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
-Route::post('login', [LoginController::class, 'login']);
+Route::get('login/{type?}', [LoginController::class, 'login'])->name('login')->middleware('guest');
+Route::post('login', [LoginController::class, 'postLogin']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 // Dashboard & Protected Routes
