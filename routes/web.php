@@ -21,8 +21,17 @@ Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 // Dashboard & Protected Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
+        $redirectUrl = getDashboardRedirectUrl();
+        if ($redirectUrl !== '/dashboard') {
+            return redirect($redirectUrl);
+        }
         return view('dashboard');
     })->name('dashboard');
+
+    // Also add /home as requested
+    Route::get('/home', function () {
+        return redirect()->route('dashboard');
+    })->name('home');
 
     // CPH Dashboard Aplikasi Routes
     Route::prefix('cph_dashboard')->group(function () {
@@ -34,6 +43,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
         Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
         Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
+    });
+
+    // Tyre Performance Application Routes
+    Route::prefix('tyre_performance')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'index'])->name('tyre_performance.dashboard');
+        // Add other tyre performance routes here
     });
 
     // Example of using permission middleware
