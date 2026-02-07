@@ -7,7 +7,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Failure Codes</h4>
          <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
-            <i class="ri-add-line me-1"></i> Add Failure Code
+            <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
          </a>
       </div>
 
@@ -38,15 +38,17 @@
                         <td>{{ $fc->failure_name }}</td>
                         <td>
                            @if ($fc->image_1)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if ($fc->image_2)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if (!$fc->image_1 && !$fc->image_2)
@@ -91,32 +93,36 @@
                   @endforelse
                </tbody>
             </table>
-         </div>
-      </div>
-   </div>
-
-   <!-- Image Preview Modal -->
-   <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Image Preview</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-               <img src="" id="previewImage" class="img-fluid rounded">
+            <div class="card-footer px-0 py-2 border-top">
+               <div class="d-flex justify-content-center">
+                  {{ $failureCodes->links() }}
+               </div>
             </div>
          </div>
       </div>
-   </div>
 
-@endsection
+      <!-- Image Preview Modal -->
+      <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+               <div class="modal-header">
+                  <h5 class="modal-title">Image Preview</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+               </div>
+               <div class="modal-body text-center">
+                  <img src="" id="previewImage" class="img-fluid rounded">
+               </div>
+            </div>
+         </div>
+      </div>
 
-@section('page-script')
-   <script>
-      function showImagePreview(src) {
-         $('#previewImage').attr('src', src);
-         $('#imagePreviewModal').modal('show');
-      }
-   </script>
-@endsection
+   @endsection
+
+   @section('page-script')
+      <script>
+         function showImagePreview(src) {
+            $('#previewImage').attr('src', src);
+            $('#imagePreviewModal').modal('show');
+         }
+      </script>
+   @endsection

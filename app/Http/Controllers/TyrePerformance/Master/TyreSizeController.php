@@ -11,7 +11,7 @@ class TyreSizeController extends Controller
 {
     public function index()
     {
-        $sizes = TyreSize::with('brand')->get();
+        $sizes = TyreSize::with('brand')->latest()->paginate(10);
         $brands = TyreBrand::where('status', 'Active')->get();
         return view('tyre-performance.master.sizes.index', compact('sizes', 'brands'));
     }

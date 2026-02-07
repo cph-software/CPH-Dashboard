@@ -4,14 +4,16 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterImportKendaraan;
+use App\Models\TyrePositionConfiguration;
 use Illuminate\Http\Request;
 
 class KendaraanController extends Controller
 {
     public function index()
     {
-        $kendaraans = MasterImportKendaraan::all();
-        return view('tyre-performance.master.kendaraan.index', compact('kendaraans'));
+        $kendaraans = MasterImportKendaraan::with('tyrePositionConfiguration')->latest()->paginate(10);
+        $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
+        return view('tyre-performance.master.kendaraan.index', compact('kendaraans', 'configurations'));
     }
 
     public function store(Request $request)
@@ -29,6 +31,7 @@ class KendaraanController extends Controller
             'no_rangka' => 'nullable|string|max:255',
             'no_mesin' => 'nullable|string|max:255',
             'total_tyre_position' => 'required|integer',
+            'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
         ]);
 
@@ -52,6 +55,7 @@ class KendaraanController extends Controller
             'no_rangka' => 'nullable|string|max:255',
             'no_mesin' => 'nullable|string|max:255',
             'total_tyre_position' => 'required|integer',
+            'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
         ]);
 

@@ -10,7 +10,7 @@ class TyreBrandController extends Controller
 {
     public function index()
     {
-        $brands = TyreBrand::all();
+        $brands = TyreBrand::latest()->paginate(10);
         return view('tyre-performance.master.brands.index', compact('brands'));
     }
 

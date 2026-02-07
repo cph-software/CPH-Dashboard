@@ -46,27 +46,26 @@
                            </span>
                         </td>
                         <td>
-                           <div class="dropdown">
-                              <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                 <i class="ri-more-2-fill"></i>
-                              </button>
-                              <div class="dropdown-menu">
-                                 <a class="dropdown-item edit-segment" href="javascript:void(0);" data-bs-toggle="modal"
-                                    data-bs-target="#editSegmentModal" data-id="{{ $segment->id }}"
-                                    data-segment-id="{{ $segment->segment_id }}" data-name="{{ $segment->segment_name }}"
-                                    data-location-id="{{ $segment->tyre_location_id }}"
-                                    data-terrain="{{ $segment->terrain_type }}" data-status="{{ $segment->status }}">
-                                    <i class="ri-pencil-line me-1"></i> Edit
-                                 </a>
-                                 <form action="{{ route('tyre-segments.destroy', $segment->id) }}" method="POST"
-                                    onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dropdown-item">
-                                       <i class="ri-delete-bin-line me-1"></i> Delete
-                                    </button>
-                                 </form>
-                              </div>
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-segment"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSegmentModal"
+                                 data-id="{{ $segment->id }}" data-segment-id="{{ $segment->segment_id }}"
+                                 data-name="{{ $segment->segment_name }}"
+                                 data-location-id="{{ $segment->tyre_location_id }}"
+                                 data-terrain="{{ $segment->terrain_type }}" data-status="{{ $segment->status }}"
+                                 title="Edit">
+                                 <i class="ri-pencil-line"></i>
+                              </a>
+                              <form action="{{ route('tyre-segments.destroy', $segment->id) }}" method="POST"
+                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
+                                    title="Delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                 </button>
+                              </form>
                            </div>
                         </td>
                      </tr>

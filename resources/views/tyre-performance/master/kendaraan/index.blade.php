@@ -27,6 +27,7 @@
                      <th>Plate No</th>
                      <th>Area</th>
                      <th>Type</th>
+                     <th>Tyre Layout</th>
                      <th>Tyre Positions</th>
                      <th>Status</th>
                      <th>Actions</th>
@@ -39,6 +40,7 @@
                         <td>{{ $kv->no_polisi }}</td>
                         <td>{{ $kv->area }}</td>
                         <td>{{ $kv->jenis_kendaraan ?? '-' }}</td>
+                        <td>{{ $kv->tyrePositionConfiguration->name ?? '-' }}</td>
                         <td>{{ $kv->total_tyre_position }}</td>
                         <td>
                            <span
@@ -48,24 +50,36 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle" 
-                                 href="javascript:void(0);" data-bs-toggle="modal"
-                                 data-bs-target="#editVehicleModal" data-id="{{ $kv->id }}"
-                                 data-kode="{{ $kv->kode_kendaraan }}" data-polisi="{{ $kv->no_polisi }}"
-                                 data-area="{{ $kv->area }}" data-jenis="{{ $kv->jenis_kendaraan }}"
-                                 data-tipe="{{ $kv->tipe_kendaraan }}" data-tahun="{{ $kv->tahun_rakit }}"
-                                 data-usia="{{ $kv->usia_kendaraan }}" data-silinder="{{ $kv->kapasitas_silinder }}"
-                                 data-bpkb="{{ $kv->no_bpkb }}" data-rangka="{{ $kv->no_rangka }}"
-                                 data-mesin="{{ $kv->no_mesin }}" data-positions="{{ $kv->total_tyre_position }}"
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                                 data-id="{{ $kv->id }}" data-kode="{{ $kv->kode_kendaraan }}"
+                                 data-polisi="{{ $kv->no_polisi }}" data-area="{{ $kv->area }}"
+                                 data-jenis="{{ $kv->jenis_kendaraan }}" data-tipe="{{ $kv->tipe_kendaraan }}"
+                                 data-tahun="{{ $kv->tahun_rakit }}" data-usia="{{ $kv->usia_kendaraan }}"
+                                 data-silinder="{{ $kv->kapasitas_silinder }}" data-bpkb="{{ $kv->no_bpkb }}"
+                                 data-rangka="{{ $kv->no_rangka }}" data-mesin="{{ $kv->no_mesin }}"
+                                 data-positions="{{ $kv->total_tyre_position }}"
+                                 data-config-id="{{ $kv->tyre_position_configuration_id }}"
                                  data-status="{{ $kv->tyre_unit_status }}" title="Edit">
-                                 <i class="ri-pencil-line"></i>
+                                 <i class="icon-base ri ri-pencil-line"></i>
                               </a>
+                              @if ($kv->tyre_position_configuration_id)
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
+                                    data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
+                                    data-config-name="{{ $kv->tyrePositionConfiguration->name }}"
+                                    data-config-id="{{ $kv->tyre_position_configuration_id }}" title="View Layout">
+                                    <i class="icon-base ri ri-layout-6-line text-primary"></i>
+                                 </button>
+                              @endif
                               <form action="{{ route('tyre-kendaraan.destroy', $kv->id) }}" method="POST"
                                  onsubmit="return confirm('Are you sure?')" class="d-inline">
                                  @csrf
                                  @method('DELETE')
-                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
+                                 <button type="submit"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
+                                    title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
                                  </button>
                               </form>
                            </div>
@@ -73,11 +87,16 @@
                      </tr>
                   @empty
                      <tr>
-                        <td colspan="7" class="text-center">No data found</td>
+                        <td colspan="8" class="text-center">No data found</td>
                      </tr>
                   @endforelse
                </tbody>
             </table>
+         </div>
+         <div class="card-footer px-3 py-2 border-top">
+            <div class="d-flex justify-content-center overflow-auto">
+               {{ $kendaraans->links() }}
+            </div>
          </div>
       </div>
    </div>
@@ -106,8 +125,8 @@
                      </div>
                      <div class="col mb-3">
                         <label for="area" class="form-label">Area</label>
-                        <input type="text" id="area" name="area" class="form-control" placeholder="e.g. Site A"
-                           required>
+                        <input type="text" id="area" name="area" class="form-control"
+                           placeholder="e.g. Site A" required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -155,9 +174,19 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="total_tyre_position" class="form-label">Tyre Positions</label>
+                        <label for="total_tyre_position" class="form-label">Total Tyre Positions</label>
                         <input type="number" id="total_tyre_position" name="total_tyre_position" class="form-control"
                            placeholder="e.g. 10" required>
+                     </div>
+                     <div class="col mb-3">
+                        <label for="tyre_position_configuration_id" class="form-label">Tyre Layout Configuration</label>
+                        <select name="tyre_position_configuration_id" class="form-select">
+                           <option value="">-- Select Configuration --</option>
+                           @foreach ($configurations as $config)
+                              <option value="{{ $config->id }}">{{ $config->name }} ({{ $config->code }})</option>
+                           @endforeach
+                        </select>
+                        <small class="text-muted">Optional: Link to a visual layout template</small>
                      </div>
                      <div class="col mb-3">
                         <label for="tyre_unit_status" class="form-label">Status</label>
@@ -246,9 +275,20 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="edit_total_positions" class="form-label">Tyre Positions</label>
+                        <label for="edit_total_positions" class="form-label">Total Tyre Positions</label>
                         <input type="number" id="edit_total_positions" name="total_tyre_position" class="form-control"
                            required>
+                     </div>
+                     <div class="col mb-3">
+                        <label for="edit_tyre_position_configuration_id" class="form-label">Tyre Layout
+                           Configuration</label>
+                        <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
+                           class="form-select">
+                           <option value="">-- No Configuration --</option>
+                           @foreach ($configurations as $config)
+                              <option value="{{ $config->id }}">{{ $config->name }} ({{ $config->code }})</option>
+                           @endforeach
+                        </select>
                      </div>
                      <div class="col mb-3">
                         <label for="edit_unit_status" class="form-label">Status</label>
@@ -265,6 +305,25 @@
                   <button type="submit" class="btn btn-primary">Update changes</button>
                </div>
             </form>
+         </div>
+      </div>
+   </div>
+
+   <!-- View Layout Modal -->
+   <div class="modal fade" id="viewLayoutModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title">Vehicle Tyre Layout: <span id="layoutModalTitle"></span></h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light text-center">
+               <div id="layoutContainer">
+                  <div class="text-center py-5">
+                     <div class="spinner-border text-primary" role="status"></div>
+                  </div>
+               </div>
+            </div>
          </div>
       </div>
    </div>
@@ -292,6 +351,7 @@
                const rangka = this.getAttribute('data-rangka');
                const mesin = this.getAttribute('data-mesin');
                const positions = this.getAttribute('data-positions');
+               const configId = this.getAttribute('data-config-id');
                const status = this.getAttribute('data-status');
 
                editForm.action = `/tyre_performance/master/kendaraan/${id}`;
@@ -301,17 +361,46 @@
                document.querySelector('#edit_jenis_kendaraan').value = jenis === 'null' ? '' : (jenis ||
                   '');
                document.querySelector('#edit_tipe_kendaraan').value = tipe === 'null' ? '' : (tipe ||
-               '');
+                  '');
                document.querySelector('#edit_tahun_rakit').value = tahun === 'null' ? '' : (tahun || '');
                document.querySelector('#edit_usia_kendaraan').value = usia === 'null' ? '' : (usia ||
-               '');
+                  '');
                document.querySelector('#edit_kapasitas_silinder').value = silinder === 'null' ? '' : (
                   silinder || '');
                document.querySelector('#edit_no_bpkb').value = bpkb === 'null' ? '' : (bpkb || '');
                document.querySelector('#edit_no_rangka').value = rangka === 'null' ? '' : (rangka || '');
                document.querySelector('#edit_no_mesin').value = mesin === 'null' ? '' : (mesin || '');
                document.querySelector('#edit_total_positions').value = positions;
+               document.querySelector('#edit_tyre_position_configuration_id').value = configId ===
+                  'null' ? '' : (configId || '');
                document.querySelector('#edit_unit_status').value = status;
+            });
+         });
+
+         // View Layout Modal Logic
+         const viewLayoutButtons = document.querySelectorAll('.view-layout');
+         const layoutContainer = document.querySelector('#layoutContainer');
+         const layoutModalTitle = document.querySelector('#layoutModalTitle');
+
+         viewLayoutButtons.forEach(button => {
+            button.addEventListener('click', function() {
+               const configId = this.getAttribute('data-config-id');
+               const configName = this.getAttribute('data-config-name');
+
+               layoutModalTitle.textContent = configName;
+               layoutContainer.innerHTML =
+                  '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+               // Fetch layout via AJAX
+               fetch(`/tyre_performance/master_position/${configId}/layout`)
+                  .then(response => response.text())
+                  .then(html => {
+                     layoutContainer.innerHTML = html;
+                  })
+                  .catch(err => {
+                     layoutContainer.innerHTML =
+                        '<div class="alert alert-danger">Gagal memuat layout.</div>';
+                  });
             });
          });
       });

@@ -6,9 +6,9 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Sizes</h4>
-         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
-            <i class="ri-add-line me-1"></i> Add Size
-         </button>
+         <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
+            <i class="icon-base ri ri-add-line me-1"></i> Add Size
+         </a>
       </div>
 
       @if (session('success'))
@@ -40,27 +40,24 @@
                         <td>{{ $size->std_otd ?? '-' }}</td>
                         <td>{{ $size->ply_rating ?? '-' }}</td>
                         <td>
-                           <div class="dropdown">
-                              <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                 <i class="ri-more-2-fill"></i>
-                              </button>
-                              <div class="dropdown-menu">
-                                 <a class="dropdown-item edit-size" href="javascript:void(0);" data-bs-toggle="modal"
-                                    data-bs-target="#editSizeModal" data-id="{{ $size->id }}"
-                                    data-size="{{ $size->size }}" data-brand-id="{{ $size->tyre_brand_id }}"
-                                    data-type="{{ $size->type }}" data-otd="{{ $size->std_otd }}"
-                                    data-ply="{{ $size->ply_rating }}">
-                                    <i class="ri-pencil-line me-1"></i> Edit
-                                 </a>
-                                 <form action="{{ route('tyre-sizes.destroy', $size->id) }}" method="POST"
-                                    onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dropdown-item">
-                                       <i class="ri-delete-bin-line me-1"></i> Delete
-                                    </button>
-                                 </form>
-                              </div>
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
+                                 data-id="{{ $size->id }}" data-size="{{ $size->size }}"
+                                 data-brand-id="{{ $size->tyre_brand_id }}" data-type="{{ $size->type }}"
+                                 data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" title="Edit">
+                                 <i class="icon-base ri ri-pencil-line"></i>
+                              </a>
+                              <form action="{{ route('tyre-sizes.destroy', $size->id) }}" method="POST"
+                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
+                                    title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              </form>
                            </div>
                         </td>
                      </tr>
@@ -71,6 +68,11 @@
                   @endforelse
                </tbody>
             </table>
+         </div>
+         <div class="card-footer px-3 py-2 border-top">
+            <div class="d-flex justify-content-center overflow-auto">
+               {{ $sizes->links() }}
+            </div>
          </div>
       </div>
    </div>

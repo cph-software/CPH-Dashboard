@@ -7,7 +7,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Brands</h4>
          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBrandModal">
-            <i class="ri-add-line me-1"></i> Add Brand
+            <i class="icon-base ri ri-add-line me-1"></i> Add Brand
          </button>
       </div>
 
@@ -41,19 +41,20 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand" 
-                                 href="javascript:void(0);" data-bs-toggle="modal"
-                                 data-bs-target="#editBrandModal" data-id="{{ $brand->id }}"
-                                 data-name="{{ $brand->brand_name }}" data-type="{{ $brand->brand_type }}"
-                                 data-status="{{ $brand->status }}" title="Edit">
-                                 <i class="ri-pencil-line"></i>
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editBrandModal"
+                                 data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}"
+                                 data-type="{{ $brand->brand_type }}" data-status="{{ $brand->status }}" title="Edit">
+                                 <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <form action="{{ route('tyre-brands.destroy', $brand->id) }}" method="POST"
                                  onsubmit="return confirm('Are you sure?')" class="d-inline">
                                  @csrf
                                  @method('DELETE')
-                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
+                                 <button type="submit"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
+                                    title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
                                  </button>
                               </form>
                            </div>
@@ -66,6 +67,11 @@
                   @endforelse
                </tbody>
             </table>
+         </div>
+         <div class="card-footer px-3 py-2 border-top">
+            <div class="d-flex justify-content-center overflow-auto">
+               {{ $brands->links() }}
+            </div>
          </div>
       </div>
    </div>
