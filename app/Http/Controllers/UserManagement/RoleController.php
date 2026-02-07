@@ -38,7 +38,7 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $menus = Menu::whereNull('parent_id')->with('children')->get();
+        $menus = Menu::all();
         return view('user-management.roles.create', compact('menus'));
     }
 
@@ -71,7 +71,7 @@ class RoleController extends Controller
     public function edit($id)
     {
         $role = \App\Models\Role::with('menus')->findOrFail($id);
-        $menus = Menu::whereNull('parent_id')->with('children')->get();
+        $menus = Menu::all();
         $roleMenuIds = $role->menus->pluck('id')->toArray();
         
         return view('user-management.roles.edit', compact('role', 'menus', 'roleMenuIds'));

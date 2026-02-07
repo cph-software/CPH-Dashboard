@@ -39,7 +39,7 @@ if (!function_exists('getAplikasiPerRole')) {
             return collect();
         }
 
-        return $role->aplikasi()->orderBy('order_no', 'asc')->orderBy('name', 'asc')->get();
+        return $role->aplikasi()->orderBy('name', 'asc')->get();
     }
 }
 
@@ -55,17 +55,9 @@ if (!function_exists('getRoleMenu')) {
     {
         return \App\Models\RoleMenu::where('role_id', $roleId)
             ->whereHas('menu', function ($query) use ($aplikasiId) {
-                $query->where('aplikasi_id', $aplikasiId)
-                    ->where('is_active', true)
-                    ->where('is_header', false) // Exclude headers
-                    ->whereNull('parent_id') // Only get parent menus
-                    ->orderBy('order_no');
+                $query->where('aplikasi_id', $aplikasiId);
             })
-            ->with([
-                'menu.children' => function ($query) {
-                    $query->where('is_active', true)->orderBy('order_no');
-                }
-            ])
+            ->with('menu')
             ->get();
     }
 }
@@ -85,9 +77,7 @@ if (!function_exists('getGeneralMenu')) {
 
         return \App\Models\RoleMenu::where('role_id', $roleId)
             ->whereHas('menu', function ($query) {
-                $query->where('is_active', true)
-                    ->whereNull('parent_id')
-                    ->where('aplikasi_id', 1); // Assuming 1 is general/main app
+                $query->where('aplikasi_id', 1); // Assuming 1 is general/main app
             })
             ->with('menu')
             ->get();

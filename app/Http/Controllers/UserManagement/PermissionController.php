@@ -17,7 +17,7 @@ class PermissionController extends Controller
     public function index()
     {
         $roles = Role::all();
-        $aplikasi = Aplikasi::orderBy('order_no')->get();
+        $aplikasi = Aplikasi::orderBy('name')->get();
         return view('user-management.permissions.index', compact('roles', 'aplikasi'));
     }
 

@@ -32,8 +32,7 @@
                         <h5 class="mb-0"><i class="ri-shield-keyhole-line me-2"></i> Role Permissions</h5>
                         <div class="form-check">
                            <input class="form-check-input" type="checkbox" id="selectAll">
-                           <label class="form-check-label fw-medium" for="selectAll text-primary">Select All
-                              Permissions</label>
+                           <label class="form-check-label fw-medium" for="selectAll">Select All Permissions</label>
                         </div>
                      </div>
 
@@ -47,7 +46,7 @@
                            </thead>
                            <tbody>
                               @foreach ($menus as $menu)
-                                 <tr class="table-light border-bottom-0">
+                                 <tr class="table-light border-bottom">
                                     <td class="text-nowrap fw-bold text-heading">
                                        <i class="ri-folder-shared-line me-2 text-primary"></i>
                                        {{ $menu->name }}
@@ -59,24 +58,6 @@
                                        </div>
                                     </td>
                                  </tr>
-                                 @if ($menu->children->count() > 0)
-                                    @foreach ($menu->children as $child)
-                                       <tr class="border-bottom">
-                                          <td class="text-nowrap fw-normal ps-6">
-                                             <span class="text-muted">└─</span>
-                                             <i class="ri-subtract-line mx-1 text-muted"></i>
-                                             {{ $child->name }}
-                                          </td>
-                                          <td class="text-center">
-                                             <div class="form-check d-flex justify-content-center">
-                                                <input class="form-check-input menu-checkbox" type="checkbox"
-                                                   name="menu_ids[]" value="{{ $child->id }}"
-                                                   id="menuCheck{{ $child->id }}" />
-                                             </div>
-                                          </td>
-                                       </tr>
-                                    @endforeach
-                                 @endif
                               @endforeach
                            </tbody>
                         </table>
