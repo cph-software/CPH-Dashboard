@@ -14,35 +14,25 @@ class RoleService extends BaseService
         parent::__construct($repository);
     }
 
-    public function storeWithPermissions(array $data, array $permissions)
+    public function storeWithPermissions(array $data, array $menuIds)
     {
         $role = $this->repository->create([
             'name' => $data['name'],
             'status' => 'active'
         ]);
 
-        foreach ($permissions as $menuId => $actions) {
-            $role->menus()->attach($menuId, [
-                'permissions' => json_encode($actions)
-            ]);
-        }
+        $role->menus()->attach($menuIds);
 
         return $role;
     }
 
-    public function updateWithPermissions($id, array $data, array $permissions)
+    public function updateWithPermissions($id, array $data, array $menuIds)
     {
         $role = $this->repository->update($id, [
             'name' => $data['name']
         ]);
 
-        $syncData = [];
-        foreach ($permissions as $menuId => $actions) {
-            $syncData[$menuId] = [
-                'permissions' => json_encode($actions)
-            ];
-        }
-        $role->menus()->sync($syncData);
+        $role->menus()->sync($menuIds);
 
         return $role;
     }

@@ -39,7 +39,7 @@ if (!function_exists('getAplikasiPerRole')) {
             return collect();
         }
 
-        return $role->aplikasi()->get();
+        return $role->aplikasi()->orderBy('order_no', 'asc')->orderBy('name', 'asc')->get();
     }
 }
 

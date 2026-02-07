@@ -37,16 +37,11 @@ class User extends Authenticatable
     /**
      * Check if user has specific permission for a menu
      */
-    public function hasPermission($menuName, $permission)
+    public function hasPermission($menuName, $permission = null)
     {
         if (!$this->role)
             return false;
 
-        $menu = $this->role->menus()->where('name', $menuName)->first();
-        if (!$menu)
-            return false;
-
-        $permissions = json_decode($menu->pivot->permissions, true) ?? [];
-        return in_array($permission, $permissions);
+        return $this->role->menus()->where('name', $menuName)->exists();
     }
 }

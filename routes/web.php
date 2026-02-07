@@ -29,6 +29,11 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
         Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
         Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
+        
+        // Permission Management
+        Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
+        Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
+        Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
     });
 
     // Example of using permission middleware

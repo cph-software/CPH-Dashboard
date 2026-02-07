@@ -48,11 +48,14 @@ class UserManagementSeeder extends Seeder
             ['url' => 'users', 'icon' => 'ri-user-follow-line', 'order_no' => 3]
         );
 
+        \App\Models\Menu::updateOrCreate(
+            ['name' => 'Permissions', 'parent_id' => $userMgmt->id, 'aplikasi_id' => $app->id],
+            ['url' => 'permissions', 'icon' => 'ri-lock-password-line', 'order_no' => 4]
+        );
+
         // 4. Assign Menus to Super Admin
         $allMenus = \App\Models\Menu::all();
-        foreach ($allMenus as $m) {
-            $superAdmin->menus()->syncWithoutDetaching([$m->id => ['permissions' => json_encode(['view', 'create', 'update', 'delete'])]]);
-        }
+        $superAdmin->menus()->sync($allMenus->pluck('id'));
 
         // 5. Create Super Admin User
         \App\Models\User::updateOrCreate(
