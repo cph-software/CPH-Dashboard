@@ -39,7 +39,21 @@ if (!function_exists('getAplikasiPerRole')) {
             return collect();
         }
 
-        return $role->aplikasi()->orderBy('name', 'asc')->get();
+        // Get application IDs linked via assigned menus
+        $menuAppIds = \App\Models\Menu::whereHas('roles', function($q) use ($roleId) {
+            $q->where('role.id', $roleId);
+        })->pluck('aplikasi_id')->unique()->toArray();
+
+        // Get application IDs explicitly linked to the role
+        $explicitAppIds = $role->aplikasi()->pluck('aplikasi.id')->toArray();
+
+        $allAppIds = array_unique(array_merge($menuAppIds, $explicitAppIds));
+
+        if (empty($allAppIds)) {
+            return collect();
+        }
+
+        return \App\Models\Aplikasi::whereIn('id', $allAppIds)->orderBy('name', 'asc')->get();
     }
 }
 
