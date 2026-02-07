@@ -41,26 +41,22 @@
                         </td>
                         <td>{{ $loc->capacity ?? '-' }}</td>
                         <td>
-                           <div class="dropdown">
-                              <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                 <i class="ri-more-2-fill"></i>
-                              </button>
-                              <div class="dropdown-menu">
-                                 <a class="dropdown-item edit-location" href="javascript:void(0);" data-bs-toggle="modal"
-                                    data-bs-target="#editLocationModal" data-id="{{ $loc->id }}"
-                                    data-name="{{ $loc->location_name }}" data-type="{{ $loc->location_type }}"
-                                    data-capacity="{{ $loc->capacity }}">
-                                    <i class="ri-pencil-line me-1"></i> Edit
-                                 </a>
-                                 <form action="{{ route('tyre-locations.destroy', $loc->id) }}" method="POST"
-                                    onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dropdown-item">
-                                       <i class="ri-delete-bin-line me-1"></i> Delete
-                                    </button>
-                                 </form>
-                              </div>
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location" 
+                                 href="javascript:void(0);" data-bs-toggle="modal"
+                                 data-bs-target="#editLocationModal" data-id="{{ $loc->id }}"
+                                 data-name="{{ $loc->location_name }}" data-type="{{ $loc->location_type }}"
+                                 data-capacity="{{ $loc->capacity }}" title="Edit">
+                                 <i class="ri-pencil-line"></i>
+                              </a>
+                              <form action="{{ route('tyre-locations.destroy', $loc->id) }}" method="POST"
+                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                 </button>
+                              </form>
                            </div>
                         </td>
                      </tr>

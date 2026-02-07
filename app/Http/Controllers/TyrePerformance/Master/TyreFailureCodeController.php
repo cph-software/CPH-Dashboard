@@ -14,6 +14,11 @@ class TyreFailureCodeController extends Controller
         return view('tyre-performance.master.failure-codes.index', compact('failureCodes'));
     }
 
+    public function create()
+    {
+        return view('tyre-performance.master.failure-codes.create');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -39,7 +44,13 @@ class TyreFailureCodeController extends Controller
 
         TyreFailureCode::create($data);
 
-        return redirect()->back()->with('success', 'Failure code created successfully');
+        return redirect()->route('tyre-failure-codes.index')->with('success', 'Failure code created successfully');
+    }
+
+    public function edit($id)
+    {
+        $failureCode = TyreFailureCode::findOrFail($id);
+        return view('tyre-performance.master.failure-codes.edit', compact('failureCode'));
     }
 
     public function update(Request $request, $id)
@@ -69,7 +80,7 @@ class TyreFailureCodeController extends Controller
 
         $failureCode->update($data);
 
-        return redirect()->back()->with('success', 'Failure code updated successfully');
+        return redirect()->route('tyre-failure-codes.index')->with('success', 'Failure code updated successfully');
     }
 
     public function destroy($id)

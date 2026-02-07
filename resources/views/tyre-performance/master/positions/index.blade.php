@@ -40,27 +40,23 @@
                         <td>{{ $pos->position_order }}</td>
                         <td>{{ $pos->description ?? '-' }}</td>
                         <td>
-                           <div class="dropdown">
-                              <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                 <i class="ri-more-2-fill"></i>
-                              </button>
-                              <div class="dropdown-menu">
-                                 <a class="dropdown-item edit-position" href="javascript:void(0);" data-bs-toggle="modal"
-                                    data-bs-target="#editPositionModal" data-id="{{ $pos->id }}"
-                                    data-code="{{ $pos->position_code }}" data-axle="{{ $pos->axle }}"
-                                    data-side="{{ $pos->side }}" data-order="{{ $pos->position_order }}"
-                                    data-desc="{{ $pos->description }}">
-                                    <i class="ri-pencil-line me-1"></i> Edit
-                                 </a>
-                                 <form action="{{ route('tyre-positions.destroy', $pos->id) }}" method="POST"
-                                    onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dropdown-item">
-                                       <i class="ri-delete-bin-line me-1"></i> Delete
-                                    </button>
-                                 </form>
-                              </div>
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-position" 
+                                 href="javascript:void(0);" data-bs-toggle="modal"
+                                 data-bs-target="#editPositionModal" data-id="{{ $pos->id }}"
+                                 data-code="{{ $pos->position_code }}" data-axle="{{ $pos->axle }}"
+                                 data-side="{{ $pos->side }}" data-order="{{ $pos->position_order }}"
+                                 data-desc="{{ $pos->description }}" title="Edit">
+                                 <i class="ri-pencil-line"></i>
+                              </a>
+                              <form action="{{ route('tyre-positions.destroy', $pos->id) }}" method="POST"
+                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                 </button>
+                              </form>
                            </div>
                         </td>
                      </tr>

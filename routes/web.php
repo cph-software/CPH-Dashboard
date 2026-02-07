@@ -38,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
         Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
         Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
-        
+
         // Permission Management
         Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
         Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
@@ -48,19 +48,18 @@ Route::middleware(['auth'])->group(function () {
     // Tyre Performance Application Routes
     Route::prefix('tyre_performance')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'index'])->name('tyre_performance.dashboard');
-        
+
         // Master Data Routes
-        Route::prefix('master')->group(function () {
-            Route::resource('brands', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands');
-            Route::resource('sizes', \App\Http\Controllers\TyrePerformance\Master\TyreSizeController::class)->names('tyre-sizes');
-            Route::resource('segments', \App\Http\Controllers\TyrePerformance\Master\TyreSegmentController::class)->names('tyre-segments');
-            Route::resource('locations', \App\Http\Controllers\TyrePerformance\Master\TyreLocationController::class)->names('tyre-locations');
-            Route::resource('failure-codes', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes');
-            Route::resource('positions', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions');
-            Route::resource('tyres', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master');
-            Route::resource('kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan');
-            Route::resource('patterns', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns');
-        });
+        // Master Data Routes
+        Route::resource('master_brand', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands');
+        Route::resource('master_size', \App\Http\Controllers\TyrePerformance\Master\TyreSizeController::class)->names('tyre-sizes');
+        Route::resource('master_segment', \App\Http\Controllers\TyrePerformance\Master\TyreSegmentController::class)->names('tyre-segments');
+        Route::resource('master_location', \App\Http\Controllers\TyrePerformance\Master\TyreLocationController::class)->names('tyre-locations');
+        Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes');
+        Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions');
+        Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master');
+        Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan');
+        Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns');
     });
 
     // Example of using permission middleware

@@ -47,31 +47,27 @@
                            </span>
                         </td>
                         <td>
-                           <div class="dropdown">
-                              <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                 <i class="ri-more-2-fill"></i>
-                              </button>
-                              <div class="dropdown-menu">
-                                 <a class="dropdown-item edit-vehicle" href="javascript:void(0);" data-bs-toggle="modal"
-                                    data-bs-target="#editVehicleModal" data-id="{{ $kv->id }}"
-                                    data-kode="{{ $kv->kode_kendaraan }}" data-polisi="{{ $kv->no_polisi }}"
-                                    data-area="{{ $kv->area }}" data-jenis="{{ $kv->jenis_kendaraan }}"
-                                    data-tipe="{{ $kv->tipe_kendaraan }}" data-tahun="{{ $kv->tahun_rakit }}"
-                                    data-usia="{{ $kv->usia_kendaraan }}" data-silinder="{{ $kv->kapasitas_silinder }}"
-                                    data-bpkb="{{ $kv->no_bpkb }}" data-rangka="{{ $kv->no_rangka }}"
-                                    data-mesin="{{ $kv->no_mesin }}" data-positions="{{ $kv->total_tyre_position }}"
-                                    data-status="{{ $kv->tyre_unit_status }}">
-                                    <i class="ri-pencil-line me-1"></i> Edit
-                                 </a>
-                                 <form action="{{ route('tyre-kendaraan.destroy', $kv->id) }}" method="POST"
-                                    onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dropdown-item">
-                                       <i class="ri-delete-bin-line me-1"></i> Delete
-                                    </button>
-                                 </form>
-                              </div>
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle" 
+                                 href="javascript:void(0);" data-bs-toggle="modal"
+                                 data-bs-target="#editVehicleModal" data-id="{{ $kv->id }}"
+                                 data-kode="{{ $kv->kode_kendaraan }}" data-polisi="{{ $kv->no_polisi }}"
+                                 data-area="{{ $kv->area }}" data-jenis="{{ $kv->jenis_kendaraan }}"
+                                 data-tipe="{{ $kv->tipe_kendaraan }}" data-tahun="{{ $kv->tahun_rakit }}"
+                                 data-usia="{{ $kv->usia_kendaraan }}" data-silinder="{{ $kv->kapasitas_silinder }}"
+                                 data-bpkb="{{ $kv->no_bpkb }}" data-rangka="{{ $kv->no_rangka }}"
+                                 data-mesin="{{ $kv->no_mesin }}" data-positions="{{ $kv->total_tyre_position }}"
+                                 data-status="{{ $kv->tyre_unit_status }}" title="Edit">
+                                 <i class="ri-pencil-line"></i>
+                              </a>
+                              <form action="{{ route('tyre-kendaraan.destroy', $kv->id) }}" method="POST"
+                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                 </button>
+                              </form>
                            </div>
                         </td>
                      </tr>
