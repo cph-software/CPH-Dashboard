@@ -39,7 +39,21 @@ if (!function_exists('getAplikasiPerRole')) {
             return collect();
         }
 
-        return $role->aplikasi()->orderBy('order_no', 'asc')->orderBy('name', 'asc')->get();
+        // Get application IDs linked via assigned menus
+        $menuAppIds = \App\Models\Menu::whereHas('roles', function($q) use ($roleId) {
+            $q->where('role.id', $roleId);
+        })->pluck('aplikasi_id')->unique()->toArray();
+
+        // Get application IDs explicitly linked to the role
+        $explicitAppIds = $role->aplikasi()->pluck('aplikasi.id')->toArray();
+
+        $allAppIds = array_unique(array_merge($menuAppIds, $explicitAppIds));
+
+        if (empty($allAppIds)) {
+            return collect();
+        }
+
+        return \App\Models\Aplikasi::whereIn('id', $allAppIds)->orderBy('name', 'asc')->get();
     }
 }
 
@@ -55,17 +69,9 @@ if (!function_exists('getRoleMenu')) {
     {
         return \App\Models\RoleMenu::where('role_id', $roleId)
             ->whereHas('menu', function ($query) use ($aplikasiId) {
-                $query->where('aplikasi_id', $aplikasiId)
-                    ->where('is_active', true)
-                    ->where('is_header', false) // Exclude headers
-                    ->whereNull('parent_id') // Only get parent menus
-                    ->orderBy('order_no');
+                $query->where('aplikasi_id', $aplikasiId);
             })
-            ->with([
-                'menu.children' => function ($query) {
-                    $query->where('is_active', true)->orderBy('order_no');
-                }
-            ])
+            ->with('menu')
             ->get();
     }
 }
@@ -85,9 +91,7 @@ if (!function_exists('getGeneralMenu')) {
 
         return \App\Models\RoleMenu::where('role_id', $roleId)
             ->whereHas('menu', function ($query) {
-                $query->where('is_active', true)
-                    ->whereNull('parent_id')
-                    ->where('aplikasi_id', 1); // Assuming 1 is general/main app
+                $query->where('aplikasi_id', 1); // Assuming 1 is general/main app
             })
             ->with('menu')
             ->get();
@@ -118,5 +122,38 @@ if (!function_exists('hasPermission')) {
     function hasPermission($menuName, $action = 'view')
     {
         return auth()->user()?->hasPermission($menuName, $action) ?? false;
+    }
+}
+if (!function_exists('getDashboardRedirectUrl')) {
+    /**
+     * Determine the correct dashboard URL based on user role and application access.
+     * 
+     * @return string
+     */
+    function getDashboardRedirectUrl()
+    {
+        $user = auth()->user();
+        if (!$user) return '/login';
+
+        // Check if user has access to 'Tyre Performance' (ID 20)
+        $roleId = $user->role_id;
+        $hasTyreAccess = \App\Models\Aplikasi::where('id', 20)
+            ->whereHas('roles', function($q) use ($roleId) {
+                $q->where('role.id', $roleId);
+            })->exists();
+
+        // Secondary check via menus if explicit link is missing
+        if (!$hasTyreAccess) {
+            $hasTyreAccess = \App\Models\Menu::where('aplikasi_id', 20)
+                ->whereHas('roles', function($q) use ($roleId) {
+                    $q->where('role.id', $roleId);
+                })->exists();
+        }
+
+        if ($hasTyreAccess) {
+            return '/tyre_performance/dashboard';
+        }
+
+        return '/dashboard';
     }
 }

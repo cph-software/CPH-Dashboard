@@ -61,7 +61,7 @@ class LoginController extends Controller
 
                     setLogActivity($user->id, 'Melakukan login ke sistem CPH');
 
-                    return redirect()->intended('/dashboard');
+                    return redirect()->intended(getDashboardRedirectUrl());
                 } else {
                     return redirect('/login')->with('fail', 'Password yang anda masukan salah');
                 }
@@ -79,7 +79,7 @@ class LoginController extends Controller
                     // Regenerate session to prevent session fixation
                     $request->session()->regenerate();
 
-                    return redirect()->intended('/dashboard');
+                    return redirect()->intended(getDashboardRedirectUrl());
                 } else {
                     return redirect('/login/langganan')->with('fail', 'Password yang anda masukan salah');
                 }

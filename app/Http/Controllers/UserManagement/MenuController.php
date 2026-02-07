@@ -28,11 +28,10 @@ class MenuController extends Controller
      */
     public function index()
     {
-        $menus = \App\Models\Menu::with(['aplikasi', 'parent'])->orderBy('aplikasi_id')->orderBy('order_no')->get();
+        $menus = \App\Models\Menu::with(['aplikasi'])->orderBy('aplikasi_id')->orderBy('name')->get();
         $aplikasi = $this->aplikasiService->getAll();
-        $parentMenus = \App\Models\Menu::whereNull('parent_id')->get();
 
-        return view('user-management.menus.index', compact('menus', 'aplikasi', 'parentMenus'));
+        return view('user-management.menus.index', compact('menus', 'aplikasi'));
     }
 
     /**
@@ -51,13 +50,9 @@ class MenuController extends Controller
 
         $this->menuService->store([
             'aplikasi_id' => $request->aplikasi_id,
-            'parent_id' => $request->parent_id ?: null,
             'name' => $request->name,
             'url' => $request->url,
             'icon' => $request->icon ?: 'ri-circle-line',
-            'order_no' => $request->order_no ?: 0,
-            'is_active' => true,
-            'is_header' => $request->has('is_header')
         ]);
 
         return redirect()->back()->with('success', 'Menu created successfully');
@@ -92,12 +87,9 @@ class MenuController extends Controller
 
         $this->menuService->update($id, [
             'aplikasi_id' => $request->aplikasi_id,
-            'parent_id' => $request->parent_id ?: null,
             'name' => $request->name,
             'url' => $request->url,
             'icon' => $request->icon ?: 'ri-circle-line',
-            'order_no' => $request->order_no ?: 0,
-            'is_header' => $request->has('is_header')
         ]);
 
         return redirect()->back()->with('success', 'Menu updated successfully');

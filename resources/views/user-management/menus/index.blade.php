@@ -24,11 +24,8 @@
                   <tr>
                      <th>Name</th>
                      <th>Application</th>
-                     <th>Parent</th>
                      <th>URL</th>
                      <th>Icon</th>
-                     <th>Order</th>
-                     <th>Status</th>
                      <th>Actions</th>
                   </tr>
                </thead>
@@ -37,17 +34,8 @@
                      <tr>
                         <td>{{ $menu->name }}</td>
                         <td>{{ $menu->aplikasi->name ?? '-' }}</td>
-                        <td>{{ $menu->parent->name ?? 'Root' }}</td>
                         <td><code>{{ $menu->url }}</code></td>
                         <td><i class="ri {{ $menu->icon }}"></i></td>
-                        <td>{{ $menu->order_no }}</td>
-                        <td>
-                           @if ($menu->is_active)
-                              <span class="badge bg-label-success">Active</span>
-                           @else
-                              <span class="badge bg-label-secondary">Inactive</span>
-                           @endif
-                        </td>
                         <td>
                            <div class="d-inline-block text-nowrap">
                               <button class="btn btn-sm btn-icon edit-menu" data-id="{{ $menu->id }}"><i
@@ -83,15 +71,6 @@
                         </select>
                      </div>
                      <div class="mb-3">
-                        <label class="form-label">Parent Menu</label>
-                        <select name="parent_id" class="form-select">
-                           <option value="">Root</option>
-                           @foreach ($parentMenus as $pm)
-                              <option value="{{ $pm->id }}">{{ $pm->name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="mb-3">
                         <label class="form-label">Name</label>
                         <input type="text" name="name" class="form-control" required placeholder="e.g. Dashboard">
                      </div>
@@ -102,10 +81,6 @@
                      <div class="mb-3">
                         <label class="form-label">Icon (Remix Icon Class)</label>
                         <input type="text" name="icon" class="form-control" placeholder="e.g. ri-home-line">
-                     </div>
-                     <div class="mb-3">
-                        <label class="form-label">Order Number</label>
-                        <input type="number" name="order_no" class="form-control" value="0">
                      </div>
                   </div>
                   <div class="modal-footer">
@@ -138,15 +113,6 @@
                         </select>
                      </div>
                      <div class="mb-3">
-                        <label class="form-label">Parent Menu</label>
-                        <select name="parent_id" id="edit_parent_id" class="form-select">
-                           <option value="">Root</option>
-                           @foreach ($parentMenus as $pm)
-                              <option value="{{ $pm->id }}">{{ $pm->name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="mb-3">
                         <label class="form-label">Name</label>
                         <input type="text" name="name" id="edit_name" class="form-control" required>
                      </div>
@@ -157,10 +123,6 @@
                      <div class="mb-3">
                         <label class="form-label">Icon</label>
                         <input type="text" name="icon" id="edit_icon" class="form-control">
-                     </div>
-                     <div class="mb-3">
-                        <label class="form-label">Order Number</label>
-                        <input type="number" name="order_no" id="edit_order_no" class="form-control">
                      </div>
                   </div>
                   <div class="modal-footer">
@@ -185,21 +147,20 @@
          $('.datatables-menus').DataTable({
             order: [
                [1, 'asc'],
-               [5, 'asc']
+               [0, 'asc']
             ]
          });
 
          // Edit Menu
          $(document).on('click', '.edit-menu', function() {
             const id = $(this).data('id');
-            $.get('{{ url('cph_dashboard/menus') }}/' + id + '/edit', function(menu) {
-               $('#editMenuForm').attr('action', '{{ url('cph_dashboard/menus') }}/' + id);
+            const baseUrl = '{{ url('cph_dashboard/menus') }}';
+            $.get(baseUrl + '/' + id + '/edit', function(menu) {
+               $('#editMenuForm').attr('action', baseUrl + '/' + id);
                $('#edit_aplikasi_id').val(menu.aplikasi_id);
-               $('#edit_parent_id').val(menu.parent_id);
                $('#edit_name').val(menu.name);
                $('#edit_url').val(menu.url);
                $('#edit_icon').val(menu.icon);
-               $('#edit_order_no').val(menu.order_no);
                $('#editMenuModal').modal('show');
             });
          });

@@ -81,10 +81,9 @@
                            <tr class="table-dark app-header" data-app-id="{{ $app->id }}">
                               <td colspan="2" class="fw-bold px-4 py-2">{{ strtoupper($app->name) }}</td>
                            </tr>
-                           @foreach ($app->menus()->whereNull('parent_id')->orderBy('order_no')->get() as $menu)
+                           @foreach ($app->menus()->orderBy('name')->get() as $menu)
                               @include('user-management.permissions._menu_row', [
                                   'menu' => $menu,
-                                  'level' => 0,
                               ])
                            @endforeach
                         @endforeach

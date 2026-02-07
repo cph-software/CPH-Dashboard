@@ -38,8 +38,8 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $menus = Menu::whereNull('parent_id')->with('children')->get();
-        return view('user-management.roles.create', compact('menus'));
+        $aplikasi = \App\Models\Aplikasi::with('menus')->orderBy('name')->get();
+        return view('user-management.roles.create', compact('aplikasi'));
     }
 
     /**
@@ -71,10 +71,10 @@ class RoleController extends Controller
     public function edit($id)
     {
         $role = \App\Models\Role::with('menus')->findOrFail($id);
-        $menus = Menu::whereNull('parent_id')->with('children')->get();
+        $aplikasi = \App\Models\Aplikasi::with('menus')->orderBy('name')->get();
         $roleMenuIds = $role->menus->pluck('id')->toArray();
         
-        return view('user-management.roles.edit', compact('role', 'menus', 'roleMenuIds'));
+        return view('user-management.roles.edit', compact('role', 'aplikasi', 'roleMenuIds'));
     }
 
     /**

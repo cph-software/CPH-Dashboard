@@ -17,7 +17,7 @@ class PermissionController extends Controller
     public function index()
     {
         $roles = Role::all();
-        $aplikasi = Aplikasi::orderBy('order_no')->get();
+        $aplikasi = Aplikasi::orderBy('name')->get();
         return view('user-management.permissions.index', compact('roles', 'aplikasi'));
     }
 
@@ -47,8 +47,15 @@ class PermissionController extends Controller
             // Sync Applications
             $role->aplikasi()->sync($appIds);
 
-            // Sync Menus
-            $role->menus()->sync($menuIds);
+            // Sync Menus with default permissions
+            $pivotData = [];
+            $defaultPermissions = json_encode(['view', 'create', 'update', 'delete']);
+            foreach ($menuIds as $menuId) {
+                if ($menuId) {
+                    $pivotData[$menuId] = ['permissions' => $defaultPermissions];
+                }
+            }
+            $role->menus()->sync($pivotData);
         });
 
         return redirect()->back()->with('success', 'Permissions updated successfully');

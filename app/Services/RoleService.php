@@ -21,7 +21,7 @@ class RoleService extends BaseService
             'status' => 'active'
         ]);
 
-        $role->menus()->attach($menuIds);
+        $this->syncRolePermissions($role, $menuIds);
 
         return $role;
     }
@@ -32,9 +32,32 @@ class RoleService extends BaseService
             'name' => $data['name']
         ]);
 
-        $role->menus()->sync($menuIds);
+        $this->syncRolePermissions($role, $menuIds);
 
         return $role;
+    }
+
+    protected function syncRolePermissions($role, $menuIds)
+    {
+        if (empty($menuIds)) {
+            $role->menus()->sync([]);
+            $role->aplikasi()->sync([]);
+            return;
+        }
+
+        // Sync Menus with default permissions
+        $pivotData = [];
+        $defaultPermissions = json_encode(['view', 'create', 'update', 'delete']);
+        foreach ($menuIds as $menuId) {
+            if ($menuId) {
+                $pivotData[$menuId] = ['permissions' => $defaultPermissions];
+            }
+        }
+        $role->menus()->sync($pivotData);
+
+        // Automatically sync Aplikasi IDs based on selected Menus
+        $appIds = \App\Models\Menu::whereIn('id', $menuIds)->pluck('aplikasi_id')->unique()->toArray();
+        $role->aplikasi()->sync($appIds);
     }
 
     public function getAllWithUserCount()
