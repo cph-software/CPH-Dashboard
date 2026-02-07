@@ -27,9 +27,19 @@ class RoleController extends Controller
     public function index()
     {
         $roles = $this->roleService->getAllWithUserCount();
-        $menus = Menu::whereNull('parent_id')->with('children')->get();
 
-        return view('user-management.roles.index', compact('roles', 'menus'));
+        return view('user-management.roles.index', compact('roles'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function create()
+    {
+        $menus = Menu::whereNull('parent_id')->with('children')->get();
+        return view('user-management.roles.create', compact('menus'));
     }
 
     /**
@@ -46,10 +56,10 @@ class RoleController extends Controller
 
         $this->roleService->storeWithPermissions(
             $request->only('name'),
-            $request->input('permissions', [])
+            $request->input('menu_ids', [])
         );
 
-        return redirect()->back()->with('success', 'Role created successfully');
+        return redirect()->route('roles.index')->with('success', 'Role created successfully');
     }
 
     /**
@@ -61,7 +71,10 @@ class RoleController extends Controller
     public function edit($id)
     {
         $role = \App\Models\Role::with('menus')->findOrFail($id);
-        return response()->json($role);
+        $menus = Menu::whereNull('parent_id')->with('children')->get();
+        $roleMenuIds = $role->menus->pluck('id')->toArray();
+        
+        return view('user-management.roles.edit', compact('role', 'menus', 'roleMenuIds'));
     }
 
     /**
@@ -80,10 +93,10 @@ class RoleController extends Controller
         $this->roleService->updateWithPermissions(
             $id,
             $request->only('name'),
-            $request->input('permissions', [])
+            $request->input('menu_ids', [])
         );
 
-        return redirect()->back()->with('success', 'Role updated successfully');
+        return redirect()->route('roles.index')->with('success', 'Role updated successfully');
     }
 
     /**

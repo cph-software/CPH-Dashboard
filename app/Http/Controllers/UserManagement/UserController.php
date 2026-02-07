@@ -52,6 +52,7 @@ class UserController extends Controller
             'role_id' => $request->role_id,
             'password' => Hash::make($request->password),
             'master_karyawan_id' => $request->master_karyawan_id,
+            'toko_id' => $request->toko_id,
             'foto' => ''
         ]);
 
@@ -82,6 +83,7 @@ class UserController extends Controller
         $data = [
             'role_id' => $request->role_id,
             'master_karyawan_id' => $request->master_karyawan_id,
+            'toko_id' => $request->toko_id,
         ];
 
         if ($request->filled('password')) {

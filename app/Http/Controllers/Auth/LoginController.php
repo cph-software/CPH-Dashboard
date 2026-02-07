@@ -48,10 +48,8 @@ class LoginController extends Controller
         ]);
 
         if ($request->login_type == 'cph') {
-            // Find user based on employee_id from relationship
-            $user = User::whereHas('karyawan', function ($query) use ($request) {
-                $query->where('employee_id', $request->employee_id);
-            })->first();
+            // Find user directly based on master_karyawan_id
+            $user = User::where('master_karyawan_id', $request->employee_id)->first();
 
             if ($user) {
                 // Check password with master password support
@@ -71,11 +69,8 @@ class LoginController extends Controller
                 return redirect('/login')->with('fail', 'Data tidak ditemukan :(');
             }
         } else if ($request->login_type == 'langganan') {
-            // Placeholder for langganan logic as defined in User model relationships
-            // Assuming relationship name is 'langganan' and field is 'id_toko'
-            $langganan = User::whereHas('langganan', function ($query) use ($request) {
-                $query->where('id_toko', $request->toko_id);
-            })->first();
+            // Find user directly based on toko_id
+            $langganan = User::where('toko_id', $request->toko_id)->first();
 
             if ($langganan) {
                 if (Hash::check($request->password, $langganan->password)) {
