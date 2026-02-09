@@ -57,11 +57,10 @@
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
                                  data-id="{{ $tyre->id }}" data-serial="{{ $tyre->serial_number }}"
                                  data-brand-id="{{ $tyre->tyre_brand_id }}" data-size-id="{{ $tyre->tyre_size_id }}"
-                                 data-pattern-id="{{ $tyre->tyre_pattern_id }}"
-                                 data-segment-id="{{ $tyre->tyre_segment_id }}" data-type="{{ $tyre->tyre_type }}"
-                                 data-location-id="{{ $tyre->work_location_id }}" data-status="{{ $tyre->status }}"
-                                 title="Edit">
-                                 <i class="ri-pencil-line"></i>
+                                 data-pattern-id="{{ $tyre->tyre_pattern_id }}" data-segment-id="{{ $tyre->tyre_segment_id }}"
+                                 data-type="{{ $tyre->tyre_type }}" data-location-id="{{ $tyre->work_location_id }}"
+                                 data-status="{{ $tyre->status }}" title="Edit">
+                                 <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
@@ -139,8 +138,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_type" class="form-label">Type</label>
-                        <input type="text" id="tyre_type" name="tyre_type" class="form-control"
-                           placeholder="e.g. Radial" required>
+                        <input type="text" id="tyre_type" name="tyre_type" class="form-control" placeholder="e.g. Radial"
+                           required>
                      </div>
                      <div class="col mb-3">
                         <label for="work_location_id" class="form-label">Location</label>
@@ -188,8 +187,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
-                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
-                           required>
+                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control" required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -281,7 +279,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-tyres').DataTable({
             order: [
                [0, 'desc']
@@ -292,7 +290,7 @@
 
          const editForm = $('#editTyreForm');
 
-         $(document).on('click', '.edit-tyre', function() {
+         $(document).on('click', '.edit-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
             const brandId = $(this).data('brand-id');
@@ -314,7 +312,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-tyre', function() {
+         $(document).on('click', '.delete-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
 
@@ -348,6 +346,6 @@
                showConfirmButton: false
             });
          @endif
-      });
+         });
    </script>
 @endsection
