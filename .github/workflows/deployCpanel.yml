@@ -1,0 +1,20 @@
+name: Publish Website
+on:
+  push:
+    branches:
+      - main
+      - staging
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.1.0
+    - name: FTP-Deploy-Action
+      uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ github.ref == 'refs/heads/main' && secrets.FTP_USERNAME || secrets.FTP_USERNAME_STAGING }}
+        password: ${{ github.ref == 'refs/heads/main' && secrets.FTP_PASSWORD || secrets.FTP_PASSWORD_STAGING }}
+        local-dir: ./
+        server-dir: ${{ github.ref == 'refs/heads/main' && './' || './' }}
+        
