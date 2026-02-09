@@ -58,16 +58,15 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-segment"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSegmentModal"
                                  data-id="{{ $segment->id }}" data-segment-id="{{ $segment->segment_id }}"
-                                 data-name="{{ $segment->segment_name }}"
-                                 data-location-id="{{ $segment->tyre_location_id }}"
+                                 data-name="{{ $segment->segment_name }}" data-location-id="{{ $segment->tyre_location_id }}"
                                  data-terrain="{{ $segment->terrain_type }}" data-status="{{ $segment->status }}"
                                  title="Edit">
-                                 <i class="ri-pencil-line"></i>
+                                 <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-segment"
                                  data-id="{{ $segment->id }}" data-name="{{ $segment->segment_name }}" title="Delete">
-                                 <i class="ri-delete-bin-line"></i>
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
                               </button>
                            </div>
                         </td>
@@ -98,8 +97,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="segment_id" class="form-label">Segment ID</label>
-                        <input type="text" id="segment_id" name="segment_id" class="form-control"
-                           placeholder="e.g. BB-01" required>
+                        <input type="text" id="segment_id" name="segment_id" class="form-control" placeholder="e.g. BB-01"
+                           required>
                      </div>
                      <div class="col mb-3">
                         <label for="segment_name" class="form-label">Segment Name</label>
@@ -214,12 +213,12 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-segments').DataTable();
 
          const editForm = $('#editSegmentForm');
 
-         $(document).on('click', '.edit-segment', function() {
+         $(document).on('click', '.edit-segment', function () {
             const id = $(this).data('id');
             const segmentId = $(this).data('segment-id');
             const name = $(this).data('name');
@@ -235,7 +234,7 @@
             $('#edit_segment_status').val(status);
          });
 
-         $(document).on('click', '.delete-segment', function() {
+         $(document).on('click', '.delete-segment', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -269,6 +268,6 @@
                showConfirmButton: false
             });
          @endif
-      });
+         });
    </script>
 @endsection
