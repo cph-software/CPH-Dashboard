@@ -159,7 +159,7 @@
                }).then((result) => {
                   if (result.isConfirmed) {
                      const form = document.getElementById('deleteForm');
-                     form.action = `/tyre_performance/master_position/${configId}`;
+                     form.action = `{{ url('tyre_performance/master_position') }}/${configId}`;
                      form.submit();
                   }
                });

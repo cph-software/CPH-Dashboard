@@ -333,7 +333,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/tyres/${id}`;
+                  form.action = `{{ url('tyre_performance/master_tyre') }}/${id}`;
                   form.submit();
                }
             });

@@ -145,7 +145,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/failure_codes/${id}`;
+                  form.action = `{{ url('tyre_performance/master_failure_code') }}/${id}`;
                   form.submit();
                }
             });

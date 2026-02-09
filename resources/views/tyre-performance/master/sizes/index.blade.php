@@ -213,7 +213,7 @@
             const otd = $(this).data('otd');
             const ply = $(this).data('ply');
 
-            editForm.attr('action', `/tyre_performance/master/sizes/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_size') }}/${id}`);
             $('#edit_size').val(size);
             $('#edit_brand_id').val(brandId);
             $('#edit_type').val(type);
@@ -240,7 +240,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/sizes/${id}`;
+                  form.action = `{{ url('tyre_performance/master_size') }}/${id}`;
                   form.submit();
                }
             });

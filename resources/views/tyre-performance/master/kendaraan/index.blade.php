@@ -356,7 +356,7 @@
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
 
-            editForm.attr('action', `/tyre_performance/master/kendaraan/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_kendaraan') }}/${id}`);
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_no_polisi').val(polisi);
             $('#edit_area').val(area);
@@ -392,7 +392,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/kendaraan/${id}`;
+                  form.action = `{{ url('tyre_performance/master_kendaraan') }}/${id}`;
                   form.submit();
                }
             });

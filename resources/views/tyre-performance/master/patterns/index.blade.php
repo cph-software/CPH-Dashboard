@@ -140,7 +140,7 @@
             const id = $(this).data('id');
             const name = $(this).data('name');
 
-            editForm.attr('action', `/tyre_performance/master/patterns/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_pattern') }}/${id}`);
             $('#edit_name').val(name);
          });
 
@@ -163,7 +163,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/patterns/${id}`;
+                  form.action = `{{ url('tyre_performance/master_pattern') }}/${id}`;
                   form.submit();
                }
             });

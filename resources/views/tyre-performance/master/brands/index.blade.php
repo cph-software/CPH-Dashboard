@@ -182,7 +182,7 @@
             const type = $(this).data('type');
             const status = $(this).data('status');
 
-            editForm.attr('action', `/tyre_performance/master/brands/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_brand') }}/${id}`);
             $('#edit_brand_name').val(name);
             $('#edit_brand_type').val(type === 'null' ? '' : type);
             $('#edit_status').val(status);
@@ -207,7 +207,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/brands/${id}`;
+                  form.action = `{{ url('tyre_performance/master_brand') }}/${id}`;
                   form.submit();
                }
             });

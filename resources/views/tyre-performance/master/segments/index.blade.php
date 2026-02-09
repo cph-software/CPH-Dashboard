@@ -227,7 +227,7 @@
             const terrain = $(this).data('terrain');
             const status = $(this).data('status');
 
-            editForm.attr('action', `/tyre_performance/master/segments/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_segment') }}/${id}`);
             $('#edit_segment_id').val(segmentId);
             $('#edit_segment_name').val(name);
             $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || ''));
@@ -254,7 +254,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `/tyre_performance/master/segments/${id}`;
+                  form.action = `{{ url('tyre_performance/master_segment') }}/${id}`;
                   form.submit();
                }
             });
