@@ -40,7 +40,7 @@ if (!function_exists('getAplikasiPerRole')) {
         }
 
         // Get application IDs linked via assigned menus
-        $menuAppIds = \App\Models\Menu::whereHas('roles', function($q) use ($roleId) {
+        $menuAppIds = \App\Models\Menu::whereHas('roles', function ($q) use ($roleId) {
             $q->where('role.id', $roleId);
         })->pluck('aplikasi_id')->unique()->toArray();
 
@@ -121,7 +121,7 @@ if (!function_exists('hasPermission')) {
      */
     function hasPermission($menuName, $action = 'view')
     {
-        return auth()->user()?->hasPermission($menuName, $action) ?? false;
+        return optional(auth()->user())->hasPermission($menuName, $action) ?? false;
     }
 }
 if (!function_exists('getDashboardRedirectUrl')) {
@@ -133,19 +133,20 @@ if (!function_exists('getDashboardRedirectUrl')) {
     function getDashboardRedirectUrl()
     {
         $user = auth()->user();
-        if (!$user) return '/login';
+        if (!$user)
+            return '/login';
 
         // Check if user has access to 'Tyre Performance' (ID 20)
         $roleId = $user->role_id;
         $hasTyreAccess = \App\Models\Aplikasi::where('id', 20)
-            ->whereHas('roles', function($q) use ($roleId) {
+            ->whereHas('roles', function ($q) use ($roleId) {
                 $q->where('role.id', $roleId);
             })->exists();
 
         // Secondary check via menus if explicit link is missing
         if (!$hasTyreAccess) {
             $hasTyreAccess = \App\Models\Menu::where('aplikasi_id', 20)
-                ->whereHas('roles', function($q) use ($roleId) {
+                ->whereHas('roles', function ($q) use ($roleId) {
                     $q->where('role.id', $roleId);
                 })->exists();
         }
