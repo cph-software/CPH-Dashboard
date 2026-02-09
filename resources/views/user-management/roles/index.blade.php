@@ -2,6 +2,10 @@
 
 @section('title', 'Roles')
 
+@section('vendor-style')
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -94,28 +98,46 @@
 @endsection
 
 @section('vendor-script')
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      $(document).on('click', '.delete-role', function() {
-         const id = $(this).data('id');
-         const url = '{{ url('cph_dashboard/roles') }}/' + id;
+      $(document).ready(function() {
+         $(document).on('click', '.delete-role', function() {
+            const id = $(this).data('id');
+            const name = $(this).closest('.card-body').find('.role-content h5').text();
 
-         Swal.fire({
-            title: 'Are you sure?',
-            text: "User with this role might lose access!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
-         }).then((result) => {
-            if (result.isConfirmed) {
-               $('#deleteForm').attr('action', url).submit();
-            }
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Role "${name}" akan dihapus. User dengan role ini mungkin akan kehilangan akses!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = '{{ url('cph_dashboard/roles') }}/' + id;
+                  form.submit();
+               }
+            });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

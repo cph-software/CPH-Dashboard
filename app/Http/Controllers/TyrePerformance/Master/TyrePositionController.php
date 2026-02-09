@@ -38,6 +38,7 @@ class TyrePositionController extends Controller
             'code' => 'required|string|max:50|unique:tyre_position_configurations,code',
             'description' => 'nullable|string',
             'front_axles' => 'required|integer|min:0|max:5',
+            'middle_axles' => 'required|integer|min:0|max:5',
             'rear_axles' => 'required|integer|min:0|max:10',
             'spare_tyres' => 'required|integer|min:0|max:5',
         ]);
@@ -46,6 +47,7 @@ class TyrePositionController extends Controller
         try {
             // Calculate total positions
             $totalPositions = ($validated['front_axles'] * 2) + 
+                            ($validated['middle_axles'] * 4) +
                             ($validated['rear_axles'] * 4) + 
                             $validated['spare_tyres'];
 
@@ -62,6 +64,7 @@ class TyrePositionController extends Controller
             // Generate positions
             $axleConfig = [
                 'front' => $validated['front_axles'],
+                'middle' => $validated['middle_axles'],
                 'rear' => $validated['rear_axles'],
                 'spare' => $validated['spare_tyres'],
             ];
@@ -113,10 +116,11 @@ class TyrePositionController extends Controller
         $configuration = TyrePositionConfiguration::with('details')->findOrFail($id);
         
         $frontAxles = $configuration->details->where('axle_type', 'Front')->max('axle_number') ?? 0;
+        $middleAxles = $configuration->details->where('axle_type', 'Middle')->max('axle_number') ?? 0;
         $rearAxles = $configuration->details->where('axle_type', 'Rear')->max('axle_number') ?? 0;
         $spareTyres = $configuration->total_spare;
         
-        return view('tyre-performance.master.positions.edit', compact('configuration', 'frontAxles', 'rearAxles', 'spareTyres'));
+        return view('tyre-performance.master.positions.edit', compact('configuration', 'frontAxles', 'middleAxles', 'rearAxles', 'spareTyres'));
     }
 
     /**
@@ -130,6 +134,7 @@ class TyrePositionController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:Active,Inactive',
             'front_axles' => 'required|integer|min:0|max:5',
+            'middle_axles' => 'required|integer|min:0|max:5',
             'rear_axles' => 'required|integer|min:0|max:10',
             'spare_tyres' => 'required|integer|min:0|max:5',
         ]);
@@ -140,6 +145,7 @@ class TyrePositionController extends Controller
         try {
             // Calculate total positions
             $totalPositions = ($validated['front_axles'] * 2) + 
+                            ($validated['middle_axles'] * 4) +
                             ($validated['rear_axles'] * 4) + 
                             $validated['spare_tyres'];
             
@@ -160,6 +166,7 @@ class TyrePositionController extends Controller
             
             $axleConfig = [
                 'front' => $validated['front_axles'],
+                'middle' => $validated['middle_axles'],
                 'rear' => $validated['rear_axles'],
                 'spare' => $validated['spare_tyres'],
             ];

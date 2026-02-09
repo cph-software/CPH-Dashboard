@@ -3,6 +3,7 @@
 
    @php
       $frontAxles = $configuration->details->where('axle_type', 'Front')->groupBy('axle_number');
+      $middleAxles = $configuration->details->where('axle_type', 'Middle')->groupBy('axle_number');
       $rearAxles = $configuration->details->where('axle_type', 'Rear')->groupBy('axle_number');
       $spares = $configuration->details->where('is_spare', true);
    @endphp
@@ -24,6 +25,36 @@
             data-position-id="{{ $right->id }}" data-code="{{ $right->position_code }}"
             data-sn="{{ $rightTyre->serial_number ?? '' }}">
             {{ $right->position_code }}
+         </div>
+      </div>
+   @endforeach
+
+   @endforeach
+
+   {{-- Middle Axles (Assume Dual for visual consistency with heavy duty) --}}
+   @foreach ($middleAxles as $positions)
+      <div class="v-axle">
+         <div class="v-group">
+            @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+               @php
+                  $t = $assignedTyres->get($p->id) ?? null;
+               @endphp
+               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+                  data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}">
+                  {{ $p->position_code }}
+               </div>
+            @endforeach
+         </div>
+         <div class="v-group">
+            @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+               @php
+                  $t = $assignedTyres->get($p->id) ?? null;
+               @endphp
+               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+                  data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}">
+                  {{ $p->position_code }}
+               </div>
+            @endforeach
          </div>
       </div>
    @endforeach
@@ -143,6 +174,11 @@
 
    .v-tyre.rear {
       border-left: 3px solid #28c76f;
+   }
+
+   .v-tyre.middle {
+      border-left: 3px solid #7367f0;
+      /* Use primary color for middle */
    }
 
    .v-tyre.spare {

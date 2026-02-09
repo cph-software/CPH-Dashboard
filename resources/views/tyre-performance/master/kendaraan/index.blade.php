@@ -2,6 +2,14 @@
 
 @section('title', 'Master Vehicles')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,21 +19,14 @@
          </button>
       </div>
 
-      @if (session('success'))
-         <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-         </div>
-      @endif
-
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-vehicles table border-top table-hover">
                <thead>
                   <tr>
                      <th>Unit Code</th>
                      <th>Plate No</th>
-                     <th>Area</th>
+                     <th>Location</th>
                      <th>Type</th>
                      <th>Tyre Layout</th>
                      <th>Tyre Positions</th>
@@ -34,7 +35,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($kendaraans as $kv)
+                  @foreach ($kendaraans as $kv)
                      <tr>
                         <td><strong>{{ $kv->kode_kendaraan }}</strong></td>
                         <td>{{ $kv->no_polisi }}</td>
@@ -72,31 +73,17 @@
                                     <i class="icon-base ri ri-layout-6-line text-primary"></i>
                                  </button>
                               @endif
-                              <form action="{{ route('tyre-kendaraan.destroy', $kv->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
-                                    title="Delete">
-                                    <i class="icon-base ri ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
+                                 data-id="{{ $kv->id }}" data-kode="{{ $kv->kode_kendaraan }}" title="Delete">
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="8" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
-         </div>
-         <div class="card-footer px-3 py-2 border-top">
-            <div class="d-flex justify-content-center overflow-auto">
-               {{ $kendaraans->links() }}
-            </div>
          </div>
       </div>
    </div>
@@ -124,9 +111,13 @@
                            placeholder="e.g. B 1234 ABC" required>
                      </div>
                      <div class="col mb-3">
-                        <label for="area" class="form-label">Area</label>
-                        <input type="text" id="area" name="area" class="form-control"
-                           placeholder="e.g. Site A" required>
+                        <label for="area" class="form-label">Location (Area)</label>
+                        <select id="area" name="area" class="form-select" required>
+                           <option value="">-- Select Location --</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -230,8 +221,13 @@
                         <input type="text" id="edit_no_polisi" name="no_polisi" class="form-control" required>
                      </div>
                      <div class="col mb-3">
-                        <label for="edit_area" class="form-label">Area</label>
-                        <input type="text" id="edit_area" name="area" class="form-control" required>
+                        <label for="edit_area" class="form-label">Location (Area)</label>
+                        <select id="edit_area" name="area" class="form-select" required>
+                           <option value="">-- Select Location --</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -328,81 +324,119 @@
       </div>
    </div>
 
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-vehicle');
-         const editForm = document.querySelector('#editVehicleForm');
+      $(document).ready(function() {
+         $('.datatables-vehicles').DataTable({
+            order: [
+               [0, 'desc']
+            ],
+            displayLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+         });
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const kode = this.getAttribute('data-kode');
-               const polisi = this.getAttribute('data-polisi');
-               const area = this.getAttribute('data-area');
-               const jenis = this.getAttribute('data-jenis');
-               const tipe = this.getAttribute('data-tipe');
-               const tahun = this.getAttribute('data-tahun');
-               const usia = this.getAttribute('data-usia');
-               const silinder = this.getAttribute('data-silinder');
-               const bpkb = this.getAttribute('data-bpkb');
-               const rangka = this.getAttribute('data-rangka');
-               const mesin = this.getAttribute('data-mesin');
-               const positions = this.getAttribute('data-positions');
-               const configId = this.getAttribute('data-config-id');
-               const status = this.getAttribute('data-status');
+         const editForm = $('#editVehicleForm');
 
-               editForm.action = `/tyre_performance/master/kendaraan/${id}`;
-               document.querySelector('#edit_kode_kendaraan').value = kode;
-               document.querySelector('#edit_no_polisi').value = polisi;
-               document.querySelector('#edit_area').value = area;
-               document.querySelector('#edit_jenis_kendaraan').value = jenis === 'null' ? '' : (jenis ||
-                  '');
-               document.querySelector('#edit_tipe_kendaraan').value = tipe === 'null' ? '' : (tipe ||
-                  '');
-               document.querySelector('#edit_tahun_rakit').value = tahun === 'null' ? '' : (tahun || '');
-               document.querySelector('#edit_usia_kendaraan').value = usia === 'null' ? '' : (usia ||
-                  '');
-               document.querySelector('#edit_kapasitas_silinder').value = silinder === 'null' ? '' : (
-                  silinder || '');
-               document.querySelector('#edit_no_bpkb').value = bpkb === 'null' ? '' : (bpkb || '');
-               document.querySelector('#edit_no_rangka').value = rangka === 'null' ? '' : (rangka || '');
-               document.querySelector('#edit_no_mesin').value = mesin === 'null' ? '' : (mesin || '');
-               document.querySelector('#edit_total_positions').value = positions;
-               document.querySelector('#edit_tyre_position_configuration_id').value = configId ===
-                  'null' ? '' : (configId || '');
-               document.querySelector('#edit_unit_status').value = status;
+         $(document).on('click', '.edit-vehicle', function() {
+            const id = $(this).data('id');
+            const kode = $(this).data('kode');
+            const polisi = $(this).data('polisi');
+            const area = $(this).data('area');
+            const jenis = $(this).data('jenis');
+            const tipe = $(this).data('tipe');
+            const tahun = $(this).data('tahun');
+            const usia = $(this).data('usia');
+            const silinder = $(this).data('silinder');
+            const bpkb = $(this).data('bpkb');
+            const rangka = $(this).data('rangka');
+            const mesin = $(this).data('mesin');
+            const positions = $(this).data('positions');
+            const configId = $(this).data('config-id');
+            const status = $(this).data('status');
+
+            editForm.attr('action', `{{ url('tyre_performance/master_kendaraan') }}/${id}`);
+            $('#edit_kode_kendaraan').val(kode);
+            $('#edit_no_polisi').val(polisi);
+            $('#edit_area').val(area);
+            $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
+            $('#edit_tipe_kendaraan').val(tipe === 'null' ? '' : (tipe || ''));
+            $('#edit_tahun_rakit').val(tahun === 'null' ? '' : (tahun || ''));
+            $('#edit_usia_kendaraan').val(usia === 'null' ? '' : (usia || ''));
+            $('#edit_kapasitas_silinder').val(silinder === 'null' ? '' : (silinder || ''));
+            $('#edit_no_bpkb').val(bpkb === 'null' ? '' : (bpkb || ''));
+            $('#edit_no_rangka').val(rangka === 'null' ? '' : (rangka || ''));
+            $('#edit_no_mesin').val(mesin === 'null' ? '' : (mesin || ''));
+            $('#edit_total_positions').val(positions);
+            $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || ''));
+            $('#edit_unit_status').val(status);
+         });
+
+         $(document).on('click', '.delete-vehicle', function() {
+            const id = $(this).data('id');
+            const kode = $(this).data('kode');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Kendaraan "${kode}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `{{ url('tyre_performance/master_kendaraan') }}/${id}`;
+                  form.submit();
+               }
             });
          });
 
-         // View Layout Modal Logic
-         const viewLayoutButtons = document.querySelectorAll('.view-layout');
-         const layoutContainer = document.querySelector('#layoutContainer');
-         const layoutModalTitle = document.querySelector('#layoutModalTitle');
+         $(document).on('click', '.view-layout', function() {
+            const configId = $(this).data('config-id');
+            const configName = $(this).data('config-name');
+            const layoutContainer = $('#layoutContainer');
+            const layoutModalTitle = $('#layoutModalTitle');
 
-         viewLayoutButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const configId = this.getAttribute('data-config-id');
-               const configName = this.getAttribute('data-config-name');
+            layoutModalTitle.text(configName);
+            layoutContainer.html(
+               '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+            );
 
-               layoutModalTitle.textContent = configName;
-               layoutContainer.innerHTML =
-                  '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
-
-               // Fetch layout via AJAX
-               fetch(`/tyre_performance/master_position/${configId}/layout`)
-                  .then(response => response.text())
-                  .then(html => {
-                     layoutContainer.innerHTML = html;
-                  })
-                  .catch(err => {
-                     layoutContainer.innerHTML =
-                        '<div class="alert alert-danger">Gagal memuat layout.</div>';
-                  });
-            });
+            fetch(`/tyre_performance/master_position/${configId}/layout`)
+               .then(response => response.text())
+               .then(html => {
+                  layoutContainer.html(html);
+               })
+               .catch(err => {
+                  layoutContainer.html('<div class="alert alert-danger">Gagal memuat layout.</div>');
+               });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

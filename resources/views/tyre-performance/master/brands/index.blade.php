@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Brands')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,16 +19,9 @@
          </button>
       </div>
 
-      @if (session('success'))
-         <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-         </div>
-      @endif
-
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-brands table border-top table-hover">
                <thead>
                   <tr>
                      <th>Brand Name</th>
@@ -30,7 +31,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($brands as $brand)
+                  @foreach ($brands as $brand)
                      <tr>
                         <td><strong>{{ $brand->brand_name }}</strong></td>
                         <td>{{ $brand->brand_type ?? '-' }}</td>
@@ -47,31 +48,17 @@
                                  data-type="{{ $brand->brand_type }}" data-status="{{ $brand->status }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-brands.destroy', $brand->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
-                                    title="Delete">
-                                    <i class="icon-base ri ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-brand"
+                                 data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}" title="Delete">
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="4" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
-         </div>
-         <div class="card-footer px-3 py-2 border-top">
-            <div class="d-flex justify-content-center overflow-auto">
-               {{ $brands->links() }}
-            </div>
          </div>
       </div>
    </div>
@@ -165,27 +152,76 @@
       </div>
    </div>
 
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-brand');
-         const editForm = document.querySelector('#editBrandForm');
+      $(document).ready(function() {
+         $('.datatables-brands').DataTable({
+            order: [
+               [0, 'desc']
+            ],
+            displayLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+         });
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const name = this.getAttribute('data-name');
-               const type = this.getAttribute('data-type');
-               const status = this.getAttribute('data-status');
+         const editForm = $('#editBrandForm');
 
-               editForm.action = `/tyre_performance/master/brands/${id}`;
-               document.querySelector('#edit_brand_name').value = name;
-               document.querySelector('#edit_brand_type').value = type === 'null' ? '' : type;
-               document.querySelector('#edit_status').value = status;
+         $(document).on('click', '.edit-brand', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const type = $(this).data('type');
+            const status = $(this).data('status');
+
+            editForm.attr('action', `{{ url('tyre_performance/master_brand') }}/${id}`);
+            $('#edit_brand_name').val(name);
+            $('#edit_brand_type').val(type === 'null' ? '' : type);
+            $('#edit_status').val(status);
+         });
+
+         $(document).on('click', '.delete-brand', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Brand "${name}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `{{ url('tyre_performance/master_brand') }}/${id}`;
+                  form.submit();
+               }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

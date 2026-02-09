@@ -63,6 +63,53 @@ class TyrePositionConfiguration extends Model
             }
         }
 
+        // Generate middle axle positions
+        if (isset($axleConfig['middle']) && $axleConfig['middle'] > 0) {
+            for ($i = 1; $i <= $axleConfig['middle']; $i++) {
+                // Middle axles (assuming dual tyres like rear for load bearing)
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => 'M' . $i . 'LO',
+                    'position_name' => 'Middle Axle ' . $i . ' - Left Outer',
+                    'axle_type' => 'Middle',
+                    'axle_number' => $i,
+                    'side' => 'Left',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => 'M' . $i . 'LI',
+                    'position_name' => 'Middle Axle ' . $i . ' - Left Inner',
+                    'axle_type' => 'Middle',
+                    'axle_number' => $i,
+                    'side' => 'Left',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => 'M' . $i . 'RI',
+                    'position_name' => 'Middle Axle ' . $i . ' - Right Inner',
+                    'axle_type' => 'Middle',
+                    'axle_number' => $i,
+                    'side' => 'Right',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => 'M' . $i . 'RO',
+                    'position_name' => 'Middle Axle ' . $i . ' - Right Outer',
+                    'axle_type' => 'Middle',
+                    'axle_number' => $i,
+                    'side' => 'Right',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+            }
+        }
+
         // Generate rear axle positions
         if (isset($axleConfig['rear']) && $axleConfig['rear'] > 0) {
             for ($i = 1; $i <= $axleConfig['rear']; $i++) {

@@ -10,7 +10,7 @@ class TyreLocationController extends Controller
 {
     public function index()
     {
-        $locations = TyreLocation::latest()->paginate(10);
+        $locations = TyreLocation::latest()->get();
         return view('tyre-performance.master.locations.index', compact('locations'));
     }
 

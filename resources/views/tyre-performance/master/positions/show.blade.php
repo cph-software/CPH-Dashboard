@@ -203,6 +203,7 @@
 
                      @php
                         $frontAxles = $configuration->details->where('axle_type', 'Front')->groupBy('axle_number');
+                        $middleAxles = $configuration->details->where('axle_type', 'Middle')->groupBy('axle_number');
                         $rearAxles = $configuration->details->where('axle_type', 'Rear')->groupBy('axle_number');
                         $spareTyres = $configuration->details->where('is_spare', true);
                      @endphp
@@ -223,6 +224,59 @@
                               @if ($right)
                                  <div class="tyre-node front" title="{{ $right->position_name }}">
                                     <span>{{ $right->position_code }}</span>
+                                 </div>
+                              @endif
+                           </div>
+                        </div>
+                     @endforeach
+
+                     <!-- Middle Axles -->
+                     @foreach ($middleAxles as $axleNum => $positions)
+                        <div class="axle-row">
+                           <!-- Left Side Middle (Usually Dual) -->
+                           <div class="tyre-group">
+                              @php
+                                 $leftOuter = $positions
+                                     ->where('side', 'Left')
+                                     ->where('wheel_position', 'Outer')
+                                     ->first();
+                                 $leftInner = $positions
+                                     ->where('side', 'Left')
+                                     ->where('wheel_position', 'Inner')
+                                     ->first();
+                              @endphp
+                              @if ($leftOuter)
+                                 <div class="tyre-node rear" title="{{ $leftOuter->position_name }}">
+                                    <span>{{ $leftOuter->position_code }}</span>
+                                 </div>
+                              @endif
+                              @if ($leftInner)
+                                 <div class="tyre-node rear" title="{{ $leftInner->position_name }}">
+                                    <span>{{ $leftInner->position_code }}</span>
+                                 </div>
+                              @endif
+                           </div>
+
+                           <!-- Right Side Middle (Usually Dual) -->
+                           <div class="tyre-group">
+                              @php
+                                 $rightInner = $positions
+                                     ->where('side', 'Right')
+                                     ->where('wheel_position', 'Inner')
+                                     ->first();
+                                 $rightOuter = $positions
+                                     ->where('side', 'Right')
+                                     ->where('wheel_position', 'Outer')
+                                     ->first();
+                              @endphp
+                              @if ($rightInner)
+                                 <div class="tyre-node rear" title="{{ $rightInner->position_name }}">
+                                    <span>{{ $rightInner->position_code }}</span>
+                                 </div>
+                              @endif
+                              @if ($rightOuter)
+                                 <div class="tyre-node rear" title="{{ $rightOuter->position_name }}">
+                                    <span>{{ $rightOuter->position_code }}</span>
                                  </div>
                               @endif
                            </div>
@@ -318,6 +372,11 @@
                         <span><i class="ri-checkbox-blank-circle-fill text-warning me-2" style="font-size: 8px;"></i> As
                            Depan (Single)</span>
                         <span class="fw-bold">{{ $frontAxles->count() }} As ({{ $frontAxles->count() * 2 }} Ban)</span>
+                     </div>
+                     <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="ri-checkbox-blank-circle-fill text-success me-2" style="font-size: 8px;"></i> As
+                           Tengah (Dual)</span>
+                        <span class="fw-bold">{{ $middleAxles->count() }} As ({{ $middleAxles->count() * 4 }} Ban)</span>
                      </div>
                      <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <span><i class="ri-checkbox-blank-circle-fill text-success me-2" style="font-size: 8px;"></i> As

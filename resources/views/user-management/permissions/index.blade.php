@@ -4,6 +4,7 @@
 
 @section('vendor-style')
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
 @section('content')
@@ -106,7 +107,7 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
@@ -153,6 +154,16 @@
             const anyUnchecked = $('.menu-checkbox').length > $('.menu-checkbox:checked').length;
             $('.menu-checkbox').prop('checked', anyUnchecked);
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

@@ -92,6 +92,7 @@
 
    @php
       $frontAxles = $configuration->details->where('axle_type', 'Front')->groupBy('axle_number');
+      $middleAxles = $configuration->details->where('axle_type', 'Middle')->groupBy('axle_number');
       $rearAxles = $configuration->details->where('axle_type', 'Rear')->groupBy('axle_number');
       $spares = $configuration->details->where('is_spare', true);
    @endphp
@@ -100,6 +101,21 @@
       <div class="v-axle">
          <div class="v-tyre front">{{ $positions->where('side', 'Left')->first()->position_code ?? '' }}</div>
          <div class="v-tyre front">{{ $positions->where('side', 'Right')->first()->position_code ?? '' }}</div>
+      </div>
+   @endforeach
+
+   @foreach ($middleAxles as $positions)
+      <div class="v-axle">
+         <div class="v-group">
+            @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+               <div class="v-tyre rear" style="border-left-color: #7367f0;">{{ $p->position_code }}</div>
+            @endforeach
+         </div>
+         <div class="v-group">
+            @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+               <div class="v-tyre rear" style="border-left-color: #7367f0;">{{ $p->position_code }}</div>
+            @endforeach
+         </div>
       </div>
    @endforeach
 

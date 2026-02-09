@@ -149,14 +149,17 @@
                   text: `Yakin ingin menghapus konfigurasi "${configName}"? Semua posisi ban dalam konfigurasi ini akan ikut terhapus.`,
                   icon: 'warning',
                   showCancelButton: true,
-                  confirmButtonColor: '#d33',
-                  cancelButtonColor: '#3085d6',
                   confirmButtonText: 'Ya, Hapus!',
-                  cancelButtonText: 'Batal'
+                  cancelButtonText: 'Batal',
+                  customClass: {
+                     confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                     cancelButton: 'btn btn-outline-secondary waves-effect'
+                  },
+                  buttonsStyling: false
                }).then((result) => {
                   if (result.isConfirmed) {
                      const form = document.getElementById('deleteForm');
-                     form.action = `/tyre_performance/master_position/${configId}`;
+                     form.action = `{{ url('tyre_performance/master_position') }}/${configId}`;
                      form.submit();
                   }
                });
