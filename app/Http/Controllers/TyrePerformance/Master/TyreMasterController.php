@@ -15,7 +15,7 @@ class TyreMasterController extends Controller
 {
     public function index()
     {
-        $tyres = Tyre::with(['brand', 'size', 'segment', 'pattern', 'location'])->latest()->paginate(10);
+        $tyres = Tyre::with(['brand', 'size', 'segment', 'pattern', 'location'])->latest()->get();
         $brands = TyreBrand::where('status', 'Active')->get();
         $sizes = TyreSize::all();
         $segments = TyreSegment::where('status', 'Active')->get();

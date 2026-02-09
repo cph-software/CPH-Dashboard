@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Failure Codes')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,16 +19,9 @@
          </a>
       </div>
 
-      @if (session('success'))
-         <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-         </div>
-      @endif
-
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-failures table border-top table-hover">
                <thead>
                   <tr>
                      <th>Code</th>
@@ -32,7 +33,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($failureCodes as $fc)
+                  @foreach ($failureCodes as $fc)
                      <tr>
                         <td><strong>{{ $fc->failure_code }}</strong></td>
                         <td>{{ $fc->failure_name }}</td>
@@ -73,56 +74,97 @@
                                  title="Edit">
                                  <i class="ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-failure-codes.destroy', $fc->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
-                                    title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-failure"
+                                 data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete">
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="6" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
-            <div class="card-footer px-0 py-2 border-top">
-               <div class="d-flex justify-content-center">
-                  {{ $failureCodes->links() }}
-               </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- Image Preview Modal -->
+   <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title">Image Preview</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+               <img src="" id="previewImage" class="img-fluid rounded">
             </div>
          </div>
       </div>
+   </div>
 
-      <!-- Image Preview Modal -->
-      <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
-         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-               <div class="modal-header">
-                  <h5 class="modal-title">Image Preview</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-               </div>
-               <div class="modal-body text-center">
-                  <img src="" id="previewImage" class="img-fluid rounded">
-               </div>
-            </div>
-         </div>
-      </div>
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
+@endsection
 
-   @endsection
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
 
-   @section('page-script')
-      <script>
-         function showImagePreview(src) {
-            $('#previewImage').attr('src', src);
-            $('#imagePreviewModal').modal('show');
-         }
-      </script>
-   @endsection
+@section('page-script')
+   <script>
+      $(document).ready(function() {
+         $('.datatables-failures').DataTable({
+            order: [
+               [0, 'desc']
+            ],
+            displayLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+         });
+
+         $(document).on('click', '.delete-failure', function() {
+            const id = $(this).data('id');
+            const code = $(this).data('code');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Kode Kerusakan "${code}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `/tyre_performance/master/failure_codes/${id}`;
+                  form.submit();
+               }
+            });
+         });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
+      });
+
+      function showImagePreview(src) {
+         $('#previewImage').attr('src', src);
+         $('#imagePreviewModal').modal('show');
+      }
+   </script>
+@endsection

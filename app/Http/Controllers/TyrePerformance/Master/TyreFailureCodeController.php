@@ -10,7 +10,7 @@ class TyreFailureCodeController extends Controller
 {
     public function index()
     {
-        $failureCodes = TyreFailureCode::latest()->paginate(10);
+        $failureCodes = TyreFailureCode::latest()->get();
         return view('tyre-performance.master.failure-codes.index', compact('failureCodes'));
     }
 

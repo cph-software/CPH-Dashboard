@@ -11,7 +11,7 @@ class KendaraanController extends Controller
 {
     public function index()
     {
-        $kendaraans = MasterImportKendaraan::with('tyrePositionConfiguration')->latest()->paginate(10);
+        $kendaraans = MasterImportKendaraan::with('tyrePositionConfiguration')->latest()->get();
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
         return view('tyre-performance.master.kendaraan.index', compact('kendaraans', 'configurations'));
     }

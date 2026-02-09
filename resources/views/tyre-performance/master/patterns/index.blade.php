@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Patterns')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,8 +27,8 @@
       @endif
 
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-patterns table border-top table-hover">
                <thead>
                   <tr>
                      <th>Pattern Name</th>
@@ -28,38 +36,35 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($patterns as $pattern)
+                  @foreach ($patterns as $pattern)
                      <tr>
                         <td><strong>{{ $pattern->name }}</strong></td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern" 
-                                 href="javascript:void(0);" data-bs-toggle="modal"
-                                 data-bs-target="#editPatternModal" data-id="{{ $pattern->id }}"
-                                 data-name="{{ $pattern->name }}" title="Edit">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
+                                 data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Edit">
                                  <i class="ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-patterns.destroy', $pattern->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-pattern"
+                                 data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Delete">
+                                 <i class="ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="2" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
          </div>
       </div>
    </div>
+
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
 
    <!-- Add Pattern Modal -->
    <div class="modal fade" id="addPatternModal" tabindex="-1" aria-hidden="true">
@@ -119,21 +124,60 @@
 
 @endsection
 
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-pattern');
-         const editForm = document.querySelector('#editPatternForm');
+      $(document).ready(function() {
+         $('.datatables-patterns').DataTable();
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const name = this.getAttribute('data-name');
+         const editForm = $('#editPatternForm');
 
-               editForm.action = `/tyre_performance/master/patterns/${id}`;
-               document.querySelector('#edit_name').value = name;
+         $(document).on('click', '.edit-pattern', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            editForm.attr('action', `/tyre_performance/master/patterns/${id}`);
+            $('#edit_name').val(name);
+         });
+
+         $(document).on('click', '.delete-pattern', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Pattern "${name}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `/tyre_performance/master/patterns/${id}`;
+                  form.submit();
+               }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

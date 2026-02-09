@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Segments')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,8 +27,8 @@
       @endif
 
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-segments table border-top table-hover">
                <thead>
                   <tr>
                      <th>Segment ID</th>
@@ -32,7 +40,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($segments as $segment)
+                  @foreach ($segments as $segment)
                      <tr>
                         <td><strong>{{ $segment->segment_id }}</strong></td>
                         <td>{{ $segment->segment_name }}</td>
@@ -56,29 +64,25 @@
                                  title="Edit">
                                  <i class="ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-segments.destroy', $segment->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
-                                    title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-segment"
+                                 data-id="{{ $segment->id }}" data-name="{{ $segment->segment_name }}" title="Delete">
+                                 <i class="ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="6" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
          </div>
       </div>
    </div>
+
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
 
    <!-- Add Segment Modal -->
    <div class="modal fade" id="addSegmentModal" tabindex="-1" aria-hidden="true">
@@ -203,30 +207,68 @@
 
 @endsection
 
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-segment');
-         const editForm = document.querySelector('#editSegmentForm');
+      $(document).ready(function() {
+         $('.datatables-segments').DataTable();
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const segmentId = this.getAttribute('data-segment-id');
-               const name = this.getAttribute('data-name');
-               const locationId = this.getAttribute('data-location-id');
-               const terrain = this.getAttribute('data-terrain');
-               const status = this.getAttribute('data-status');
+         const editForm = $('#editSegmentForm');
 
-               editForm.action = `/tyre_performance/master/segments/${id}`;
-               document.querySelector('#edit_segment_id').value = segmentId;
-               document.querySelector('#edit_segment_name').value = name;
-               document.querySelector('#edit_location_id').value = locationId === 'null' ? '' :
-                  locationId;
-               document.querySelector('#edit_terrain').value = terrain;
-               document.querySelector('#edit_segment_status').value = status;
+         $(document).on('click', '.edit-segment', function() {
+            const id = $(this).data('id');
+            const segmentId = $(this).data('segment-id');
+            const name = $(this).data('name');
+            const locationId = $(this).data('location-id');
+            const terrain = $(this).data('terrain');
+            const status = $(this).data('status');
+
+            editForm.attr('action', `/tyre_performance/master/segments/${id}`);
+            $('#edit_segment_id').val(segmentId);
+            $('#edit_segment_name').val(name);
+            $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || ''));
+            $('#edit_terrain').val(terrain);
+            $('#edit_segment_status').val(status);
+         });
+
+         $(document).on('click', '.delete-segment', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Segment "${name}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `/tyre_performance/master/segments/${id}`;
+                  form.submit();
+               }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

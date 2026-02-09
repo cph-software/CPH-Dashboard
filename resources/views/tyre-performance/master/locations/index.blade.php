@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Locations')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,16 +19,9 @@
          </button>
       </div>
 
-      @if (session('success'))
-         <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-         </div>
-      @endif
-
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-locations table border-top table-hover">
                <thead>
                   <tr>
                      <th>Location Name</th>
@@ -30,7 +31,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($locations as $loc)
+                  @foreach ($locations as $loc)
                      <tr>
                         <td><strong>{{ $loc->location_name }}</strong></td>
                         <td>
@@ -42,29 +43,22 @@
                         <td>{{ $loc->capacity ?? '-' }}</td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location" 
-                                 href="javascript:void(0);" data-bs-toggle="modal"
-                                 data-bs-target="#editLocationModal" data-id="{{ $loc->id }}"
-                                 data-name="{{ $loc->location_name }}" data-type="{{ $loc->location_type }}"
-                                 data-capacity="{{ $loc->capacity }}" title="Edit">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editLocationModal"
+                                 data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}"
+                                 data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}"
+                                 title="Edit">
                                  <i class="ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-locations.destroy', $loc->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit" class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light" title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-location"
+                                 data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}" title="Delete">
+                                 <i class="ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="4" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
          </div>
@@ -156,28 +150,76 @@
       </div>
    </div>
 
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-location');
-         const editForm = document.querySelector('#editLocationForm');
+      $(document).ready(function() {
+         $('.datatables-locations').DataTable({
+            order: [
+               [0, 'desc']
+            ],
+            displayLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+         });
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const name = this.getAttribute('data-name');
-               const type = this.getAttribute('data-type');
-               const capacity = this.getAttribute('data-capacity');
+         const editForm = $('#editLocationForm');
 
-               editForm.action = `/tyre_performance/master/locations/${id}`;
-               document.querySelector('#edit_location_name').value = name;
-               document.querySelector('#edit_location_type').value = type;
-               document.querySelector('#edit_location_capacity').value = capacity === 'null' ? '' :
-                  capacity;
+         $(document).on('click', '.edit-location', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const type = $(this).data('type');
+            const capacity = $(this).data('capacity');
+
+            editForm.attr('action', `/tyre_performance/master/locations/${id}`);
+            $('#edit_location_name').val(name);
+            $('#edit_location_type').val(type);
+            $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
+         });
+
+         $(document).on('click', '.delete-location', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Lokasi "${name}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `/tyre_performance/master/locations/${id}`;
+                  form.submit();
+               }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

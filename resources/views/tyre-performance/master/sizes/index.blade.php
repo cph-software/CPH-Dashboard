@@ -2,6 +2,14 @@
 
 @section('title', 'Master Tyre Sizes')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,16 +19,9 @@
          </a>
       </div>
 
-      @if (session('success'))
-         <div class="alert alert-success alert-dismissible" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-         </div>
-      @endif
-
       <div class="card">
-         <div class="table-responsive text-nowrap">
-            <table class="table table-hover">
+         <div class="card-datatable table-responsive">
+            <table class="datatables-sizes table border-top table-hover">
                <thead>
                   <tr>
                      <th>Size</th>
@@ -32,7 +33,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @forelse($sizes as $size)
+                  @foreach ($sizes as $size)
                      <tr>
                         <td><strong>{{ $size->size }}</strong></td>
                         <td>{{ $size->brand->brand_name ?? '-' }}</td>
@@ -48,31 +49,17 @@
                                  data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
-                              <form action="{{ route('tyre-sizes.destroy', $size->id) }}" method="POST"
-                                 onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                 @csrf
-                                 @method('DELETE')
-                                 <button type="submit"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light"
-                                    title="Delete">
-                                    <i class="icon-base ri ri-delete-bin-line"></i>
-                                 </button>
-                              </form>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
+                                 data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                              </button>
                            </div>
                         </td>
                      </tr>
-                  @empty
-                     <tr>
-                        <td colspan="6" class="text-center">No data found</td>
-                     </tr>
-                  @endforelse
+                  @endforeach
                </tbody>
             </table>
-         </div>
-         <div class="card-footer px-3 py-2 border-top">
-            <div class="d-flex justify-content-center overflow-auto">
-               {{ $sizes->links() }}
-            </div>
          </div>
       </div>
    </div>
@@ -123,8 +110,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="ply_rating" class="form-label">Ply Rating</label>
-                        <input type="number" id="ply_rating" name="ply_rating" class="form-control"
-                           placeholder="e.g. 16">
+                        <input type="number" id="ply_rating" name="ply_rating" class="form-control" placeholder="e.g. 16">
                      </div>
                   </div>
                </div>
@@ -195,31 +181,80 @@
       </div>
    </div>
 
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const editButtons = document.querySelectorAll('.edit-size');
-         const editForm = document.querySelector('#editSizeForm');
+      $(document).ready(function() {
+         $('.datatables-sizes').DataTable({
+            order: [
+               [0, 'desc']
+            ],
+            displayLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+         });
 
-         editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-               const id = this.getAttribute('data-id');
-               const size = this.getAttribute('data-size');
-               const brandId = this.getAttribute('data-brand-id');
-               const type = this.getAttribute('data-type');
-               const otd = this.getAttribute('data-otd');
-               const ply = this.getAttribute('data-ply');
+         const editForm = $('#editSizeForm');
 
-               editForm.action = `/tyre_performance/master/sizes/${id}`;
-               document.querySelector('#edit_size').value = size;
-               document.querySelector('#edit_brand_id').value = brandId;
-               document.querySelector('#edit_type').value = type;
-               document.querySelector('#edit_otd').value = otd === 'null' ? '' : otd;
-               document.querySelector('#edit_ply').value = ply === 'null' ? '' : ply;
+         $(document).on('click', '.edit-size', function() {
+            const id = $(this).data('id');
+            const size = $(this).data('size');
+            const brandId = $(this).data('brand-id');
+            const type = $(this).data('type');
+            const otd = $(this).data('otd');
+            const ply = $(this).data('ply');
+
+            editForm.attr('action', `/tyre_performance/master/sizes/${id}`);
+            $('#edit_size').val(size);
+            $('#edit_brand_id').val(brandId);
+            $('#edit_type').val(type);
+            $('#edit_otd').val(otd === 'null' || otd === null ? '' : otd);
+            $('#edit_ply').val(ply === 'null' || ply === null ? '' : ply);
+         });
+
+         $(document).on('click', '.delete-size', function() {
+            const id = $(this).data('id');
+            const sizeValue = $(this).data('size');
+
+            Swal.fire({
+               title: 'Yakin ingin menghapus?',
+               text: `Ukuran Ban "${sizeValue}" akan dihapus permanen!`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const form = document.getElementById('deleteForm');
+                  form.action = `/tyre_performance/master/sizes/${id}`;
+                  form.submit();
+               }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection

@@ -7,6 +7,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
 @section('content')
@@ -134,11 +135,16 @@
          </div>
       </div>
    </div>
+
+   <form id="deleteForm" method="POST" style="display: none;">
+      @csrf
+      @method('DELETE')
+   </form>
 @endsection
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
@@ -165,28 +171,40 @@
             });
          });
 
-         // Delete Menu
          $(document).on('click', '.delete-menu', function() {
             const id = $(this).data('id');
+            const name = $(this).closest('tr').find('td:first').text();
+
             Swal.fire({
-               title: 'Are you sure?',
-               text: "You won't be able to revert this!",
+               title: 'Yakin ingin menghapus?',
+               text: `Menu "${name}" akan dihapus permanen!`,
                icon: 'warning',
                showCancelButton: true,
-               confirmButtonColor: '#3085d6',
-               cancelButtonColor: '#d33',
-               confirmButtonText: 'Yes, delete it!'
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  const form = document.createElement('form');
-                  form.method = 'POST';
+                  const form = document.getElementById('deleteForm');
                   form.action = '{{ url('cph_dashboard/menus') }}/' + id;
-                  form.innerHTML = `@csrf @method('DELETE')`;
-                  document.body.appendChild(form);
                   form.submit();
                }
             });
          });
+
+         @if (session('success'))
+            Swal.fire({
+               icon: 'success',
+               title: 'Berhasil!',
+               text: '{{ session('success') }}',
+               timer: 2000,
+               showConfirmButton: false
+            });
+         @endif
       });
    </script>
 @endsection
