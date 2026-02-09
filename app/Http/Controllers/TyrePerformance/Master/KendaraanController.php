@@ -5,6 +5,7 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 use App\Http\Controllers\Controller;
 use App\Models\MasterImportKendaraan;
 use App\Models\TyrePositionConfiguration;
+use App\Models\TyreLocation;
 use Illuminate\Http\Request;
 
 class KendaraanController extends Controller
@@ -13,7 +14,8 @@ class KendaraanController extends Controller
     {
         $kendaraans = MasterImportKendaraan::with('tyrePositionConfiguration')->latest()->get();
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
-        return view('tyre-performance.master.kendaraan.index', compact('kendaraans', 'configurations'));
+        $locations = TyreLocation::all();
+        return view('tyre-performance.master.kendaraan.index', compact('kendaraans', 'configurations', 'locations'));
     }
 
     public function store(Request $request)

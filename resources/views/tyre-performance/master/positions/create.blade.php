@@ -141,7 +141,7 @@
                         generate posisi ban.</p>
 
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                            <label for="front_axles" class="form-label">
                               <i class="ri-steering-line me-1"></i> As Depan (Front)
                            </label>
@@ -154,7 +154,20 @@
                            <small class="text-muted">2 ban per as</small>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                           <label for="middle_axles" class="form-label">
+                              <i class="ri-truck-line me-1"></i> As Tengah (Middle)
+                           </label>
+                           <input type="number" class="form-control @error('middle_axles') is-invalid @enderror"
+                              id="middle_axles" name="middle_axles" min="0" max="5"
+                              value="{{ old('middle_axles', 0) }}" required>
+                           @error('middle_axles')
+                              <div class="invalid-feedback">{{ $message }}</div>
+                           @enderror
+                           <small class="text-muted">4 ban per as (dual)</small>
+                        </div>
+
+                        <div class="col-md-3">
                            <label for="rear_axles" class="form-label">
                               <i class="ri-truck-line me-1"></i> As Belakang (Rear)
                            </label>
@@ -167,7 +180,7 @@
                            <small class="text-muted">4 ban per as (dual)</small>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                            <label for="spare_tyres" class="form-label">
                               <i class="ri-tools-line me-1"></i> Ban Cadangan
                            </label>
@@ -209,19 +222,25 @@
                   <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
 
                   <div class="row g-2 text-center mb-3">
-                     <div class="col-4">
+                     <div class="col-3">
                         <div class="p-2 rounded" style="background-color: rgba(255,255,255,0.1);">
                            <strong class="d-block" id="frontCount">2</strong>
                            <small style="opacity: 0.8; font-size: 0.7rem;">Front</small>
                         </div>
                      </div>
-                     <div class="col-4">
+                     <div class="col-3">
+                        <div class="p-2 rounded" style="background-color: rgba(255,255,255,0.1);">
+                           <strong class="d-block" id="middleCount">0</strong>
+                           <small style="opacity: 0.8; font-size: 0.7rem;">Middle</small>
+                        </div>
+                     </div>
+                     <div class="col-3">
                         <div class="p-2 rounded" style="background-color: rgba(255,255,255,0.1);">
                            <strong class="d-block" id="rearCount">8</strong>
                            <small style="opacity: 0.8; font-size: 0.7rem;">Rear</small>
                         </div>
                      </div>
-                     <div class="col-4">
+                     <div class="col-3">
                         <div class="p-2 rounded" style="background-color: rgba(255,255,255,0.1);">
                            <strong class="d-block" id="spareCount">1</strong>
                            <small style="opacity: 0.8; font-size: 0.7rem;">Spare</small>
@@ -252,6 +271,7 @@
    <script>
       document.addEventListener('DOMContentLoaded', function() {
          const frontInput = document.getElementById('front_axles');
+         const middleInput = document.getElementById('middle_axles');
          const rearInput = document.getElementById('rear_axles');
          const spareInput = document.getElementById('spare_tyres');
 
@@ -260,14 +280,17 @@
 
          function updatePreview() {
             const front = parseInt(frontInput.value) || 0;
+            const middle = parseInt(middleInput.value) || 0;
             const rear = parseInt(rearInput.value) || 0;
             const spare = parseInt(spareInput.value) || 0;
 
             const frontTotal = front * 2;
+            const middleTotal = middle * 4;
             const rearTotal = rear * 4;
-            const total = frontTotal + rearTotal + spare;
+            const total = frontTotal + middleTotal + rearTotal + spare;
 
             document.getElementById('frontCount').textContent = frontTotal;
+            document.getElementById('middleCount').textContent = middleTotal;
             document.getElementById('rearCount').textContent = rearTotal;
             document.getElementById('spareCount').textContent = spare;
             document.getElementById('totalPositions').textContent = total;
@@ -280,6 +303,17 @@
                const axle = document.createElement('div');
                axle.className = 'mini-axle';
                axle.innerHTML = '<div class="mini-tyre"></div><div class="mini-tyre"></div>';
+               axleContainer.appendChild(axle);
+            }
+
+            // Add Middle Axles (Dual)
+            for (let i = 0; i < middle; i++) {
+               const axle = document.createElement('div');
+               axle.className = 'mini-axle';
+               axle.innerHTML = `
+                  <div class="mini-tyre-group"><div class="mini-tyre"></div><div class="mini-tyre"></div></div>
+                  <div class="mini-tyre-group"><div class="mini-tyre"></div><div class="mini-tyre"></div></div>
+               `;
                axleContainer.appendChild(axle);
             }
 
@@ -309,6 +343,7 @@
          }
 
          frontInput.addEventListener('input', updatePreview);
+         middleInput.addEventListener('input', updatePreview);
          rearInput.addEventListener('input', updatePreview);
          spareInput.addEventListener('input', updatePreview);
 

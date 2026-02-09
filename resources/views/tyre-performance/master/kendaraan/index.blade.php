@@ -26,7 +26,7 @@
                   <tr>
                      <th>Unit Code</th>
                      <th>Plate No</th>
-                     <th>Area</th>
+                     <th>Location</th>
                      <th>Type</th>
                      <th>Tyre Layout</th>
                      <th>Tyre Positions</th>
@@ -111,9 +111,13 @@
                            placeholder="e.g. B 1234 ABC" required>
                      </div>
                      <div class="col mb-3">
-                        <label for="area" class="form-label">Area</label>
-                        <input type="text" id="area" name="area" class="form-control" placeholder="e.g. Site A"
-                           required>
+                        <label for="area" class="form-label">Location (Area)</label>
+                        <select id="area" name="area" class="form-select" required>
+                           <option value="">-- Select Location --</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -217,8 +221,13 @@
                         <input type="text" id="edit_no_polisi" name="no_polisi" class="form-control" required>
                      </div>
                      <div class="col mb-3">
-                        <label for="edit_area" class="form-label">Area</label>
-                        <input type="text" id="edit_area" name="area" class="form-control" required>
+                        <label for="edit_area" class="form-label">Location (Area)</label>
+                        <select id="edit_area" name="area" class="form-select" required>
+                           <option value="">-- Select Location --</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="row g-2">
