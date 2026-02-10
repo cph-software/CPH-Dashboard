@@ -62,7 +62,9 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes');
         Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions');
         Route::get('master_position/{id}/layout', [\App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class, 'getLayout'])->name('tyre-positions.layout');
+        Route::get('master_tyre/data', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'data'])->name('tyre-master.data');
         Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master');
+        Route::get('master_kendaraan/data', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'data'])->name('tyre-kendaraan.data');
         Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan');
         
         // Tyre Movement Routes
@@ -72,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('movement/layout/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleLayout']);
         Route::get('movement/position-info', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getPositionInfo']);
         Route::get('movement/vehicle-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleDetail']);
+        Route::get('movement/search-tyres', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'searchTyres'])->name('tyre-movement.search-tyres');
         Route::post('movement/store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store']);
         Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns');
     });

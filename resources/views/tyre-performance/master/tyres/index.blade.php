@@ -37,42 +37,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @foreach ($tyres as $tyre)
-                     <tr>
-                        <td><strong>{{ $tyre->serial_number }}</strong></td>
-                        <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
-                        <td>{{ $tyre->size->size ?? '-' }}</td>
-                        <td>{{ $tyre->pattern->name ?? '-' }}</td>
-                        <td>{{ $tyre->segment->segment_name ?? '-' }}</td>
-                        <td>{{ $tyre->tyre_type ?? '-' }}</td>
-                        <td>{{ $tyre->location->location_name ?? '-' }}</td>
-                        <td>
-                           <span
-                              class="badge bg-label-{{ $tyre->status == 'New' ? 'primary' : ($tyre->status == 'Installed' ? 'success' : ($tyre->status == 'Scrap' ? 'danger' : 'warning')) }}">
-                              {{ $tyre->status }}
-                           </span>
-                        </td>
-                        <td>
-                           <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                                 data-id="{{ $tyre->id }}" data-serial="{{ $tyre->serial_number }}"
-                                 data-brand-id="{{ $tyre->tyre_brand_id }}" data-size-id="{{ $tyre->tyre_size_id }}"
-                                 data-pattern-id="{{ $tyre->tyre_pattern_id }}"
-                                 data-segment-id="{{ $tyre->tyre_segment_id }}" data-type="{{ $tyre->tyre_type }}"
-                                 data-location-id="{{ $tyre->work_location_id }}" data-status="{{ $tyre->status }}"
-                                 title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                                 data-id="{{ $tyre->id }}" data-serial="{{ $tyre->serial_number }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
-                           </div>
-                        </td>
-                     </tr>
-                  @endforeach
+                  {{-- Data loaded via AJAX --}}
                </tbody>
             </table>
          </div>
@@ -293,9 +258,78 @@
 @section('page-script')
    <script>
       $(document).ready(function() {
-         $('.datatables-tyres').DataTable({
-            order: [
-               [0, 'desc']
+         const table = $('.datatables-tyres').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('tyre-master.data') }}",
+            columns: [{
+                  data: 'serial_number',
+                  render: function(data) {
+                     return `<strong>${data}</strong>`;
+                  }
+               },
+               {
+                  data: 'brand.brand_name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'size.size',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'pattern.name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'segment.segment_name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'tyre_type',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'location.location_name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'status',
+                  render: function(data) {
+                     const badges = {
+                        'New': 'primary',
+                        'Installed': 'success',
+                        'Scrap': 'danger',
+                        'Repaired': 'warning'
+                     };
+                     return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
+                  }
+               },
+               {
+                  data: null,
+                  searchable: false,
+                  orderable: false,
+                  render: function(data, type, row) {
+                     return `
+                        <div class="d-flex align-items-center">
+                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                              href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                              data-id="${row.id}" data-serial="${row.serial_number}"
+                              data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                              data-pattern-id="${row.tyre_pattern_id}"
+                              data-segment-id="${row.tyre_segment_id}" data-type="${row.tyre_type}"
+                              data-location-id="${row.work_location_id}" data-status="${row.status}"
+                              title="Edit">
+                              <i class="icon-base ri ri-pencil-line"></i>
+                           </a>
+                           <button type="button"
+                              class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                              data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                              <i class="icon-base ri ri-delete-bin-line"></i>
+                           </button>
+                        </div>
+                     `;
+                  }
+               }
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],

@@ -18,28 +18,59 @@ class TyreMovementController extends Controller
 {
     public function index()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')->get();
+        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->get();
         return view('tyre-performance.movement.index', compact('kendaraans'));
     }
 
     public function pemasangan()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')->get();
-        $availableTyres = Tyre::whereNull('current_vehicle_id')
-            ->whereIn('status', ['New', 'Repaired'])
-            ->with(['brand', 'size', 'pattern'])
+        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->select('id', 'kode_kendaraan')
             ->get();
-        $segments = TyreSegment::where('status', 'Active')->get();
+        // Removed eager loading of all tyres to avoid memory bloat
+        // Available tyres will be fetched via AJAX search
+        $availableTyres = collect(); 
+        $segments = TyreSegment::where('status', 'Active')->select('id', 'segment_name')->get();
         return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments'));
+    }
+
+    public function searchTyres(Request $request)
+    {
+        $search = $request->input('q');
+        
+        $tyres = Tyre::whereIn('status', ['New', 'Repaired'])
+            ->whereNull('current_vehicle_id')
+            ->when($search, function($query) use ($search) {
+                $query->where('serial_number', 'like', "%$search%");
+            })
+            ->with(['brand', 'size', 'pattern'])
+            ->limit(20)
+            ->get();
+
+        $results = $tyres->map(function($tyre) {
+            return [
+                'id' => $tyre->id,
+                'text' => $tyre->serial_number,
+                'brand' => $tyre->brand->brand_name ?? '-',
+                'pattern' => $tyre->pattern->name ?? '-',
+                'size' => $tyre->size->size ?? '-',
+                'sn' => $tyre->serial_number
+            ];
+        });
+
+        return response()->json(['results' => $results]);
     }
 
     public function pelepasan()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
             ->whereHas('tyres') // Only vehicles with tyres
+            ->select('id', 'kode_kendaraan')
             ->get();
-        $failureCodes = TyreFailureCode::where('status', 'Active')->get();
-        $segments = TyreSegment::where('status', 'Active')->get();
+        $failureCodes = TyreFailureCode::where('status', 'Active')->select('id', 'name', 'code')->get();
+        $segments = TyreSegment::where('status', 'Active')->select('id', 'segment_name')->get();
         return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments'));
     }
 
@@ -71,8 +102,8 @@ class TyreMovementController extends Controller
         $vehicleId = $request->vehicle_id;
         $type = $request->type ?? 'Installation';
         
-        $vehicle = MasterImportKendaraan::with('tyrePositionConfiguration.details')->findOrFail($vehicleId);
-        $config = $vehicle->tyrePositionConfiguration;
+        $vehicle = MasterImportKendaraan::select('id', 'tyre_position_configuration_id')->findOrFail($vehicleId);
+        $configId = $vehicle->tyre_position_configuration_id;
         
         if ($type === 'Installation') {
             // Get positions that DON'T have a tyre assigned
@@ -81,18 +112,22 @@ class TyreMovementController extends Controller
                 ->pluck('current_position_id')
                 ->toArray();
                 
-            $positions = $config->details()->whereNotIn('id', $occupiedPositionIds)->get();
+            $positions = TyrePositionDetail::where('configuration_id', $configId)
+                ->whereNotIn('id', $occupiedPositionIds)
+                ->get();
         } else {
-            // Removal: Get positions that DO have a tyre assigned
-            $positions = $config->details()->whereHas('tyre')->get();
-            // Or better, filter based on tyres currently on this vehicle
+            // Removal: Get tyres currently on this vehicle
             $tyresOnVehicle = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
-                ->with(['brand', 'size', 'pattern'])
-                ->get();
+                ->with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name'])
+                ->get(['id', 'serial_number', 'tyre_brand_id', 'tyre_size_id', 'tyre_pattern_id', 'current_position_id']);
+                
+            $positionIds = $tyresOnVehicle->pluck('current_position_id');
+            
+            $positions = TyrePositionDetail::whereIn('id', $positionIds)->get();
                 
             return response()->json([
-                'positions' => $config->details()->whereIn('id', $tyresOnVehicle->pluck('current_position_id'))->get(),
+                'positions' => $positions,
                 'assignedTyres' => $tyresOnVehicle->keyBy('current_position_id')
             ]);
         }

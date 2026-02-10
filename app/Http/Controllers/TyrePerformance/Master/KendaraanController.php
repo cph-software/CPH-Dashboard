@@ -12,10 +12,64 @@ class KendaraanController extends Controller
 {
     public function index()
     {
-        $kendaraans = MasterImportKendaraan::with('tyrePositionConfiguration')->latest()->get();
+        // Removed heavy eager loading of all vehicles
+        // Data will be loaded via AJAX for the DataTable
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
         $locations = TyreLocation::all();
-        return view('tyre-performance.master.kendaraan.index', compact('kendaraans', 'configurations', 'locations'));
+        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations'));
+    }
+
+    /**
+     * Data for Server-Side DataTables
+     */
+    public function data(Request $request)
+    {
+        $query = MasterImportKendaraan::with('tyrePositionConfiguration');
+
+        // Search logic
+        if ($request->has('search') && $request->input('search.value')) {
+            $searchValue = $request->input('search.value');
+            $query->where(function($q) use ($searchValue) {
+                $q->where('kode_kendaraan', 'like', "%$searchValue%")
+                  ->orWhere('jenis_kendaraan', 'like', "%$searchValue%")
+                  ->orWhere('no_polisi', 'like', "%$searchValue%");
+            });
+        }
+
+        $totalRecords = MasterImportKendaraan::count();
+        $filteredRecords = $query->count();
+
+        // Ordering
+        if ($request->has('order')) {
+            $columnIndex = $request->input('order.0.column');
+            $columnDir = $request->input('order.0.dir');
+            
+            $cols = [
+                0 => 'kode_kendaraan',
+                1 => 'jenis_kendaraan',
+                2 => 'tyre_position_configuration_id',
+                3 => 'total_tyre_position',
+                4 => 'tyre_unit_status'
+            ];
+            
+            if (isset($cols[$columnIndex])) {
+                $query->orderBy($cols[$columnIndex], $columnDir);
+            }
+        } else {
+            $query->latest();
+        }
+
+        // Pagination
+        $start = $request->input('start', 0);
+        $length = $request->input('length', 10);
+        $kendaraans = $query->skip($start)->take($length)->get();
+
+        return response()->json([
+            "draw"            => intval($request->input('draw')),
+            "recordsTotal"    => intval($totalRecords),
+            "recordsFiltered" => intval($filteredRecords),
+            "data"            => $kendaraans
+        ]);
     }
 
     public function store(Request $request)

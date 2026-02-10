@@ -104,16 +104,9 @@
 
                      <div class="mb-3 p-3 bg-light rounded-3 border">
                         <label class="form-label fw-bold font-size-13" for="tyre_id">Pilih Ban (SN)</label>
-                        <select name="tyre_id" id="tyre_id" class="form-select select2" data-placeholder="Cari SN Ban..."
+                        <select name="tyre_id" id="tyre_id" class="form-select" data-placeholder="Cari SN Ban..."
                            required>
                            <option value="">-- Cari SN Ban --</option>
-                           @foreach ($availableTyres as $t)
-                              <option value="{{ $t->id }}" data-brand="{{ $t->brand->brand_name }}"
-                                 data-pattern="{{ $t->pattern->name ?? '-' }}" data-size="{{ $t->size->size }}"
-                                 data-sn="{{ $t->serial_number }}">
-                                 {{ $t->serial_number }}
-                              </option>
-                           @endforeach
                         </select>
                         <div id="tyre_info_display" class="mt-2" style="display: none;">
                            <div class="d-flex flex-wrap gap-2">
@@ -228,6 +221,45 @@
             });
          });
 
+         // Initialize Tyre Select2 with AJAX
+         tyreSelect.select2({
+            placeholder: 'Cari SN Ban...',
+            allowClear: true,
+            ajax: {
+               url: "{{ route('tyre-movement.search-tyres') }}",
+               dataType: 'json',
+               delay: 250,
+               data: function(params) {
+                  return {
+                     q: params.term
+                  };
+               },
+               processResults: function(data) {
+                  return {
+                     results: data.results
+                  };
+               },
+               cache: true
+            },
+            minimumInputLength: 1,
+            templateResult: formatTyreResult,
+            templateSelection: formatTyreSelection
+         });
+
+         function formatTyreResult(tyre) {
+            if (tyre.loading) return tyre.text;
+            return $(`
+               <div class='select2-result-tyre'>
+                  <div class='fw-bold'>${tyre.sn}</div>
+                  <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
+               </div>
+            `);
+         }
+
+         function formatTyreSelection(tyre) {
+            return tyre.sn || tyre.text;
+         }
+
          // Handle Vehicle Change
          vehicleSelect.on('change', function() {
             const vehicleId = $(this).val();
@@ -278,16 +310,20 @@
          });
 
          // Handle Tyre Selection Info
-         tyreSelect.on('change', function() {
-            const selected = $(this).find(':selected');
-            if (selected.val()) {
-               $('#info_brand').text(selected.data('brand'));
-               $('#info_pattern').text(selected.data('pattern'));
-               $('#info_size').text(selected.data('size'));
+         tyreSelect.on('select2:select', function(e) {
+            const data = e.params.data;
+            if (data.id) {
+               $('#info_brand').text(data.brand);
+               $('#info_pattern').text(data.pattern);
+               $('#info_size').text(data.size);
                $('#tyre_info_display').slideDown();
             } else {
                $('#tyre_info_display').slideUp();
             }
+         });
+
+         tyreSelect.on('select2:unselect', function() {
+            $('#tyre_info_display').slideUp();
          });
 
          // Sync visual click to dropdown
@@ -335,7 +371,8 @@
             const formData = new FormData(this);
             const posId = positionSelect.val();
             const targetNode = document.querySelector(`.m-tyre-node[data-position-id="${posId}"]`);
-            const serialNumber = tyreSelect.find('option:selected').attr('data-sn');
+            const tyreData = tyreSelect.select2('data')[0];
+            const serialNumber = tyreData ? (tyreData.sn || tyreData.text) : '';
 
             if (!posId || !targetNode) {
                Swal.fire('Peringatan', 'Silakan pilih posisi pemasangan terlebih dahulu.', 'warning');
