@@ -36,146 +36,178 @@ class TyrePositionConfiguration extends Model
 
     /**
      * Generate position details based on configuration
+     * New Standard:
+     * - Sequential from front to back, left to right symmetrical
+     * - Front: LF/1, RF/2
+     * - Dual (Middle/Rear): Inner (Lower Number), Outer (Higher Number)
+     * - Format: Code/Number
      */
     public function generatePositions($axleConfig)
     {
         $positions = [];
-        $order = 1;
+        $seq = 1;      // Sequential number for display in code (e.g., LF/1)
+        $order = 1;    // Display order for layout sorting (left to right)
 
-        // Generate front axle positions
-        if (isset($axleConfig['front']) && $axleConfig['front'] > 0) {
-            for ($i = 1; $i <= $axleConfig['front']; $i++) {
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'F' . $i . 'L',
-                    'position_name' => 'Front Axle ' . $i . ' - Left',
-                    'axle_type' => 'Front',
-                    'axle_number' => $i,
-                    'side' => 'Left',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'F' . $i . 'R',
-                    'position_name' => 'Front Axle ' . $i . ' - Right',
-                    'axle_type' => 'Front',
-                    'axle_number' => $i,
-                    'side' => 'Right',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-            }
+        // 1. Front Axles
+        $frontCount = $axleConfig['front'] ?? 0;
+        for ($i = 1; $i <= $frontCount; $i++) {
+            $prefix = $frontCount > 1 ? "$i" : "";
+            
+            // Left (1)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "LF$prefix/" . ($seq),
+                'position_name' => "Left Front $i",
+                'axle_type' => 'Front',
+                'axle_number' => $i,
+                'side' => 'Left',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            
+            // Right (2)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "RF$prefix/" . ($seq + 1),
+                'position_name' => "Right Front $i",
+                'axle_type' => 'Front',
+                'axle_number' => $i,
+                'side' => 'Right',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            $seq += 2;
         }
 
-        // Generate middle axle positions
-        if (isset($axleConfig['middle']) && $axleConfig['middle'] > 0) {
-            for ($i = 1; $i <= $axleConfig['middle']; $i++) {
-                // Middle axles (assuming dual tyres like rear for load bearing)
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'M' . $i . 'LO',
-                    'position_name' => 'Middle Axle ' . $i . ' - Left Outer',
-                    'axle_type' => 'Middle',
-                    'axle_number' => $i,
-                    'side' => 'Left',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'M' . $i . 'LI',
-                    'position_name' => 'Middle Axle ' . $i . ' - Left Inner',
-                    'axle_type' => 'Middle',
-                    'axle_number' => $i,
-                    'side' => 'Left',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'M' . $i . 'RI',
-                    'position_name' => 'Middle Axle ' . $i . ' - Right Inner',
-                    'axle_type' => 'Middle',
-                    'axle_number' => $i,
-                    'side' => 'Right',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'M' . $i . 'RO',
-                    'position_name' => 'Middle Axle ' . $i . ' - Right Outer',
-                    'axle_type' => 'Middle',
-                    'axle_number' => $i,
-                    'side' => 'Right',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-            }
+        // 2. Middle Axles
+        $middleCount = $axleConfig['middle'] ?? 0;
+        for ($i = 1; $i <= $middleCount; $i++) {
+            $prefix = $middleCount > 1 ? $i : "";
+            
+            // User Pattern: LMO/4 LMI/3 - RMI/5 RMO/6
+            // Order in visual (Left to Right): LO, LI, RI, RO
+            // Order in numbering (Inner first): LI=seq, LO=seq+1, RI=seq+2, RO=seq+3
+            
+            // Left side group
+            // LMO (LO)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "LM${prefix}O/" . ($seq + 1),
+                'position_name' => "Left Middle ${i} Outer",
+                'axle_type' => 'Middle',
+                'axle_number' => $i,
+                'side' => 'Left',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            // LMI (LI)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "LM${prefix}I/" . ($seq),
+                'position_name' => "Left Middle ${i} Inner",
+                'axle_type' => 'Middle',
+                'axle_number' => $i,
+                'side' => 'Left',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+
+            // Right side group
+            // RMI (RI)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "RM${prefix}I/" . ($seq + 2),
+                'position_name' => "Right Middle ${i} Inner",
+                'axle_type' => 'Middle',
+                'axle_number' => $i,
+                'side' => 'Right',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            // RMO (RO)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "RM${prefix}O/" . ($seq + 3),
+                'position_name' => "Right Middle ${i} Outer",
+                'axle_type' => 'Middle',
+                'axle_number' => $i,
+                'side' => 'Right',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            $seq += 4;
         }
 
-        // Generate rear axle positions
-        if (isset($axleConfig['rear']) && $axleConfig['rear'] > 0) {
-            for ($i = 1; $i <= $axleConfig['rear']; $i++) {
-                // Rear axles typically have dual tyres
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'R' . $i . 'LO',
-                    'position_name' => 'Rear Axle ' . $i . ' - Left Outer',
-                    'axle_type' => 'Rear',
-                    'axle_number' => $i,
-                    'side' => 'Left',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'R' . $i . 'LI',
-                    'position_name' => 'Rear Axle ' . $i . ' - Left Inner',
-                    'axle_type' => 'Rear',
-                    'axle_number' => $i,
-                    'side' => 'Left',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'R' . $i . 'RI',
-                    'position_name' => 'Rear Axle ' . $i . ' - Right Inner',
-                    'axle_type' => 'Rear',
-                    'axle_number' => $i,
-                    'side' => 'Right',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'R' . $i . 'RO',
-                    'position_name' => 'Rear Axle ' . $i . ' - Right Outer',
-                    'axle_type' => 'Rear',
-                    'axle_number' => $i,
-                    'side' => 'Right',
-                    'is_spare' => false,
-                    'display_order' => $order++,
-                ];
-            }
+        // 3. Rear Axles
+        $rearCount = $axleConfig['rear'] ?? 0;
+        for ($i = 1; $i <= $rearCount; $i++) {
+            $prefix = $rearCount > 1 ? $i : "";
+            
+            // Same pattern for Rear
+            // Left side group
+            // LRO (LO)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "LR${prefix}O/" . ($seq + 1),
+                'position_name' => "Left Rear ${i} Outer",
+                'axle_type' => 'Rear',
+                'axle_number' => $i,
+                'side' => 'Left',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            // LRI (LI)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "LR${prefix}I/" . ($seq),
+                'position_name' => "Left Rear ${i} Inner",
+                'axle_type' => 'Rear',
+                'axle_number' => $i,
+                'side' => 'Left',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+
+            // Right side group
+            // RRI (RI)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "RR${prefix}I/" . ($seq + 2),
+                'position_name' => "Right Rear ${i} Inner",
+                'axle_type' => 'Rear',
+                'axle_number' => $i,
+                'side' => 'Right',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            // RRO (RO)
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "RR${prefix}O/" . ($seq + 3),
+                'position_name' => "Right Rear ${i} Outer",
+                'axle_type' => 'Rear',
+                'axle_number' => $i,
+                'side' => 'Right',
+                'is_spare' => false,
+                'display_order' => $order++,
+            ];
+            $seq += 4;
         }
 
-        // Generate spare positions
-        if (isset($axleConfig['spare']) && $axleConfig['spare'] > 0) {
-            for ($i = 1; $i <= $axleConfig['spare']; $i++) {
-                $positions[] = [
-                    'configuration_id' => $this->id,
-                    'position_code' => 'SP' . $i,
-                    'position_name' => 'Spare ' . $i,
-                    'axle_type' => 'Spare',
-                    'axle_number' => 0,
-                    'side' => 'None',
-                    'is_spare' => true,
-                    'display_order' => $order++,
-                ];
-            }
+        // 4. Spare Tyres
+        $spareCount = $axleConfig['spare'] ?? 0;
+        for ($i = 1; $i <= $spareCount; $i++) {
+            $positions[] = [
+                'configuration_id' => $this->id,
+                'position_code' => "SP/" . ($seq),
+                'position_name' => "Spare $i",
+                'axle_type' => 'Spare',
+                'axle_number' => 0,
+                'side' => 'None',
+                'is_spare' => true,
+                'display_order' => $order++,
+            ];
+            $seq++;
         }
 
         return $positions;

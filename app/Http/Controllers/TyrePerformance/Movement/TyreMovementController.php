@@ -8,6 +8,7 @@ use App\Models\MasterImportKendaraan;
 use App\Models\TyrePositionConfiguration;
 use App\Models\TyrePositionDetail;
 use App\Models\TyreFailureCode;
+use App\Models\TyreSegment;
 use App\Models\TyreMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,8 @@ class TyreMovementController extends Controller
             ->whereIn('status', ['New', 'Repaired'])
             ->with(['brand', 'size', 'pattern'])
             ->get();
-        return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres'));
+        $segments = TyreSegment::where('status', 'Active')->get();
+        return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments'));
     }
 
     public function pelepasan()
@@ -37,7 +39,8 @@ class TyreMovementController extends Controller
             ->whereHas('tyres') // Only vehicles with tyres
             ->get();
         $failureCodes = TyreFailureCode::where('status', 'Active')->get();
-        return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes'));
+        $segments = TyreSegment::where('status', 'Active')->get();
+        return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments'));
     }
 
     public function getVehicleLayout($id)
@@ -55,6 +58,12 @@ class TyreMovementController extends Controller
             'configuration' => $vehicle->tyrePositionConfiguration,
             'assignedTyres' => $assignedTyres
         ]);
+    }
+
+    public function getVehicleDetail($id)
+    {
+        $vehicle = MasterImportKendaraan::findOrFail($id);
+        return response()->json($vehicle);
     }
 
     public function getPositionInfo(Request $request)
@@ -79,7 +88,7 @@ class TyreMovementController extends Controller
             // Or better, filter based on tyres currently on this vehicle
             $tyresOnVehicle = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
-                ->with(['brand', 'size'])
+                ->with(['brand', 'size', 'pattern'])
                 ->get();
                 
             return response()->json([
@@ -102,6 +111,11 @@ class TyreMovementController extends Controller
             'tyre_id' => 'required_if:movement_type,Installation|exists:tyres,id',
             'movement_date' => 'required|date',
             'odometer' => 'nullable|numeric',
+            'hour_meter' => 'nullable|numeric',
+            'operational_segment_id' => 'nullable|exists:tyre_segments,id',
+            'psi_reading' => 'nullable|numeric',
+            'start_time' => 'nullable',
+            'end_time' => 'nullable',
             'failure_code_id' => 'nullable|exists:tyre_failure_codes,id',
         ]);
 
@@ -127,9 +141,19 @@ class TyreMovementController extends Controller
                     'tyre_id' => $tyre->id,
                     'vehicle_id' => $request->vehicle_id,
                     'position_id' => $request->position_id,
+                    'operational_segment_id' => $request->operational_segment_id,
+                    'work_location' => $request->work_location,
+                    'start_time' => $request->start_time,
+                    'end_time' => $request->end_time,
+                    'tyreman_1' => $request->tyreman_1,
+                    'tyreman_2' => $request->tyreman_2,
+                    'psi_reading' => $request->psi_reading,
+                    'new_bolts_used' => $request->has('new_bolts_used'),
+                    'rim_size' => $request->rim_size,
                     'movement_type' => 'Installation',
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
+                    'hour_meter_reading' => $request->hour_meter,
                     'notes' => $request->notes,
                     'created_by' => Auth::id()
                 ]);
@@ -144,11 +168,21 @@ class TyreMovementController extends Controller
                     'tyre_id' => $tyre->id,
                     'vehicle_id' => $request->vehicle_id,
                     'position_id' => $request->position_id,
+                    'operational_segment_id' => $request->operational_segment_id,
+                    'work_location' => $request->work_location,
+                    'start_time' => $request->start_time,
+                    'end_time' => $request->end_time,
+                    'tyreman_1' => $request->tyreman_1,
+                    'tyreman_2' => $request->tyreman_2,
+                    'psi_reading' => $request->psi_reading,
+                    'new_bolts_used' => $request->has('new_bolts_used'),
+                    'rim_size' => $request->rim_size,
                     'movement_type' => 'Removal',
                     'target_status' => $request->target_status,
                     'failure_code_id' => $request->failure_code_id,
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
+                    'hour_meter_reading' => $request->hour_meter,
                     'notes' => $request->notes,
                     'created_by' => Auth::id()
                 ]);
