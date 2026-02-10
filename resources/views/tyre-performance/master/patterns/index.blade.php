@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+z@extends('layouts.admin')
 
 @section('title', 'Master Tyre Patterns')
 
@@ -60,12 +60,12 @@
                                  data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
                                  data-brand-id="{{ $pattern->tyre_brand_id }}" data-status="{{ $pattern->status }}"
                                  title="Edit">
-                                 <i class="ri-pencil-line"></i>
+                                 <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-pattern"
                                  data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Delete">
-                                 <i class="ri-delete-bin-line"></i>
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
                               </button>
                            </div>
                         </td>
