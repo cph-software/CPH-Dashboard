@@ -55,8 +55,16 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Transaksi /</span> Pergerakan Ban</h4>
          <div class="d-flex gap-2">
-            <span class="badge bg-label-success"><i class="ri-checkbox-circle-line me-1"></i> Terpasang</span>
-            <span class="badge bg-label-secondary"><i class="ri-checkbox-blank-circle-line me-1"></i> Kosong</span>
+            <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
+               <i class="ri-add-line me-1"></i> Form Pemasangan
+            </a>
+            <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
+               <i class="ri-delete-bin-line me-1"></i> Form Pelepasan
+            </a>
+            <span class="badge bg-label-success d-flex align-items-center"><i class="ri-checkbox-circle-line me-1"></i>
+               Terpasang</span>
+            <span class="badge bg-label-secondary d-flex align-items-center"><i
+                  class="ri-checkbox-blank-circle-line me-1"></i> Kosong</span>
          </div>
       </div>
 
@@ -250,7 +258,7 @@
                      data.availableTyres.forEach(tyre => {
                         tyreSelect.append(
                            `<option value="${tyre.id}">${tyre.serial_number} (${tyre.brand.brand_name} - ${tyre.size.size})</option>`
-                           );
+                        );
                      });
                   });
             }

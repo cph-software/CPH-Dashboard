@@ -43,4 +43,9 @@ class Tyre extends Model
     {
         return $this->belongsTo(TyrePosition::class, 'current_position_id');
     }
+
+    public function movements()
+    {
+        return $this->hasMany(TyreMovement::class, 'tyre_id');
+    }
 }

@@ -21,6 +21,11 @@ class TyrePositionConfiguration extends Model
         return $this->hasMany(TyrePositionDetail::class, 'configuration_id');
     }
 
+    public function vehicles()
+    {
+        return $this->hasMany(MasterImportKendaraan::class, 'tyre_position_configuration_id');
+    }
+
     /**
      * Get active configurations
      */

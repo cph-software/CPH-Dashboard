@@ -44,6 +44,11 @@ class TyreLocationController extends Controller
     public function destroy($id)
     {
         $location = TyreLocation::findOrFail($id);
+
+        if ($location->tyres()->exists() || $location->segments()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete location. It is currently being used by some segment or tyre records.');
+        }
+
         $location->delete();
 
         return redirect()->back()->with('success', 'Location deleted successfully');

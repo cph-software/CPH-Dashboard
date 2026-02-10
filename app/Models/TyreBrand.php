@@ -18,4 +18,9 @@ class TyreBrand extends Model
     {
         return $this->hasMany(TyreSize::class, 'tyre_brand_id');
     }
+
+    public function patterns()
+    {
+        return $this->hasMany(TyrePattern::class, 'tyre_brand_id');
+    }
 }

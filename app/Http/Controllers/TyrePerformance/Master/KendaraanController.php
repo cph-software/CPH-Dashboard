@@ -70,6 +70,11 @@ class KendaraanController extends Controller
     public function destroy($id)
     {
         $kendaraan = MasterImportKendaraan::findOrFail($id);
+
+        if ($kendaraan->tyres()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete vehicle. It is currently associated with some tyre records.');
+        }
+
         $kendaraan->delete();
 
         return redirect()->back()->with('success', 'Vehicle deleted successfully');

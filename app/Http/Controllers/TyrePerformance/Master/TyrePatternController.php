@@ -10,14 +10,17 @@ class TyrePatternController extends Controller
 {
     public function index()
     {
-        $patterns = TyrePattern::all();
-        return view('tyre-performance.master.patterns.index', compact('patterns'));
+        $patterns = TyrePattern::with('brand')->latest()->get();
+        $brands = \App\Models\TyreBrand::where('status', 'Active')->get();
+        return view('tyre-performance.master.patterns.index', compact('patterns', 'brands'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'tyre_brand_id' => 'required|exists:tyre_brands,id',
+            'status' => 'required|in:Active,Inactive',
         ]);
 
         TyrePattern::create($request->all());
@@ -29,6 +32,8 @@ class TyrePatternController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'tyre_brand_id' => 'required|exists:tyre_brands,id',
+            'status' => 'required|in:Active,Inactive',
         ]);
 
         $pattern = TyrePattern::findOrFail($id);
@@ -40,6 +45,11 @@ class TyrePatternController extends Controller
     public function destroy($id)
     {
         $pattern = TyrePattern::findOrFail($id);
+
+        if ($pattern->tyres()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete pattern. It is currently being used by some tyre records.');
+        }
+
         $pattern->delete();
 
         return redirect()->back()->with('success', 'Pattern deleted successfully');

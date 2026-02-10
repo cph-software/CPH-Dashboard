@@ -7,6 +7,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
@@ -112,7 +113,8 @@
                      </div>
                      <div class="col mb-3">
                         <label for="area" class="form-label">Location (Area)</label>
-                        <select id="area" name="area" class="form-select" required>
+                        <select id="area" name="area" class="form-select select2"
+                           data-placeholder="Select Location" required>
                            <option value="">-- Select Location --</option>
                            @foreach ($locations as $loc)
                               <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
@@ -171,7 +173,8 @@
                      </div>
                      <div class="col mb-3">
                         <label for="tyre_position_configuration_id" class="form-label">Tyre Layout Configuration</label>
-                        <select name="tyre_position_configuration_id" class="form-select">
+                        <select name="tyre_position_configuration_id" class="form-select select2"
+                           data-placeholder="Select Configuration">
                            <option value="">-- Select Configuration --</option>
                            @foreach ($configurations as $config)
                               <option value="{{ $config->id }}">{{ $config->name }} ({{ $config->code }})</option>
@@ -222,7 +225,7 @@
                      </div>
                      <div class="col mb-3">
                         <label for="edit_area" class="form-label">Location (Area)</label>
-                        <select id="edit_area" name="area" class="form-select" required>
+                        <select id="edit_area" name="area" class="form-select select2" required>
                            <option value="">-- Select Location --</option>
                            @foreach ($locations as $loc)
                               <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
@@ -332,6 +335,7 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
@@ -368,7 +372,7 @@
             editForm.attr('action', `{{ url('tyre_performance/master_kendaraan') }}/${id}`);
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_no_polisi').val(polisi);
-            $('#edit_area').val(area);
+            $('#edit_area').val(area).trigger('change');
             $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
             $('#edit_tipe_kendaraan').val(tipe === 'null' ? '' : (tipe || ''));
             $('#edit_tahun_rakit').val(tahun === 'null' ? '' : (tahun || ''));
@@ -378,7 +382,8 @@
             $('#edit_no_rangka').val(rangka === 'null' ? '' : (rangka || ''));
             $('#edit_no_mesin').val(mesin === 'null' ? '' : (mesin || ''));
             $('#edit_total_positions').val(positions);
-            $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || ''));
+            $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || '')).trigger(
+               'change');
             $('#edit_unit_status').val(status);
          });
 
@@ -437,6 +442,23 @@
                showConfirmButton: false
             });
          @endif
+
+         @if (session('error'))
+            Swal.fire({
+               icon: 'error',
+               title: 'Oops...',
+               text: '{{ session('error') }}',
+            });
+         @endif
+
+         // Initialize Select2
+         $('.select2').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal')
+            });
+         });
       });
    </script>
 @endsection

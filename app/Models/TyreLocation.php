@@ -13,4 +13,9 @@ class TyreLocation extends Model
     {
         return $this->hasMany(TyreSegment::class, 'tyre_location_id');
     }
+
+    public function tyres()
+    {
+        return $this->hasMany(Tyre::class, 'work_location_id');
+    }
 }

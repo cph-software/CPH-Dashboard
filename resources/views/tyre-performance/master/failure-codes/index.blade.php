@@ -39,15 +39,17 @@
                         <td>{{ $fc->failure_name }}</td>
                         <td>
                            @if ($fc->image_1)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if ($fc->image_2)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if (!$fc->image_1 && !$fc->image_2)
@@ -115,7 +117,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-failures').DataTable({
             order: [
                [0, 'desc']
@@ -124,7 +126,7 @@
             lengthMenu: [10, 25, 50, 75, 100],
          });
 
-         $(document).on('click', '.delete-failure', function () {
+         $(document).on('click', '.delete-failure', function() {
             const id = $(this).data('id');
             const code = $(this).data('code');
 
@@ -158,7 +160,15 @@
                showConfirmButton: false
             });
          @endif
-         });
+
+         @if (session('error'))
+            Swal.fire({
+               icon: 'error',
+               title: 'Oops...',
+               text: '{{ session('error') }}',
+            });
+         @endif
+      });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);

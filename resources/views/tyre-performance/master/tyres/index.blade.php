@@ -7,6 +7,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
@@ -57,9 +58,10 @@
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
                                  data-id="{{ $tyre->id }}" data-serial="{{ $tyre->serial_number }}"
                                  data-brand-id="{{ $tyre->tyre_brand_id }}" data-size-id="{{ $tyre->tyre_size_id }}"
-                                 data-pattern-id="{{ $tyre->tyre_pattern_id }}" data-segment-id="{{ $tyre->tyre_segment_id }}"
-                                 data-type="{{ $tyre->tyre_type }}" data-location-id="{{ $tyre->work_location_id }}"
-                                 data-status="{{ $tyre->status }}" title="Edit">
+                                 data-pattern-id="{{ $tyre->tyre_pattern_id }}"
+                                 data-segment-id="{{ $tyre->tyre_segment_id }}" data-type="{{ $tyre->tyre_type }}"
+                                 data-location-id="{{ $tyre->work_location_id }}" data-status="{{ $tyre->status }}"
+                                 title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
@@ -98,7 +100,7 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_brand_id" class="form-label">Brand</label>
-                        <select name="tyre_brand_id" class="form-select" required>
+                        <select name="tyre_brand_id" class="form-select select2" data-placeholder="Select Brand" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
@@ -107,10 +109,12 @@
                      </div>
                      <div class="col mb-3">
                         <label for="tyre_size_id" class="form-label">Size</label>
-                        <select name="tyre_size_id" class="form-select" required>
+                        <select name="tyre_size_id" id="tyre_size_id" class="form-select select2"
+                           data-placeholder="Select Size" required>
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}">{{ $size->size }}</option>
+                              <option value="{{ $size->id }}" data-type="{{ $size->type }}">{{ $size->size }}
+                              </option>
                            @endforeach
                         </select>
                      </div>
@@ -118,7 +122,7 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_pattern_id" class="form-label">Pattern</label>
-                        <select name="tyre_pattern_id" class="form-select">
+                        <select name="tyre_pattern_id" class="form-select select2" data-placeholder="Select Pattern">
                            <option value="">Select Pattern</option>
                            @foreach ($patterns as $pattern)
                               <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
@@ -127,7 +131,7 @@
                      </div>
                      <div class="col mb-3">
                         <label for="tyre_segment_id" class="form-label">Segment</label>
-                        <select name="tyre_segment_id" class="form-select">
+                        <select name="tyre_segment_id" class="form-select select2" data-placeholder="Select Segment">
                            <option value="">Select Segment</option>
                            @foreach ($segments as $segment)
                               <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
@@ -138,12 +142,15 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_type" class="form-label">Type</label>
-                        <input type="text" id="tyre_type" name="tyre_type" class="form-control" placeholder="e.g. Radial"
-                           required>
+                        <select id="tyre_type" name="tyre_type" class="form-select" required>
+                           <option value="Radial">Radial</option>
+                           <option value="Bias">Bias</option>
+                        </select>
                      </div>
                      <div class="col mb-3">
                         <label for="work_location_id" class="form-label">Location</label>
-                        <select name="work_location_id" class="form-select" required>
+                        <select name="work_location_id" class="form-select select2" data-placeholder="Select Location"
+                           required>
                            <option value="">Select Location</option>
                            @foreach ($locations as $loc)
                               <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
@@ -187,13 +194,14 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
-                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control" required>
+                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
+                           required>
                      </div>
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_brand_id" class="form-label">Brand</label>
-                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select" required>
+                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
@@ -202,10 +210,11 @@
                      </div>
                      <div class="col mb-3">
                         <label for="edit_size_id" class="form-label">Size</label>
-                        <select id="edit_size_id" name="tyre_size_id" class="form-select" required>
+                        <select id="edit_size_id" name="tyre_size_id" class="form-select select2" required>
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}">{{ $size->size }}</option>
+                              <option value="{{ $size->id }}" data-type="{{ $size->type }}">{{ $size->size }}
+                              </option>
                            @endforeach
                         </select>
                      </div>
@@ -213,7 +222,7 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_pattern_id" class="form-label">Pattern</label>
-                        <select id="edit_pattern_id" name="tyre_pattern_id" class="form-select">
+                        <select id="edit_pattern_id" name="tyre_pattern_id" class="form-select select2">
                            <option value="">Select Pattern</option>
                            @foreach ($patterns as $pattern)
                               <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
@@ -222,7 +231,7 @@
                      </div>
                      <div class="col mb-3">
                         <label for="edit_segment_id" class="form-label">Segment</label>
-                        <select id="edit_segment_id" name="tyre_segment_id" class="form-select">
+                        <select id="edit_segment_id" name="tyre_segment_id" class="form-select select2">
                            <option value="">Select Segment</option>
                            @foreach ($segments as $segment)
                               <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
@@ -233,11 +242,14 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_tyre_type" class="form-label">Type</label>
-                        <input type="text" id="edit_tyre_type" name="tyre_type" class="form-control" required>
+                        <select id="edit_tyre_type" name="tyre_type" class="form-select" required>
+                           <option value="Radial">Radial</option>
+                           <option value="Bias">Bias</option>
+                        </select>
                      </div>
                      <div class="col mb-3">
                         <label for="edit_work_location_id" class="form-label">Location</label>
-                        <select id="edit_work_location_id" name="work_location_id" class="form-select" required>
+                        <select id="edit_work_location_id" name="work_location_id" class="form-select select2" required>
                            <option value="">Select Location</option>
                            @foreach ($locations as $loc)
                               <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
@@ -274,12 +286,13 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-tyres').DataTable({
             order: [
                [0, 'desc']
@@ -290,7 +303,7 @@
 
          const editForm = $('#editTyreForm');
 
-         $(document).on('click', '.edit-tyre', function () {
+         $(document).on('click', '.edit-tyre', function() {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
             const brandId = $(this).data('brand-id');
@@ -303,16 +316,16 @@
 
             editForm.attr('action', `/tyre_performance/master/tyres/${id}`);
             $('#edit_serial_number').val(serial);
-            $('#edit_brand_id').val(brandId);
-            $('#edit_size_id').val(sizeId);
-            $('#edit_pattern_id').val(patternId === 'null' ? '' : patternId);
-            $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId);
+            $('#edit_brand_id').val(brandId).trigger('change');
+            $('#edit_size_id').val(sizeId).trigger('change');
+            $('#edit_pattern_id').val(patternId === 'null' ? '' : patternId).trigger('change');
+            $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
             $('#edit_tyre_type').val(type === 'null' ? '' : type);
-            $('#edit_work_location_id').val(locationId);
+            $('#edit_work_location_id').val(locationId).trigger('change');
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-tyre', function () {
+         $(document).on('click', '.delete-tyre', function() {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
 
@@ -346,6 +359,38 @@
                showConfirmButton: false
             });
          @endif
+
+         @if (session('error'))
+            Swal.fire({
+               icon: 'error',
+               title: 'Oops...',
+               text: '{{ session('error') }}',
+            });
+         @endif
+
+         // Auto-sync Tyre Type based on Size
+         $('#tyre_size_id').on('change', function() {
+            const type = $(this).find(':selected').data('type');
+            if (type) {
+               $('#tyre_type').val(type);
+            }
          });
+
+         $('#edit_size_id').on('change', function() {
+            const type = $(this).find(':selected').data('type');
+            if (type) {
+               $('#edit_tyre_type').val(type);
+            }
+         });
+
+         // Initialize Select2
+         $('.select2').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal')
+            });
+         });
+      });
    </script>
 @endsection

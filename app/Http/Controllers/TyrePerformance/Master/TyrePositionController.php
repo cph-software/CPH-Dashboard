@@ -197,6 +197,11 @@ class TyrePositionController extends Controller
         DB::beginTransaction();
         try {
             $configuration = TyrePositionConfiguration::findOrFail($id);
+
+            // Check if used by vehicles
+            if ($configuration->vehicles()->exists()) {
+                return redirect()->back()->with('error', 'Tidak dapat menghapus konfigurasi. Konfigurasi ini sedang digunakan oleh beberapa kendaraan.');
+            }
             
             // Delete all position details
             $configuration->details()->delete();
