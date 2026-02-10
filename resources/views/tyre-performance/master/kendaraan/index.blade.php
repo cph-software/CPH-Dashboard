@@ -15,35 +15,31 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Vehicles</h4>
-         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+         <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
             <i class="ri-add-line me-1"></i> Add Vehicle
          </button>
       </div>
 
-      <div class="card">
+      <div class="card shadow-sm border-0">
          <div class="card-datatable table-responsive">
             <table class="datatables-vehicles table border-top table-hover">
                <thead>
                   <tr>
                      <th>Unit Code</th>
-                     <th>Plate No</th>
-                     <th>Location</th>
                      <th>Type</th>
                      <th>Tyre Layout</th>
                      <th>Tyre Positions</th>
                      <th>Status</th>
-                     <th>Actions</th>
+                     <th class="text-center">Actions</th>
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
                   @foreach ($kendaraans as $kv)
                      <tr>
                         <td><strong>{{ $kv->kode_kendaraan }}</strong></td>
-                        <td>{{ $kv->no_polisi }}</td>
-                        <td>{{ $kv->area }}</td>
                         <td>{{ $kv->jenis_kendaraan ?? '-' }}</td>
                         <td>{{ $kv->tyrePositionConfiguration->name ?? '-' }}</td>
-                        <td>{{ $kv->total_tyre_position }}</td>
+                        <td>{{ $kv->total_tyre_position }} Wheels</td>
                         <td>
                            <span
                               class="badge bg-label-{{ $kv->tyre_unit_status == 'Active' ? 'success' : ($kv->tyre_unit_status == 'Maintenance' ? 'warning' : 'secondary') }}">
@@ -51,16 +47,11 @@
                            </span>
                         </td>
                         <td>
-                           <div class="d-flex align-items-center">
+                           <div class="d-flex align-items-center justify-content-center">
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
                                  data-id="{{ $kv->id }}" data-kode="{{ $kv->kode_kendaraan }}"
-                                 data-polisi="{{ $kv->no_polisi }}" data-area="{{ $kv->area }}"
-                                 data-jenis="{{ $kv->jenis_kendaraan }}" data-tipe="{{ $kv->tipe_kendaraan }}"
-                                 data-tahun="{{ $kv->tahun_rakit }}" data-usia="{{ $kv->usia_kendaraan }}"
-                                 data-silinder="{{ $kv->kapasitas_silinder }}" data-bpkb="{{ $kv->no_bpkb }}"
-                                 data-rangka="{{ $kv->no_rangka }}" data-mesin="{{ $kv->no_mesin }}"
-                                 data-positions="{{ $kv->total_tyre_position }}"
+                                 data-jenis="{{ $kv->jenis_kendaraan }}" data-positions="{{ $kv->total_tyre_position }}"
                                  data-config-id="{{ $kv->tyre_position_configuration_id }}"
                                  data-status="{{ $kv->tyre_unit_status }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
@@ -91,99 +82,51 @@
 
    <!-- Add Vehicle Modal -->
    <div class="modal fade" id="addVehicleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Add New Vehicle</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-dialog modal-dialog-centered" role="document">
+         <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary">
+               <h5 class="modal-title text-white">Add New Vehicle</h5>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-kendaraan.store') }}" method="POST">
                @csrf
-               <div class="modal-body">
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="kode_kendaraan" class="form-label">Unit Code</label>
-                        <input type="text" id="kode_kendaraan" name="kode_kendaraan" class="form-control"
-                           placeholder="e.g. DT-101" required>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="no_polisi" class="form-label">Plate No</label>
-                        <input type="text" id="no_polisi" name="no_polisi" class="form-control"
-                           placeholder="e.g. B 1234 ABC" required>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="area" class="form-label">Location (Area)</label>
-                        <select id="area" name="area" class="form-select select2"
-                           data-placeholder="Select Location" required>
-                           <option value="">-- Select Location --</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
+               {{-- Default values for simplified fields --}}
+               <input type="hidden" name="no_polisi" value="-">
+               <input type="hidden" name="area" value="HO">
+
+               <div class="modal-body pt-4">
+                  <div class="mb-3">
+                     <label for="kode_kendaraan" class="form-label fw-bold">Unit Code</label>
+                     <input type="text" id="kode_kendaraan" name="kode_kendaraan" class="form-control"
+                        placeholder="e.g. DT-101" required>
+                  </div>
+                  <div class="mb-3">
+                     <label for="jenis_kendaraan" class="form-label fw-bold">Vehicle Type</label>
+                     <input type="text" id="jenis_kendaraan" name="jenis_kendaraan" class="form-control"
+                        placeholder="e.g. Dump Truck Hino 500">
+                  </div>
+                  <div class="mb-3">
+                     <label for="tyre_position_configuration_id" class="form-label fw-bold">Tyre Layout
+                        Configuration</label>
+                     <select name="tyre_position_configuration_id" class="form-select select2 config-selector"
+                        data-placeholder="Select Configuration">
+                        <option value="">-- Select Configuration --</option>
+                        @foreach ($configurations as $config)
+                           <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
+                              {{ $config->name }} ({{ $config->total_positions }} Wheels)
+                           </option>
+                        @endforeach
+                     </select>
                   </div>
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="jenis_kendaraan" class="form-label">Vehicle Type</label>
-                        <input type="text" id="jenis_kendaraan" name="jenis_kendaraan" class="form-control"
-                           placeholder="e.g. Dump Truck">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="tipe_kendaraan" class="form-label">Model/Brand</label>
-                        <input type="text" id="tipe_kendaraan" name="tipe_kendaraan" class="form-control"
-                           placeholder="e.g. Hino 500">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="tahun_rakit" class="form-label">Year</label>
-                        <input type="number" id="tahun_rakit" name="tahun_rakit" class="form-control"
-                           placeholder="e.g. 2022">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="usia_kendaraan" class="form-label">Age</label>
-                        <input type="text" id="usia_kendaraan" name="usia_kendaraan" class="form-control"
-                           placeholder="e.g. 2 Years">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="kapasitas_silinder" class="form-label">Cylinder Cap.</label>
-                        <input type="text" id="kapasitas_silinder" name="kapasitas_silinder" class="form-control"
-                           placeholder="e.g. 5000cc">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="no_bpkb" class="form-label">BPKB No</label>
-                        <input type="text" id="no_bpkb" name="no_bpkb" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="no_rangka" class="form-label">Frame No</label>
-                        <input type="text" id="no_rangka" name="no_rangka" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="no_mesin" class="form-label">Engine No</label>
-                        <input type="text" id="no_mesin" name="no_mesin" class="form-control">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="total_tyre_position" class="form-label">Total Tyre Positions</label>
-                        <input type="number" id="total_tyre_position" name="total_tyre_position" class="form-control"
+                     <div class="col-md-6 mb-3">
+                        <label for="total_tyre_position" class="form-label fw-bold">Total Tyre Positions</label>
+                        <input type="number" name="total_tyre_position" class="form-control total-pos-input"
                            placeholder="e.g. 10" required>
                      </div>
-                     <div class="col mb-3">
-                        <label for="tyre_position_configuration_id" class="form-label">Tyre Layout Configuration</label>
-                        <select name="tyre_position_configuration_id" class="form-select select2"
-                           data-placeholder="Select Configuration">
-                           <option value="">-- Select Configuration --</option>
-                           @foreach ($configurations as $config)
-                              <option value="{{ $config->id }}">{{ $config->name }} ({{ $config->code }})</option>
-                           @endforeach
-                        </select>
-                        <small class="text-muted">Optional: Link to a visual layout template</small>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="tyre_unit_status" class="form-label">Status</label>
+                     <div class="col-md-6 mb-3">
+                        <label for="tyre_unit_status" class="form-label fw-bold">Status</label>
                         <select name="tyre_unit_status" class="form-select" required>
                            <option value="Active">Active</option>
                            <option value="Inactive">Inactive</option>
@@ -192,9 +135,9 @@
                      </div>
                   </div>
                </div>
-               <div class="modal-footer">
+               <div class="modal-footer border-top">
                   <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save changes</button>
+                  <button type="submit" class="btn btn-primary shadow">Save changes</button>
                </div>
             </form>
          </div>
@@ -203,94 +146,50 @@
 
    <!-- Edit Vehicle Modal -->
    <div class="modal fade" id="editVehicleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-         <div class="modal-content">
-            <div class="modal-header">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+         <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning">
                <h5 class="modal-title">Edit Vehicle</h5>
                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editVehicleForm" method="POST">
                @csrf
                @method('PUT')
-               <div class="modal-body">
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_kode_kendaraan" class="form-label">Unit Code</label>
-                        <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control"
-                           required>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_no_polisi" class="form-label">Plate No</label>
-                        <input type="text" id="edit_no_polisi" name="no_polisi" class="form-control" required>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_area" class="form-label">Location (Area)</label>
-                        <select id="edit_area" name="area" class="form-select select2" required>
-                           <option value="">-- Select Location --</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
+               {{-- Default values for simplified fields --}}
+               <input type="hidden" name="no_polisi" value="-">
+               <input type="hidden" name="area" value="HO">
+
+               <div class="modal-body pt-4">
+                  <div class="mb-3">
+                     <label for="edit_kode_kendaraan" class="form-label fw-bold">Unit Code</label>
+                     <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control"
+                        required>
+                  </div>
+                  <div class="mb-3">
+                     <label for="edit_jenis_kendaraan" class="form-label fw-bold">Vehicle Type</label>
+                     <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control">
+                  </div>
+                  <div class="mb-3">
+                     <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Tyre Layout
+                        Configuration</label>
+                     <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
+                        class="form-select select2 config-selector">
+                        <option value="">-- No Configuration --</option>
+                        @foreach ($configurations as $config)
+                           <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
+                              {{ $config->name }} ({{ $config->total_positions }} Wheels)
+                           </option>
+                        @endforeach
+                     </select>
                   </div>
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_jenis_kendaraan" class="form-label">Vehicle Type</label>
-                        <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control">
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_total_positions" class="form-label fw-bold">Total Tyre Positions</label>
+                        <input type="number" id="edit_total_positions" name="total_tyre_position"
+                           class="form-control total-pos-input" required>
                      </div>
-                     <div class="col mb-3">
-                        <label for="edit_tipe_kendaraan" class="form-label">Model/Brand</label>
-                        <input type="text" id="edit_tipe_kendaraan" name="tipe_kendaraan" class="form-control">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_tahun_rakit" class="form-label">Year</label>
-                        <input type="number" id="edit_tahun_rakit" name="tahun_rakit" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_usia_kendaraan" class="form-label">Age</label>
-                        <input type="text" id="edit_usia_kendaraan" name="usia_kendaraan" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_kapasitas_silinder" class="form-label">Cylinder Cap.</label>
-                        <input type="text" id="edit_kapasitas_silinder" name="kapasitas_silinder"
-                           class="form-control">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_no_bpkb" class="form-label">BPKB No</label>
-                        <input type="text" id="edit_no_bpkb" name="no_bpkb" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_no_rangka" class="form-label">Frame No</label>
-                        <input type="text" id="edit_no_rangka" name="no_rangka" class="form-control">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_no_mesin" class="form-label">Engine No</label>
-                        <input type="text" id="edit_no_mesin" name="no_mesin" class="form-control">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_total_positions" class="form-label">Total Tyre Positions</label>
-                        <input type="number" id="edit_total_positions" name="total_tyre_position" class="form-control"
-                           required>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_tyre_position_configuration_id" class="form-label">Tyre Layout
-                           Configuration</label>
-                        <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
-                           class="form-select">
-                           <option value="">-- No Configuration --</option>
-                           @foreach ($configurations as $config)
-                              <option value="{{ $config->id }}">{{ $config->name }} ({{ $config->code }})</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_unit_status" class="form-label">Status</label>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_unit_status" class="form-label fw-bold">Status</label>
                         <select id="edit_unit_status" name="tyre_unit_status" class="form-select" required>
                            <option value="Active">Active</option>
                            <option value="Inactive">Inactive</option>
@@ -299,9 +198,9 @@
                      </div>
                   </div>
                </div>
-               <div class="modal-footer">
+               <div class="modal-footer border-top">
                   <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Update changes</button>
+                  <button type="submit" class="btn btn-warning shadow">Update changes</button>
                </div>
             </form>
          </div>
@@ -311,10 +210,11 @@
    <!-- View Layout Modal -->
    <div class="modal fade" id="viewLayoutModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Vehicle Tyre Layout: <span id="layoutModalTitle"></span></h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary">
+               <h5 class="modal-title text-white">Vehicle Tyre Layout: <span id="layoutModalTitle"></span></h5>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light text-center">
                <div id="layoutContainer">
@@ -344,7 +244,7 @@
       $(document).ready(function() {
          $('.datatables-vehicles').DataTable({
             order: [
-               [0, 'desc']
+               [0, 'asc']
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
@@ -355,32 +255,14 @@
          $(document).on('click', '.edit-vehicle', function() {
             const id = $(this).data('id');
             const kode = $(this).data('kode');
-            const polisi = $(this).data('polisi');
-            const area = $(this).data('area');
             const jenis = $(this).data('jenis');
-            const tipe = $(this).data('tipe');
-            const tahun = $(this).data('tahun');
-            const usia = $(this).data('usia');
-            const silinder = $(this).data('silinder');
-            const bpkb = $(this).data('bpkb');
-            const rangka = $(this).data('rangka');
-            const mesin = $(this).data('mesin');
             const positions = $(this).data('positions');
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
 
             editForm.attr('action', `{{ url('tyre_performance/master_kendaraan') }}/${id}`);
             $('#edit_kode_kendaraan').val(kode);
-            $('#edit_no_polisi').val(polisi);
-            $('#edit_area').val(area).trigger('change');
             $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
-            $('#edit_tipe_kendaraan').val(tipe === 'null' ? '' : (tipe || ''));
-            $('#edit_tahun_rakit').val(tahun === 'null' ? '' : (tahun || ''));
-            $('#edit_usia_kendaraan').val(usia === 'null' ? '' : (usia || ''));
-            $('#edit_kapasitas_silinder').val(silinder === 'null' ? '' : (silinder || ''));
-            $('#edit_no_bpkb').val(bpkb === 'null' ? '' : (bpkb || ''));
-            $('#edit_no_rangka').val(rangka === 'null' ? '' : (rangka || ''));
-            $('#edit_no_mesin').val(mesin === 'null' ? '' : (mesin || ''));
             $('#edit_total_positions').val(positions);
             $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || '')).trigger(
                'change');
@@ -431,6 +313,15 @@
                .catch(err => {
                   layoutContainer.html('<div class="alert alert-danger">Gagal memuat layout.</div>');
                });
+         });
+
+         // Auto-detect Total Positions based on Configuration
+         $(document).on('change', '.config-selector', function() {
+            const total = $(this).find(':selected').data('total');
+            const modal = $(this).closest('.modal');
+            if (total) {
+               modal.find('.total-pos-input').val(total);
+            }
          });
 
          @if (session('success'))
