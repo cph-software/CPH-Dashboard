@@ -1,4 +1,4 @@
-z@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Master Tyre Patterns')
 
