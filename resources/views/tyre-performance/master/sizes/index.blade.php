@@ -7,6 +7,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
@@ -85,7 +86,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="tyre_brand_id" class="form-label">Brand</label>
-                        <select name="tyre_brand_id" class="form-select" required>
+                        <select name="tyre_brand_id" class="form-select select2" data-placeholder="Select Brand" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
@@ -144,7 +145,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_brand_id" class="form-label">Brand</label>
-                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select" required>
+                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
@@ -189,6 +190,7 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
@@ -215,7 +217,7 @@
 
             editForm.attr('action', `{{ url('tyre_performance/master_size') }}/${id}`);
             $('#edit_size').val(size);
-            $('#edit_brand_id').val(brandId);
+            $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_type').val(type);
             $('#edit_otd').val(otd === 'null' || otd === null ? '' : otd);
             $('#edit_ply').val(ply === 'null' || ply === null ? '' : ply);
@@ -255,6 +257,46 @@
                showConfirmButton: false
             });
          @endif
+
+         @if (session('error'))
+            Swal.fire({
+               icon: 'error',
+               title: 'Oops...',
+               text: '{{ session('error') }}',
+            });
+         @endif
+
+         // Auto-detect Tyre Type from Size string
+         function detectType(size) {
+            if (!size) return null;
+            const s = size.toUpperCase();
+            if (s.includes('R') || s.includes('RADIAL')) return 'Radial';
+            if (s.includes('-') || s.includes('BIAS')) return 'Bias';
+            return null;
+         }
+
+         $('#size').on('input', function() {
+            const type = detectType($(this).val());
+            if (type) {
+               $('select[name="type"]').val(type);
+            }
+         });
+
+         $('#edit_size').on('input', function() {
+            const type = detectType($(this).val());
+            if (type) {
+               $('#edit_type').val(type);
+            }
+         });
+
+         // Initialize Select2
+         $('.select2').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal')
+            });
+         });
       });
    </script>
 @endsection

@@ -86,6 +86,11 @@ class TyreFailureCodeController extends Controller
     public function destroy($id)
     {
         $failureCode = TyreFailureCode::findOrFail($id);
+
+        if ($failureCode->movements()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete failure code. It is currently associated with some movement history records.');
+        }
+
         $failureCode->delete();
 
         return redirect()->back()->with('success', 'Failure code deleted successfully');

@@ -50,6 +50,11 @@ class TyreSizeController extends Controller
     public function destroy($id)
     {
         $size = TyreSize::findOrFail($id);
+
+        if ($size->tyres()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete size. It is currently being used by some tyre records.');
+        }
+
         $size->delete();
 
         return redirect()->back()->with('success', 'Size deleted successfully');

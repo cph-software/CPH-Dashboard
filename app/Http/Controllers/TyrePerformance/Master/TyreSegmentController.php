@@ -50,6 +50,11 @@ class TyreSegmentController extends Controller
     public function destroy($id)
     {
         $segment = TyreSegment::findOrFail($id);
+
+        if ($segment->tyres()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete segment. It is currently being used by some tyre records.');
+        }
+
         $segment->delete();
 
         return redirect()->back()->with('success', 'Segment deleted successfully');

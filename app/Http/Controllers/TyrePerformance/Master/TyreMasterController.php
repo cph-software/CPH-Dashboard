@@ -65,6 +65,11 @@ class TyreMasterController extends Controller
     public function destroy($id)
     {
         $tyre = Tyre::findOrFail($id);
+
+        if ($tyre->movements()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete tyre. it has movement history records.');
+        }
+
         $tyre->delete();
 
         return redirect()->back()->with('success', 'Tyre deleted successfully');

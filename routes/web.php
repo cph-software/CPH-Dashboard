@@ -67,6 +67,8 @@ Route::middleware(['auth'])->group(function () {
         
         // Tyre Movement Routes
         Route::get('movement', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'index'])->name('tyre-movement.index');
+        Route::get('movement/pemasangan', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'pemasangan'])->name('tyre-movement.pemasangan');
+        Route::get('movement/pelepasan', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'pelepasan'])->name('tyre-movement.pelepasan');
         Route::get('movement/layout/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleLayout']);
         Route::get('movement/position-info', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getPositionInfo']);
         Route::post('movement/store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store']);

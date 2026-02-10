@@ -44,6 +44,11 @@ class TyreBrandController extends Controller
     public function destroy($id)
     {
         $brand = TyreBrand::findOrFail($id);
+
+        if ($brand->tyres()->exists() || $brand->sizes()->exists() || $brand->patterns()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete brand. It is currently being used by some size, pattern, or tyre records.');
+        }
+
         $brand->delete();
 
         return redirect()->back()->with('success', 'Brand deleted successfully');

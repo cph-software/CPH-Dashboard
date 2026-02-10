@@ -6,8 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class TyrePattern extends Model
 {
-    protected $table = 'master_import_pattern';
+    protected $table = 'tyre_patterns';
     protected $guarded = [];
+
+    public function brand()
+    {
+        return $this->belongsTo(TyreBrand::class, 'tyre_brand_id');
+    }
 
     public function tyres()
     {

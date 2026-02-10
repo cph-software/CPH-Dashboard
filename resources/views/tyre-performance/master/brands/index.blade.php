@@ -222,6 +222,14 @@
                showConfirmButton: false
             });
          @endif
+
+         @if (session('error'))
+            Swal.fire({
+               icon: 'error',
+               title: 'Oops...',
+               text: '{{ session('error') }}',
+            });
+         @endif
       });
    </script>
 @endsection
