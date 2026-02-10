@@ -34,46 +34,7 @@
                   </tr>
                </thead>
                <tbody class="table-border-bottom-0">
-                  @foreach ($kendaraans as $kv)
-                     <tr>
-                        <td><strong>{{ $kv->kode_kendaraan }}</strong></td>
-                        <td>{{ $kv->jenis_kendaraan ?? '-' }}</td>
-                        <td>{{ $kv->tyrePositionConfiguration->name ?? '-' }}</td>
-                        <td>{{ $kv->total_tyre_position }} Wheels</td>
-                        <td>
-                           <span
-                              class="badge bg-label-{{ $kv->tyre_unit_status == 'Active' ? 'success' : ($kv->tyre_unit_status == 'Maintenance' ? 'warning' : 'secondary') }}">
-                              {{ $kv->tyre_unit_status }}
-                           </span>
-                        </td>
-                        <td>
-                           <div class="d-flex align-items-center justify-content-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                 data-id="{{ $kv->id }}" data-kode="{{ $kv->kode_kendaraan }}"
-                                 data-jenis="{{ $kv->jenis_kendaraan }}" data-positions="{{ $kv->total_tyre_position }}"
-                                 data-config-id="{{ $kv->tyre_position_configuration_id }}"
-                                 data-status="{{ $kv->tyre_unit_status }}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              @if ($kv->tyre_position_configuration_id)
-                                 <button type="button"
-                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
-                                    data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
-                                    data-config-name="{{ $kv->tyrePositionConfiguration->name }}"
-                                    data-config-id="{{ $kv->tyre_position_configuration_id }}" title="View Layout">
-                                    <i class="icon-base ri ri-layout-6-line text-primary"></i>
-                                 </button>
-                              @endif
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
-                                 data-id="{{ $kv->id }}" data-kode="{{ $kv->kode_kendaraan }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
-                           </div>
-                        </td>
-                     </tr>
-                  @endforeach
+                  {{-- Data loaded via AJAX --}}
                </tbody>
             </table>
          </div>
@@ -242,9 +203,79 @@
 @section('page-script')
    <script>
       $(document).ready(function() {
-         $('.datatables-vehicles').DataTable({
-            order: [
-               [0, 'asc']
+         const table = $('.datatables-vehicles').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('tyre-kendaraan.data') }}",
+            columns: [{
+                  data: 'kode_kendaraan',
+                  render: function(data) {
+                     return `<strong>${data}</strong>`;
+                  }
+               },
+               {
+                  data: 'jenis_kendaraan',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'tyre_position_configuration.name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'total_tyre_position',
+                  render: function(data) {
+                     return `${data} Wheels`;
+                  }
+               },
+               {
+                  data: 'tyre_unit_status',
+                  render: function(data) {
+                     const badges = {
+                        'Active': 'success',
+                        'Maintenance': 'warning',
+                        'Inactive': 'secondary'
+                     };
+                     return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
+                  }
+               },
+               {
+                  data: null,
+                  searchable: false,
+                  orderable: false,
+                  className: 'text-center',
+                  render: function(data, type, row) {
+                     let layoutBtn = '';
+                     if (row.tyre_position_configuration_id) {
+                        layoutBtn = `
+                           <button type="button"
+                              class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
+                              data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
+                              data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
+                              data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
+                              <i class="icon-base ri ri-layout-6-line text-primary"></i>
+                           </button>
+                        `;
+                     }
+                     return `
+                        <div class="d-flex align-items-center justify-content-center">
+                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
+                              href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                              data-id="${row.id}" data-kode="${row.kode_kendaraan}"
+                              data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
+                              data-config-id="${row.tyre_position_configuration_id}"
+                              data-status="${row.tyre_unit_status}" title="Edit">
+                              <i class="icon-base ri ri-pencil-line"></i>
+                           </a>
+                           ${layoutBtn}
+                           <button type="button"
+                              class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
+                              data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
+                              <i class="icon-base ri ri-delete-bin-line"></i>
+                           </button>
+                        </div>
+                     `;
+                  }
+               }
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
