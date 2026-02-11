@@ -382,9 +382,29 @@
                         `<option value="${pos.id}">${pos.position_code} - ${pos.position_name}</option>`
                      );
                   });
-                  positionSelect.prop('disabled', false).trigger('change');
+                  positionSelect.prop('disabled', false);
+
+                  // Auto-select position if provided in URL
+                  if (typeof pendingPositionId !== 'undefined' && pendingPositionId) {
+                     positionSelect.val(pendingPositionId).trigger('change');
+                     pendingPositionId = null; // Reset
+                  } else {
+                     positionSelect.trigger('change');
+                  }
                });
          });
+
+         // Check URL Params for Auto-fill
+         const urlParams = new URLSearchParams(window.location.search);
+         const preVehicleId = urlParams.get('vehicle_id');
+         let pendingPositionId = urlParams.get('position_id');
+
+         if (preVehicleId) {
+            // Create option if not exists (though it should be in the list)
+            if (vehicleSelect.find("option[value='" + preVehicleId + "']").length) {
+               vehicleSelect.val(preVehicleId).trigger('change');
+            }
+         }
 
          // Handle Tyre Selection Info
          tyreSelect.on('select2:select', function(e) {

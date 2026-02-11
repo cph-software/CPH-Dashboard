@@ -112,13 +112,27 @@ class TyreMovementController extends Controller
     public function getPositionInfo(Request $request)
     {
         $vehicleId = $request->vehicle_id;
+        // Check if we need available tyres specifically for a position
+        // The frontend sends vehicle_id and position_id for the quick form
+        
+        if ($request->has('position_id')) {
+            // For Quick Form Installation: We need list of available tyres
+            $availableTyres = Tyre::whereIn('status', ['New', 'Repaired'])
+                ->with(['brand', 'size'])
+                ->get();
+                
+            return response()->json([
+                'availableTyres' => $availableTyres
+            ]);
+        }
+        
+        // ... (rest of existing logic for full page forms if needed, but the quick form uses the above)
         $type = $request->type ?? 'Installation';
         
         $vehicle = MasterImportKendaraan::select('id', 'tyre_position_configuration_id')->findOrFail($vehicleId);
         $configId = $vehicle->tyre_position_configuration_id;
         
         if ($type === 'Installation') {
-            // Get positions that DON'T have a tyre assigned
             $occupiedPositionIds = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
                 ->pluck('current_position_id')
@@ -128,14 +142,12 @@ class TyreMovementController extends Controller
                 ->whereNotIn('id', $occupiedPositionIds)
                 ->get();
         } else {
-            // Removal: Get tyres currently on this vehicle
             $tyresOnVehicle = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
                 ->with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name'])
-                ->get(['id', 'serial_number', 'tyre_brand_id', 'tyre_size_id', 'tyre_pattern_id', 'current_position_id']);
+                ->get();
                 
             $positionIds = $tyresOnVehicle->pluck('current_position_id');
-            
             $positions = TyrePositionDetail::whereIn('id', $positionIds)->get();
                 
             return response()->json([
