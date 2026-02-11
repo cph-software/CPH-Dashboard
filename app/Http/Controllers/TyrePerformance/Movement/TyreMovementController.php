@@ -360,7 +360,7 @@ class TyreMovementController extends Controller
                 'tyre_sn' => $row->tyre->serial_number ?? '-',
                 'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
-                'action' => '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="ri-history-line"></i> Rollback</button>'
+                'action' => '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
             ];
         });
 
@@ -377,44 +377,70 @@ class TyreMovementController extends Controller
         DB::beginTransaction();
         try {
             $movement = TyreMovement::findOrFail($id);
-            $tyre = Tyre::findOrFail($movement->tyre_id);
-            $position = TyrePositionDetail::findOrFail($movement->position_id);
+            $tyre = Tyre::find($movement->tyre_id);
+            
+            if (!$tyre) {
+                throw new \Exception('Data ban tidak ditemukan.');
+            }
+
+            $position = TyrePositionDetail::find($movement->position_id);
 
             if ($movement->movement_type === 'Installation') {
-                // To rollback an installation:
-                // 1. Move tyre back to stock (New/Repaired? We'll assume New if we don't store prev status, 
-                //    but usually we can revert to its state before)
-                // Actually, let's just set it to 'New' or 'Repaired' based on a simple check or manual triage.
-                // For now, let's revert to 'New' as it's the safest stock status.
+                // LOGIC: Undo Installation (Remove from vehicle → Return to stock)
+                
+                // 1. Reset Tyre Status to "New" or available state
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
-                    'status' => 'New' 
+                    'status' => 'New',
+                    // Return tracking to the location where the installation happened
+                    'work_location_id' => $movement->work_location_id 
                 ]);
 
-                // 2. Clear position
-                $position->update(['tyre_id' => null]);
+                // 2. Increment Stock at that location (assuming it goes back to inventory)
+                if ($movement->work_location_id) {
+                     DB::table('tyre_locations')->where('id', $movement->work_location_id)->increment('current_stock');
+                }
+
+                // 3. Free the position (if it still exists)
+                if ($position) {
+                    $position->update(['tyre_id' => null]);
+                }
             } else {
-                // To rollback a removal:
-                // 1. Put tyre back on vehicle/position
+                // LOGIC: Undo Removal (Return to vehicle)
+
+                if (!$position) {
+                    throw new \Exception("Posisi ban (ID: {$movement->position_id}) tidak ditemukan dalam database. Tidak dapat mengembalikan ban ke posisi yang sudah dihapus.");
+                }
+
+                // Check if position is currently occupied by another tyre
+                if ($position->tyre_id && $position->tyre_id != $tyre->id) {
+                     // Check if the tyre occupying it is actually valid
+                     $occupier = Tyre::find($position->tyre_id);
+                     if ($occupier) {
+                        throw new \Exception("Posisi ini sekarang sedang diisi oleh ban lain (SN: {$occupier->serial_number}). Rollback dibatalkan untuk mencegah konflik.");
+                     }
+                }
+
+                // 1. Put Tyre back on Vehicle
                 $tyre->update([
                     'current_vehicle_id' => $movement->vehicle_id,
                     'current_position_id' => $movement->position_id,
                     'status' => 'Installed'
                 ]);
 
-                // 2. Sync position
+                // 2. Occupy the position
                 $position->update(['tyre_id' => $tyre->id]);
             }
 
-            // 3. Delete the log
+            // Delete the log
             $movement->delete();
 
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Transaksi berhasil di-rollback.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal Rollback: ' . $e->getMessage()], 500);
         }
     }
 }

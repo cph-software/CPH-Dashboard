@@ -9,13 +9,20 @@ use App\Models\TyreBrand;
 use App\Models\TyreLocation;
 use App\Models\TyreFailureCode;
 use App\Models\MasterImportKendaraan;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // ========================================
+        // Filters
+        // ========================================
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(6)->startOfMonth();
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
+
         // ========================================
         // ROW 1: KPI Summary Cards
         // ========================================
@@ -44,12 +51,11 @@ class DashboardController extends Controller
         // Scrap Rate %
         $scrapRate = $totalTyres > 0 ? round(($scrappedTyres / $totalTyres) * 100, 1) : 0;
 
-        // Movement counts this month
-        $thisMonthStart = Carbon::now()->startOfMonth();
+        // Movement counts in filtered range
         $installationsThisMonth = TyreMovement::where('movement_type', 'Installation')
-            ->where('movement_date', '>=', $thisMonthStart)->count();
+            ->whereBetween('movement_date', [$startDate, $endDate])->count();
         $removalsThisMonth = TyreMovement::where('movement_type', 'Removal')
-            ->where('movement_date', '>=', $thisMonthStart)->count();
+            ->whereBetween('movement_date', [$startDate, $endDate])->count();
 
         // ========================================
         // ROW 2: Charts Data
@@ -61,11 +67,13 @@ class DashboardController extends Controller
             ->pluck('total', 'status')
             ->toArray();
 
-        // 2b. Monthly Movement Trend (last 6 months - Bar Chart)
+        // 2b. Monthly Movement Trend - Filtered
         $monthlyMovements = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $monthStart = Carbon::now()->subMonths($i)->startOfMonth();
-            $monthEnd   = Carbon::now()->subMonths($i)->endOfMonth();
+        $period = \Carbon\CarbonPeriod::create($startDate->copy()->startOfMonth(), '1 month', $endDate->copy()->startOfMonth());
+        
+        foreach ($period as $date) {
+            $monthStart = $date->copy()->startOfMonth();
+            $monthEnd   = $date->copy()->endOfMonth();
             $monthLabel = $monthStart->format('M Y');
 
             $installs = TyreMovement::where('movement_type', 'Installation')
@@ -138,8 +146,9 @@ class DashboardController extends Controller
         $locationStock = TyreLocation::select('location_name', 'current_stock', 'capacity')
             ->get();
 
-        // 4b. Failure Code Distribution (Pie Chart)
+        // 4b. Failure Code Distribution (Pie Chart) - Filtered
         $failureDistribution = TyreMovement::where('movement_type', 'Removal')
+            ->whereBetween('movement_date', [$startDate, $endDate])
             ->whereNotNull('failure_code_id')
             ->select('failure_code_id', DB::raw('count(*) as total'))
             ->groupBy('failure_code_id')
@@ -153,8 +162,9 @@ class DashboardController extends Controller
                 ];
             });
 
-        // 4c. Recent Movements (last 10)
+        // 4c. Recent Movements - Filtered
         $recentMovements = TyreMovement::with(['tyre', 'vehicle', 'position'])
+            ->whereBetween('movement_date', [$startDate, $endDate])
             ->orderBy('movement_date', 'desc')
             ->orderBy('id', 'desc')
             ->limit(10)
@@ -171,7 +181,33 @@ class DashboardController extends Controller
         // Total vehicles
         $totalVehicles = MasterImportKendaraan::count();
 
+        // 5a. Fleet Health (RTD Distribution) - Installed tyres only
+        $rtdDistribution = [
+            'Critical (< 4mm)' => Tyre::where('status', 'Installed')->whereBetween('current_tread_depth', [0, 3.99])->count(),
+            'Warning (4-8mm)' => Tyre::where('status', 'Installed')->whereBetween('current_tread_depth', [4, 7.99])->count(),
+            'Monitor (8-12mm)' => Tyre::where('status', 'Installed')->whereBetween('current_tread_depth', [8, 11.99])->count(),
+            'Good (> 12mm)' => Tyre::where('status', 'Installed')->where('current_tread_depth', '>=', 12)->count(),
+        ];
+
+        // 5b. Axle Analysis (Removal Frequency by Position) - Filtered
+        $axleAnalysis = TyreMovement::where('movement_type', 'Removal')
+            ->whereBetween('movement_date', [$startDate, $endDate])
+            ->join('tyre_position_details', 'tyre_movements.position_id', '=', 'tyre_position_details.id')
+            ->select('tyre_position_details.position_name', DB::raw('count(*) as total'))
+            ->groupBy('tyre_position_details.position_name')
+            ->orderBy('total', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'position' => $item->position_name,
+                    'total' => $item->total
+                ];
+            });
+
         return view('tyre-performance.dashboard', compact(
+            // Filters
+            'startDate', 'endDate',
             // KPI
             'totalTyres', 'installedTyres', 'inStockTyres', 'scrappedTyres',
             'totalInvestment', 'avgLifetimeKm', 'avgLifetimeHm', 'avgCpk', 'scrapRate',
@@ -182,7 +218,7 @@ class DashboardController extends Controller
             'brandPerformance', 'cpkByBrand', 'criticalTread',
             // Inventory & Operational
             'locationStock', 'failureDistribution', 'recentMovements', 'lowRtdTyres',
-            'totalVehicles'
+            'totalVehicles', 'rtdDistribution', 'axleAnalysis'
         ));
     }
 
@@ -372,6 +408,73 @@ class DashboardController extends Controller
                     'title'   => "{$typeLabel} - {$monthStr}",
                     'columns' => ['Tanggal', 'Serial Ban', 'Brand', 'Kendaraan', 'KM', 'HM', 'PSI', 'RTD'],
                     'keys'    => ['date', 'serial', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
+                    'data'    => $movements,
+                    'total'   => $movements->count(),
+                ]);
+
+            // ==========================================
+            // 6. RTD DISTRIBUTION → List installed tyres
+            // ==========================================
+            case 'rtd':
+                $query = Tyre::where('status', 'Installed');
+                
+                if (str_contains($value, 'Critical')) {
+                    $query->whereBetween('current_tread_depth', [0, 3.99]);
+                } elseif (str_contains($value, 'Warning')) {
+                    $query->whereBetween('current_tread_depth', [4, 7.99]);
+                } elseif (str_contains($value, 'Monitor')) {
+                    $query->whereBetween('current_tread_depth', [8, 11.99]);
+                } else {
+                    $query->where('current_tread_depth', '>=', 12);
+                }
+
+                $tyres = $query->with(['brand', 'size', 'currentVehicle'])
+                    ->get()
+                    ->map(function ($t) {
+                        return [
+                            'id'            => $t->id,
+                            'serial_number' => $t->serial_number,
+                            'brand'         => $t->brand->brand_name ?? '-',
+                            'size'          => $t->size->size ?? '-',
+                            'vehicle'       => $t->currentVehicle->kode_kendaraan ?? '-',
+                            'rtd'           => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
+                            'lifetime_km'   => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
+                        ];
+                    });
+
+                return response()->json([
+                    'title'   => "Fleet Health: {$value}",
+                    'columns' => ['Serial Number', 'Brand', 'Size', 'Kendaraan', 'RTD', 'Lifetime KM'],
+                    'keys'    => ['serial_number', 'brand', 'size', 'vehicle', 'rtd', 'lifetime_km'],
+                    'data'    => $tyres,
+                    'total'   => $tyres->count(),
+                ]);
+
+            // ==========================================
+            // 7. AXLE ANALYSIS → List removals by axle/pos
+            // ==========================================
+            case 'axle':
+                $movements = TyreMovement::where('movement_type', 'Removal')
+                    ->join('tyre_position_details', 'tyre_movements.position_id', '=', 'tyre_position_details.id')
+                    ->where('tyre_position_details.position_name', $value)
+                    ->with(['tyre', 'vehicle'])
+                    ->orderBy('movement_date', 'desc')
+                    ->get()
+                    ->map(function ($m) {
+                        return [
+                            'date'    => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                            'serial'  => $m->tyre->serial_number ?? '-',
+                            'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
+                            'km'      => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                            'rtd'     => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
+                            'notes'   => $m->notes ?? '-',
+                        ];
+                    });
+
+                return response()->json([
+                    'title'   => "Scrap Frequency: Posisi {$value}",
+                    'columns' => ['Tanggal', 'Serial Ban', 'Kendaraan', 'KM', 'RTD', 'Notes'],
+                    'keys'    => ['date', 'serial', 'vehicle', 'km', 'rtd', 'notes'],
                     'data'    => $movements,
                     'total'   => $movements->count(),
                 ]);
