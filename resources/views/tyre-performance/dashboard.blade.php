@@ -79,8 +79,35 @@
       </div>
 
       {{-- ============================================== --}}
-      {{-- ROW 1: KPI SUMMARY CARDS (6 cards) --}}
+      {{-- DASHBOARD FILTERS --}}
       {{-- ============================================== --}}
+      <div class="card mb-4">
+         <div class="card-body py-3">
+            <form action="{{ route('tyre_performance.dashboard') }}" method="GET" class="row g-3 align-items-end">
+               <div class="col-md-3">
+                  <label class="form-label fw-semibold">Rentang Tanggal:</label>
+                  <div class="input-group input-group-sm">
+                     <span class="input-group-text"><i class="icon-base ri ri-calendar-line"></i></span>
+                     <input type="date" name="start_date" class="form-control"
+                        value="{{ $startDate->format('Y-m-d') }}">
+                     <span class="input-group-text">sampai</span>
+                     <input type="date" name="end_date" class="form-control" value="{{ $endDate->format('Y-m-d') }}">
+                  </div>
+               </div>
+               <div class="col-md-3">
+                  <button type="submit" class="btn btn-sm btn-primary">
+                     <i class="icon-base ri ri-filter-3-line me-1"></i>Terapkan Filter
+                  </button>
+                  <a href="{{ route('tyre_performance.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                     <i class="icon-base ri ri-refresh-line me-1"></i>Reset
+                  </a>
+               </div>
+               <div class="col-md-6 text-md-end">
+                  <span class="badge bg-label-info">Zona Waktu: WITA (Asia/Makassar)</span>
+               </div>
+            </form>
+         </div>
+      </div>
       <div class="row g-4 mb-4">
          {{-- Total Tyres --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
@@ -197,7 +224,8 @@
          <div class="col-xl-4 col-lg-5">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-pie-chart-line me-1 text-primary"></i> Distribusi Status Ban
+                  <h6 class="mb-1"><i class="icon-base ri ri-pie-chart-line me-1 text-primary"></i> Distribusi Status
+                     Ban
                   </h6>
                   <p class="kpi-sub mb-0">Persentase ban berdasarkan status</p>
                </div>
@@ -267,8 +295,39 @@
          </div>
       </div>
 
+      <div class="row g-4 mb-4">
+         {{-- 4a. Fleet Health (RTD Distribution) --}}
+         <div class="col-xl-6">
+            <div class="card chart-card h-100">
+               <div class="card-header pb-0">
+                  <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Fleet Health (RTD
+                     Distribution)</h6>
+                  <p class="kpi-sub mb-0">Distribusi Ketebalan Tapak Ban Terpasang</p>
+               </div>
+               <div class="card-body">
+                  <div id="rtdDistributionChart" style="min-height:280px;"></div>
+               </div>
+            </div>
+         </div>
+
+         {{-- 4b. Axle Analysis (Scrap Frequency) --}}
+         <div class="col-xl-6">
+            <div class="card chart-card h-100">
+               <div class="card-header pb-0">
+                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-primary"></i> Axle Analysis
+                     (Scrap
+                     Frequency)</h6>
+                  <p class="kpi-sub mb-0">Frekuensi Pelepasan per Posisi</p>
+               </div>
+               <div class="card-body">
+                  <div id="axleAnalysisChart" style="min-height:280px;"></div>
+               </div>
+            </div>
+         </div>
+      </div>
+
       {{-- ============================================== --}}
-      {{-- ROW 4: ALERTS & OPERATIONAL TABLE --}}
+      {{-- ROW 5: ALERTS & OPERATIONAL TABLE --}}
       {{-- ============================================== --}}
       <div class="row g-4 mb-4">
          {{-- 4a. Low RTD Alert --}}
@@ -932,6 +991,116 @@
                   enabled: false
                }
             }).render();
+         }
+
+         // ==========================================
+         // 6. FLEET HEALTH (RTD DISTRIBUTION) CHART
+         // ==========================================
+         const rtdData = @json($rtdDistribution);
+         const rtdLabels = Object.keys(rtdData);
+         const rtdValues = Object.values(rtdData);
+
+         new ApexCharts(document.querySelector('#rtdDistributionChart'), {
+            chart: {
+               type: 'bar',
+               height: 280,
+               toolbar: {
+                  show: false
+               },
+               events: {
+                  dataPointSelection: function(event, chartContext, config) {
+                     const label = rtdLabels[config.dataPointIndex];
+                     openDrillDown('rtd', label);
+                  }
+               }
+            },
+            series: [{
+               name: 'Jumlah Ban',
+               data: rtdValues
+            }],
+            xaxis: {
+               categories: rtdLabels,
+               labels: {
+                  style: {
+                     fontSize: '11px'
+                  }
+               }
+            },
+            colors: [function({
+               value,
+               seriesIndex,
+               dataPointIndex,
+               w
+            }) {
+               if (dataPointIndex === 0) return colors.danger;
+               if (dataPointIndex === 1) return colors.warning;
+               if (dataPointIndex === 2) return colors.info;
+               return colors.success;
+            }],
+            plotOptions: {
+               bar: {
+                  distributed: true,
+                  borderRadius: 4,
+                  columnWidth: '50%',
+               }
+            },
+            legend: {
+               show: false
+            },
+            grid: {
+               borderColor: '#f1f1f1',
+               strokeDashArray: 3
+            }
+         }).render();
+
+         // ==========================================
+         // 7. AXLE ANALYSIS (SCRAP FREQUENCY) CHART
+         // ==========================================
+         const axleData = @json($axleAnalysis);
+
+         if (axleData.length > 0) {
+            new ApexCharts(document.querySelector('#axleAnalysisChart'), {
+               chart: {
+                  type: 'bar',
+                  height: 280,
+                  toolbar: {
+                     show: false
+                  },
+                  events: {
+                     dataPointSelection: function(event, chartContext, config) {
+                        const posName = axleData[config.dataPointIndex].position;
+                        openDrillDown('axle', posName);
+                     }
+                  }
+               },
+               series: [{
+                  name: 'Total Pelepasan',
+                  data: axleData.map(a => a.total)
+               }],
+               xaxis: {
+                  categories: axleData.map(a => a.position),
+                  labels: {
+                     style: {
+                        fontSize: '11px'
+                     }
+                  }
+               },
+               plotOptions: {
+                  bar: {
+                     horizontal: true,
+                     borderRadius: 4,
+                     barHeight: '60%',
+                  }
+               },
+               colors: [colors.primary],
+               grid: {
+                  borderColor: '#f1f1f1',
+                  strokeDashArray: 3
+               }
+            }).render();
+         } else {
+            document.querySelector('#axleAnalysisChart').innerHTML =
+               '<div class="text-center text-muted py-5"><i class="icon-base ri ri-bar-chart-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data pelepasan</p></div>';
          }
 
       });
