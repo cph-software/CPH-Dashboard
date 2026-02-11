@@ -49,16 +49,16 @@
 
    <ul class="menu-inner py-1">
       {{-- STATIC MENUS - Available for all users --}}
-      <li class="menu-header small">
+      {{-- <li class="menu-header small">
          <span class="menu-header-text" data-i18n="MAIN MENU">MAIN MENU</span>
-      </li>
+      </li> --}}
 
-      <li class="menu-item {{ request()->is('dashboard*') ? 'active' : '' }}">
+      {{-- <li class="menu-item {{ request()->is('dashboard*') ? 'active' : '' }}">
          <a href="{{ url('dashboard') }}" class="menu-link">
             <i class="menu-icon icon-base ri ri-home-smile-line"></i>
             <div data-i18n="Dashboard">Dashboard</div>
          </a>
-      </li>
+      </li> --}}
 
       <li class="menu-header small">
          <span class="menu-header-text" data-i18n="APPLICATIONS">APPLICATIONS</span>
