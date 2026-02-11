@@ -2,6 +2,15 @@
 
 @section('title', 'Pergerakan Ban (Eks/Ins)')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('page-style')
    <style>
       .movement-card {
@@ -97,7 +106,7 @@
             <!-- Transaction Form (Hidden initially) -->
             <div id="transaction_card" class="card" style="display: none;">
                <div class="card-header border-bottom">
-                  <h6 class="card-title mb-0">Form Transaksi</h6>
+                  <h6 class="card-title mb-0">Form Transaksi Quick</h6>
                </div>
                <div class="card-body pt-4">
                   <form id="movement_form">
@@ -114,7 +123,7 @@
                      <div id="installation_fields" style="display: none;">
                         <div class="mb-3">
                            <label class="form-label">Pilih Ban (SN)</label>
-                           <select name="tyre_id" id="tyre_select" class="form-select select2">
+                           <select name="tyre_id" id="tyre_select" class="form-control">
                               <option value="">-- Pilih Ban Tersedia --</option>
                            </select>
                         </div>
@@ -145,8 +154,24 @@
                         <input type="number" name="odometer" class="form-control" placeholder="Opsional">
                      </div>
 
+                     <div class="mb-3">
+                        <label class="form-label">Remarks (Kategori)</label>
+                        <select name="remarks" class="form-select">
+                           <option value="">-- Pilih --</option>
+                           <option value="Pasang">Pasang</option>
+                           <option value="Pindah">Pindah</option>
+                           <option value="Lepas">Lepas</option>
+                           <option value="Tergores">Tergores</option>
+                           <option value="Kembung">Kembung</option>
+                           <option value="Pecah">Pecah</option>
+                           <option value="Sobek">Sobek</option>
+                           <option value="Tertusuk">Tertusuk</option>
+                           <option value="Telapak Lepas">Telapak Lepas</option>
+                        </select>
+                     </div>
+
                      <div class="mb-4">
-                        <label class="form-label">Catatan</label>
+                        <label class="form-label">Catatan Tambahan</label>
                         <textarea name="notes" class="form-control" rows="2"></textarea>
                      </div>
 
@@ -162,7 +187,7 @@
 
          <!-- Visual Layout Area -->
          <div class="col-md-8">
-            <div class="card movement-card">
+            <div class="card movement-card mb-4">
                <div class="card-header d-flex justify-content-between align-items-center border-bottom">
                   <h5 class="card-title mb-0">Visualisasi Unit</h5>
                   <div id="layout_loading" class="spinner-border spinner-border-sm text-primary" style="display: none;">
@@ -177,18 +202,53 @@
                   </div>
                </div>
             </div>
+
+            <div class="card">
+               <div class="card-header border-bottom">
+                  <h6 class="card-title mb-0">Riwayat Transaksi Terakhir</h6>
+               </div>
+               <div class="card-body pt-3">
+                  <div class="table-responsive">
+                     <table class="table table-sm table-hover" id="history_table">
+                        <thead>
+                           <tr>
+                              <th>Tanggal</th>
+                              <th>Tipe</th>
+                              <th>Unit</th>
+                              <th>Posisi</th>
+                              <th>SN Ban</th>
+                              <th>Action</th>
+                           </tr>
+                        </thead>
+                     </table>
+                  </div>
+               </div>
+            </div>
          </div>
       </div>
    </div>
 @endsection
 
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
+      $(document).ready(function() {
          const vehicleSelect = $('#vehicle_select');
          const layoutContainer = document.getElementById('layout_container');
          const transactionCard = document.getElementById('transaction_card');
          const movementForm = document.getElementById('movement_form');
+
+         $('.select2').each(function() {
+            $(this).select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent()
+            });
+         });
 
          vehicleSelect.on('change', function() {
             const vehicleId = this.value;
@@ -253,16 +313,95 @@
                fetch(`/tyre_performance/movement/position-info?vehicle_id=${vehicleId}&position_id=${positionId}`)
                   .then(response => response.json())
                   .then(data => {
-                     const tyreSelect = $('#tyre_select');
-                     tyreSelect.empty().append('<option value="">-- Pilih Ban --</option>');
-                     data.availableTyres.forEach(tyre => {
-                        tyreSelect.append(
-                           `<option value="${tyre.id}">${tyre.serial_number} (${tyre.brand.brand_name} - ${tyre.size.size})</option>`
-                        );
-                     });
+                     const tSelect = $('#tyre_select');
+                     tSelect.empty().append('<option value="">-- Pilih Ban --</option>');
+                     // Note: the response returns 'availableTyres' or similar based on backend
+                     // Let's assume the backend search logic works
+                     if (data.availableTyres) {
+                        data.availableTyres.forEach(tyre => {
+                           tSelect.append(
+                              `<option value="${tyre.id}">${tyre.serial_number} (${tyre.brand.brand_name} - ${tyre.size.size})</option>`
+                           );
+                        });
+                     }
                   });
             }
          }
+
+         // Initialize DataTable History
+         const historyTable = $('#history_table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('tyre-movement.history') }}",
+            columns: [{
+                  data: 'movement_date',
+                  name: 'movement_date'
+               },
+               {
+                  data: 'movement_type',
+                  name: 'movement_type',
+                  render: function(data) {
+                     let badge = data === 'Installation' ? 'bg-label-primary' : 'bg-label-danger';
+                     return `<span class="badge ${badge}">${data}</span>`;
+                  }
+               },
+               {
+                  data: 'vehicle_code',
+                  name: 'vehicle_code'
+               },
+               {
+                  data: 'position_name',
+                  name: 'position_name'
+               },
+               {
+                  data: 'tyre_sn',
+                  name: 'tyre_sn'
+               },
+               {
+                  data: 'action',
+                  name: 'action',
+                  orderable: false,
+                  searchable: false
+               }
+            ],
+            order: [
+               [0, 'desc']
+            ]
+         });
+
+         window.rollbackMovement = function(id) {
+            Swal.fire({
+               title: 'Konfirmasi Rollback',
+               text: 'Anda akan membatalkan transaksi ini. Status ban dan posisi akan dikembalikan ke kondisi sebelum transaksi. Lanjutkan?',
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Batalkan!',
+               customClass: {
+                  confirmButton: 'btn btn-danger me-3',
+                  cancelButton: 'btn btn-outline-secondary'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  fetch(`/tyre_performance/movement/rollback/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                     })
+                     .then(response => response.json())
+                     .then(data => {
+                        if (data.success) {
+                           Swal.fire('Berhasil!', data.message, 'success');
+                           historyTable.ajax.reload();
+                           if (vehicleSelect.val()) vehicleSelect.trigger('change');
+                        } else {
+                           Swal.fire('Gagal!', data.message, 'error');
+                        }
+                     });
+               }
+            });
+         };
 
          movementForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -289,6 +428,7 @@
                         if (data.success) {
                            Swal.fire('Berhasil!', data.message, 'success');
                            vehicleSelect.trigger('change');
+                           historyTable.ajax.reload();
                         } else {
                            Swal.fire('Gagal!', data.message, 'error');
                         }

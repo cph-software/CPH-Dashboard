@@ -75,6 +75,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('movement/position-info', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getPositionInfo']);
         Route::get('movement/vehicle-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleDetail']);
         Route::get('movement/search-tyres', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'searchTyres'])->name('tyre-movement.search-tyres');
+        Route::get('movement/segments/{locationId}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getSegmentsByLocation'])->name('tyre-movement.get-segments');
+        Route::get('movement/history', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'apiHistory'])->name('tyre-movement.history');
+        Route::delete('movement/rollback/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'rollback'])->name('tyre-movement.rollback');
         Route::post('movement/store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store']);
         Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns');
     });

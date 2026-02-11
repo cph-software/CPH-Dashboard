@@ -29,8 +29,8 @@
                <h5 class="mb-0 fw-bold"><i class="ri-truck-line me-2"></i>Identifikasi Unit</h5>
             </div>
             <div class="card-body pt-3">
-               <div class="row align-items-end">
-                  <div class="col-md-5 mb-3 mb-md-0">
+               <div class="row">
+                  <div class="col-md-4 mb-3">
                      <label class="form-label fw-bold font-size-13" for="vehicle_id">Pilih Unit / Kendaraan</label>
                      <select name="vehicle_id" id="vehicle_id" class="form-select select2"
                         data-placeholder="Cari Unit Kendaraan..." required>
@@ -40,13 +40,25 @@
                         @endforeach
                      </select>
                   </div>
-                  <div class="col-md-4 mb-3 mb-md-0">
+                  <div class="col-md-3 mb-3">
+                     <label class="form-label fw-bold font-size-13">Tanggal Pemasangan</label>
+                     <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                  </div>
+                  <div class="col-md-3 mb-3">
+                     <label class="form-label fw-bold font-size-13">KM Saat Pasang</label>
+                     <input type="number" name="odometer" class="form-control" placeholder="Odometer">
+                  </div>
+                  <div class="col-md-2 mb-3">
+                     <label class="form-label fw-bold font-size-13">HM Saat Pasang</label>
+                     <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter">
+                  </div>
+                  <div class="col-md-4 mb-3">
                      <label class="form-label fw-bold font-size-13">Vehicle Type</label>
                      <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
                         placeholder="Auto-filled">
                   </div>
-                  <div class="col-md-3">
-                     <div class="d-flex align-items-center justify-content-end">
+                  <div class="col-md-8 pt-2">
+                     <div class="d-flex align-items-center justify-content-end h-100">
                         <span class="badge bg-label-primary text-uppercase px-3 py-2">Installation</span>
                      </div>
                   </div>
@@ -118,22 +130,40 @@
                      </div>
 
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Operational Segment</label>
-                        <select name="operational_segment_id" class="form-select select2"
-                           data-placeholder="Select Segment">
+                        <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
+                        <select name="work_location_id" id="work_location_id" class="form-select select2"
+                           data-placeholder="Pilih Lokasi...">
                            <option value=""></option>
-                           @foreach ($segments as $seg)
-                              <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                            @endforeach
                         </select>
                      </div>
 
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Baut Baru?</label>
-                        <div class="form-check form-switch mt-1">
-                           <input class="form-check-input" type="checkbox" name="new_bolts_used" id="new_bolts"
-                              value="1">
-                           <label class="form-check-label" for="new_bolts">Ya, Menggunakan Baut Baru</label>
+                        <label class="form-label fw-bold font-size-13">Operational Segment</label>
+                        <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                           data-placeholder="Pilih Segmen..." disabled>
+                           <option value=""></option>
+                        </select>
+                     </div>
+
+                     <div class="mb-3">
+                        <label class="form-label fw-bold font-size-13">Penggunaan Baut Baru</label>
+                        <div class="d-flex align-items-center gap-3">
+                           <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" name="new_bolts_used" id="new_bolts"
+                                 value="1">
+                              <label class="form-check-label" for="new_bolts">Ya</label>
+                           </div>
+                           <div id="bolt_qty_container" style="display: none;">
+                              <div class="input-group input-group-sm">
+                                 <span class="input-group-text bg-primary text-white border-primary">Jumlah Baut
+                                    Baru</span>
+                                 <input type="number" name="new_bolts_quantity" class="form-control border-primary"
+                                    placeholder="Qty" style="width: 80px;">
+                              </div>
+                           </div>
                         </div>
                      </div>
 
@@ -149,14 +179,16 @@
                      </div>
 
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Odometer & HM</label>
-                        <div class="input-group input-group-merge mb-2">
-                           <span class="input-group-text small">KM</span>
-                           <input type="number" name="odometer" class="form-control" placeholder="Odo">
-                        </div>
-                        <div class="input-group input-group-merge">
-                           <span class="input-group-text small">HM</span>
-                           <input type="number" name="hour_meter" class="form-control" placeholder="HM">
+                        <label class="form-label fw-bold font-size-13">Waktu Pengerjaan (Start - End)</label>
+                        <div class="row g-2">
+                           <div class="col-6">
+                              <input type="time" name="start_time" class="form-control small">
+                              <small class="text-muted fs-tiny">Jam Mulai</small>
+                           </div>
+                           <div class="col-6">
+                              <input type="time" name="end_time" class="form-control small">
+                              <small class="text-muted fs-tiny">Jam Selesai</small>
+                           </div>
                         </div>
                      </div>
 
@@ -166,21 +198,26 @@
                         <input type="text" name="tyreman_2" class="form-control" placeholder="Helper (Optional)">
                      </div>
 
+
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Dates & Time</label>
-                        <input type="date" name="movement_date" class="form-control mb-2"
-                           value="{{ date('Y-m-d') }}">
-                        <div class="row g-2">
-                           <div class="col-6"><input type="time" name="start_time" class="form-control small"
-                                 placeholder="Start"></div>
-                           <div class="col-6"><input type="time" name="end_time" class="form-control small"
-                                 placeholder="End"></div>
-                        </div>
+                        <label class="form-label fw-bold font-size-13">Remarks (Keterangan Dropdown)</label>
+                        <select name="remarks" class="form-select select2" data-placeholder="Pilih Keterangan...">
+                           <option value=""></option>
+                           <option value="Pasang">Pasang</option>
+                           <option value="Pindah">Pindah</option>
+                           <option value="Lepas">Lepas</option>
+                           <option value="Tergores">Tergores</option>
+                           <option value="Kembung">Kembung</option>
+                           <option value="Pecah">Pecah</option>
+                           <option value="Sobek">Sobek</option>
+                           <option value="Tertusuk">Tertusuk</option>
+                           <option value="Telapak Lepas">Telapak Lepas</option>
+                        </select>
                      </div>
 
                      <div class="mb-4">
-                        <label class="form-label fw-bold font-size-13">Notes</label>
-                        <textarea name="notes" class="form-control" rows="2" placeholder="Catatan..."></textarea>
+                        <label class="form-label fw-bold font-size-13">Keterangan Tambahan (Notes)</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Masukkan catatan tambahan jika ada..."></textarea>
                      </div>
 
                      <div class="d-grid gap-2 mt-4">
@@ -241,9 +278,17 @@
                },
                cache: true
             },
-            minimumInputLength: 1,
+            minimumInputLength: 0,
             templateResult: formatTyreResult,
             templateSelection: formatTyreSelection
+         });
+
+         // Force load data when opened if empty
+         tyreSelect.on('select2:open', function() {
+            const searchField = $('.select2-search__field');
+            if (searchField.length > 0 && !$(this).val()) {
+               searchField.val('').trigger('input');
+            }
          });
 
          function formatTyreResult(tyre) {
@@ -259,6 +304,38 @@
          function formatTyreSelection(tyre) {
             return tyre.sn || tyre.text;
          }
+
+         // Handle Baut Baru Toggle
+         $('#new_bolts').on('change', function() {
+            if (this.checked) {
+               $('#bolt_qty_container').fadeIn();
+            } else {
+               $('#bolt_qty_container').fadeOut();
+               $('input[name="new_bolts_quantity"]').val(0);
+            }
+         });
+
+         // Handle Location -> Segment Filtering
+         $('#work_location_id').on('change', function() {
+            const locId = $(this).val();
+            const segmentSelect = $('#operational_segment_id');
+
+            segmentSelect.empty().append('<option value=""></option>');
+            if (!locId) {
+               segmentSelect.prop('disabled', true).trigger('change');
+               return;
+            }
+
+            segmentSelect.prop('disabled', false);
+            fetch(`{{ url('tyre_performance/movement/segments') }}/${locId}`)
+               .then(response => response.json())
+               .then(data => {
+                  data.forEach(seg => {
+                     segmentSelect.append(`<option value="${seg.id}">${seg.segment_name}</option>`);
+                  });
+                  segmentSelect.trigger('change');
+               });
+         });
 
          // Handle Vehicle Change
          vehicleSelect.on('change', function() {
