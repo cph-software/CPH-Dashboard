@@ -200,11 +200,16 @@
                      </div>
 
                      <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Pressure (PSI)</label>
                            <input type="number" name="psi_reading" class="form-control" placeholder="PSI">
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
+                           <label class="form-label fw-bold font-size-13 small">RTD (mm)</label>
+                           <input type="number" name="rtd_reading" class="form-control" placeholder="RTD"
+                              step="0.01">
+                        </div>
+                        <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Rim Size</label>
                            <input type="text" name="rim_size" class="form-control" placeholder="Size">
                         </div>

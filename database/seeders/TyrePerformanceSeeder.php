@@ -137,9 +137,11 @@ class TyrePerformanceSeeder extends Seeder
         $patternIds = TyrePattern::pluck('id')->toArray();
         $segmentIds = TyreSegment::pluck('id')->toArray();
         $sizeIds = TyreSize::pluck('id')->toArray();
+        $locId = DB::table('tyre_locations')->first()->id; 
 
         // New Tyres in stock
         for ($i = 1; $i <= 20; $i++) {
+            $otd = rand(15, 20);
             Tyre::create([
                 'serial_number' => 'SN-STOCK-' . str_pad($i, 5, '0', STR_PAD_LEFT),
                 'tyre_type' => 'Radial',
@@ -148,28 +150,46 @@ class TyrePerformanceSeeder extends Seeder
                 'status' => 'New',
                 'tyre_brand_id' => $brandIds[array_rand($brandIds)],
                 'tyre_size_id' => $sizeIds[array_rand($sizeIds)],
-                'work_location_id' => $locationIds[0],
+                'work_location_id' => $locId,
+                'price' => rand(3000000, 5000000),
+                'initial_tread_depth' => $otd,
+                'current_tread_depth' => $otd,
+                'retread_count' => 0
             ]);
         }
 
         // Install tyres on DT-001
         $dt001 = MasterImportKendaraan::where('kode_kendaraan', 'DT-001')->first();
-        $positions = $dt001->tyrePositionConfiguration->details;
-        foreach ($positions as $p) {
-            $tyre = Tyre::create([
-                'serial_number' => 'SN-INST-' . $dt001->kode_kendaraan . '-' . $p->position_code,
-                'tyre_type' => 'Radial',
-                'tyre_pattern_id' => $patternIds[array_rand($patternIds)],
-                'tyre_segment_id' => $segmentIds[array_rand($segmentIds)],
-                'status' => 'Installed',
-                'tyre_brand_id' => $brandIds[array_rand($brandIds)],
-                'tyre_size_id' => $sizeIds[array_rand($sizeIds)],
-                'work_location_id' => $locationIds[0],
-                'current_vehicle_id' => $dt001->id,
-                'current_position_id' => $p->id
-            ]);
-            // Update the position detail as well
-            $p->update(['tyre_id' => $tyre->id]);
+        // Since we might not have the relationship set up correctly in model yet, fetch config manually
+        $config = TyrePositionConfiguration::find($dt001->tyre_position_configuration_id);
+        
+        if ($config) {
+            $positions = $config->details;
+            foreach ($positions as $p) {
+                $otd = rand(16, 22);
+                $rtd = $otd - rand(1, 5); // Simulating some wear
+                
+                $tyre = Tyre::create([
+                    'serial_number' => 'SN-INST-' . $dt001->kode_kendaraan . '-' . $p->position_code,
+                    'tyre_type' => 'Radial',
+                    'tyre_pattern_id' => $patternIds[array_rand($patternIds)],
+                    'tyre_segment_id' => $segmentIds[array_rand($segmentIds)],
+                    'status' => 'Installed',
+                    'tyre_brand_id' => $brandIds[array_rand($brandIds)],
+                    'tyre_size_id' => $sizeIds[array_rand($sizeIds)],
+                    'work_location_id' => $locId,
+                    'current_vehicle_id' => $dt001->id,
+                    'current_position_id' => $p->id,
+                    'price' => rand(3500000, 5500000),
+                    'initial_tread_depth' => $otd,
+                    'current_tread_depth' => $rtd,
+                    'retread_count' => 0,
+                    'total_lifetime_km' => rand(1000, 5000),
+                    'total_lifetime_hm' => rand(100, 500)
+                ]);
+                // Update the position detail as well
+                $p->update(['tyre_id' => $tyre->id]);
+            }
         }
 
         // Re-enable foreign key checks

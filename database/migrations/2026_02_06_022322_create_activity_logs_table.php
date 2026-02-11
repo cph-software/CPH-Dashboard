@@ -13,12 +13,14 @@ class CreateActivityLogsTable extends Migration
      */
     public function up()
     {
-        Schema::create('activity_logs', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('user_id')->index('activity_logs_user_id_foreign');
-            $table->string('activity');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('activity_logs')) {
+            Schema::create('activity_logs', function (Blueprint $table) {
+                $table->bigIncrements('id');
+                $table->unsignedBigInteger('user_id')->index('activity_logs_user_id_foreign');
+                $table->string('activity');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

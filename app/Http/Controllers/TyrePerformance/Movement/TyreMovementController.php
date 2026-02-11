@@ -174,6 +174,7 @@ class TyreMovementController extends Controller
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'work_location_id' => 'nullable|exists:tyre_locations,id',
             'psi_reading' => 'nullable|numeric',
+            'rtd_reading' => 'nullable|numeric',
             'start_time' => 'nullable',
             'end_time' => 'nullable',
             'failure_code_id' => 'nullable|exists:tyre_failure_codes,id',
@@ -193,7 +194,9 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
-                    'status' => 'Installed'
+                    'status' => 'Installed',
+                    // Optional: Update RTD if provided during install (e.g. used tyre)
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
                 // 2. Update Position Detail (Secondary sync)
@@ -211,6 +214,7 @@ class TyreMovementController extends Controller
                     'tyreman_1' => $request->tyreman_1,
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
+                    'rtd_reading' => $request->rtd_reading,
                     'new_bolts_used' => $request->has('new_bolts_used'),
                     'new_bolts_quantity' => $request->new_bolts_quantity,
                     'rim_size' => $request->rim_size,
@@ -228,6 +232,31 @@ class TyreMovementController extends Controller
                     ->where('current_position_id', $request->position_id)
                     ->firstOrFail();
 
+                // --- Calculate Lifetime (KM & HM) ---
+                $lastInstallation = TyreMovement::where('tyre_id', $tyre->id)
+                    ->where('movement_type', 'Installation')
+                    ->orderBy('movement_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $kmDiff = 0;
+                $hmDiff = 0;
+
+                if ($lastInstallation) {
+                    // Calculate KM Difference
+                    if ($request->odometer && $lastInstallation->odometer_reading) {
+                        $diff = $request->odometer - $lastInstallation->odometer_reading;
+                        if ($diff > 0) $kmDiff = $diff;
+                    }
+
+                    // Calculate HM Difference
+                    if ($request->hour_meter && $lastInstallation->hour_meter_reading) {
+                        $diff = $request->hour_meter - $lastInstallation->hour_meter_reading;
+                        if ($diff > 0) $hmDiff = $diff;
+                    }
+                }
+                // ------------------------------------
+
                 // 1. Log Movement
                 TyreMovement::create([
                     'tyre_id' => $tyre->id,
@@ -240,6 +269,7 @@ class TyreMovementController extends Controller
                     'tyreman_1' => $request->tyreman_1,
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
+                    'rtd_reading' => $request->rtd_reading,
                     'new_bolts_used' => $request->has('new_bolts_used'),
                     'new_bolts_quantity' => $request->new_bolts_quantity,
                     'rim_size' => $request->rim_size,
@@ -254,11 +284,14 @@ class TyreMovementController extends Controller
                     'created_by' => Auth::id()
                 ]);
 
-                // 2. Update Tyre status & location
+                // 2. Update Tyre status, location, Total Lifetime AND RTD
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
-                    'status' => $request->target_status ?? 'Repaired'
+                    'status' => $request->target_status ?? 'Repaired',
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                    'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
                 // 3. Clear Position Detail
