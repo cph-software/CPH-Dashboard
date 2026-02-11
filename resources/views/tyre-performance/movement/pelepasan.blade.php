@@ -206,8 +206,7 @@
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">RTD (mm)</label>
-                           <input type="number" name="rtd_reading" class="form-control" placeholder="RTD"
-                              step="0.01">
+                           <input type="number" name="rtd_reading" class="form-control" placeholder="RTD" step="0.01">
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Rim Size</label>
@@ -247,7 +246,8 @@
 
                      <div class="mb-4">
                         <label class="form-label fw-bold font-size-13">Keterangan Tambahan (Notes)</label>
-                        <textarea name="notes" class="form-control" rows="3" placeholder="Masukkan catatan tambahan jika ada..."></textarea>
+                        <textarea name="notes" class="form-control" rows="3"
+                           placeholder="Masukkan catatan tambahan jika ada..."></textarea>
                      </div>
 
                      <div class="d-grid gap-2 mt-4">
@@ -272,7 +272,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          const vehicleSelect = $('#vehicle_id');
          const positionSelect = $('#position_id');
          const infoArea = document.getElementById('current_tyre_info');
@@ -281,7 +281,7 @@
          let assignedTyres = {};
 
          // Initialize Select2
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
@@ -291,7 +291,7 @@
          });
 
          // Handle Baut Baru Toggle
-         $('#new_bolts').on('change', function() {
+         $('#new_bolts').on('change', function () {
             if (this.checked) {
                $('#bolt_qty_container').fadeIn();
             } else {
@@ -301,7 +301,7 @@
          });
 
          // Handle Location -> Segment Filtering
-         $('#work_location_id').on('change', function() {
+         $('#work_location_id').on('change', function () {
             const locId = $(this).val();
             const segmentSelect = $('#operational_segment_id');
 
@@ -312,7 +312,7 @@
             }
 
             segmentSelect.prop('disabled', false);
-            fetch(`{{ url('tyre_performance/movement/segments') }}/${locId}`)
+            fetch(`{{ url('tyre_performance/segments') }}/${locId}`)
                .then(response => response.json())
                .then(data => {
                   data.forEach(seg => {
@@ -322,7 +322,7 @@
                });
          });
 
-         vehicleSelect.on('change', function() {
+         vehicleSelect.on('change', function () {
             const vehicleId = $(this).val();
             const text = $(this).find('option:selected').text();
             document.getElementById('unit_code_display').textContent = vehicleId ? text : '-';
@@ -339,7 +339,7 @@
             }
 
             // Fetch Vehicle Detail
-            fetch(`{{ url('tyre_performance/movement/vehicle-detail') }}/${vehicleId}`)
+            fetch(`{{ url('tyre_performance/vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
@@ -347,7 +347,7 @@
 
             // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
-            fetch(`{{ url('tyre_performance/movement/layout') }}/${vehicleId}`)
+            fetch(`{{ url('tyre_performance/layout') }}/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -355,7 +355,7 @@
                });
 
             // Load Positions
-            fetch(`{{ url('tyre_performance/movement/position-info') }}?vehicle_id=${vehicleId}&type=Removal`)
+            fetch(`{{ url('tyre_performance/position-info') }}?vehicle_id=${vehicleId}&type=Removal`)
                .then(response => response.json())
                .then(data => {
                   assignedTyres = data.assignedTyres;
@@ -393,7 +393,7 @@
          function attachLayoutEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function() {
+               node.addEventListener('click', function () {
                   const posId = this.getAttribute('data-position-id');
                   if (!this.classList.contains('filled')) {
                      Swal.fire('Informasi',
@@ -408,7 +408,7 @@
          }
 
          // Sync dropdown to visual
-         positionSelect.on('change', function() {
+         positionSelect.on('change', function () {
             const posId = $(this).val();
             const nodes = document.querySelectorAll('.m-tyre-node');
 
@@ -438,7 +438,7 @@
             }
          });
 
-         document.getElementById('pelepasan_form').addEventListener('submit', function(e) {
+         document.getElementById('pelepasan_form').addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(this);
             const posId = positionSelect.val();
@@ -467,13 +467,13 @@
                   btn.innerHTML =
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
-                  fetch(`{{ url('tyre_performance/movement/store') }}`, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
-                     })
+                  fetch(`{{ url('tyre_performance/store') }}`, {
+                     method: 'POST',
+                     body: formData,
+                     headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                     }
+                  })
                      .then(response => response.json())
                      .then(data => {
                         if (data.success) {
