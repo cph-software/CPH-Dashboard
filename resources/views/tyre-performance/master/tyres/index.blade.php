@@ -123,7 +123,35 @@
                         </select>
                      </div>
                   </div>
-                  <div class="row">
+                  <div class="row g-2">
+                     <div class="col mb-3">
+                        <label for="price" class="form-label">Harga Beli (IDR)</label>
+                        <input type="number" name="price" class="form-control" placeholder="3500000"
+                           step="1000">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="retread_count" class="form-label">Retread Count</label>
+                        <select name="retread_count" class="form-select">
+                           <option value="0">New (R0)</option>
+                           <option value="1">R1</option>
+                           <option value="2">R2</option>
+                           <option value="3">R3</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col mb-3">
+                        <label for="initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
+                        <input type="number" name="initial_tread_depth" class="form-control" placeholder="18.5"
+                           step="0.01">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
+                        <input type="number" name="current_tread_depth" class="form-control" placeholder="18.5"
+                           step="0.01">
+                     </div>
+                  </div>
+                  <div class="row g-2">
                      <div class="col mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select name="status" class="form-select" required>
@@ -222,6 +250,33 @@
                         </select>
                      </div>
                   </div>
+                  <div class="row g-2">
+                     <div class="col mb-3">
+                        <label for="edit_price" class="form-label">Harga Beli (IDR)</label>
+                        <input type="number" id="edit_price" name="price" class="form-control" step="1000">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="edit_retread_count" class="form-label">Retread Count</label>
+                        <select id="edit_retread_count" name="retread_count" class="form-select">
+                           <option value="0">New (R0)</option>
+                           <option value="1">R1</option>
+                           <option value="2">R2</option>
+                           <option value="3">R3</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col mb-3">
+                        <label for="edit_initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
+                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
+                           class="form-control" step="0.01">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="edit_current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
+                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth"
+                           class="form-control" step="0.01">
+                     </div>
+                  </div>
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_status" class="form-label">Status</label>
@@ -311,6 +366,11 @@
                   render: function(data, type, row) {
                      return `
                         <div class="d-flex align-items-center">
+                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                              href="/tyre_performance/master_tyre/${row.id}"
+                              title="View Details">
+                              <i class="icon-base ri ri-eye-line"></i>
+                           </a>
                            <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
                               href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
                               data-id="${row.id}" data-serial="${row.serial_number}"
@@ -318,6 +378,10 @@
                               data-pattern-id="${row.tyre_pattern_id}"
                               data-segment-id="${row.tyre_segment_id}" data-type="${row.tyre_type}"
                               data-location-id="${row.work_location_id}" data-status="${row.status}"
+                              data-price="${row.price || ''}"
+                              data-initial-tread="${row.initial_tread_depth || ''}"
+                              data-current-tread="${row.current_tread_depth || ''}"
+                              data-retread-count="${row.retread_count || 0}"
                               title="Edit">
                               <i class="icon-base ri ri-pencil-line"></i>
                            </a>
@@ -347,6 +411,10 @@
             const type = $(this).data('type');
             const locationId = $(this).data('location-id');
             const status = $(this).data('status');
+            const price = $(this).data('price');
+            const initialTread = $(this).data('initial-tread');
+            const currentTread = $(this).data('current-tread');
+            const retreadCount = $(this).data('retread-count');
 
             editForm.attr('action', `/tyre_performance/master/tyres/${id}`);
             $('#edit_serial_number').val(serial);
@@ -357,6 +425,10 @@
             $('#edit_tyre_type').val(type === 'null' ? '' : type);
             $('#edit_work_location_id').val(locationId).trigger('change');
             $('#edit_status').val(status);
+            $('#edit_price').val(price);
+            $('#edit_initial_tread_depth').val(initialTread);
+            $('#edit_current_tread_depth').val(currentTread);
+            $('#edit_retread_count').val(retreadCount);
          });
 
          $(document).on('click', '.delete-tyre', function() {

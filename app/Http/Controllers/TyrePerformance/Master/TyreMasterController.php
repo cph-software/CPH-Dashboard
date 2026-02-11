@@ -88,6 +88,14 @@ class TyreMasterController extends Controller
         ]);
     }
 
+    public function show($id)
+    {
+        $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location', 'currentVehicle', 'currentPosition', 'movements.vehicle', 'movements.position'])
+            ->findOrFail($id);
+        
+        return view('tyre-performance.master.tyres.show', compact('tyre'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -99,6 +107,10 @@ class TyreMasterController extends Controller
             'work_location_id' => 'required|exists:tyre_locations,id',
             'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
+            'price' => 'nullable|numeric|min:0',
+            'initial_tread_depth' => 'nullable|numeric|min:0',
+            'current_tread_depth' => 'nullable|numeric|min:0',
+            'retread_count' => 'nullable|integer|min:0',
         ]);
 
         Tyre::create($request->all());
@@ -117,6 +129,10 @@ class TyreMasterController extends Controller
             'work_location_id' => 'required|exists:tyre_locations,id',
             'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
+            'price' => 'nullable|numeric|min:0',
+            'initial_tread_depth' => 'nullable|numeric|min:0',
+            'current_tread_depth' => 'nullable|numeric|min:0',
+            'retread_count' => 'nullable|integer|min:0',
         ]);
 
         $tyre = Tyre::findOrFail($id);

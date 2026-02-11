@@ -189,6 +189,7 @@ class TyreMovementController extends Controller
 
             if ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
+                $oldLocationId = $tyre->work_location_id; // Store old location before update
                 
                 // 1. Update Tyre status & location
                 $tyre->update([
@@ -202,7 +203,14 @@ class TyreMovementController extends Controller
                 // 2. Update Position Detail (Secondary sync)
                 $position->update(['tyre_id' => $tyre->id]);
 
-                // 3. Log Movement
+                // 3. Decrease stock at old location (tyre leaving warehouse)
+                if ($oldLocationId) {
+                    DB::table('tyre_locations')
+                        ->where('id', $oldLocationId)
+                        ->decrement('current_stock');
+                }
+
+                // 4. Log Movement
                 TyreMovement::create([
                     'tyre_id' => $tyre->id,
                     'vehicle_id' => $request->vehicle_id,
@@ -289,12 +297,20 @@ class TyreMovementController extends Controller
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
                     'status' => $request->target_status ?? 'Repaired',
+                    'work_location_id' => $request->work_location_id, // Update lokasi fisik ban
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
-                // 3. Clear Position Detail
+                // 3. Increase stock at new location (tyre entering warehouse)
+                if ($request->work_location_id) {
+                    DB::table('tyre_locations')
+                        ->where('id', $request->work_location_id)
+                        ->increment('current_stock');
+                }
+
+                // 4. Clear Position Detail
                 $position->update(['tyre_id' => null]);
             }
 
