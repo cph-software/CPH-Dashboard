@@ -27,6 +27,7 @@
                      <th>Location Name</th>
                      <th>Type</th>
                      <th>Capacity</th>
+                     <th>Current Stock</th>
                      <th>Actions</th>
                   </tr>
                </thead>
@@ -41,6 +42,12 @@
                            </span>
                         </td>
                         <td>{{ $loc->capacity ?? '-' }}</td>
+                        <td>
+                           <span
+                              class="badge bg-label-{{ $loc->current_stock > $loc->capacity * 0.8 ? 'danger' : ($loc->current_stock > $loc->capacity * 0.5 ? 'warning' : 'success') }} rounded-pill">
+                              {{ $loc->current_stock ?? 0 }} tyres
+                           </span>
+                        </td>
                         <td>
                            <div class="d-flex align-items-center">
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location"

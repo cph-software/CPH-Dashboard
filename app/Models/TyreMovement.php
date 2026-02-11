@@ -23,4 +23,9 @@ class TyreMovement extends Model
     {
         return $this->belongsTo(TyrePositionDetail::class, 'position_id');
     }
+
+    public function failureCode()
+    {
+        return $this->belongsTo(TyreFailureCode::class, 'failure_code_id');
+    }
 }

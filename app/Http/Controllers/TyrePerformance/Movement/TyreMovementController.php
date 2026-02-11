@@ -32,20 +32,23 @@ class TyreMovementController extends Controller
         // Removed eager loading of all tyres to avoid memory bloat
         // Available tyres will be fetched via AJAX search
         $availableTyres = collect(); 
-        $segments = TyreSegment::where('status', 'Active')->select('id', 'segment_name')->get();
-        return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments'));
+        $locations = \App\Models\TyreLocation::all();
+        $segments = collect(); // Will be loaded via AJAX based on location
+        return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments', 'locations'));
     }
 
     public function searchTyres(Request $request)
     {
         $search = $request->input('q');
         
-        $tyres = Tyre::whereIn('status', ['New', 'Repaired'])
-            ->whereNull('current_vehicle_id')
-            ->when($search, function($query) use ($search) {
-                $query->where('serial_number', 'like', "%$search%");
-            })
-            ->with(['brand', 'size', 'pattern'])
+        $query = Tyre::whereIn('status', ['New', 'Repaired'])
+            ->whereNull('current_vehicle_id');
+
+        if ($search) {
+            $query->where('serial_number', 'like', "%$search%");
+        }
+
+        $tyres = $query->with(['brand', 'size', 'pattern'])
             ->limit(20)
             ->get();
 
@@ -69,9 +72,18 @@ class TyreMovementController extends Controller
             ->whereHas('tyres') // Only vehicles with tyres
             ->select('id', 'kode_kendaraan')
             ->get();
-        $failureCodes = TyreFailureCode::where('status', 'Active')->select('id', 'name', 'code')->get();
-        $segments = TyreSegment::where('status', 'Active')->select('id', 'segment_name')->get();
-        return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments'));
+        $failureCodes = TyreFailureCode::where('status', 'Active')->select('id', 'failure_name', 'failure_code')->get();
+        $locations = \App\Models\TyreLocation::all();
+        $segments = collect();
+        return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments', 'locations'));
+    }
+
+    public function getSegmentsByLocation($locationId)
+    {
+        $segments = TyreSegment::where('tyre_location_id', $locationId)
+            ->where('status', 'Active')
+            ->get();
+        return response()->json($segments);
     }
 
     public function getVehicleLayout($id)
@@ -100,13 +112,27 @@ class TyreMovementController extends Controller
     public function getPositionInfo(Request $request)
     {
         $vehicleId = $request->vehicle_id;
+        // Check if we need available tyres specifically for a position
+        // The frontend sends vehicle_id and position_id for the quick form
+        
+        if ($request->has('position_id')) {
+            // For Quick Form Installation: We need list of available tyres
+            $availableTyres = Tyre::whereIn('status', ['New', 'Repaired'])
+                ->with(['brand', 'size'])
+                ->get();
+                
+            return response()->json([
+                'availableTyres' => $availableTyres
+            ]);
+        }
+        
+        // ... (rest of existing logic for full page forms if needed, but the quick form uses the above)
         $type = $request->type ?? 'Installation';
         
         $vehicle = MasterImportKendaraan::select('id', 'tyre_position_configuration_id')->findOrFail($vehicleId);
         $configId = $vehicle->tyre_position_configuration_id;
         
         if ($type === 'Installation') {
-            // Get positions that DON'T have a tyre assigned
             $occupiedPositionIds = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
                 ->pluck('current_position_id')
@@ -116,14 +142,12 @@ class TyreMovementController extends Controller
                 ->whereNotIn('id', $occupiedPositionIds)
                 ->get();
         } else {
-            // Removal: Get tyres currently on this vehicle
             $tyresOnVehicle = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
                 ->with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name'])
-                ->get(['id', 'serial_number', 'tyre_brand_id', 'tyre_size_id', 'tyre_pattern_id', 'current_position_id']);
+                ->get();
                 
             $positionIds = $tyresOnVehicle->pluck('current_position_id');
-            
             $positions = TyrePositionDetail::whereIn('id', $positionIds)->get();
                 
             return response()->json([
@@ -148,10 +172,15 @@ class TyreMovementController extends Controller
             'odometer' => 'nullable|numeric',
             'hour_meter' => 'nullable|numeric',
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
+            'work_location_id' => 'nullable|exists:tyre_locations,id',
             'psi_reading' => 'nullable|numeric',
+            'rtd_reading' => 'nullable|numeric',
             'start_time' => 'nullable',
             'end_time' => 'nullable',
             'failure_code_id' => 'nullable|exists:tyre_failure_codes,id',
+            'new_bolts_quantity' => 'nullable|integer',
+            'remarks' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -160,35 +189,48 @@ class TyreMovementController extends Controller
 
             if ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
+                $oldLocationId = $tyre->work_location_id; // Store old location before update
                 
                 // 1. Update Tyre status & location
                 $tyre->update([
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
-                    'status' => 'Installed'
+                    'status' => 'Installed',
+                    // Optional: Update RTD if provided during install (e.g. used tyre)
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
                 // 2. Update Position Detail (Secondary sync)
                 $position->update(['tyre_id' => $tyre->id]);
 
-                // 3. Log Movement
+                // 3. Decrease stock at old location (tyre leaving warehouse)
+                if ($oldLocationId) {
+                    DB::table('tyre_locations')
+                        ->where('id', $oldLocationId)
+                        ->decrement('current_stock');
+                }
+
+                // 4. Log Movement
                 TyreMovement::create([
                     'tyre_id' => $tyre->id,
                     'vehicle_id' => $request->vehicle_id,
                     'position_id' => $request->position_id,
                     'operational_segment_id' => $request->operational_segment_id,
-                    'work_location' => $request->work_location,
+                    'work_location_id' => $request->work_location_id,
                     'start_time' => $request->start_time,
                     'end_time' => $request->end_time,
                     'tyreman_1' => $request->tyreman_1,
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
+                    'rtd_reading' => $request->rtd_reading,
                     'new_bolts_used' => $request->has('new_bolts_used'),
+                    'new_bolts_quantity' => $request->new_bolts_quantity,
                     'rim_size' => $request->rim_size,
                     'movement_type' => 'Installation',
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
                     'hour_meter_reading' => $request->hour_meter,
+                    'remarks' => $request->remarks,
                     'notes' => $request->notes,
                     'created_by' => Auth::id()
                 ]);
@@ -198,19 +240,46 @@ class TyreMovementController extends Controller
                     ->where('current_position_id', $request->position_id)
                     ->firstOrFail();
 
+                // --- Calculate Lifetime (KM & HM) ---
+                $lastInstallation = TyreMovement::where('tyre_id', $tyre->id)
+                    ->where('movement_type', 'Installation')
+                    ->orderBy('movement_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $kmDiff = 0;
+                $hmDiff = 0;
+
+                if ($lastInstallation) {
+                    // Calculate KM Difference
+                    if ($request->odometer && $lastInstallation->odometer_reading) {
+                        $diff = $request->odometer - $lastInstallation->odometer_reading;
+                        if ($diff > 0) $kmDiff = $diff;
+                    }
+
+                    // Calculate HM Difference
+                    if ($request->hour_meter && $lastInstallation->hour_meter_reading) {
+                        $diff = $request->hour_meter - $lastInstallation->hour_meter_reading;
+                        if ($diff > 0) $hmDiff = $diff;
+                    }
+                }
+                // ------------------------------------
+
                 // 1. Log Movement
                 TyreMovement::create([
                     'tyre_id' => $tyre->id,
                     'vehicle_id' => $request->vehicle_id,
                     'position_id' => $request->position_id,
                     'operational_segment_id' => $request->operational_segment_id,
-                    'work_location' => $request->work_location,
+                    'work_location_id' => $request->work_location_id,
                     'start_time' => $request->start_time,
                     'end_time' => $request->end_time,
                     'tyreman_1' => $request->tyreman_1,
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
+                    'rtd_reading' => $request->rtd_reading,
                     'new_bolts_used' => $request->has('new_bolts_used'),
+                    'new_bolts_quantity' => $request->new_bolts_quantity,
                     'rim_size' => $request->rim_size,
                     'movement_type' => 'Removal',
                     'target_status' => $request->target_status,
@@ -218,23 +287,131 @@ class TyreMovementController extends Controller
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
                     'hour_meter_reading' => $request->hour_meter,
+                    'remarks' => $request->remarks,
                     'notes' => $request->notes,
                     'created_by' => Auth::id()
                 ]);
 
-                // 2. Update Tyre status & location
+                // 2. Update Tyre status, location, Total Lifetime AND RTD
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
-                    'status' => $request->target_status ?? 'Repaired'
+                    'status' => $request->target_status ?? 'Repaired',
+                    'work_location_id' => $request->work_location_id, // Update lokasi fisik ban
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                    'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
-                // 3. Clear Position Detail
+                // 3. Increase stock at new location (tyre entering warehouse)
+                if ($request->work_location_id) {
+                    DB::table('tyre_locations')
+                        ->where('id', $request->work_location_id)
+                        ->increment('current_stock');
+                }
+
+                // 4. Clear Position Detail
                 $position->update(['tyre_id' => null]);
             }
 
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Transaksi berhasil disimpan']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function apiHistory(Request $request)
+    {
+        $query = TyreMovement::with(['tyre', 'vehicle', 'position']);
+
+        $totalRecords = TyreMovement::count();
+
+        // Search logic
+        if ($request->has('search') && $request->input('search.value')) {
+            $searchValue = $request->input('search.value');
+            $query->where(function ($q) use ($searchValue) {
+                $q->where('movement_type', 'like', "%$searchValue%")
+                    ->orWhereHas('tyre', function ($sub) use ($searchValue) {
+                        $sub->where('serial_number', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('vehicle', function ($sub) use ($searchValue) {
+                        $sub->where('kode_kendaraan', 'like', "%$searchValue%");
+                    });
+            });
+        }
+
+        $filteredRecords = $query->count();
+
+        // Ordering
+        $query->orderBy('created_at', 'desc');
+
+        // Pagination
+        $start = $request->input('start', 0);
+        $length = $request->input('length', 10);
+        $movements = $query->skip($start)->take($length)->get();
+
+        $data = $movements->map(function ($row) {
+            return [
+                'id' => $row->id,
+                'movement_date' => \Carbon\Carbon::parse($row->movement_date)->format('d/m/Y'),
+                'movement_type' => $row->movement_type,
+                'tyre_sn' => $row->tyre->serial_number ?? '-',
+                'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
+                'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
+                'action' => '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="ri-history-line"></i> Rollback</button>'
+            ];
+        });
+
+        return response()->json([
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalRecords),
+            "recordsFiltered" => intval($filteredRecords),
+            "data" => $data
+        ]);
+    }
+
+    public function rollback($id)
+    {
+        DB::beginTransaction();
+        try {
+            $movement = TyreMovement::findOrFail($id);
+            $tyre = Tyre::findOrFail($movement->tyre_id);
+            $position = TyrePositionDetail::findOrFail($movement->position_id);
+
+            if ($movement->movement_type === 'Installation') {
+                // To rollback an installation:
+                // 1. Move tyre back to stock (New/Repaired? We'll assume New if we don't store prev status, 
+                //    but usually we can revert to its state before)
+                // Actually, let's just set it to 'New' or 'Repaired' based on a simple check or manual triage.
+                // For now, let's revert to 'New' as it's the safest stock status.
+                $tyre->update([
+                    'current_vehicle_id' => null,
+                    'current_position_id' => null,
+                    'status' => 'New' 
+                ]);
+
+                // 2. Clear position
+                $position->update(['tyre_id' => null]);
+            } else {
+                // To rollback a removal:
+                // 1. Put tyre back on vehicle/position
+                $tyre->update([
+                    'current_vehicle_id' => $movement->vehicle_id,
+                    'current_position_id' => $movement->position_id,
+                    'status' => 'Installed'
+                ]);
+
+                // 2. Sync position
+                $position->update(['tyre_id' => $tyre->id]);
+            }
+
+            // 3. Delete the log
+            $movement->delete();
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Transaksi berhasil di-rollback.']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

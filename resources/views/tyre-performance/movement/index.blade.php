@@ -2,6 +2,15 @@
 
 @section('title', 'Pergerakan Ban (Eks/Ins)')
 
+@section('vendor-style')
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
 @section('page-style')
    <style>
       .movement-card {
@@ -56,124 +65,88 @@
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Transaksi /</span> Pergerakan Ban</h4>
          <div class="d-flex gap-2">
             <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
-               <i class="ri-add-line me-1"></i> Form Pemasangan
+               <i class="ri-add-line me-1"></i> Form Pasang Baru
             </a>
             <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
-               <i class="ri-delete-bin-line me-1"></i> Form Pelepasan
+               <i class="ri-delete-bin-line me-1"></i> Form Lepas Ban
             </a>
-            <span class="badge bg-label-success d-flex align-items-center"><i class="ri-checkbox-circle-line me-1"></i>
-               Terpasang</span>
-            <span class="badge bg-label-secondary d-flex align-items-center"><i
-                  class="ri-checkbox-blank-circle-line me-1"></i> Kosong</span>
          </div>
       </div>
 
       <div class="row">
-         <!-- Sidebar Selection -->
-         <div class="col-md-4">
+         <div class="col-12">
+            <!-- Vehicle Selection Card -->
             <div class="card mb-4">
                <div class="card-body">
-                  <label for="vehicle_select" class="form-label text-uppercase fw-bold">Pilih Kendaraan</label>
-                  <select id="vehicle_select" class="form-select select2">
-                     <option value="">-- Cari Unit --</option>
-                     @foreach ($kendaraans as $unit)
-                        <option value="{{ $unit->id }}">{{ $unit->kode_kendaraan }} ({{ $unit->no_polisi }})</option>
-                     @endforeach
-                  </select>
-                  <div id="unit_info" class="mt-3" style="display: none;">
-                     <hr>
-                     <div class="d-flex justify-content-between small mb-2">
-                        <span class="text-muted">Tipe Unit:</span>
-                        <span id="info_tipe" class="fw-bold">-</span>
+                  <div class="row align-items-center">
+                     <div class="col-md-4">
+                        <label for="vehicle_select" class="form-label text-uppercase fw-bold">Pilih Unit Kendaraan</label>
+                        <select id="vehicle_select" class="form-select select2">
+                           <option value="">-- Cari Unit --</option>
+                           @foreach ($kendaraans as $unit)
+                              <option value="{{ $unit->id }}">{{ $unit->kode_kendaraan }} ({{ $unit->no_polisi }})
+                              </option>
+                           @endforeach
+                        </select>
                      </div>
-                     <div class="d-flex justify-content-between small mb-2">
-                        <span class="text-muted">Konfigurasi:</span>
-                        <span id="info_config" class="fw-bold">-</span>
+                     <div class="col-md-8">
+                        <div id="unit_info" class="d-flex gap-4 mt-3 mt-md-0" style="display: none !important;">
+                           <div>
+                              <small class="text-muted d-block">Tipe Unit</small>
+                              <span id="info_tipe" class="fw-bold fs-5">-</span>
+                           </div>
+                           <div>
+                              <small class="text-muted d-block">Konfigurasi Roda</small>
+                              <span id="info_config" class="fw-bold fs-5">-</span>
+                           </div>
+                           <div class="ms-auto align-self-center">
+                              <span class="badge bg-label-success me-2"><i class="ri-checkbox-circle-line me-1"></i>
+                                 Terpasang</span>
+                              <span class="badge bg-label-secondary"><i class="ri-checkbox-blank-circle-line me-1"></i>
+                                 Kosong</span>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
             </div>
 
-            <!-- Transaction Form (Hidden initially) -->
-            <div id="transaction_card" class="card" style="display: none;">
-               <div class="card-header border-bottom">
-                  <h6 class="card-title mb-0">Form Transaksi</h6>
-               </div>
-               <div class="card-body pt-4">
-                  <form id="movement_form">
-                     @csrf
-                     <input type="hidden" name="vehicle_id" id="form_vehicle_id">
-                     <input type="hidden" name="position_id" id="form_position_id">
-                     <input type="hidden" name="movement_type" id="form_movement_type">
-
-                     <div class="mb-3">
-                        <label class="form-label">Posisi Terpilih</label>
-                        <input type="text" id="display_position" class="form-control bg-light" readonly>
-                     </div>
-
-                     <div id="installation_fields" style="display: none;">
-                        <div class="mb-3">
-                           <label class="form-label">Pilih Ban (SN)</label>
-                           <select name="tyre_id" id="tyre_select" class="form-select select2">
-                              <option value="">-- Pilih Ban Tersedia --</option>
-                           </select>
-                        </div>
-                     </div>
-
-                     <div id="removal_fields" style="display: none;">
-                        <div class="alert alert-info py-2">
-                           <small>Ban SN: <strong id="display_sn">-</strong> akan dilepas.</small>
-                        </div>
-                        <div class="mb-3">
-                           <label class="form-label">Status Akhir Ban</label>
-                           <select name="target_status" class="form-select">
-                              <option value="Repaired">Repair (Gudang)</option>
-                              <option value="Scrap">Scrap (Rusak Total)</option>
-                              <option value="New">Ready (Kembali ke Stock)</option>
-                           </select>
-                        </div>
-                     </div>
-
-                     <div class="mb-3">
-                        <label class="form-label">Tanggal Transaksi</label>
-                        <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}"
-                           required>
-                     </div>
-
-                     <div class="mb-3">
-                        <label class="form-label">Odometer (KM)</label>
-                        <input type="number" name="odometer" class="form-control" placeholder="Opsional">
-                     </div>
-
-                     <div class="mb-4">
-                        <label class="form-label">Catatan</label>
-                        <textarea name="notes" class="form-control" rows="2"></textarea>
-                     </div>
-
-                     <div class="d-grid mt-2">
-                        <button type="submit" class="btn btn-primary">Simpan Transaksi</button>
-                        <button type="button" class="btn btn-link text-muted mt-2 btn-sm"
-                           onclick="resetForm()">Batal</button>
-                     </div>
-                  </form>
-               </div>
-            </div>
-         </div>
-
-         <!-- Visual Layout Area -->
-         <div class="col-md-8">
-            <div class="card movement-card">
+            <!-- Visual Layout Area -->
+            <div class="card movement-card mb-4">
                <div class="card-header d-flex justify-content-between align-items-center border-bottom">
-                  <h5 class="card-title mb-0">Visualisasi Unit</h5>
+                  <h5 class="card-title mb-0">Visualisasi Layout Ban</h5>
                   <div id="layout_loading" class="spinner-border spinner-border-sm text-primary" style="display: none;">
                   </div>
                </div>
-               <div class="card-body d-flex align-items-center justify-content-center bg-light">
-                  <div id="layout_container" class="text-center w-100 py-5">
+               <div class="card-body d-flex align-items-center justify-content-center bg-light" style="min-height: 400px;">
+                  <div id="layout_container" class="text-center w-100 py-3">
                      <div class="text-muted">
-                        <i class="ri-truck-line ri-4x mb-3 d-block"></i>
-                        <p>Silakan pilih kendaraan untuk melihat layout ban.</p>
+                        <i class="ri-truck-line ri-4x mb-3 d-block" style="opacity: 0.3"></i>
+                        <p class="fs-5">Silakan pilih kendaraan di atas untuk melihat posisi ban.</p>
                      </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="card">
+               <div class="card-header border-bottom">
+                  <h6 class="card-title mb-0">Riwayat Transaksi Terakhir</h6>
+               </div>
+               <div class="card-body pt-3">
+                  <div class="table-responsive">
+                     <table class="table table-sm table-hover" id="history_table">
+                        <thead>
+                           <tr>
+                              <th>Tanggal</th>
+                              <th>Tipe</th>
+                              <th>Unit</th>
+                              <th>Posisi</th>
+                              <th>SN Ban</th>
+                              <th>Action</th>
+                           </tr>
+                        </thead>
+                     </table>
                   </div>
                </div>
             </div>
@@ -182,23 +155,38 @@
    </div>
 @endsection
 
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
+      $(document).ready(function() {
          const vehicleSelect = $('#vehicle_select');
          const layoutContainer = document.getElementById('layout_container');
-         const transactionCard = document.getElementById('transaction_card');
-         const movementForm = document.getElementById('movement_form');
+
+         $('.select2').each(function() {
+            $(this).select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent()
+            });
+         });
 
          vehicleSelect.on('change', function() {
             const vehicleId = this.value;
-            if (!vehicleId) return;
+            if (!vehicleId) {
+               document.getElementById('unit_info').style.setProperty('display', 'none', 'important');
+               return;
+            };
 
             // Loading state
             document.getElementById('layout_loading').style.display = 'inline-block';
+            document.getElementById('unit_info').style.setProperty('display', 'flex', 'important');
+
             layoutContainer.innerHTML =
-               '<div class="py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Memuat layout...</p></div>';
-            resetForm();
+               '<div class="py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Sedang memuat layout...</p></div>';
 
             fetch(`/tyre_performance/movement/layout/${vehicleId}`)
                .then(response => response.text())
@@ -218,68 +206,80 @@
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
                node.addEventListener('click', function() {
-                  nodes.forEach(n => n.style.boxShadow = 'none');
-                  this.style.boxShadow = '0 0 0 4px rgba(105, 108, 255, 0.4)';
-
-                  const positionId = this.getAttribute('data-position-id');
                   const vehicleId = vehicleSelect.val();
-                  const positionCode = this.getAttribute('data-code');
-                  const sn = this.getAttribute('data-sn');
+                  const positionId = this.getAttribute('data-position-id');
+                  const sn = this.getAttribute('data-sn'); // Present if filled
 
-                  openTransactionForm(vehicleId, positionId, positionCode, sn);
+                  if (sn) {
+                     // Ban Terpasang -> Arahkan ke Form Lepas (Removal)
+                     window.location.href =
+                        `{{ route('tyre-movement.pelepasan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                  } else {
+                     // Ban Kosong -> Arahkan ke Form Pasang (Installation)
+                     window.location.href =
+                        `{{ route('tyre-movement.pemasangan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                  }
                });
             });
          }
 
-         function openTransactionForm(vehicleId, positionId, positionCode, sn) {
-            transactionCard.style.display = 'block';
-            document.getElementById('form_vehicle_id').value = vehicleId;
-            document.getElementById('form_position_id').value = positionId;
-            document.getElementById('display_position').value = positionCode;
+         // Initialize DataTable History
+         const historyTable = $('#history_table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('tyre-movement.history') }}",
+            columns: [{
+                  data: 'movement_date',
+                  name: 'movement_date'
+               },
+               {
+                  data: 'movement_type',
+                  name: 'movement_type',
+                  render: function(data) {
+                     let badge = data === 'Installation' ? 'bg-label-primary' : 'bg-label-danger';
+                     return `<span class="badge ${badge}">${data}</span>`;
+                  }
+               },
+               {
+                  data: 'vehicle_code',
+                  name: 'vehicle_code'
+               },
+               {
+                  data: 'position_name',
+                  name: 'position_name'
+               },
+               {
+                  data: 'tyre_sn',
+                  name: 'tyre_sn'
+               },
+               {
+                  data: 'action',
+                  name: 'action',
+                  orderable: false,
+                  searchable: false
+               }
+            ],
+            order: [
+               [0, 'desc']
+            ]
+         });
 
-            if (sn) {
-               // Removal
-               document.getElementById('form_movement_type').value = 'Removal';
-               document.getElementById('installation_fields').style.display = 'none';
-               document.getElementById('removal_fields').style.display = 'block';
-               document.getElementById('display_sn').textContent = sn;
-            } else {
-               // Installation
-               document.getElementById('form_movement_type').value = 'Installation';
-               document.getElementById('installation_fields').style.display = 'block';
-               document.getElementById('removal_fields').style.display = 'none';
-
-               // Fetch available tyres
-               fetch(`/tyre_performance/movement/position-info?vehicle_id=${vehicleId}&position_id=${positionId}`)
-                  .then(response => response.json())
-                  .then(data => {
-                     const tyreSelect = $('#tyre_select');
-                     tyreSelect.empty().append('<option value="">-- Pilih Ban --</option>');
-                     data.availableTyres.forEach(tyre => {
-                        tyreSelect.append(
-                           `<option value="${tyre.id}">${tyre.serial_number} (${tyre.brand.brand_name} - ${tyre.size.size})</option>`
-                        );
-                     });
-                  });
-            }
-         }
-
-         movementForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-
+         window.rollbackMovement = function(id) {
             Swal.fire({
-               title: 'Konfirmasi Simpan',
-               text: 'Apakah data pergerakan ban ini sudah benar?',
-               icon: 'question',
+               title: 'Konfirmasi Rollback',
+               text: 'Anda akan membatalkan transaksi ini. Status ban dan posisi akan dikembalikan ke kondisi sebelum transaksi. Lanjutkan?',
+               icon: 'warning',
                showCancelButton: true,
-               confirmButtonText: 'Ya, Simpan',
-               cancelButtonText: 'Batal'
+               confirmButtonText: 'Ya, Batalkan!',
+               customClass: {
+                  confirmButton: 'btn btn-danger me-3',
+                  cancelButton: 'btn btn-outline-secondary'
+               },
+               buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  fetch('/tyre_performance/movement/store', {
-                        method: 'POST',
-                        body: formData,
+                  fetch(`/tyre_performance/movement/rollback/${id}`, {
+                        method: 'DELETE',
                         headers: {
                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         }
@@ -288,19 +288,15 @@
                      .then(data => {
                         if (data.success) {
                            Swal.fire('Berhasil!', data.message, 'success');
-                           vehicleSelect.trigger('change');
+                           historyTable.ajax.reload();
+                           if (vehicleSelect.val()) vehicleSelect.trigger('change');
                         } else {
                            Swal.fire('Gagal!', data.message, 'error');
                         }
                      });
                }
             });
-         });
+         };
       });
-
-      function resetForm() {
-         document.getElementById('transaction_card').style.display = 'none';
-         document.getElementById('movement_form').reset();
-      }
    </script>
 @endsection

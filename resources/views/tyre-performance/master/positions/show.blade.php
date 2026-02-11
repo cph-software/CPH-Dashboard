@@ -181,25 +181,120 @@
                <div class="card-body">
                   <div class="d-flex justify-content-between align-items-center mb-4">
                      <h5 class="card-title mb-0">Peta Visual Kendaraan</h5>
-                     <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                           data-bs-toggle="dropdown">
-                           <i class="ri-download-line me-1"></i> Export
-                        </button>
-                        <ul class="dropdown-menu">
-                           <li><a class="dropdown-item" href="#"><i class="ri-file-pdf-line me-2"></i> PDF Layout</a>
-                           </li>
-                           <li><a class="dropdown-item" href="#"><i class="ri-image-line me-2"></i> PNG Image</a>
-                           </li>
-                        </ul>
-                     </div>
                   </div>
 
-                  <div class="vehicle-chassis">
-                     <div class="chassis-line"></div>
+                  <style>
+                     .v-chassis {
+                        position: relative;
+                        width: 100%;
+                        max-width: 350px;
+                        margin: 0 auto;
+                        background: #fafafa;
+                        border-radius: 20px;
+                        padding: 40px 20px;
+                        border: 2px solid #eee;
+                        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.02);
+                     }
 
-                     <!-- Front Section (Cabin) -->
-                     <div class="cabin-box">CABIN</div>
+                     .v-cabin {
+                        width: 100px;
+                        height: 45px;
+                        background: #333;
+                        margin: 0 auto 30px auto;
+                        border-radius: 8px 8px 4px 4px;
+                        border-bottom: 5px solid #111;
+                        text-align: center;
+                        line-height: 40px;
+                        font-size: 11px;
+                        color: #fff;
+                        font-weight: bold;
+                        letter-spacing: 2px;
+                     }
+
+                     .v-axle {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 30px;
+                        position: relative;
+                     }
+
+                     .v-axle::after {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 65%;
+                        height: 4px;
+                        background: #e0e0e0;
+                        z-index: 1;
+                        border-radius: 2px;
+                     }
+
+                     .v-tyre {
+                        width: 32px;
+                        height: 55px;
+                        background: #fff;
+                        border: 2px solid #ddd;
+                        border-radius: 6px;
+                        z-index: 2;
+                        position: relative;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                     }
+
+                     .v-tyre-code {
+                        font-size: 9px;
+                        font-weight: 800;
+                        color: #666;
+                     }
+
+                     .v-tyre.front {
+                        border-top: 4px solid #ff9f43;
+                     }
+
+                     .v-tyre.rear {
+                        border-top: 4px solid #28c76f;
+                     }
+
+                     .v-tyre.middle {
+                        border-top: 4px solid #7367f0;
+                     }
+
+                     .v-tyre:hover {
+                        transform: scale(1.15) translateY(-2px);
+                        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                        z-index: 10;
+                     }
+
+                     .v-group {
+                        display: flex;
+                        gap: 5px;
+                     }
+
+                     .v-spare-list {
+                        display: flex;
+                        justify-content: center;
+                        gap: 15px;
+                        margin-top: 20px;
+                        padding-top: 20px;
+                        border-top: 2px dashed #eee;
+                     }
+
+                     .v-tyre.spare {
+                        width: 55px;
+                        height: 32px;
+                        border-top: none;
+                        border-right: 4px solid #00cfe8;
+                     }
+                  </style>
+
+                  <div class="v-chassis">
+                     <div class="v-cabin">FRONT</div>
 
                      @php
                         $frontAxles = $configuration->details->where('axle_type', 'Front')->groupBy('axle_number');
@@ -208,146 +303,74 @@
                         $spareTyres = $configuration->details->where('is_spare', true);
                      @endphp
 
-                     <!-- Front Axles -->
-                     @foreach ($frontAxles as $axleNum => $positions)
-                        <div class="axle-row">
-                           <div class="tyre-group">
-                              @php $left = $positions->where('side', 'Left')->first(); @endphp
-                              @if ($left)
-                                 <div class="tyre-node front" title="{{ $left->position_name }}">
-                                    <span>{{ $left->position_code }}</span>
-                                 </div>
-                              @endif
+                     {{-- Front Axles --}}
+                     @foreach ($frontAxles as $positions)
+                        <div class="v-axle">
+                           @php
+                              $left = $positions->where('side', 'Left')->first();
+                              $right = $positions->where('side', 'Right')->first();
+                           @endphp
+                           <div class="v-tyre front" title="{{ $left->position_name ?? '' }}">
+                              <span class="v-tyre-code">{{ $left->position_code ?? '' }}</span>
                            </div>
-                           <div class="tyre-group">
-                              @php $right = $positions->where('side', 'Right')->first(); @endphp
-                              @if ($right)
-                                 <div class="tyre-node front" title="{{ $right->position_name }}">
-                                    <span>{{ $right->position_code }}</span>
-                                 </div>
-                              @endif
+                           <div class="v-tyre front" title="{{ $right->position_name ?? '' }}">
+                              <span class="v-tyre-code">{{ $right->position_code ?? '' }}</span>
                            </div>
                         </div>
                      @endforeach
 
-                     <!-- Middle Axles -->
-                     @foreach ($middleAxles as $axleNum => $positions)
-                        <div class="axle-row">
-                           <!-- Left Side Middle (Usually Dual) -->
-                           <div class="tyre-group">
-                              @php
-                                 $leftOuter = $positions
-                                     ->where('side', 'Left')
-                                     ->where('wheel_position', 'Outer')
-                                     ->first();
-                                 $leftInner = $positions
-                                     ->where('side', 'Left')
-                                     ->where('wheel_position', 'Inner')
-                                     ->first();
-                              @endphp
-                              @if ($leftOuter)
-                                 <div class="tyre-node rear" title="{{ $leftOuter->position_name }}">
-                                    <span>{{ $leftOuter->position_code }}</span>
+                     {{-- Middle Axles --}}
+                     @foreach ($middleAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 <div class="v-tyre middle" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
-                              @endif
-                              @if ($leftInner)
-                                 <div class="tyre-node rear" title="{{ $leftInner->position_name }}">
-                                    <span>{{ $leftInner->position_code }}</span>
-                                 </div>
-                              @endif
+                              @endforeach
                            </div>
-
-                           <!-- Right Side Middle (Usually Dual) -->
-                           <div class="tyre-group">
-                              @php
-                                 $rightInner = $positions
-                                     ->where('side', 'Right')
-                                     ->where('wheel_position', 'Inner')
-                                     ->first();
-                                 $rightOuter = $positions
-                                     ->where('side', 'Right')
-                                     ->where('wheel_position', 'Outer')
-                                     ->first();
-                              @endphp
-                              @if ($rightInner)
-                                 <div class="tyre-node rear" title="{{ $rightInner->position_name }}">
-                                    <span>{{ $rightInner->position_code }}</span>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 <div class="v-tyre middle" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
-                              @endif
-                              @if ($rightOuter)
-                                 <div class="tyre-node rear" title="{{ $rightOuter->position_name }}">
-                                    <span>{{ $rightOuter->position_code }}</span>
-                                 </div>
-                              @endif
+                              @endforeach
                            </div>
                         </div>
                      @endforeach
 
-                     <!-- Rear Axles -->
-                     @foreach ($rearAxles as $axleNum => $positions)
-                        <div class="axle-row">
-                           <!-- Left Side Rear (Usually Dual) -->
-                           <div class="tyre-group">
-                              @php
-                                 $leftOuter = $positions
-                                     ->where('side', 'Left')
-                                     ->where('wheel_position', 'Outer')
-                                     ->first();
-                                 $leftInner = $positions
-                                     ->where('side', 'Left')
-                                     ->where('wheel_position', 'Inner')
-                                     ->first();
-                              @endphp
-                              @if ($leftOuter)
-                                 <div class="tyre-node rear" title="{{ $leftOuter->position_name }}">
-                                    <span>{{ $leftOuter->position_code }}</span>
+                     {{-- Rear Axles --}}
+                     @foreach ($rearAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 <div class="v-tyre rear" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
-                              @endif
-                              @if ($leftInner)
-                                 <div class="tyre-node rear" title="{{ $leftInner->position_name }}">
-                                    <span>{{ $leftInner->position_code }}</span>
-                                 </div>
-                              @endif
+                              @endforeach
                            </div>
-
-                           <!-- Right Side Rear (Usually Dual) -->
-                           <div class="tyre-group">
-                              @php
-                                 $rightInner = $positions
-                                     ->where('side', 'Right')
-                                     ->where('wheel_position', 'Inner')
-                                     ->first();
-                                 $rightOuter = $positions
-                                     ->where('side', 'Right')
-                                     ->where('wheel_position', 'Outer')
-                                     ->first();
-                              @endphp
-                              @if ($rightInner)
-                                 <div class="tyre-node rear" title="{{ $rightInner->position_name }}">
-                                    <span>{{ $rightInner->position_code }}</span>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 <div class="v-tyre rear" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
-                              @endif
-                              @if ($rightOuter)
-                                 <div class="tyre-node rear" title="{{ $rightOuter->position_name }}">
-                                    <span>{{ $rightOuter->position_code }}</span>
-                                 </div>
-                              @endif
+                              @endforeach
                            </div>
                         </div>
                      @endforeach
 
-                     <!-- Spare Tyres -->
+                     {{-- Spares --}}
                      @if ($spareTyres->count() > 0)
-                        <div class="spare-container">
-                           @foreach ($spareTyres as $spare)
-                              <div class="tyre-node spare" title="{{ $spare->position_name }}">
-                                 <span>{{ $spare->position_code }}</span>
-                                 <span class="position-label">SPARE</span>
+                        <div class="v-spare-list">
+                           @foreach ($spareTyres as $s)
+                              <div class="v-tyre spare" title="{{ $s->position_name }}">
+                                 <span class="v-tyre-code">{{ $s->position_code }}</span>
                               </div>
                            @endforeach
                         </div>
                      @endif
                   </div>
+
                </div>
             </div>
          </div>
