@@ -4,6 +4,10 @@
 
 @section('vendor-style')
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/apex-charts/apex-charts.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
+   <link rel="stylesheet"
+      href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
    <style>
       .kpi-card {
          transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -425,10 +429,55 @@
       </div>
 
    </div>
+
+   {{-- ============================================== --}}
+   {{-- DRILL-DOWN MODAL (Universal) --}}
+   {{-- ============================================== --}}
+   <div class="modal fade" id="drillDownModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+         <div class="modal-content">
+            <div class="modal-header bg-primary">
+               <h5 class="modal-title text-white" id="drillDownTitle">
+                  <i class="icon-base ri ri-search-eye-line me-2"></i>
+                  <span id="drillDownTitleText">Detail Data</span>
+               </h5>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <div id="drillDownLoading" class="text-center py-5">
+                  <div class="spinner-border text-primary" role="status">
+                     <span class="visually-hidden">Loading...</span>
+                  </div>
+                  <p class="mt-2 text-muted">Memuat data...</p>
+               </div>
+               <div id="drillDownContent" style="display:none;">
+                  <div class="mb-3 d-flex justify-content-between align-items-center">
+                     <span class="badge bg-primary rounded-pill" id="drillDownCount"></span>
+                     <a href="#" id="drillDownLink" class="btn btn-sm btn-outline-primary" style="display:none;">
+                        <i class="icon-base ri ri-external-link-line me-1"></i>Lihat Semua
+                     </a>
+                  </div>
+                  <div class="table-responsive">
+                     <table class="table table-sm table-hover table-striped" id="drillDownTable" style="width:100%">
+                        <thead class="table-light" id="drillDownHead"></thead>
+                        <tbody id="drillDownBody"></tbody>
+                     </table>
+                  </div>
+               </div>
+               <div id="drillDownEmpty" class="text-center py-5" style="display:none;">
+                  <i class="icon-base ri ri-file-search-line ri-3x mb-2 d-block opacity-25"></i>
+                  <p class="text-muted mb-0">Tidak ada data untuk ditampilkan</p>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
 @endsection
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
 @endsection
 
 @section('page-script')
@@ -449,6 +498,115 @@
             secondary: '#a8aaae',
             dark: '#4b4b4b'
          };
+
+         // ==========================================
+         // DRILL-DOWN HELPER FUNCTION
+         // ==========================================
+         const drillDownUrl = '{{ route('tyre_performance.drill-down') }}';
+         let drillDownDT = null;
+
+         function openDrillDown(type, value) {
+            const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+            document.getElementById('drillDownLoading').style.display = 'block';
+            document.getElementById('drillDownContent').style.display = 'none';
+            document.getElementById('drillDownEmpty').style.display = 'none';
+            document.getElementById('drillDownTitleText').textContent = 'Memuat...';
+
+            // Destroy previous DataTable instance
+            if (drillDownDT) {
+               drillDownDT.destroy();
+               drillDownDT = null;
+            }
+
+            modal.show();
+
+            $.ajax({
+               url: drillDownUrl,
+               data: {
+                  type: type,
+                  value: value
+               },
+               dataType: 'json',
+               success: function(res) {
+                  document.getElementById('drillDownLoading').style.display = 'none';
+
+                  if (!res.data || res.data.length === 0) {
+                     document.getElementById('drillDownEmpty').style.display = 'block';
+                     document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
+                     return;
+                  }
+
+                  document.getElementById('drillDownContent').style.display = 'block';
+                  document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
+                  document.getElementById('drillDownCount').textContent = res.total + ' data ditemukan';
+
+                  // Link
+                  const linkEl = document.getElementById('drillDownLink');
+                  if (res.link) {
+                     linkEl.href = res.link;
+                     linkEl.style.display = 'inline-block';
+                  } else {
+                     linkEl.style.display = 'none';
+                  }
+
+                  // Build table header
+                  let headHtml = '<tr>';
+                  res.columns.forEach(col => headHtml += '<th>' + col + '</th>');
+                  // Add action column for types with tyre id
+                  if (res.data[0] && res.data[0].id) headHtml += '<th>Aksi</th>';
+                  headHtml += '</tr>';
+                  document.getElementById('drillDownHead').innerHTML = headHtml;
+
+                  // Build table body
+                  let bodyHtml = '';
+                  res.data.forEach(row => {
+                     bodyHtml += '<tr>';
+                     res.keys.forEach(key => {
+                        let val = row[key] ?? '-';
+                        // Color code status badges
+                        if (key === 'status') {
+                           let cls = val === 'Installed' ? 'success' : (val === 'New' ? 'info' :
+                              (val === 'Scrap' ? 'danger' : 'warning'));
+                           val = '<span class="badge bg-label-' + cls + ' rounded-pill">' +
+                              val + '</span>';
+                        }
+                        bodyHtml += '<td>' + val + '</td>';
+                     });
+                     // View detail link
+                     if (row.id) {
+                        bodyHtml += '<td><a href="/tyre_performance/master_tyre/' + row.id +
+                           '" class="btn btn-sm btn-icon btn-text-primary" title="Detail"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                     }
+                     bodyHtml += '</tr>';
+                  });
+                  document.getElementById('drillDownBody').innerHTML = bodyHtml;
+
+                  // Init DataTable
+                  drillDownDT = $('#drillDownTable').DataTable({
+                     paging: true,
+                     pageLength: 10,
+                     searching: true,
+                     ordering: true,
+                     info: true,
+                     language: {
+                        search: 'Cari:',
+                        lengthMenu: 'Tampilkan _MENU_ data',
+                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                        paginate: {
+                           previous: '&laquo;',
+                           next: '&raquo;'
+                        },
+                        zeroRecords: 'Tidak ada data ditemukan',
+                     }
+                  });
+               },
+               error: function() {
+                  document.getElementById('drillDownLoading').style.display = 'none';
+                  document.getElementById('drillDownEmpty').style.display = 'block';
+                  document.getElementById('drillDownTitleText').textContent = 'Error memuat data';
+               }
+            });
+         }
 
          // ==========================================
          // 1. STATUS DONUT CHART
@@ -474,7 +632,13 @@
          new ApexCharts(document.querySelector('#statusDonutChart'), {
             chart: {
                type: 'donut',
-               height: 280
+               height: 280,
+               events: {
+                  dataPointSelection: function(event, chartContext, config) {
+                     const label = statusLabels[config.dataPointIndex];
+                     openDrillDown('status', label);
+                  }
+               }
             },
             series: statusValues,
             labels: statusLabels,
@@ -524,6 +688,13 @@
                height: 300,
                toolbar: {
                   show: false
+               },
+               events: {
+                  dataPointSelection: function(event, chartContext, config) {
+                     const monthLabel = monthlyData[config.dataPointIndex].month;
+                     const seriesName = config.seriesIndex === 0 ? 'Installation' : 'Removal';
+                     openDrillDown('movement', monthLabel + '|' + seriesName);
+                  }
                }
             },
             series: [{
@@ -597,6 +768,12 @@
                   height: 280,
                   toolbar: {
                      show: false
+                  },
+                  events: {
+                     dataPointSelection: function(event, chartContext, config) {
+                        const brandName = brandData[config.dataPointIndex].brand;
+                        openDrillDown('brand', brandName);
+                     }
                   }
                },
                series: [{
@@ -657,6 +834,12 @@
                height: 280,
                toolbar: {
                   show: false
+               },
+               events: {
+                  dataPointSelection: function(event, chartContext, config) {
+                     const locName = locationData[config.dataPointIndex].location_name;
+                     openDrillDown('location', locName);
+                  }
                }
             },
             series: [{
@@ -706,7 +889,13 @@
             new ApexCharts(document.querySelector('#failureDonutChart'), {
                chart: {
                   type: 'donut',
-                  height: 280
+                  height: 280,
+                  events: {
+                     dataPointSelection: function(event, chartContext, config) {
+                        const label = failureData[config.dataPointIndex].label;
+                        openDrillDown('failure', label);
+                     }
+                  }
                },
                series: failureData.map(f => f.total),
                labels: failureData.map(f => f.label),
