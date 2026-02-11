@@ -81,7 +81,7 @@
       {{-- ============================================== --}}
       {{-- DASHBOARD FILTERS --}}
       {{-- ============================================== --}}
-      <div class="card mb-4">
+      {{-- <div class="card mb-4">
          <div class="card-body py-3">
             <form action="{{ route('tyre_performance.dashboard') }}" method="GET" class="row g-3 align-items-end">
                <div class="col-md-3">
@@ -107,7 +107,7 @@
                </div>
             </form>
          </div>
-      </div>
+      </div> --}}
       <div class="row g-4 mb-4">
          {{-- Total Tyres --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
