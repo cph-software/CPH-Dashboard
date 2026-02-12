@@ -47,6 +47,12 @@ class TyreFailureCodeController extends Controller
         return redirect()->route('tyre-failure-codes.index')->with('success', 'Failure code created successfully');
     }
 
+    public function show($id)
+    {
+        $failureCode = TyreFailureCode::findOrFail($id);
+        return view('tyre-performance.master.failure-codes.show', compact('failureCode'));
+    }
+
     public function edit($id)
     {
         $failureCode = TyreFailureCode::findOrFail($id);

@@ -332,7 +332,7 @@
       <div class="row g-4 mb-4">
          {{-- 4a. Low RTD Alert --}}
          <div class="col-xl-5">
-            <div class="card h-100">
+            <div class="card h-100 mb-4">
                <div class="card-header pb-2 d-flex justify-content-between align-items-center">
                   <div>
                      <h6 class="mb-1"><i class="icon-base ri ri-alarm-warning-line me-1 text-danger"></i> Ban Perlu
@@ -399,6 +399,36 @@
                         <p class="mb-0">Semua ban dalam kondisi baik</p>
                      </div>
                   @endif
+               </div>
+            </div>
+
+            {{-- ADMIN ACTION GUIDE --}}
+            <div class="card border-primary shadow-none bg-label-primary">
+               <div class="card-body">
+                  <h6 class="fw-bold mb-3"><i class="ri-lightbulb-flash-line me-2"></i> Panduan Tindakan Admin</h6>
+                  <div class="d-flex flex-column gap-3">
+                     <div class="d-flex align-items-start">
+                        <div class="badge bg-primary rounded p-1 me-2"><i class="ri-tools-line"></i></div>
+                        <div>
+                           <p class="mb-0 small fw-bold">1. Diagnosa & Pelepasan</p>
+                           <p class="mb-0 kpi-sub">Jika RTD < 5mm, segera lakukan <strong>Pelepasan</strong> melalui menu <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai sebagai panduan (Scrap/Repair).</p>
+                        </div>
+                     </div>
+                     <div class="d-flex align-items-start border-top pt-2">
+                        <div class="badge bg-primary rounded p-1 me-2"><i class="ri-refresh-line"></i></div>
+                        <div>
+                           <p class="mb-0 small fw-bold">2. Update Status Ban</p>
+                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban di <em>Master Tyre</em> menjadi <strong>Scrap</strong> (jika rusak) atau <strong>Repaired</strong> (siap pakai kembali).</p>
+                        </div>
+                     </div>
+                     <div class="d-flex align-items-start border-top pt-2">
+                        <div class="badge bg-primary rounded p-1 me-2"><i class="ri-history-line"></i></div>
+                        <div>
+                           <p class="mb-0 small fw-bold">3. Pencatatan Otomatis</p>
+                           <p class="mb-0 kpi-sub">Setiap pergerakan dan update status akan <strong>tercatat otomatis</strong> di log <em>Tyre Performance</em> (Tyre Movement History).</p>
+                        </div>
+                     </div>
+                  </div>
                </div>
             </div>
          </div>
