@@ -129,6 +129,17 @@
                      </div>
 
                      <div class="mb-3">
+                        <label class="form-label fw-bold font-size-13">Kondisi Ban Saat Pasang</label>
+                        <select name="install_condition" id="install_condition" class="form-select select2"
+                           data-placeholder="Pilih Kondisi..." required>
+                           <option value=""></option>
+                           <option value="New">New (Baru)</option>
+                           <option value="Spare">Spare (Bekas/Cadangan)</option>
+                           <option value="Repair">Repair (Hasil Perbaikan/Vulkanisir)</option>
+                        </select>
+                     </div>
+
+                     <div class="mb-3">
                         <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
                         <select name="work_location_id" id="work_location_id" class="form-select select2"
                            data-placeholder="Pilih Lokasi...">
@@ -294,11 +305,11 @@
          function formatTyreResult(tyre) {
             if (tyre.loading) return tyre.text;
             return $(`
-                           <div class='select2-result-tyre'>
-                              <div class='fw-bold'>${tyre.sn}</div>
-                              <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
-                           </div>
-                        `);
+                              <div class='select2-result-tyre'>
+                                 <div class='fw-bold'>${tyre.sn}</div>
+                                 <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
+                              </div>
+                           `);
          }
 
          function formatTyreSelection(tyre) {
@@ -377,9 +388,18 @@
                .then(response => response.json())
                .then(data => {
                   positionSelect.empty().append('<option value="">-- Pilih Posisi --</option>');
+                  
+                  // We also need to know which positions are occupied to label them
+                  // Let's fetch the visual layout first and check filled nodes, 
+                  // or better, rely on the position data if it includes occupation info
                   data.positions.forEach(pos => {
+                     // Find if this position is currently occupied in the visual layout
+                     const node = document.querySelector(`.m-tyre-node[data-position-id="${pos.id}"]`);
+                     const isFilled = node && node.classList.contains('filled');
+                     const label = isFilled ? `${pos.position_code} - ${pos.position_name} (REPLACE)` : `${pos.position_code} - ${pos.position_name}`;
+                     
                      positionSelect.append(
-                        `<option value="${pos.id}">${pos.position_code} - ${pos.position_name}</option>`
+                        `<option value="${pos.id}">${label}</option>`
                      );
                   });
                   positionSelect.prop('disabled', false);
@@ -429,10 +449,27 @@
             nodes.forEach(node => {
                node.addEventListener('click', function () {
                   const posId = this.getAttribute('data-position-id');
-                  if (this.classList.contains('filled')) {
-                     Swal.fire('Informasi',
-                        'Posisi ini sudah terisi ban. Gunakan Form Pelepasan jika ingin membongkar.',
-                        'info');
+                  const isFilled = this.classList.contains('filled');
+                  const sn = this.getAttribute('data-sn');
+
+                  if (isFilled) {
+                     Swal.fire({
+                        title: 'Penggantian Ban?',
+                        text: `Posisi ini sudah berisi ban (SN: ${sn}). Lanjutkan untuk melakukan penggantian (Replace)?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, Ganti',
+                        cancelButtonText: 'Batal',
+                        customClass: {
+                           confirmButton: 'btn btn-warning me-3',
+                           cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                     }).then((result) => {
+                        if (result.isConfirmed) {
+                           positionSelect.val(posId).trigger('change');
+                        }
+                     });
                      return;
                   }
 
