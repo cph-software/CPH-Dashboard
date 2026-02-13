@@ -26,10 +26,10 @@ class DashboardController extends Controller
         // ========================================
         // ROW 1: KPI Summary Cards
         // ========================================
-        $totalTyres    = Tyre::count();
+        $totalTyres = Tyre::count();
         $installedTyres = Tyre::where('status', 'Installed')->count();
-        $inStockTyres   = Tyre::whereIn('status', ['New', 'Repaired'])->count();
-        $scrappedTyres  = Tyre::where('status', 'Scrap')->count();
+        $inStockTyres = Tyre::whereIn('status', ['New', 'Repaired'])->count();
+        $scrappedTyres = Tyre::where('status', 'Scrap')->count();
 
         // Total investment value
         $totalInvestment = Tyre::sum('price');
@@ -70,10 +70,10 @@ class DashboardController extends Controller
         // 2b. Monthly Movement Trend - Filtered
         $monthlyMovements = [];
         $period = \Carbon\CarbonPeriod::create($startDate->copy()->startOfMonth(), '1 month', $endDate->copy()->startOfMonth());
-        
+
         foreach ($period as $date) {
             $monthStart = $date->copy()->startOfMonth();
-            $monthEnd   = $date->copy()->endOfMonth();
+            $monthEnd = $date->copy()->endOfMonth();
             $monthLabel = $monthStart->format('M Y');
 
             $installs = TyreMovement::where('movement_type', 'Installation')
@@ -82,9 +82,9 @@ class DashboardController extends Controller
                 ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
 
             $monthlyMovements[] = [
-                'month'         => $monthLabel,
+                'month' => $monthLabel,
                 'installations' => $installs,
-                'removals'      => $removals,
+                'removals' => $removals,
             ];
         }
 
@@ -94,30 +94,30 @@ class DashboardController extends Controller
 
         // 3a. Top Brands by Average Lifetime KM
         $brandPerformance = Tyre::select(
-                'tyre_brand_id',
-                DB::raw('AVG(total_lifetime_km) as avg_km'),
-                DB::raw('AVG(total_lifetime_hm) as avg_hm'),
-                DB::raw('COUNT(*) as tyre_count')
-            )
+            'tyre_brand_id',
+            DB::raw('AVG(total_lifetime_km) as avg_km'),
+            DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+            DB::raw('COUNT(*) as tyre_count')
+        )
             ->where('total_lifetime_km', '>', 0)
             ->groupBy('tyre_brand_id')
             ->with('brand:id,brand_name')
             ->get()
             ->map(function ($item) {
                 return [
-                    'brand'    => $item->brand->brand_name ?? 'Unknown',
-                    'avg_km'   => round($item->avg_km, 0),
-                    'avg_hm'   => round($item->avg_hm, 0),
-                    'count'    => $item->tyre_count,
+                    'brand' => $item->brand->brand_name ?? 'Unknown',
+                    'avg_km' => round($item->avg_km, 0),
+                    'avg_hm' => round($item->avg_hm, 0),
+                    'count' => $item->tyre_count,
                 ];
             });
 
         // 3b. Cost Per KM by Brand
         $cpkByBrand = Tyre::select(
-                'tyre_brand_id',
-                DB::raw('SUM(price) as total_price'),
-                DB::raw('SUM(total_lifetime_km) as total_km')
-            )
+            'tyre_brand_id',
+            DB::raw('SUM(price) as total_price'),
+            DB::raw('SUM(total_lifetime_km) as total_km')
+        )
             ->where('total_lifetime_km', '>', 0)
             ->whereNotNull('price')
             ->where('price', '>', 0)
@@ -127,7 +127,7 @@ class DashboardController extends Controller
             ->map(function ($item) {
                 return [
                     'brand' => $item->brand->brand_name ?? 'Unknown',
-                    'cpk'   => $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0,
+                    'cpk' => $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0,
                 ];
             });
 
@@ -157,7 +157,7 @@ class DashboardController extends Controller
             ->map(function ($item) {
                 $fc = $item->failureCode;
                 return [
-                    'label' => $fc ? ($fc->failure_code . ' - ' . $fc->failure_name) : 'Unknown',
+                    'label' => $fc ? ($fc->failure_code . ' - ' . ($fc->display_name ?: $fc->failure_name)) : 'Unknown',
                     'total' => $item->total,
                 ];
             });
@@ -198,7 +198,7 @@ class DashboardController extends Controller
             ->orderBy('total', 'desc')
             ->limit(10)
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'position' => $item->position_name,
                     'total' => $item->total
@@ -207,18 +207,35 @@ class DashboardController extends Controller
 
         return view('tyre-performance.dashboard', compact(
             // Filters
-            'startDate', 'endDate',
+            'startDate',
+            'endDate',
             // KPI
-            'totalTyres', 'installedTyres', 'inStockTyres', 'scrappedTyres',
-            'totalInvestment', 'avgLifetimeKm', 'avgLifetimeHm', 'avgCpk', 'scrapRate',
-            'installationsThisMonth', 'removalsThisMonth',
+            'totalTyres',
+            'installedTyres',
+            'inStockTyres',
+            'scrappedTyres',
+            'totalInvestment',
+            'avgLifetimeKm',
+            'avgLifetimeHm',
+            'avgCpk',
+            'scrapRate',
+            'installationsThisMonth',
+            'removalsThisMonth',
             // Charts
-            'statusDistribution', 'monthlyMovements',
+            'statusDistribution',
+            'monthlyMovements',
             // Performance
-            'brandPerformance', 'cpkByBrand', 'criticalTread',
+            'brandPerformance',
+            'cpkByBrand',
+            'criticalTread',
             // Inventory & Operational
-            'locationStock', 'failureDistribution', 'recentMovements', 'lowRtdTyres',
-            'totalVehicles', 'rtdDistribution', 'axleAnalysis'
+            'locationStock',
+            'failureDistribution',
+            'recentMovements',
+            'lowRtdTyres',
+            'totalVehicles',
+            'rtdDistribution',
+            'axleAnalysis'
         ));
     }
 
@@ -227,7 +244,7 @@ class DashboardController extends Controller
      */
     public function drillDown(\Illuminate\Http\Request $request)
     {
-        $type  = $request->get('type');
+        $type = $request->get('type');
         $value = $request->get('value');
 
         switch ($type) {
@@ -240,27 +257,27 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($t) {
                         return [
-                            'id'            => $t->id,
+                            'id' => $t->id,
                             'serial_number' => $t->serial_number,
-                            'brand'         => $t->brand->brand_name ?? '-',
-                            'size'          => $t->size->size ?? '-',
-                            'status'        => $t->status,
-                            'location'      => $t->location->location_name ?? '-',
-                            'vehicle'       => $t->currentVehicle->kode_kendaraan ?? '-',
-                            'otd'           => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
-                            'rtd'           => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km'   => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
-                            'price'         => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
+                            'brand' => $t->brand->brand_name ?? '-',
+                            'size' => $t->size->size ?? '-',
+                            'status' => $t->status,
+                            'location' => $t->location->location_name ?? '-',
+                            'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
+                            'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
+                            'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
+                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
+                            'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Ban Status: {$value}",
+                    'title' => "Ban Status: {$value}",
                     'columns' => ['Serial Number', 'Brand', 'Size', 'Location', 'Kendaraan', 'OTD', 'RTD', 'Lifetime KM', 'Harga'],
-                    'keys'    => ['serial_number', 'brand', 'size', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'price'],
-                    'data'    => $tyres,
-                    'total'   => $tyres->count(),
-                    'link'    => route('tyre-master.index') . '?status=' . urlencode($value),
+                    'keys' => ['serial_number', 'brand', 'size', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'price'],
+                    'data' => $tyres,
+                    'total' => $tyres->count(),
+                    'link' => route('tyre-master.index') . '?status=' . urlencode($value),
                 ]);
 
             // ==========================================
@@ -268,33 +285,34 @@ class DashboardController extends Controller
             // ==========================================
             case 'brand':
                 $brand = TyreBrand::where('brand_name', $value)->first();
-                if (!$brand) return response()->json(['data' => [], 'total' => 0]);
+                if (!$brand)
+                    return response()->json(['data' => [], 'total' => 0]);
 
                 $tyres = Tyre::where('tyre_brand_id', $brand->id)
                     ->with(['size', 'location', 'currentVehicle'])
                     ->get()
                     ->map(function ($t) {
                         return [
-                            'id'            => $t->id,
+                            'id' => $t->id,
                             'serial_number' => $t->serial_number,
-                            'status'        => $t->status,
-                            'size'          => $t->size->size ?? '-',
-                            'location'      => $t->location->location_name ?? '-',
-                            'vehicle'       => $t->currentVehicle->kode_kendaraan ?? '-',
-                            'otd'           => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
-                            'rtd'           => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km'   => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
-                            'lifetime_hm'   => $t->total_lifetime_hm ? number_format($t->total_lifetime_hm, 0) : '-',
-                            'price'         => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
+                            'status' => $t->status,
+                            'size' => $t->size->size ?? '-',
+                            'location' => $t->location->location_name ?? '-',
+                            'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
+                            'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
+                            'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
+                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
+                            'lifetime_hm' => $t->total_lifetime_hm ? number_format($t->total_lifetime_hm, 0) : '-',
+                            'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Ban Brand: {$value}",
+                    'title' => "Ban Brand: {$value}",
                     'columns' => ['Serial Number', 'Status', 'Size', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
-                    'keys'    => ['serial_number', 'status', 'size', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
-                    'data'    => $tyres,
-                    'total'   => $tyres->count(),
+                    'keys' => ['serial_number', 'status', 'size', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
+                    'data' => $tyres,
+                    'total' => $tyres->count(),
                 ]);
 
             // ==========================================
@@ -302,31 +320,32 @@ class DashboardController extends Controller
             // ==========================================
             case 'location':
                 $location = TyreLocation::where('location_name', $value)->first();
-                if (!$location) return response()->json(['data' => [], 'total' => 0]);
+                if (!$location)
+                    return response()->json(['data' => [], 'total' => 0]);
 
                 $tyres = Tyre::where('work_location_id', $location->id)
                     ->with(['brand', 'size', 'currentVehicle'])
                     ->get()
                     ->map(function ($t) {
                         return [
-                            'id'            => $t->id,
+                            'id' => $t->id,
                             'serial_number' => $t->serial_number,
-                            'brand'         => $t->brand->brand_name ?? '-',
-                            'status'        => $t->status,
-                            'size'          => $t->size->size ?? '-',
-                            'vehicle'       => $t->currentVehicle->kode_kendaraan ?? '-',
-                            'otd'           => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
-                            'rtd'           => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'retread'       => 'R' . $t->retread_count,
+                            'brand' => $t->brand->brand_name ?? '-',
+                            'status' => $t->status,
+                            'size' => $t->size->size ?? '-',
+                            'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
+                            'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
+                            'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
+                            'retread' => 'R' . $t->retread_count,
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Ban di Lokasi: {$value}",
+                    'title' => "Ban di Lokasi: {$value}",
                     'columns' => ['Serial Number', 'Brand', 'Status', 'Size', 'Kendaraan', 'OTD', 'RTD', 'Retread'],
-                    'keys'    => ['serial_number', 'brand', 'status', 'size', 'vehicle', 'otd', 'rtd', 'retread'],
-                    'data'    => $tyres,
-                    'total'   => $tyres->count(),
+                    'keys' => ['serial_number', 'brand', 'status', 'size', 'vehicle', 'otd', 'rtd', 'retread'],
+                    'data' => $tyres,
+                    'total' => $tyres->count(),
                 ]);
 
             // ==========================================
@@ -338,7 +357,8 @@ class DashboardController extends Controller
                     // Try matching by failure_code only
                     $fc = TyreFailureCode::where('failure_code', $value)->first();
                 }
-                if (!$fc) return response()->json(['data' => [], 'total' => 0]);
+                if (!$fc)
+                    return response()->json(['data' => [], 'total' => 0]);
 
                 $movements = TyreMovement::where('failure_code_id', $fc->id)
                     ->where('movement_type', 'Removal')
@@ -347,22 +367,22 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($m) {
                         return [
-                            'date'      => Carbon::parse($m->movement_date)->format('d/m/Y'),
-                            'serial'    => $m->tyre->serial_number ?? '-',
-                            'vehicle'   => $m->vehicle->kode_kendaraan ?? '-',
-                            'km'        => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                            'hm'        => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
-                            'rtd'       => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
-                            'notes'     => $m->notes ?? '-',
+                            'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                            'serial' => $m->tyre->serial_number ?? '-',
+                            'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
+                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                            'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
+                            'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
+                            'notes' => $m->notes ?? '-',
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Pelepasan: {$fc->failure_code} - {$fc->failure_name}",
+                    'title' => "Pelepasan: " . ($fc->display_name ?: "{$fc->failure_code} - {$fc->failure_name}"),
                     'columns' => ['Tanggal', 'Serial Ban', 'Kendaraan', 'KM', 'HM', 'RTD', 'Notes'],
-                    'keys'    => ['date', 'serial', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
-                    'data'    => $movements,
-                    'total'   => $movements->count(),
+                    'keys' => ['date', 'serial', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
+                    'data' => $movements,
+                    'total' => $movements->count(),
                 ]);
 
             // ==========================================
@@ -371,15 +391,16 @@ class DashboardController extends Controller
             case 'movement':
                 // value format: "Jan 2026|Installation" or "Jan 2026|Removal"
                 $parts = explode('|', $value);
-                if (count($parts) !== 2) return response()->json(['data' => [], 'total' => 0]);
+                if (count($parts) !== 2)
+                    return response()->json(['data' => [], 'total' => 0]);
 
                 $monthStr = $parts[0];
-                $movType  = $parts[1];
+                $movType = $parts[1];
 
                 try {
-                    $monthDate  = Carbon::createFromFormat('M Y', $monthStr);
+                    $monthDate = Carbon::createFromFormat('M Y', $monthStr);
                     $monthStart = $monthDate->copy()->startOfMonth();
-                    $monthEnd   = $monthDate->copy()->endOfMonth();
+                    $monthEnd = $monthDate->copy()->endOfMonth();
                 } catch (\Exception $e) {
                     return response()->json(['data' => [], 'total' => 0]);
                 }
@@ -391,25 +412,25 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($m) {
                         return [
-                            'date'    => Carbon::parse($m->movement_date)->format('d/m/Y'),
-                            'serial'  => $m->tyre->serial_number ?? '-',
-                            'brand'   => $m->tyre->brand->brand_name ?? '-',
+                            'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                            'serial' => $m->tyre->serial_number ?? '-',
+                            'brand' => $m->tyre->brand->brand_name ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                            'km'      => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                            'hm'      => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
-                            'psi'     => $m->psi_reading ?? '-',
-                            'rtd'     => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
+                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                            'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
+                            'psi' => $m->psi_reading ?? '-',
+                            'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
                         ];
                     });
 
                 $typeLabel = $movType === 'Installation' ? 'Pemasangan' : 'Pelepasan';
 
                 return response()->json([
-                    'title'   => "{$typeLabel} - {$monthStr}",
+                    'title' => "{$typeLabel} - {$monthStr}",
                     'columns' => ['Tanggal', 'Serial Ban', 'Brand', 'Kendaraan', 'KM', 'HM', 'PSI', 'RTD'],
-                    'keys'    => ['date', 'serial', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
-                    'data'    => $movements,
-                    'total'   => $movements->count(),
+                    'keys' => ['date', 'serial', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
+                    'data' => $movements,
+                    'total' => $movements->count(),
                 ]);
 
             // ==========================================
@@ -417,7 +438,7 @@ class DashboardController extends Controller
             // ==========================================
             case 'rtd':
                 $query = Tyre::where('status', 'Installed');
-                
+
                 if (str_contains($value, 'Critical')) {
                     $query->whereBetween('current_tread_depth', [0, 3.99]);
                 } elseif (str_contains($value, 'Warning')) {
@@ -432,22 +453,22 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($t) {
                         return [
-                            'id'            => $t->id,
+                            'id' => $t->id,
                             'serial_number' => $t->serial_number,
-                            'brand'         => $t->brand->brand_name ?? '-',
-                            'size'          => $t->size->size ?? '-',
-                            'vehicle'       => $t->currentVehicle->kode_kendaraan ?? '-',
-                            'rtd'           => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km'   => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
+                            'brand' => $t->brand->brand_name ?? '-',
+                            'size' => $t->size->size ?? '-',
+                            'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
+                            'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
+                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Fleet Health: {$value}",
+                    'title' => "Fleet Health: {$value}",
                     'columns' => ['Serial Number', 'Brand', 'Size', 'Kendaraan', 'RTD', 'Lifetime KM'],
-                    'keys'    => ['serial_number', 'brand', 'size', 'vehicle', 'rtd', 'lifetime_km'],
-                    'data'    => $tyres,
-                    'total'   => $tyres->count(),
+                    'keys' => ['serial_number', 'brand', 'size', 'vehicle', 'rtd', 'lifetime_km'],
+                    'data' => $tyres,
+                    'total' => $tyres->count(),
                 ]);
 
             // ==========================================
@@ -462,21 +483,21 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($m) {
                         return [
-                            'date'    => Carbon::parse($m->movement_date)->format('d/m/Y'),
-                            'serial'  => $m->tyre->serial_number ?? '-',
+                            'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                            'serial' => $m->tyre->serial_number ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                            'km'      => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                            'rtd'     => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
-                            'notes'   => $m->notes ?? '-',
+                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                            'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
+                            'notes' => $m->notes ?? '-',
                         ];
                     });
 
                 return response()->json([
-                    'title'   => "Scrap Frequency: Posisi {$value}",
+                    'title' => "Scrap Frequency: Posisi {$value}",
                     'columns' => ['Tanggal', 'Serial Ban', 'Kendaraan', 'KM', 'RTD', 'Notes'],
-                    'keys'    => ['date', 'serial', 'vehicle', 'km', 'rtd', 'notes'],
-                    'data'    => $movements,
-                    'total'   => $movements->count(),
+                    'keys' => ['date', 'serial', 'vehicle', 'km', 'rtd', 'notes'],
+                    'data' => $movements,
+                    'total' => $movements->count(),
                 ]);
 
             default:

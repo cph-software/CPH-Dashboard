@@ -31,8 +31,21 @@
                     </div>
                     <div class="card-body pt-4">
                         <div class="text-center mb-4 pb-2">
-                            <h2 class="fw-bold text-primary mb-1">{{ $failureCode->failure_code }}</h2>
-                            <h4 class="text-secondary">{{ $failureCode->failure_name }}</h4>
+                            <h2 class="fw-bold text-primary mb-1">
+                                @if($failureCode->display_name)
+                                    {{ $failureCode->display_name }}
+                                @else
+                                    {{ $failureCode->failure_code }}
+                                @endif
+                            </h2>
+                            <h4 class="text-secondary">
+                                @if($failureCode->display_name)
+                                    <span class="small text-muted">({{ $failureCode->failure_code }} -
+                                        {{ $failureCode->failure_name }})</span>
+                                @else
+                                    {{ $failureCode->failure_name }}
+                                @endif
+                            </h4>
                         </div>
 
                         <div class="row g-4 mb-5">

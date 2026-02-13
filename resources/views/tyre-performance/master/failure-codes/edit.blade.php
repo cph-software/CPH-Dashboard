@@ -28,14 +28,23 @@
                     @method('PUT')
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
-                            <label for="failure_code" class="form-label">Failure Code</label>
+                            <label for="failure_code" class="form-label">Failure Code (Standard)</label>
                             <input type="text" id="failure_code" name="failure_code" class="form-control"
                                 value="{{ $failureCode->failure_code }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="failure_name" class="form-label">Failure Name</label>
+                            <label for="failure_name" class="form-label">Failure Name (Standard)</label>
                             <input type="text" id="failure_name" name="failure_name" class="form-control"
                                 value="{{ $failureCode->failure_name }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-12 mb-3">
+                            <label for="display_name" class="form-label">Display Name / Alias (Custom Name per Site)</label>
+                            <input type="text" id="display_name" name="display_name" class="form-control"
+                                value="{{ $failureCode->display_name }}" placeholder="e.g. Luka Samping (Site ABC)">
+                            <div class="form-text">Jika diisi, nama ini yang akan muncul di dashboard dan laporan.</div>
                         </div>
                     </div>
 
@@ -84,11 +93,13 @@
                     <div class="row g-2">
                         <div class="col-md-6 mb-4">
                             <label for="description" class="form-label">Description</label>
-                            <textarea id="description-editor" name="description"></textarea>
+                            <textarea id="description-editor"
+                                name="description">{!! $failureCode->description !!}</textarea>
                         </div>
                         <div class="col-md-6 mb-4">
                             <label for="recommendations" class="form-label">Recommendations</label>
-                            <textarea id="recommendations-editor" name="recommendations"></textarea>
+                            <textarea id="recommendations-editor"
+                                name="recommendations">{!! $failureCode->recommendations !!}</textarea>
                         </div>
                     </div>
                     <div class="mt-4 text-end">

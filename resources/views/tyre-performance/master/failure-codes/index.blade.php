@@ -36,7 +36,14 @@
                   @foreach ($failureCodes as $fc)
                      <tr>
                         <td><strong>{{ $fc->failure_code }}</strong></td>
-                        <td>{{ $fc->failure_name }}</td>
+                        <td>
+                           @if($fc->display_name)
+                              <span class="fw-bold text-primary">{{ $fc->display_name }}</span><br>
+                              <small class="text-muted">({{ $fc->failure_name }})</small>
+                           @else
+                              {{ $fc->failure_name }}
+                           @endif
+                        </td>
                         <td>
                            @if ($fc->image_1)
                               <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
@@ -171,7 +178,7 @@
                text: '{{ session('error') }}',
             });
          @endif
-         });
+            });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);

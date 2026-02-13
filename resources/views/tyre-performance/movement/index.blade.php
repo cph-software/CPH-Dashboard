@@ -143,6 +143,7 @@
                               <th>Unit</th>
                               <th>Posisi</th>
                               <th>SN Ban</th>
+                              <th>Kondisi/Kerusakan</th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -263,6 +264,10 @@
             {
                data: 'tyre_sn',
                name: 'tyre_sn'
+            },
+            {
+               data: 'failure_info',
+               name: 'failure_info'
             },
             {
                data: 'action',
