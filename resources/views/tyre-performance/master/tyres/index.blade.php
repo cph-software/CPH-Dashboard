@@ -126,8 +126,7 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="price" class="form-label">Harga Beli (IDR)</label>
-                        <input type="number" name="price" class="form-control" placeholder="3500000"
-                           step="1000">
+                        <input type="number" name="price" class="form-control" placeholder="3500000" step="1000">
                      </div>
                      <div class="col mb-3">
                         <label for="retread_count" class="form-label">Retread Count</label>
@@ -187,8 +186,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
-                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
-                           required>
+                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control" required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -268,13 +266,13 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
-                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
-                           class="form-control" step="0.01">
+                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth" class="form-control"
+                           step="0.01">
                      </div>
                      <div class="col mb-3">
                         <label for="edit_current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
-                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth"
-                           class="form-control" step="0.01">
+                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth" class="form-control"
+                           step="0.01">
                      </div>
                   </div>
                   <div class="row">
@@ -312,88 +310,88 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          const table = $('.datatables-tyres').DataTable({
             processing: true,
             serverSide: true,
             ajax: "{{ route('tyre-master.data') }}",
             columns: [{
-                  data: 'serial_number',
-                  render: function(data) {
-                     return `<strong>${data}</strong>`;
-                  }
-               },
-               {
-                  data: 'brand.brand_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'size.size',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'pattern.name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'segment.segment_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'tyre_type',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'location.location_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'status',
-                  render: function(data) {
-                     const badges = {
-                        'New': 'primary',
-                        'Installed': 'success',
-                        'Scrap': 'danger',
-                        'Repaired': 'warning'
-                     };
-                     return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
-                  }
-               },
-               {
-                  data: null,
-                  searchable: false,
-                  orderable: false,
-                  render: function(data, type, row) {
-                     return `
-                        <div class="d-flex align-items-center">
-                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                              href="/tyre_performance/master_tyre/${row.id}"
-                              title="View Details">
-                              <i class="icon-base ri ri-eye-line"></i>
-                           </a>
-                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                              href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                              data-id="${row.id}" data-serial="${row.serial_number}"
-                              data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                              data-pattern-id="${row.tyre_pattern_id}"
-                              data-segment-id="${row.tyre_segment_id}" data-type="${row.tyre_type}"
-                              data-location-id="${row.work_location_id}" data-status="${row.status}"
-                              data-price="${row.price || ''}"
-                              data-initial-tread="${row.initial_tread_depth || ''}"
-                              data-current-tread="${row.current_tread_depth || ''}"
-                              data-retread-count="${row.retread_count || 0}"
-                              title="Edit">
-                              <i class="icon-base ri ri-pencil-line"></i>
-                           </a>
-                           <button type="button"
-                              class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                              data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                              <i class="icon-base ri ri-delete-bin-line"></i>
-                           </button>
-                        </div>
-                     `;
-                  }
+               data: 'serial_number',
+               render: function (data) {
+                  return `<strong>${data}</strong>`;
                }
+            },
+            {
+               data: 'brand.brand_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'size.size',
+               defaultContent: '-'
+            },
+            {
+               data: 'pattern.name',
+               defaultContent: '-'
+            },
+            {
+               data: 'segment.segment_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'tyre_type',
+               defaultContent: '-'
+            },
+            {
+               data: 'location.location_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'status',
+               render: function (data) {
+                  const badges = {
+                     'New': 'primary',
+                     'Installed': 'success',
+                     'Scrap': 'danger',
+                     'Repaired': 'warning'
+                  };
+                  return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
+               }
+            },
+            {
+               data: null,
+               searchable: false,
+               orderable: false,
+               render: function (data, type, row) {
+                  return `
+                           <div class="d-flex align-items-center">
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                 href="/tyre_performance/master_tyre/${row.id}"
+                                 title="View Details">
+                                 <i class="icon-base ri ri-eye-line"></i>
+                              </a>
+                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                                 data-id="${row.id}" data-serial="${row.serial_number}"
+                                 data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                                 data-pattern-id="${row.tyre_pattern_id}"
+                                 data-segment-id="${row.tyre_segment_id}" data-type="${row.tyre_type}"
+                                 data-location-id="${row.work_location_id}" data-status="${row.status}"
+                                 data-price="${row.price || ''}"
+                                 data-initial-tread="${row.initial_tread_depth || ''}"
+                                 data-current-tread="${row.current_tread_depth || ''}"
+                                 data-retread-count="${row.retread_count || 0}"
+                                 title="Edit">
+                                 <i class="icon-base ri ri-pencil-line"></i>
+                              </a>
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                                 data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                              </button>
+                           </div>
+                        `;
+               }
+            }
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
@@ -401,7 +399,7 @@
 
          const editForm = $('#editTyreForm');
 
-         $(document).on('click', '.edit-tyre', function() {
+         $(document).on('click', '.edit-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
             const brandId = $(this).data('brand-id');
@@ -416,7 +414,7 @@
             const currentTread = $(this).data('current-tread');
             const retreadCount = $(this).data('retread-count');
 
-            editForm.attr('action', `/tyre_performance/master/tyres/${id}`);
+            editForm.attr('action', `{{ url('tyre_performance/master_tyre') }}/${id}`);
             $('#edit_serial_number').val(serial);
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
@@ -431,7 +429,7 @@
             $('#edit_retread_count').val(retreadCount);
          });
 
-         $(document).on('click', '.delete-tyre', function() {
+         $(document).on('click', '.delete-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
 
@@ -475,14 +473,14 @@
          @endif
 
          // Auto-sync Tyre Type based on Size
-         $('#tyre_size_id').on('change', function() {
+         $('#tyre_size_id').on('change', function () {
             const type = $(this).find(':selected').data('type');
             if (type) {
                $('#tyre_type').val(type);
             }
          });
 
-         $('#edit_size_id').on('change', function() {
+         $('#edit_size_id').on('change', function () {
             const type = $(this).find(':selected').data('type');
             if (type) {
                $('#edit_tyre_type').val(type);
@@ -490,7 +488,7 @@
          });
 
          // Initialize Select2
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

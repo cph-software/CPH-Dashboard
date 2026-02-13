@@ -22,7 +22,7 @@ class TyreMasterController extends Controller
         $segments = TyreSegment::where('status', 'Active')->get();
         $patterns = TyrePattern::all();
         $locations = TyreLocation::all();
-        
+
         return view('tyre-performance.master.tyres.index', compact('brands', 'sizes', 'segments', 'patterns', 'locations'));
     }
 
@@ -36,15 +36,15 @@ class TyreMasterController extends Controller
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
             $searchValue = $request->input('search.value');
-            $query->where(function($q) use ($searchValue) {
+            $query->where(function ($q) use ($searchValue) {
                 $q->where('serial_number', 'like', "%$searchValue%")
-                  ->orWhereHas('brand', function($sub) use ($searchValue) {
-                      $sub->where('brand_name', 'like', "%$searchValue%");
-                  })
-                  ->orWhereHas('size', function($sub) use ($searchValue) {
-                      $sub->where('size', 'like', "%$searchValue%");
-                  })
-                  ->orWhere('status', 'like', "%$searchValue%");
+                    ->orWhereHas('brand', function ($sub) use ($searchValue) {
+                        $sub->where('brand_name', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('size', function ($sub) use ($searchValue) {
+                        $sub->where('size', 'like', "%$searchValue%");
+                    })
+                    ->orWhere('status', 'like', "%$searchValue%");
             });
         }
 
@@ -55,7 +55,7 @@ class TyreMasterController extends Controller
         if ($request->has('order')) {
             $columnIndex = $request->input('order.0.column');
             $columnDir = $request->input('order.0.dir');
-            
+
             // Map column index to DB field
             $cols = [
                 0 => 'serial_number',
@@ -67,7 +67,7 @@ class TyreMasterController extends Controller
                 6 => 'work_location_id',
                 7 => 'status'
             ];
-            
+
             if (isset($cols[$columnIndex])) {
                 $query->orderBy($cols[$columnIndex], $columnDir);
             }
@@ -81,10 +81,10 @@ class TyreMasterController extends Controller
         $tyres = $query->skip($start)->take($length)->get();
 
         return response()->json([
-            "draw"            => intval($request->input('draw')),
-            "recordsTotal"    => intval($totalRecords),
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalRecords),
             "recordsFiltered" => intval($filteredRecords),
-            "data"            => $tyres
+            "data" => $tyres
         ]);
     }
 
@@ -92,7 +92,7 @@ class TyreMasterController extends Controller
     {
         $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location', 'currentVehicle', 'currentPosition', 'movements.vehicle', 'movements.position'])
             ->findOrFail($id);
-        
+
         return view('tyre-performance.master.tyres.show', compact('tyre'));
     }
 
@@ -103,7 +103,7 @@ class TyreMasterController extends Controller
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'tyre_pattern_id' => 'nullable|exists:master_import_pattern,id',
+            'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
             'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
@@ -125,7 +125,7 @@ class TyreMasterController extends Controller
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'tyre_pattern_id' => 'nullable|exists:master_import_pattern,id',
+            'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
             'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
