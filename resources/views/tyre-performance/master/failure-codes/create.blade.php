@@ -27,14 +27,23 @@
                     @csrf
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
-                            <label for="failure_code" class="form-label">Failure Code</label>
+                            <label for="failure_code" class="form-label">Failure Code (Standard)</label>
                             <input type="text" id="failure_code" name="failure_code" class="form-control"
                                 placeholder="e.g. CUT-01" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="failure_name" class="form-label">Failure Name</label>
+                            <label for="failure_name" class="form-label">Failure Name (Standard)</label>
                             <input type="text" id="failure_name" name="failure_name" class="form-control"
                                 placeholder="e.g. Side Wall Cut" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-12 mb-3">
+                            <label for="display_name" class="form-label">Display Name / Alias (Custom Name per Site)</label>
+                            <input type="text" id="display_name" name="display_name" class="form-control"
+                                placeholder="e.g. Luka Samping (Site ABC)">
+                            <div class="form-text">Jika diisi, nama ini yang akan muncul di dashboard dan laporan.</div>
                         </div>
                     </div>
 

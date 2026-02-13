@@ -155,6 +155,25 @@ class TyreMovementController extends Controller
         ]);
     }
 
+    /**
+     * Helper to calculate lifetime difference handling potential meter resets (minus diff)
+     */
+    private function calculateLifetimeDiff($currentReading, $lastInstallReading)
+    {
+        if (!$currentReading || !$lastInstallReading)
+            return 0;
+
+        $diff = $currentReading - $lastInstallReading;
+
+        if ($diff < 0) {
+            // Odometer reset or replaced. 
+            // Logic: Assume the current reading is the distance covered since reset.
+            return (float) $currentReading;
+        }
+
+        return (float) $diff;
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -203,16 +222,8 @@ class TyreMovementController extends Controller
                         $kmDiff = 0;
                         $hmDiff = 0;
                         if ($lastOldInstall) {
-                            if ($request->odometer && $lastOldInstall->odometer_reading) {
-                                $diff = $request->odometer - $lastOldInstall->odometer_reading;
-                                if ($diff > 0)
-                                    $kmDiff = $diff;
-                            }
-                            if ($request->hour_meter && $lastOldInstall->hour_meter_reading) {
-                                $diff = $request->hour_meter - $lastOldInstall->hour_meter_reading;
-                                if ($diff > 0)
-                                    $hmDiff = $diff;
-                            }
+                            $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastOldInstall->odometer_reading);
+                            $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastOldInstall->hour_meter_reading);
                         }
 
                         // 2. Create Removal Log for Old Tyre (Auto-replace)
@@ -224,6 +235,8 @@ class TyreMovementController extends Controller
                             'movement_date' => $request->movement_date,
                             'odometer_reading' => $request->odometer,
                             'hour_meter_reading' => $request->hour_meter,
+                            'running_km' => $kmDiff,
+                            'running_hm' => $hmDiff,
                             'notes' => 'Auto-Removal during Replacement (SN: ' . $tyre->serial_number . ')',
                             'created_by' => Auth::id()
                         ]);
@@ -310,19 +323,8 @@ class TyreMovementController extends Controller
                 $hmDiff = 0;
 
                 if ($lastInstallation) {
-                    // Calculate KM Difference
-                    if ($request->odometer && $lastInstallation->odometer_reading) {
-                        $diff = $request->odometer - $lastInstallation->odometer_reading;
-                        if ($diff > 0)
-                            $kmDiff = $diff;
-                    }
-
-                    // Calculate HM Difference
-                    if ($request->hour_meter && $lastInstallation->hour_meter_reading) {
-                        $diff = $request->hour_meter - $lastInstallation->hour_meter_reading;
-                        if ($diff > 0)
-                            $hmDiff = $diff;
-                    }
+                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastInstallation->odometer_reading);
+                    $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastInstallation->hour_meter_reading);
                 }
                 // ------------------------------------
 
@@ -348,6 +350,8 @@ class TyreMovementController extends Controller
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
                     'hour_meter_reading' => $request->hour_meter,
+                    'running_km' => $kmDiff,
+                    'running_hm' => $hmDiff,
                     'remarks' => $request->remarks,
                     'notes' => $request->notes,
                     'created_by' => Auth::id()
@@ -385,7 +389,7 @@ class TyreMovementController extends Controller
 
     public function apiHistory(Request $request)
     {
-        $query = TyreMovement::with(['tyre', 'vehicle', 'position']);
+        $query = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode']);
 
         $totalRecords = TyreMovement::count();
 
@@ -414,6 +418,11 @@ class TyreMovementController extends Controller
         $movements = $query->skip($start)->take($length)->get();
 
         $data = $movements->map(function ($row) {
+            $failureInfo = '-';
+            if ($row->failureCode) {
+                $failureInfo = $row->failureCode->display_name ?: ($row->failureCode->failure_code . ' - ' . $row->failureCode->failure_name);
+            }
+
             return [
                 'id' => $row->id,
                 'movement_date' => \Carbon\Carbon::parse($row->movement_date)->format('d/m/Y'),
@@ -423,6 +432,7 @@ class TyreMovementController extends Controller
                 'tyre_sn' => $row->tyre->serial_number ?? '-',
                 'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
+                'failure_info' => $failureInfo,
                 'action' => '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
             ];
         });
@@ -489,10 +499,17 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => $movement->vehicle_id,
                     'current_position_id' => $movement->position_id,
-                    'status' => 'Installed'
+                    'status' => 'Installed',
+                    'total_lifetime_km' => max(0, ($tyre->total_lifetime_km ?? 0) - ($movement->running_km ?? 0)),
+                    'total_lifetime_hm' => max(0, ($tyre->total_lifetime_hm ?? 0) - ($movement->running_hm ?? 0)),
                 ]);
 
-                // 2. Occupy the position
+                // 2. Decrement Stock at the warehouse location (it's leaving the warehouse to go back on vehicle)
+                if ($movement->work_location_id) {
+                    DB::table('tyre_locations')->where('id', $movement->work_location_id)->decrement('current_stock');
+                }
+
+                // 3. Occupy the position
                 $position->update(['tyre_id' => $tyre->id]);
             }
 
