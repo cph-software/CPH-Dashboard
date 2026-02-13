@@ -28,25 +28,25 @@ class TyrePerformanceMenuSeeder extends Seeder
         // 3. Menu: Dashboard (Sudah ada biasanya, tapi kita pastikan)
         Menu::updateOrCreate(
             ['name' => 'Dashboard', 'aplikasi_id' => $app->id],
-            ['url' => 'tyre_performance/dashboard', 'icon' => 'ri-dashboard-line', 'order_no' => 1]
+            ['url' => 'dashboard', 'icon' => 'ri-dashboard-line', 'order_no' => 1]
         );
 
         // 4. Menu Utama: Transaksi / Movement
         $movementMenu = Menu::updateOrCreate(
             ['name' => 'Tyre Movement', 'aplikasi_id' => $app->id],
-            ['url' => 'tyre_performance/movement', 'icon' => 'ri-repeat-line', 'order_no' => 2]
+            ['url' => 'movement', 'icon' => 'ri-repeat-line', 'order_no' => 2]
         );
 
         // Sub-menu: Pemasangan
         Menu::updateOrCreate(
             ['name' => 'Pemasangan Ban', 'parent_id' => $movementMenu->id, 'aplikasi_id' => $app->id],
-            ['url' => 'tyre_performance/pemasangan', 'icon' => 'ri-add-circle-line', 'order_no' => 1]
+            ['url' => 'pemasangan', 'icon' => 'ri-add-circle-line', 'order_no' => 1]
         );
 
         // Sub-menu: Pelepasan
         Menu::updateOrCreate(
             ['name' => 'Pelepasan Ban', 'parent_id' => $movementMenu->id, 'aplikasi_id' => $app->id],
-            ['url' => 'tyre_performance/pelepasan', 'icon' => 'ri-indeterminate-circle-line', 'order_no' => 2]
+            ['url' => 'pelepasan', 'icon' => 'ri-indeterminate-circle-line', 'order_no' => 2]
         );
 
         // 5. Menu Utama: Master Data
@@ -57,15 +57,15 @@ class TyrePerformanceMenuSeeder extends Seeder
 
         // Sub-menus Master Data
         $masters = [
-            ['name' => 'Tyre Master', 'url' => 'tyre_performance/master_tyre', 'icon' => 'ri-poker-cells-line', 'order_no' => 1],
-            ['name' => 'Vehicle Master', 'url' => 'tyre_performance/master_kendaraan', 'icon' => 'ri-truck-line', 'order_no' => 2],
-            ['name' => 'Brands', 'url' => 'tyre_performance/master_brand', 'icon' => 'ri-copyright-line', 'order_no' => 3],
-            ['name' => 'Sizes', 'url' => 'tyre_performance/master_size', 'icon' => 'ri-expand-diagonal-2-line', 'order_no' => 4],
-            ['name' => 'Patterns', 'url' => 'tyre_performance/master_pattern', 'icon' => 'ri-layout-top-line', 'order_no' => 5],
-            ['name' => 'Failure Codes', 'url' => 'tyre_performance/master_failure_code', 'icon' => 'ri-error-warning-line', 'order_no' => 6],
-            ['name' => 'Locations', 'url' => 'tyre_performance/master_location', 'icon' => 'ri-map-pin-line', 'order_no' => 7],
-            ['name' => 'Segments', 'url' => 'tyre_performance/master_segment', 'icon' => 'ri-segment-line', 'order_no' => 8],
-            ['name' => 'Position Config', 'url' => 'tyre_performance/master_position', 'icon' => 'ri-layout-grid-line', 'order_no' => 9],
+            ['name' => 'Tyre Master', 'url' => 'master_tyre', 'icon' => 'ri-poker-cells-line', 'order_no' => 1],
+            ['name' => 'Vehicle Master', 'url' => 'master_kendaraan', 'icon' => 'ri-truck-line', 'order_no' => 2],
+            ['name' => 'Brands', 'url' => 'master_brand', 'icon' => 'ri-copyright-line', 'order_no' => 3],
+            ['name' => 'Sizes', 'url' => 'master_size', 'icon' => 'ri-expand-diagonal-2-line', 'order_no' => 4],
+            ['name' => 'Patterns', 'url' => 'master_pattern', 'icon' => 'ri-layout-top-line', 'order_no' => 5],
+            ['name' => 'Failure Codes', 'url' => 'master_failure_code', 'icon' => 'ri-error-warning-line', 'order_no' => 6],
+            ['name' => 'Locations', 'url' => 'master_location', 'icon' => 'ri-map-pin-line', 'order_no' => 7],
+            ['name' => 'Segments', 'url' => 'master_segment', 'icon' => 'ri-segment-line', 'order_no' => 8],
+            ['name' => 'Position Config', 'url' => 'master_position', 'icon' => 'ri-layout-grid-line', 'order_no' => 9],
         ];
 
         foreach ($masters as $m) {
