@@ -87,7 +87,7 @@
                             <h5 class="fw-bold border-bottom pb-2 mb-3"><i class="ri-information-line me-2"></i> Description
                                 & Characteristics</h5>
                             <div class="p-3 bg-light rounded text-body lh-lg">
-                                {!! nl2br(e($failureCode->description ?? 'No description provided.')) !!}
+                                {!! $failureCode->description ?? 'No description provided.' !!}
                             </div>
                         </div>
 
@@ -95,7 +95,7 @@
                             <h5 class="fw-bold border-bottom pb-2 mb-3 text-warning"><i class="ri-lightbulb-line me-2"></i>
                                 Maintenance Recommendations</h5>
                             <div class="p-3 bg-warning-subtle text-warning-emphasis border border-warning rounded lh-lg">
-                                {!! nl2br(e($failureCode->recommendations ?? 'No recommendations provided.')) !!}
+                                {!! $failureCode->recommendations ?? 'No recommendations provided.' !!}
                             </div>
                         </div>
                     </div>
