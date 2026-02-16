@@ -106,13 +106,6 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="tyre_type" class="form-label">Type</label>
-                        <select id="tyre_type" name="tyre_type" class="form-select" required>
-                           <option value="Radial">Radial</option>
-                           <option value="Bias">Bias</option>
-                        </select>
-                     </div>
-                     <div class="col mb-3">
                         <label for="work_location_id" class="form-label">Location</label>
                         <select name="work_location_id" class="form-select select2" data-placeholder="Select Location"
                            required>
@@ -232,13 +225,6 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="edit_tyre_type" class="form-label">Type</label>
-                        <select id="edit_tyre_type" name="tyre_type" class="form-select" required>
-                           <option value="Radial">Radial</option>
-                           <option value="Bias">Bias</option>
-                        </select>
-                     </div>
-                     <div class="col mb-3">
                         <label for="edit_work_location_id" class="form-label">Location</label>
                         <select id="edit_work_location_id" name="work_location_id" class="form-select select2" required>
                            <option value="">Select Location</option>
@@ -338,7 +324,7 @@
                defaultContent: '-'
             },
             {
-               data: 'tyre_type',
+               data: 'size.type',
                defaultContent: '-'
             },
             {
@@ -363,33 +349,33 @@
                orderable: false,
                render: function (data, type, row) {
                   return `
-                           <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                 href="/tyre_performance/master_tyre/${row.id}"
-                                 title="View Details">
-                                 <i class="icon-base ri ri-eye-line"></i>
-                              </a>
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                                 data-id="${row.id}" data-serial="${row.serial_number}"
-                                 data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                                 data-pattern-id="${row.tyre_pattern_id}"
-                                 data-segment-id="${row.tyre_segment_id}" data-type="${row.tyre_type}"
-                                 data-location-id="${row.work_location_id}" data-status="${row.status}"
-                                 data-price="${row.price || ''}"
-                                 data-initial-tread="${row.initial_tread_depth || ''}"
-                                 data-current-tread="${row.current_tread_depth || ''}"
-                                 data-retread-count="${row.retread_count || 0}"
-                                 title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                                 data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
-                           </div>
-                        `;
+                              <div class="d-flex align-items-center">
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                    href="/tyre_performance/master_tyre/${row.id}"
+                                    title="View Details">
+                                    <i class="icon-base ri ri-eye-line"></i>
+                                 </a>
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                                    href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                                    data-id="${row.id}" data-serial="${row.serial_number}"
+                                    data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                                    data-pattern-id="${row.tyre_pattern_id}"
+                                     data-segment-id="${row.tyre_segment_id}"
+                                     data-location-id="${row.work_location_id}" data-status="${row.status}"
+                                    data-price="${row.price || ''}"
+                                    data-initial-tread="${row.initial_tread_depth || ''}"
+                                    data-current-tread="${row.current_tread_depth || ''}"
+                                    data-retread-count="${row.retread_count || 0}"
+                                    title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                                    data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              </div>
+                           `;
                }
             }
             ],
@@ -406,7 +392,6 @@
             const sizeId = $(this).data('size-id');
             const patternId = $(this).data('pattern-id');
             const segmentId = $(this).data('segment-id');
-            const type = $(this).data('type');
             const locationId = $(this).data('location-id');
             const status = $(this).data('status');
             const price = $(this).data('price');
@@ -420,7 +405,6 @@
             $('#edit_size_id').val(sizeId).trigger('change');
             $('#edit_pattern_id').val(patternId === 'null' ? '' : patternId).trigger('change');
             $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
-            $('#edit_tyre_type').val(type === 'null' ? '' : type);
             $('#edit_work_location_id').val(locationId).trigger('change');
             $('#edit_status').val(status);
             $('#edit_price').val(price);
@@ -471,21 +455,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-
-         // Auto-sync Tyre Type based on Size
-         $('#tyre_size_id').on('change', function () {
-            const type = $(this).find(':selected').data('type');
-            if (type) {
-               $('#tyre_type').val(type);
-            }
-         });
-
-         $('#edit_size_id').on('change', function () {
-            const type = $(this).find(':selected').data('type');
-            if (type) {
-               $('#edit_tyre_type').val(type);
-            }
-         });
 
          // Initialize Select2
          $('.select2').each(function () {

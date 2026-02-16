@@ -63,7 +63,7 @@ class TyreMasterController extends Controller
                 2 => 'tyre_size_id',
                 3 => 'tyre_pattern_id',
                 4 => 'tyre_segment_id',
-                5 => 'tyre_type',
+                5 => 'tyre_size_id', // Changed from tyre_type to size_id (sorting will use size relationship)
                 6 => 'work_location_id',
                 7 => 'status'
             ];
@@ -105,7 +105,6 @@ class TyreMasterController extends Controller
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
             'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
-            'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
             'price' => 'nullable|numeric|min:0',
             'initial_tread_depth' => 'nullable|numeric|min:0',
@@ -127,7 +126,6 @@ class TyreMasterController extends Controller
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
             'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
-            'tyre_type' => 'required|string|max:255',
             'status' => 'required|in:New,Installed,Scrap,Repaired',
             'price' => 'nullable|numeric|min:0',
             'initial_tread_depth' => 'nullable|numeric|min:0',

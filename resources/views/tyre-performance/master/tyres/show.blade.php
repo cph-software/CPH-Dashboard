@@ -50,7 +50,7 @@
                         </li>
                         <li class="mb-2">
                            <span class="fw-medium text-muted">Type:</span>
-                           <span class="float-end">{{ $tyre->tyre_type }}</span>
+                           <span class="float-end">{{ $tyre->size->type ?? '-' }}</span>
                         </li>
                         <li class="mb-2">
                            <span class="fw-medium text-muted">Segment:</span>
@@ -132,14 +132,16 @@
                         <div class="border rounded p-3 h-100 bg-light">
                            <small class="text-muted d-block mb-1">OTD (Original)</small>
                            <h4 class="mb-0 text-primary">
-                              {{ $tyre->initial_tread_depth ? $tyre->initial_tread_depth . ' mm' : '-' }}</h4>
+                              {{ $tyre->initial_tread_depth ? $tyre->initial_tread_depth . ' mm' : '-' }}
+                           </h4>
                         </div>
                      </div>
                      <div class="col-md-4">
                         <div class="border rounded p-3 h-100 bg-light">
                            <small class="text-muted d-block mb-1">RTD (Current)</small>
                            <h4 class="mb-0 text-warning">
-                              {{ $tyre->current_tread_depth ? $tyre->current_tread_depth . ' mm' : '-' }}</h4>
+                              {{ $tyre->current_tread_depth ? $tyre->current_tread_depth . ' mm' : '-' }}
+                           </h4>
                         </div>
                      </div>
                      <div class="col-md-4">

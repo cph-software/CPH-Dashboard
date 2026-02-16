@@ -25,7 +25,6 @@
                <thead>
                   <tr>
                      <th>Brand Name</th>
-                     <th>Type</th>
                      <th>Status</th>
                      <th>Actions</th>
                   </tr>
@@ -34,7 +33,6 @@
                   @foreach ($brands as $brand)
                      <tr>
                         <td><strong>{{ $brand->brand_name }}</strong></td>
-                        <td>{{ $brand->brand_type ?? '-' }}</td>
                         <td>
                            <span class="badge bg-label-{{ $brand->status == 'Active' ? 'success' : 'secondary' }}">
                               {{ $brand->status }}
@@ -45,7 +43,7 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editBrandModal"
                                  data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}"
-                                 data-type="{{ $brand->brand_type }}" data-status="{{ $brand->status }}" title="Edit">
+                                 data-status="{{ $brand->status }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
@@ -79,13 +77,6 @@
                         <label for="brand_name" class="form-label">Brand Name</label>
                         <input type="text" id="brand_name" name="brand_name" class="form-control"
                            placeholder="Enter Brand Name" required>
-                     </div>
-                  </div>
-                  <div class="row">
-                     <div class="col mb-3">
-                        <label for="brand_type" class="form-label">Brand Type</label>
-                        <input type="text" id="brand_type" name="brand_type" class="form-control"
-                           placeholder="Enter Type (Optional)">
                      </div>
                   </div>
                   <div class="row">
@@ -128,13 +119,6 @@
                   </div>
                   <div class="row">
                      <div class="col mb-3">
-                        <label for="edit_brand_type" class="form-label">Brand Type</label>
-                        <input type="text" id="edit_brand_type" name="brand_type" class="form-control"
-                           placeholder="Enter Type (Optional)">
-                     </div>
-                  </div>
-                  <div class="row">
-                     <div class="col mb-3">
                         <label for="edit_status" class="form-label">Status</label>
                         <select id="edit_status" name="status" class="form-select" required>
                            <option value="Active">Active</option>
@@ -165,7 +149,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-brands').DataTable({
             order: [
                [0, 'desc']
@@ -176,19 +160,17 @@
 
          const editForm = $('#editBrandForm');
 
-         $(document).on('click', '.edit-brand', function() {
+         $(document).on('click', '.edit-brand', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
-            const type = $(this).data('type');
             const status = $(this).data('status');
 
             editForm.attr('action', `{{ url('tyre_performance/master_brand') }}/${id}`);
             $('#edit_brand_name').val(name);
-            $('#edit_brand_type').val(type === 'null' ? '' : type);
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-brand', function() {
+         $(document).on('click', '.delete-brand', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -230,6 +212,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-      });
+         });
    </script>
 @endsection
