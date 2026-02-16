@@ -138,7 +138,7 @@ class TyreMovementController extends Controller
         } else {
             $tyresOnVehicle = Tyre::where('current_vehicle_id', $vehicleId)
                 ->whereNotNull('current_position_id')
-                ->with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name'])
+                ->with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name', 'latestInstallation'])
                 ->get();
 
             $positionIds = $tyresOnVehicle->pluck('current_position_id');

@@ -69,7 +69,7 @@
 
          <div class="row">
             <!-- Left Column: Layout Ban (Visual) -->
-            <div class="col-xl-8 col-lg-7">
+            <div class="col-xl-6 col-lg-8">
                <div class="card mb-4 shadow-sm" style="min-height: 450px;">
                   <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                      <h6 class="mb-0 fw-bold"><i class="ri-layout-grid-line me-2"></i>Visual Layout Ban</h6>
@@ -100,7 +100,7 @@
             </div>
 
             <!-- Right Column: Removal Details -->
-            <div class="col-xl-4 col-lg-5">
+            <div class="col-xl-6 col-lg-4">
                <div class="card mb-4 shadow-sm">
                   <div class="card-header bg-transparent border-bottom">
                      <h6 class="mb-0 fw-bold"><i class="ri-list-settings-line me-2"></i>Detail Pelepasan</h6>
@@ -134,44 +134,46 @@
                         </div>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Alasan (Failure Code)</label>
-                        <select name="failure_code_id" id="failure_code_id" class="form-select select2"
-                           data-placeholder="Kenapa dilepas?">
-                           <option value="">-- Pilih Alasan --</option>
-                           @foreach ($failureCodes as $fc)
-                              <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}
-                              </option>
-                           @endforeach
-                        </select>
+                     <div class="row g-2 mb-3">
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Alasan (Failure Code)</label>
+                           <select name="failure_code_id" id="failure_code_id" class="form-select select2"
+                              data-placeholder="Pilih Alasan...">
+                              <option value="">-- Pilih Alasan --</option>
+                              @foreach ($failureCodes as $fc)
+                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}
+                                 </option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Status Akhir Ban</label>
+                           <select name="target_status" id="target_status" class="form-select" required>
+                              <option value="Repaired">REPAIR (Butuh Perbaikan)</option>
+                              <option value="Scrap">SCRAP (Rusak Total / Afkir)</option>
+                              <option value="New">STOCK (Bagus / Pindah Unit)</option>
+                           </select>
+                        </div>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Status Akhir Ban</label>
-                        <select name="target_status" id="target_status" class="form-select" required>
-                           <option value="Repaired">REPAIR (Butuh Perbaikan)</option>
-                           <option value="Scrap">SCRAP (Rusak Total / Afkir)</option>
-                           <option value="New">STOCK (Bagus / Pindah Unit)</option>
-                        </select>
-                     </div>
-
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
-                        <select name="work_location_id" id="work_location_id" class="form-select select2"
-                           data-placeholder="Pilih Lokasi...">
-                           <option value=""></option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Operational Segment</label>
-                        <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                           data-placeholder="Pilih Segmen..." disabled>
-                           <option value=""></option>
-                        </select>
+                     <div class="row g-2 mb-3">
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2"
+                              data-placeholder="Pilih Lokasi...">
+                              <option value=""></option>
+                              @foreach ($locations as $loc)
+                                 <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Operational Segment</label>
+                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                              data-placeholder="Pilih Segmen..." disabled>
+                              <option value=""></option>
+                           </select>
+                        </div>
                      </div>
 
                      <div class="mb-3">
@@ -184,7 +186,7 @@
                            </div>
                            <div id="bolt_qty_container" style="display: none;">
                               <div class="input-group input-group-sm">
-                                 <span class="input-group-text badge-danger text-white border-danger">Jumlah Baut
+                                 <span class="input-group-text bg-primary text-white border-primary">Jumlah Baut
                                     Baru</span>
                                  <input type="number" name="new_bolts_quantity" class="form-control border-danger"
                                     placeholder="Qty" style="width: 80px;">
@@ -193,10 +195,15 @@
                         </div>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Tyreman</label>
-                        <input type="text" name="tyreman_1" class="form-control mb-2" placeholder="Tyreman 1">
-                        <input type="text" name="tyreman_2" class="form-control" placeholder="Helper (Optional)">
+                     <div class="row g-2 mb-3">
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Tyreman 1</label>
+                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama">
+                        </div>
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Tyreman 2 (Helper)</label>
+                           <input type="text" name="tyreman_2" class="form-control" placeholder="Nama">
+                        </div>
                      </div>
 
                      <div class="row g-2 mb-3">
@@ -279,6 +286,7 @@
          const layoutContainer = document.getElementById('layout_container');
          const selectionInfo = document.getElementById('selection_info');
          let assignedTyres = {};
+         let suggestedSegmentId = null; // Store suggested segment from installation history
 
          // Initialize Select2
          $('.select2').each(function () {
@@ -318,6 +326,17 @@
                   data.forEach(seg => {
                      segmentSelect.append(`<option value="${seg.id}">${seg.segment_name}</option>`);
                   });
+
+                  // Auto-select segment if suggested via tyre history
+                  if (suggestedSegmentId) {
+                     segmentSelect.val(suggestedSegmentId);
+                     // Verify if selection worked (it might not be in this location list)
+                     if (!segmentSelect.val()) {
+                        // Reset if not found in this location
+                        suggestedSegmentId = null;
+                     }
+                  }
+
                   segmentSelect.trigger('change');
                });
          });
@@ -432,6 +451,30 @@
                document.getElementById('info_pattern_size').textContent =
                   `${tyre.pattern ? tyre.pattern.name : '-'} / ${tyre.size ? tyre.size.size : '-'}`;
                infoArea.style.display = 'block';
+
+               // --- AUTO-FILL LOGIC FROM LATEST INSTALLATION ---
+               if (tyre.latest_installation) {
+                  // 1. Rim Size
+                  if (tyre.latest_installation.rim_size) {
+                     $('input[name="rim_size"]').val(tyre.latest_installation.rim_size);
+                  }
+
+                  // 2. Operational Segment (Set suggestion for location change)
+                  if (tyre.latest_installation.operational_segment_id) {
+                     suggestedSegmentId = tyre.latest_installation.operational_segment_id;
+
+                     // If location is already selected and segments loaded, try to select immediately
+                     const currentSegmentVal = $('#operational_segment_id').val();
+                     if (!currentSegmentVal && $('#operational_segment_id option').length > 1) {
+                        $('#operational_segment_id').val(suggestedSegmentId).trigger('change');
+                     }
+                  }
+               } else {
+                  // Clear if no history
+                  $('input[name="rim_size"]').val('');
+                  suggestedSegmentId = null;
+               }
+               // ------------------------------------------------
             } else {
                infoArea.style.display = 'none';
                selectionInfo.style.display = 'none';
