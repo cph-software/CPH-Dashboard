@@ -52,11 +52,11 @@ class TyrePositionConfiguration extends Model
         $frontCount = $axleConfig['front'] ?? 0;
         for ($i = 1; $i <= $frontCount; $i++) {
             $prefix = $frontCount > 1 ? "$i" : "";
-            
+
             // Left (1)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "LF$prefix/" . ($seq),
+                'position_code' => "LF/" . ($seq),
                 'position_name' => "Left Front $i",
                 'axle_type' => 'Front',
                 'axle_number' => $i,
@@ -64,11 +64,11 @@ class TyrePositionConfiguration extends Model
                 'is_spare' => false,
                 'display_order' => $order++,
             ];
-            
+
             // Right (2)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "RF$prefix/" . ($seq + 1),
+                'position_code' => "RF/" . ($seq + 1),
                 'position_name' => "Right Front $i",
                 'axle_type' => 'Front',
                 'axle_number' => $i,
@@ -83,16 +83,16 @@ class TyrePositionConfiguration extends Model
         $middleCount = $axleConfig['middle'] ?? 0;
         for ($i = 1; $i <= $middleCount; $i++) {
             $prefix = $middleCount > 1 ? $i : "";
-            
+
             // User Pattern: LMO/4 LMI/3 - RMI/5 RMO/6
             // Order in visual (Left to Right): LO, LI, RI, RO
             // Order in numbering (Inner first): LI=seq, LO=seq+1, RI=seq+2, RO=seq+3
-            
+
             // Left side group
             // LMO (LO)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "LM${prefix}O/" . ($seq + 1),
+                'position_code' => "LMO/" . ($seq + 1),
                 'position_name' => "Left Middle ${i} Outer",
                 'axle_type' => 'Middle',
                 'axle_number' => $i,
@@ -103,7 +103,7 @@ class TyrePositionConfiguration extends Model
             // LMI (LI)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "LM${prefix}I/" . ($seq),
+                'position_code' => "LMI/" . ($seq),
                 'position_name' => "Left Middle ${i} Inner",
                 'axle_type' => 'Middle',
                 'axle_number' => $i,
@@ -116,7 +116,7 @@ class TyrePositionConfiguration extends Model
             // RMI (RI)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "RM${prefix}I/" . ($seq + 2),
+                'position_code' => "RMI/" . ($seq + 2),
                 'position_name' => "Right Middle ${i} Inner",
                 'axle_type' => 'Middle',
                 'axle_number' => $i,
@@ -127,7 +127,7 @@ class TyrePositionConfiguration extends Model
             // RMO (RO)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "RM${prefix}O/" . ($seq + 3),
+                'position_code' => "RMO/" . ($seq + 3),
                 'position_name' => "Right Middle ${i} Outer",
                 'axle_type' => 'Middle',
                 'axle_number' => $i,
@@ -142,13 +142,13 @@ class TyrePositionConfiguration extends Model
         $rearCount = $axleConfig['rear'] ?? 0;
         for ($i = 1; $i <= $rearCount; $i++) {
             $prefix = $rearCount > 1 ? $i : "";
-            
+
             // Same pattern for Rear
             // Left side group
             // LRO (LO)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "LR${prefix}O/" . ($seq + 1),
+                'position_code' => "LRO/" . ($seq + 1),
                 'position_name' => "Left Rear ${i} Outer",
                 'axle_type' => 'Rear',
                 'axle_number' => $i,
@@ -159,7 +159,7 @@ class TyrePositionConfiguration extends Model
             // LRI (LI)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "LR${prefix}I/" . ($seq),
+                'position_code' => "LRI/" . ($seq),
                 'position_name' => "Left Rear ${i} Inner",
                 'axle_type' => 'Rear',
                 'axle_number' => $i,
@@ -172,7 +172,7 @@ class TyrePositionConfiguration extends Model
             // RRI (RI)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "RR${prefix}I/" . ($seq + 2),
+                'position_code' => "RRI/" . ($seq + 2),
                 'position_name' => "Right Rear ${i} Inner",
                 'axle_type' => 'Rear',
                 'axle_number' => $i,
@@ -183,7 +183,7 @@ class TyrePositionConfiguration extends Model
             // RRO (RO)
             $positions[] = [
                 'configuration_id' => $this->id,
-                'position_code' => "RR${prefix}O/" . ($seq + 3),
+                'position_code' => "RRO/" . ($seq + 3),
                 'position_name' => "Right Rear ${i} Outer",
                 'axle_type' => 'Rear',
                 'axle_number' => $i,

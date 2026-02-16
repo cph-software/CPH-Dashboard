@@ -13,7 +13,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/debug-menus', function() {
+Route::get('/debug-menus', function () {
     return \App\Models\Menu::where('url', 'like', '%master_%')->orWhere('name', 'like', '%Vehicle%')->orWhere('name', 'like', '%Kendaraan%')->get();
 });
 
@@ -67,7 +67,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master');
         Route::get('master_kendaraan/data', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'data'])->name('tyre-kendaraan.data');
         Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan');
-        
+
         // Tyre Movement Routes
         Route::get('movement', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'index'])->name('tyre-movement.index');
         Route::get('pemasangan', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'pemasangan'])->name('tyre-movement.pemasangan');
