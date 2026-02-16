@@ -15,7 +15,7 @@ class CreateTyreBrandsTable extends Migration
     {
         Schema::create('tyre_brands', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('brand_type');
+            $table->string('brand_type')->nullable();
             $table->string('brand_name');
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
             $table->timestamps();

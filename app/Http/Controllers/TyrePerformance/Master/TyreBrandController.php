@@ -18,7 +18,6 @@ class TyreBrandController extends Controller
     {
         $request->validate([
             'brand_name' => 'required|string|max:255',
-            'brand_type' => 'nullable|string|max:255',
             'status' => 'required|in:Active,Inactive',
         ]);
 
@@ -31,7 +30,6 @@ class TyreBrandController extends Controller
     {
         $request->validate([
             'brand_name' => 'required|string|max:255',
-            'brand_type' => 'nullable|string|max:255',
             'status' => 'required|in:Active,Inactive',
         ]);
 
