@@ -5,15 +5,17 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 use App\Http\Controllers\Controller;
 use App\Models\TyreSize;
 use App\Models\TyreBrand;
+use App\Models\TyrePattern;
 use Illuminate\Http\Request;
 
 class TyreSizeController extends Controller
 {
     public function index()
     {
-        $sizes = TyreSize::with('brand')->latest()->get();
+        $sizes = TyreSize::with(['brand', 'pattern'])->latest()->get();
         $brands = TyreBrand::where('status', 'Active')->get();
-        return view('tyre-performance.master.sizes.index', compact('sizes', 'brands'));
+        $patterns = TyrePattern::where('status', 'Active')->get();
+        return view('tyre-performance.master.sizes.index', compact('sizes', 'brands', 'patterns'));
     }
 
     public function store(Request $request)
@@ -21,12 +23,24 @@ class TyreSizeController extends Controller
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
+            'tyre_pattern_id' => 'nullable',
             'type' => 'required|in:Bias,Radial',
             'std_otd' => 'nullable|numeric',
             'ply_rating' => 'nullable|integer',
         ]);
 
-        TyreSize::create($request->all());
+        $data = $request->all();
+
+        // Handle Custom Pattern (Tagging)
+        if ($request->tyre_pattern_id && !is_numeric($request->tyre_pattern_id)) {
+            $pattern = TyrePattern::firstOrCreate(
+                ['name' => $request->tyre_pattern_id],
+                ['tyre_brand_id' => $request->tyre_brand_id, 'status' => 'Active']
+            );
+            $data['tyre_pattern_id'] = $pattern->id;
+        }
+
+        TyreSize::create($data);
 
         return redirect()->back()->with('success', 'Size created successfully');
     }
@@ -36,13 +50,25 @@ class TyreSizeController extends Controller
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
+            'tyre_pattern_id' => 'nullable',
             'type' => 'required|in:Bias,Radial',
             'std_otd' => 'nullable|numeric',
             'ply_rating' => 'nullable|integer',
         ]);
 
         $size = TyreSize::findOrFail($id);
-        $size->update($request->all());
+        $data = $request->all();
+
+        // Handle Custom Pattern (Tagging)
+        if ($request->tyre_pattern_id && !is_numeric($request->tyre_pattern_id)) {
+            $pattern = TyrePattern::firstOrCreate(
+                ['name' => $request->tyre_pattern_id],
+                ['tyre_brand_id' => $request->tyre_brand_id, 'status' => 'Active']
+            );
+            $data['tyre_pattern_id'] = $pattern->id;
+        }
+
+        $size->update($data);
 
         return redirect()->back()->with('success', 'Size updated successfully');
     }

@@ -18,7 +18,7 @@ class TyreMasterController extends Controller
         // Removed eager loading of ALL tyres to improve performance
         // Data will be loaded via AJAX for the DataTable
         $brands = TyreBrand::where('status', 'Active')->get();
-        $sizes = TyreSize::all();
+        $sizes = TyreSize::with('pattern')->get();
         $segments = TyreSegment::where('status', 'Active')->get();
         $patterns = TyrePattern::all();
         $locations = TyreLocation::all();

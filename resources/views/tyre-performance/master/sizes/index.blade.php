@@ -27,6 +27,7 @@
                   <tr>
                      <th>Size</th>
                      <th>Brand</th>
+                     <th>Pattern</th>
                      <th>Type</th>
                      <th>Std OTD</th>
                      <th>Ply Rating</th>
@@ -38,6 +39,7 @@
                      <tr>
                         <td><strong>{{ $size->size }}</strong></td>
                         <td>{{ $size->brand->brand_name ?? '-' }}</td>
+                        <td>{{ $size->pattern->name ?? '-' }}</td>
                         <td>{{ $size->type }}</td>
                         <td>{{ $size->std_otd ?? '-' }}</td>
                         <td>{{ $size->ply_rating ?? '-' }}</td>
@@ -46,8 +48,9 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
                                  data-id="{{ $size->id }}" data-size="{{ $size->size }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}" data-type="{{ $size->type }}"
-                                 data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" title="Edit">
+                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
+                                 data-type="{{ $size->type }}" data-otd="{{ $size->std_otd }}"
+                                 data-ply="{{ $size->ply_rating }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
@@ -79,8 +82,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="size" class="form-label">Size</label>
-                        <input type="text" id="size" name="size" class="form-control"
-                           placeholder="e.g. 11.00R20" required>
+                        <input type="text" id="size" name="size" class="form-control" placeholder="e.g. 11.00R20" required>
                      </div>
                   </div>
                   <div class="row">
@@ -96,12 +98,24 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
+                        <label for="tyre_pattern_id" class="form-label">Pattern</label>
+                        <select name="tyre_pattern_id" class="form-select select2-tags"
+                           data-placeholder="Select or Type Pattern">
+                           <option value="">Select Pattern</option>
+                           @foreach ($patterns as $pattern)
+                              <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col mb-3">
                         <label for="type" class="form-label">Type</label>
                         <select name="type" class="form-select" required>
                            <option value="Bias">Bias</option>
                            <option value="Radial">Radial</option>
                         </select>
                      </div>
+                  </div>
+                  <div class="row">
                      <div class="col mb-3">
                         <label for="std_otd" class="form-label">Std OTD</label>
                         <input type="number" step="0.01" id="std_otd" name="std_otd" class="form-control"
@@ -155,6 +169,16 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
+                        <label for="edit_pattern_id" class="form-label">Pattern</label>
+                        <select id="edit_pattern_id" name="tyre_pattern_id" class="form-select select2-tags"
+                           data-placeholder="Select or Type Pattern">
+                           <option value="">Select Pattern</option>
+                           @foreach ($patterns as $pattern)
+                              <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col mb-3">
                         <label for="edit_type" class="form-label">Type</label>
                         <select id="edit_type" name="type" class="form-select" required>
                            <option value="Bias">Bias</option>
@@ -196,7 +220,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-sizes').DataTable({
             order: [
                [0, 'desc']
@@ -207,10 +231,11 @@
 
          const editForm = $('#editSizeForm');
 
-         $(document).on('click', '.edit-size', function() {
+         $(document).on('click', '.edit-size', function () {
             const id = $(this).data('id');
             const size = $(this).data('size');
             const brandId = $(this).data('brand-id');
+            const patternId = $(this).data('pattern-id');
             const type = $(this).data('type');
             const otd = $(this).data('otd');
             const ply = $(this).data('ply');
@@ -218,12 +243,13 @@
             editForm.attr('action', `{{ url('tyre_performance/master_size') }}/${id}`);
             $('#edit_size').val(size);
             $('#edit_brand_id').val(brandId).trigger('change');
+            $('#edit_pattern_id').val(patternId).trigger('change');
             $('#edit_type').val(type);
             $('#edit_otd').val(otd === 'null' || otd === null ? '' : otd);
             $('#edit_ply').val(ply === 'null' || ply === null ? '' : ply);
          });
 
-         $(document).on('click', '.delete-size', function() {
+         $(document).on('click', '.delete-size', function () {
             const id = $(this).data('id');
             const sizeValue = $(this).data('size');
 
@@ -275,14 +301,14 @@
             return null;
          }
 
-         $('#size').on('input', function() {
+         $('#size').on('input', function () {
             const type = detectType($(this).val());
             if (type) {
                $('select[name="type"]').val(type);
             }
          });
 
-         $('#edit_size').on('input', function() {
+         $('#edit_size').on('input', function () {
             const type = detectType($(this).val());
             if (type) {
                $('#edit_type').val(type);
@@ -290,11 +316,21 @@
          });
 
          // Initialize Select2
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
                dropdownParent: $this.closest('.modal')
+            });
+         });
+
+         // Initialize Select2 with Tags
+         $('.select2-tags').each(function () {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal'),
+               tags: true
             });
          });
       });

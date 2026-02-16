@@ -70,7 +70,8 @@
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
                               <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}" data-std-otd="{{ $size->std_otd }}">
+                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
+                                 data-std-otd="{{ $size->std_otd }}">
                                  {{ $size->size }}
                               </option>
                            @endforeach
@@ -91,7 +92,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_pattern_id" class="form-label">Pattern</label>
-                        <select name="tyre_pattern_id" class="form-select select2" data-placeholder="Select Pattern">
+                        <select id="tyre_pattern_id" name="tyre_pattern_id" class="form-select select2"
+                           data-placeholder="Select Pattern">
                            <option value="">Select Pattern</option>
                            @foreach ($patterns as $pattern)
                               <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
@@ -193,7 +195,8 @@
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
                               <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}" data-std-otd="{{ $size->std_otd }}">
+                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
+                                 data-std-otd="{{ $size->std_otd }}">
                                  {{ $size->size }}
                               </option>
                            @endforeach
@@ -356,33 +359,33 @@
                orderable: false,
                render: function (data, type, row) {
                   return `
-                                                   <div class="d-flex align-items-center">
-                                                      <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                                         href="/tyre_performance/master_tyre/${row.id}"
-                                                         title="View Details">
-                                                         <i class="icon-base ri ri-eye-line"></i>
-                                                      </a>
-                                                      <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                                                         href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                                                         data-id="${row.id}" data-serial="${row.serial_number}"
-                                                         data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                                                         data-pattern-id="${row.tyre_pattern_id}"
-                                                          data-segment-id="${row.tyre_segment_id}"
-                                                          data-location-id="${row.work_location_id}" data-status="${row.status}"
-                                                         data-price="${row.price || ''}"
-                                                         data-initial-tread="${row.initial_tread_depth || ''}"
-                                                         data-current-tread="${row.current_tread_depth || ''}"
-                                                         data-retread-count="${row.retread_count || 0}"
-                                                         title="Edit">
-                                                         <i class="icon-base ri ri-pencil-line"></i>
-                                                      </a>
-                                                      <button type="button"
-                                                         class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                                                         data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                                                         <i class="icon-base ri ri-delete-bin-line"></i>
-                                                      </button>
-                                                   </div>
-                                                `;
+                                                            <div class="d-flex align-items-center">
+                                                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                                                  href="/tyre_performance/master_tyre/${row.id}"
+                                                                  title="View Details">
+                                                                  <i class="icon-base ri ri-eye-line"></i>
+                                                               </a>
+                                                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                                                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                                                                  data-id="${row.id}" data-serial="${row.serial_number}"
+                                                                  data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                                                                  data-pattern-id="${row.tyre_pattern_id}"
+                                                                   data-segment-id="${row.tyre_segment_id}"
+                                                                   data-location-id="${row.work_location_id}" data-status="${row.status}"
+                                                                  data-price="${row.price || ''}"
+                                                                  data-initial-tread="${row.initial_tread_depth || ''}"
+                                                                  data-current-tread="${row.current_tread_depth || ''}"
+                                                                  data-retread-count="${row.retread_count || 0}"
+                                                                  title="Edit">
+                                                                  <i class="icon-base ri ri-pencil-line"></i>
+                                                               </a>
+                                                               <button type="button"
+                                                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                                                                  data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                                                                  <i class="icon-base ri ri-delete-bin-line"></i>
+                                                               </button>
+                                                            </div>
+                                                         `;
                }
             }
             ],
@@ -424,16 +427,22 @@
          function autoFillBySize(sizeId, targetPrefix = '') {
             const sizeSelector = targetPrefix ? `#${targetPrefix}size_id` : '#tyre_size_id';
             const brandSelector = targetPrefix ? `#${targetPrefix}brand_id` : '#tyre_brand_id';
+            const patternSelector = targetPrefix ? `#${targetPrefix}pattern_id` : '#tyre_pattern_id';
             const initialTreadSelector = targetPrefix ? `#${targetPrefix}initial_tread_depth` : '#initial_tread_depth';
 
             const selectedOption = $(`${sizeSelector} option:selected`);
             if (!selectedOption.val()) return;
 
             const brandId = selectedOption.data('brand-id');
+            const patternId = selectedOption.data('pattern-id');
             const stdOtd = selectedOption.data('std-otd');
 
             if (brandId) {
                $(brandSelector).val(brandId).trigger('change');
+            }
+
+            if (patternId) {
+               $(patternSelector).val(patternId).trigger('change');
             }
 
             if (stdOtd) {
