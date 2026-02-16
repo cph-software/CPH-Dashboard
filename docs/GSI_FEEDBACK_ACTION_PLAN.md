@@ -2,8 +2,8 @@
 
 > **Tanggal Masukan**: 2 Februari 2026 & 12 Februari 2026  
 > **Disusun oleh**: Tim Development CPH Dashboard  
-> **Tanggal Dokumen**: 13 Februari 2026  
-> **Status**: Draft — Menunggu Review & Approval
+> **Tanggal Dokumen**: 16 Februari 2026  
+> **Status**: In Progress — ITEM 1, 2, 3 Selesai pengerjaan.
 
 ---
 
@@ -554,13 +554,12 @@ Schema::table('tyres', function (Blueprint $table) {
 
 ```
 Minggu 1 (17-21 Feb 2026)
-├── ✅ ITEM-3: Kondisi Pemasangan (New/Spare/Repair)     [1-2 jam]
-├── ✅ ITEM-2: Failure Name Adjustable                    [3-5 jam]
-└── 🔧 ITEM-1: Handle HM/KM Reset (Mulai)               [start]
+├── ✅ ITEM-3: Kondisi Pemasangan (New/Spare/Repair)     [100% SELESAI]
+├── ✅ ITEM-2: Failure Name Adjustable                    [100% SELESAI]
+└── ✅ ITEM-1: Handle HM/KM Reset (Selesai)              [100% SELESAI]
 
 Minggu 2 (24-28 Feb 2026)
-├── ✅ ITEM-1: Handle HM/KM Reset (Selesai)              [4-6 jam total]
-└── 🔧 ITEM-5: Overview Dashboard (Fase 1 - DB + Backend) [start]
+└── 🔧 ITEM-5: Overview Dashboard (Fase 1 - DB + Backend) [NEXT STEP]
 
 Minggu 3-4 (3-14 Mar 2026)
 ├── ✅ ITEM-5: Overview Dashboard (Fase 2 - Frontend)
