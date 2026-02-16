@@ -157,6 +157,7 @@
                            <option value="New">New</option>
                            <option value="Installed">Installed</option>
                            <option value="Repaired">Repaired</option>
+                           <option value="Retread">Retread</option>
                            <option value="Scrap">Scrap</option>
                         </select>
                      </div>
@@ -279,6 +280,7 @@
                            <option value="New">New</option>
                            <option value="Installed">Installed</option>
                            <option value="Repaired">Repaired</option>
+                           <option value="Retread">Retread</option>
                            <option value="Scrap">Scrap</option>
                         </select>
                      </div>
@@ -344,14 +346,23 @@
             },
             {
                data: 'status',
-               render: function (data) {
+               render: function (data, type, row) {
                   const badges = {
                      'New': 'primary',
                      'Installed': 'success',
                      'Scrap': 'danger',
-                     'Repaired': 'warning'
+                     'Repaired': 'warning',
+                     'Retread': 'info'
                   };
-                  return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
+
+                  let displayText = data;
+                  if (data === 'New') {
+                     displayText = 'New (R0)';
+                  } else if (data === 'Retread' && row.retread_count) {
+                     displayText = `Retread R${row.retread_count}`;
+                  }
+
+                  return `<span class="badge bg-label-${badges[data] || 'secondary'}">${displayText}</span>`;
                }
             },
             {
@@ -360,33 +371,33 @@
                orderable: false,
                render: function (data, type, row) {
                   return `
-                                                                  <div class="d-flex align-items-center">
-                                                                     <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                                                        href="/tyre_performance/master_tyre/${row.id}"
-                                                                        title="View Details">
-                                                                        <i class="icon-base ri ri-eye-line"></i>
-                                                                     </a>
-                                                                     <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                                                                        href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                                                                        data-id="${row.id}" data-serial="${row.serial_number}"
-                                                                        data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                                                                        data-pattern-id="${row.tyre_pattern_id}"
-                                                                         data-segment-id="${row.tyre_segment_id}"
-                                                                         data-location-id="${row.work_location_id}" data-status="${row.status}"
-                                                                        data-price="${row.price || ''}"
-                                                                        data-initial-tread="${row.initial_tread_depth || ''}"
-                                                                        data-current-tread="${row.current_tread_depth || ''}"
-                                                                        data-retread-count="${row.retread_count || 0}"
-                                                                        title="Edit">
-                                                                        <i class="icon-base ri ri-pencil-line"></i>
-                                                                     </a>
-                                                                     <button type="button"
-                                                                        class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                                                                        data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                                                                        <i class="icon-base ri ri-delete-bin-line"></i>
-                                                                     </button>
-                                                                  </div>
-                                                               `;
+                                                                           <div class="d-flex align-items-center">
+                                                                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                                                                 href="/tyre_performance/master_tyre/${row.id}"
+                                                                                 title="View Details">
+                                                                                 <i class="icon-base ri ri-eye-line"></i>
+                                                                              </a>
+                                                                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                                                                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                                                                                 data-id="${row.id}" data-serial="${row.serial_number}"
+                                                                                 data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                                                                                 data-pattern-id="${row.tyre_pattern_id}"
+                                                                                  data-segment-id="${row.tyre_segment_id}"
+                                                                                  data-location-id="${row.work_location_id}" data-status="${row.status}"
+                                                                                 data-price="${row.price || ''}"
+                                                                                 data-initial-tread="${row.initial_tread_depth || ''}"
+                                                                                 data-current-tread="${row.current_tread_depth || ''}"
+                                                                                 data-retread-count="${row.retread_count || 0}"
+                                                                                 title="Edit">
+                                                                                 <i class="icon-base ri ri-pencil-line"></i>
+                                                                              </a>
+                                                                              <button type="button"
+                                                                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                                                                                 data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                                                                                 <i class="icon-base ri ri-delete-bin-line"></i>
+                                                                              </button>
+                                                                           </div>
+                                                                        `;
                }
             }
             ],
@@ -534,12 +545,27 @@
 
          // Initialize Select2
          $('.select2').each(function () {
-            var $this = $(this);
-            $this.wrap('<div class="position-relative"></div>').select2({
-               placeholder: $this.data('placeholder'),
-               dropdownParent: $this.closest('.modal')
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent()
             });
          });
-      });
+
+         // --- RETREAD AUTO-STATUS LOGIC ---
+         $(document).on('change', 'select[name="retread_count"]', function() {
+            const retreadVal = parseInt($(this).val()) || 0;
+            const form = $(this).closest('form');
+            const statusSelect = form.find('select[name="status"]');
+            
+            if (retreadVal > 0) {
+               statusSelect.val('Retread');
+            } else {
+               // If count is 0 and status is currently Retread, revert to New
+               if (statusSelect.val() === 'Retread') {
+                  statusSelect.val('New');
+               }
+            }
+         });
+         });
    </script>
 @endsection

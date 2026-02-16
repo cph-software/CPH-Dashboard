@@ -88,8 +88,7 @@
                   <label class="form-label fw-semibold">Rentang Tanggal:</label>
                   <div class="input-group input-group-sm">
                      <span class="input-group-text"><i class="icon-base ri ri-calendar-line"></i></span>
-                     <input type="date" name="start_date" class="form-control"
-                        value="{{ $startDate->format('Y-m-d') }}">
+                     <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
                      <span class="input-group-text">sampai</span>
                      <input type="date" name="end_date" class="form-control" value="{{ $endDate->format('Y-m-d') }}">
                   </div>
@@ -301,7 +300,7 @@
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Fleet Health (RTD
-                     Distribution)</h6>
+                     Distribution and Population)</h6>
                   <p class="kpi-sub mb-0">Distribusi Ketebalan Tapak Ban Terpasang</p>
                </div>
                <div class="card-body">
@@ -365,8 +364,7 @@
                                  <tr class="alert-tyre-row">
                                     <td class="ps-3">
                                        <strong class="d-block small">{{ $t->serial_number }}</strong>
-                                       <span class="text-muted"
-                                          style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
+                                       <span class="text-muted" style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
                                     </td>
                                     <td>
                                        <span
@@ -383,8 +381,8 @@
                                        <div class="d-flex align-items-center">
                                           <span class="small me-2">{{ $wearPct }}%</span>
                                           <div class="rtd-bar flex-grow-1">
-                                             <div class="rtd-bar-inner"
-                                                style="width:{{ $wearPct }}%;background:{{ $barColor }}"></div>
+                                             <div class="rtd-bar-inner" style="width:{{ $wearPct }}%;background:{{ $barColor }}">
+                                             </div>
                                           </div>
                                        </div>
                                     </td>
@@ -411,21 +409,27 @@
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-tools-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">1. Diagnosa & Pelepasan</p>
-                           <p class="mb-0 kpi-sub">Jika RTD < 5mm, segera lakukan <strong>Pelepasan</strong> melalui menu <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai sebagai panduan (Scrap/Repair).</p>
+                           <p class="mb-0 kpi-sub">Jika RTD < 5mm, segera lakukan <strong>Pelepasan</strong> melalui menu
+                                 <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai sebagai panduan
+                                 (Scrap/Repair).</p>
                         </div>
                      </div>
                      <div class="d-flex align-items-start border-top pt-2">
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-refresh-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">2. Update Status Ban</p>
-                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban di <em>Master Tyre</em> menjadi <strong>Scrap</strong> (jika rusak) atau <strong>Repaired</strong> (siap pakai kembali).</p>
+                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban di
+                              <em>Master Tyre</em> menjadi <strong>Scrap</strong> (jika rusak) atau
+                              <strong>Repaired</strong> (siap pakai kembali).
+                           </p>
                         </div>
                      </div>
                      <div class="d-flex align-items-start border-top pt-2">
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-history-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">3. Pencatatan Otomatis</p>
-                           <p class="mb-0 kpi-sub">Setiap pergerakan dan update status akan <strong>tercatat otomatis</strong> di log <em>Tyre Performance</em> (Tyre Movement History).</p>
+                           <p class="mb-0 kpi-sub">Setiap pergerakan dan update status akan <strong>tercatat
+                                 otomatis</strong> di log <em>Tyre Performance</em> (Tyre Movement History).</p>
                         </div>
                      </div>
                   </div>
@@ -471,7 +475,8 @@
                                     @foreach ($recentMovements as $m)
                                        <tr>
                                           <td class="small">
-                                             {{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}</td>
+                                             {{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}
+                                          </td>
                                           <td>
                                              <span
                                                 class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : 'danger' }} rounded-pill"
@@ -530,8 +535,7 @@
                   <i class="icon-base ri ri-search-eye-line me-2"></i>
                   <span id="drillDownTitleText">Detail Data</span>
                </h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                <div id="drillDownLoading" class="text-center py-5">
@@ -573,7 +577,7 @@
    <script>
       'use strict';
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
 
          // ==========================================
          // Color Palette
@@ -616,7 +620,7 @@
                   value: value
                },
                dataType: 'json',
-               success: function(res) {
+               success: function (res) {
                   document.getElementById('drillDownLoading').style.display = 'none';
 
                   if (!res.data || res.data.length === 0) {
@@ -654,8 +658,12 @@
                         let val = row[key] ?? '-';
                         // Color code status badges
                         if (key === 'status') {
-                           let cls = val === 'Installed' ? 'success' : (val === 'New' ? 'info' :
-                              (val === 'Scrap' ? 'danger' : 'warning'));
+                           let cls = 'secondary';
+                           if (val === 'Installed') cls = 'success';
+                           else if (val === 'New') cls = 'primary';
+                           else if (val === 'Retread') cls = 'info';
+                           else if (val === 'Scrap') cls = 'danger';
+                           else if (val === 'Repaired') cls = 'warning';
                            val = '<span class="badge bg-label-' + cls + ' rounded-pill">' +
                               val + '</span>';
                         }
@@ -689,7 +697,7 @@
                      }
                   });
                },
-               error: function() {
+               error: function () {
                   document.getElementById('drillDownLoading').style.display = 'none';
                   document.getElementById('drillDownEmpty').style.display = 'block';
                   document.getElementById('drillDownTitleText').textContent = 'Error memuat data';
@@ -704,11 +712,12 @@
          const statusLabels = Object.keys(statusData);
          const statusValues = Object.values(statusData);
          const statusColors = statusLabels.map(s => {
+            if (s.startsWith('New')) return colors.primary;
+            if (s.startsWith('Retread')) return colors.info;
+
             switch (s) {
                case 'Installed':
                   return colors.success;
-               case 'New':
-                  return colors.info;
                case 'Repaired':
                   return colors.warning;
                case 'Scrap':
@@ -723,7 +732,7 @@
                type: 'donut',
                height: 280,
                events: {
-                  dataPointSelection: function(event, chartContext, config) {
+                  dataPointSelection: function (event, chartContext, config) {
                      const label = statusLabels[config.dataPointIndex];
                      openDrillDown('status', label);
                   }
@@ -779,7 +788,7 @@
                   show: false
                },
                events: {
-                  dataPointSelection: function(event, chartContext, config) {
+                  dataPointSelection: function (event, chartContext, config) {
                      const monthLabel = monthlyData[config.dataPointIndex].month;
                      const seriesName = config.seriesIndex === 0 ? 'Installation' : 'Removal';
                      openDrillDown('movement', monthLabel + '|' + seriesName);
@@ -787,13 +796,13 @@
                }
             },
             series: [{
-                  name: 'Pemasangan',
-                  data: monthlyData.map(m => m.installations)
-               },
-               {
-                  name: 'Pelepasan',
-                  data: monthlyData.map(m => m.removals)
-               }
+               name: 'Pemasangan',
+               data: monthlyData.map(m => m.installations)
+            },
+            {
+               name: 'Pelepasan',
+               data: monthlyData.map(m => m.removals)
+            }
             ],
             xaxis: {
                categories: monthlyData.map(m => m.month),
@@ -859,7 +868,7 @@
                      show: false
                   },
                   events: {
-                     dataPointSelection: function(event, chartContext, config) {
+                     dataPointSelection: function (event, chartContext, config) {
                         const brandName = brandData[config.dataPointIndex].brand;
                         openDrillDown('brand', brandName);
                      }
@@ -925,20 +934,20 @@
                   show: false
                },
                events: {
-                  dataPointSelection: function(event, chartContext, config) {
+                  dataPointSelection: function (event, chartContext, config) {
                      const locName = locationData[config.dataPointIndex].location_name;
                      openDrillDown('location', locName);
                   }
                }
             },
             series: [{
-                  name: 'Current Stock',
-                  data: locationData.map(l => l.current_stock)
-               },
-               {
-                  name: 'Capacity',
-                  data: locationData.map(l => l.capacity)
-               }
+               name: 'Current Stock',
+               data: locationData.map(l => l.current_stock)
+            },
+            {
+               name: 'Capacity',
+               data: locationData.map(l => l.capacity)
+            }
             ],
             xaxis: {
                categories: locationData.map(l => l.location_name),
@@ -980,7 +989,7 @@
                   type: 'donut',
                   height: 280,
                   events: {
-                     dataPointSelection: function(event, chartContext, config) {
+                     dataPointSelection: function (event, chartContext, config) {
                         const label = failureData[config.dataPointIndex].label;
                         openDrillDown('failure', label);
                      }
@@ -1038,7 +1047,7 @@
                   show: false
                },
                events: {
-                  dataPointSelection: function(event, chartContext, config) {
+                  dataPointSelection: function (event, chartContext, config) {
                      const label = rtdLabels[config.dataPointIndex];
                      openDrillDown('rtd', label);
                   }
@@ -1056,7 +1065,7 @@
                   }
                }
             },
-            colors: [function({
+            colors: [function ({
                value,
                seriesIndex,
                dataPointIndex,
@@ -1097,7 +1106,7 @@
                      show: false
                   },
                   events: {
-                     dataPointSelection: function(event, chartContext, config) {
+                     dataPointSelection: function (event, chartContext, config) {
                         const posName = axleData[config.dataPointIndex].position;
                         openDrillDown('axle', posName);
                      }

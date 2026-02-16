@@ -459,7 +459,12 @@
                      $('input[name="rim_size"]').val(tyre.latest_installation.rim_size);
                   }
 
-                  // 2. Operational Segment (Set suggestion for location change)
+                  // 2. Work Location (Auto-fill from latest installation)
+                  if (tyre.latest_installation.work_location_id) {
+                     $('#work_location_id').val(tyre.latest_installation.work_location_id).trigger('change');
+                  }
+
+                  // 3. Operational Segment (Set suggestion for location change)
                   if (tyre.latest_installation.operational_segment_id) {
                      suggestedSegmentId = tyre.latest_installation.operational_segment_id;
 
@@ -472,6 +477,7 @@
                } else {
                   // Clear if no history
                   $('input[name="rim_size"]').val('');
+                  $('#work_location_id').val('').trigger('change');
                   suggestedSegmentId = null;
                }
                // ------------------------------------------------
