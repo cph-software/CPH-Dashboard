@@ -125,7 +125,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="price" class="form-label">Harga Beli (IDR)</label>
-                        <input type="number" name="price" class="form-control" placeholder="3500000" step="1000">
+                        <input type="text" id="price" name="price" class="form-control currency-input"
+                           placeholder="3.500.000">
                      </div>
                      <div class="col mb-3">
                         <label for="retread_count" class="form-label">Retread Count</label>
@@ -247,7 +248,7 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_price" class="form-label">Harga Beli (IDR)</label>
-                        <input type="number" id="edit_price" name="price" class="form-control" step="1000">
+                        <input type="text" id="edit_price" name="price" class="form-control currency-input">
                      </div>
                      <div class="col mb-3">
                         <label for="edit_retread_count" class="form-label">Retread Count</label>
@@ -359,33 +360,33 @@
                orderable: false,
                render: function (data, type, row) {
                   return `
-                                                            <div class="d-flex align-items-center">
-                                                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                                                  href="/tyre_performance/master_tyre/${row.id}"
-                                                                  title="View Details">
-                                                                  <i class="icon-base ri ri-eye-line"></i>
-                                                               </a>
-                                                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                                                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                                                                  data-id="${row.id}" data-serial="${row.serial_number}"
-                                                                  data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                                                                  data-pattern-id="${row.tyre_pattern_id}"
-                                                                   data-segment-id="${row.tyre_segment_id}"
-                                                                   data-location-id="${row.work_location_id}" data-status="${row.status}"
-                                                                  data-price="${row.price || ''}"
-                                                                  data-initial-tread="${row.initial_tread_depth || ''}"
-                                                                  data-current-tread="${row.current_tread_depth || ''}"
-                                                                  data-retread-count="${row.retread_count || 0}"
-                                                                  title="Edit">
-                                                                  <i class="icon-base ri ri-pencil-line"></i>
-                                                               </a>
-                                                               <button type="button"
-                                                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                                                                  data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                                                                  <i class="icon-base ri ri-delete-bin-line"></i>
-                                                               </button>
-                                                            </div>
-                                                         `;
+                                                                  <div class="d-flex align-items-center">
+                                                                     <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                                                        href="/tyre_performance/master_tyre/${row.id}"
+                                                                        title="View Details">
+                                                                        <i class="icon-base ri ri-eye-line"></i>
+                                                                     </a>
+                                                                     <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                                                                        href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                                                                        data-id="${row.id}" data-serial="${row.serial_number}"
+                                                                        data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                                                                        data-pattern-id="${row.tyre_pattern_id}"
+                                                                         data-segment-id="${row.tyre_segment_id}"
+                                                                         data-location-id="${row.work_location_id}" data-status="${row.status}"
+                                                                        data-price="${row.price || ''}"
+                                                                        data-initial-tread="${row.initial_tread_depth || ''}"
+                                                                        data-current-tread="${row.current_tread_depth || ''}"
+                                                                        data-retread-count="${row.retread_count || 0}"
+                                                                        title="Edit">
+                                                                        <i class="icon-base ri ri-pencil-line"></i>
+                                                                     </a>
+                                                                     <button type="button"
+                                                                        class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                                                                        data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                                                                        <i class="icon-base ri ri-delete-bin-line"></i>
+                                                                     </button>
+                                                                  </div>
+                                                               `;
                }
             }
             ],
@@ -417,7 +418,14 @@
             $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
             $('#edit_work_location_id').val(locationId).trigger('change');
             $('#edit_status').val(status);
-            $('#edit_price').val(price);
+
+            // Format existing price
+            if (price) {
+               $('#edit_price').val(parseInt(price, 10).toLocaleString('id-ID'));
+            } else {
+               $('#edit_price').val('');
+            }
+
             $('#edit_initial_tread_depth').val(initialTread);
             $('#edit_current_tread_depth').val(currentTread);
             $('#edit_retread_count').val(retreadCount);
@@ -456,6 +464,29 @@
 
          $(document).on('change', '#edit_size_id', function () {
             autoFillBySize($(this).val(), 'edit_');
+         });
+
+         // Currency Formatting Logic
+         function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, ''); // Remove non-digits
+            if (value) {
+               value = parseInt(value, 10).toLocaleString('id-ID'); // Format to 1.000.000
+               input.value = value;
+            } else {
+               input.value = '';
+            }
+         }
+
+         $(document).on('input', '.currency-input', function () {
+            formatCurrency(this);
+         });
+
+         // Unformat currency before submit
+         $('form').on('submit', function () {
+            $('.currency-input').each(function () {
+               let value = $(this).val().replace(/\./g, ''); // Remove dots
+               $(this).val(value);
+            });
          });
 
          $(document).on('click', '.delete-tyre', function () {

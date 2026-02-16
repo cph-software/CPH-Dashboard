@@ -68,7 +68,7 @@
 
          <div class="row">
             <!-- Left Column: Layout Ban (Visual) -->
-            <div class="col-xl-8 col-lg-7">
+            <div class="col-xl-6 col-lg-8">
                <div class="card mb-4 shadow-sm" style="min-height: 450px;">
                   <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                      <h6 class="mb-0 fw-bold"><i class="ri-layout-grid-line me-2"></i>Visual Layout Ban</h6>
@@ -99,7 +99,7 @@
             </div>
 
             <!-- Right Column: Detail Tyre & Petugas -->
-            <div class="col-xl-4 col-lg-5">
+            <div class="col-xl-6 col-lg-4">
                <div class="card mb-4 shadow-sm">
                   <div class="card-header bg-transparent border-bottom">
                      <h6 class="mb-0 fw-bold"><i class="ri-list-settings-line me-2"></i>Detail Pemasangan</h6>
@@ -139,23 +139,24 @@
                         </select>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
-                        <select name="work_location_id" id="work_location_id" class="form-select select2"
-                           data-placeholder="Pilih Lokasi...">
-                           <option value=""></option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Operational Segment</label>
-                        <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                           data-placeholder="Pilih Segmen..." disabled>
-                           <option value=""></option>
-                        </select>
+                     <div class="row g-2 mb-3">
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2"
+                              data-placeholder="Pilih Lokasi...">
+                              <option value=""></option>
+                              @foreach ($locations as $loc)
+                                 <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Operational Segment</label>
+                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                              data-placeholder="Pilih Segmen..." disabled>
+                              <option value=""></option>
+                           </select>
+                        </div>
                      </div>
 
                      <div class="mb-3">
@@ -202,10 +203,15 @@
                         </div>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Tyreman</label>
-                        <input type="text" name="tyreman_1" class="form-control mb-2" placeholder="Tyreman 1">
-                        <input type="text" name="tyreman_2" class="form-control" placeholder="Helper (Optional)">
+                     <div class="row g-2 mb-3">
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Tyreman 1</label>
+                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama">
+                        </div>
+                        <div class="col-6">
+                           <label class="form-label fw-bold font-size-13">Tyreman 2 (Helper)</label>
+                           <input type="text" name="tyreman_2" class="form-control" placeholder="Nama">
+                        </div>
                      </div>
 
 
@@ -305,11 +311,11 @@
          function formatTyreResult(tyre) {
             if (tyre.loading) return tyre.text;
             return $(`
-                              <div class='select2-result-tyre'>
-                                 <div class='fw-bold'>${tyre.sn}</div>
-                                 <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
-                              </div>
-                           `);
+                                       <div class='select2-result-tyre'>
+                                          <div class='fw-bold'>${tyre.sn}</div>
+                                          <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
+                                       </div>
+                                    `);
          }
 
          function formatTyreSelection(tyre) {
@@ -388,7 +394,7 @@
                .then(response => response.json())
                .then(data => {
                   positionSelect.empty().append('<option value="">-- Pilih Posisi --</option>');
-                  
+
                   // We also need to know which positions are occupied to label them
                   // Let's fetch the visual layout first and check filled nodes, 
                   // or better, rely on the position data if it includes occupation info
@@ -397,7 +403,7 @@
                      const node = document.querySelector(`.m-tyre-node[data-position-id="${pos.id}"]`);
                      const isFilled = node && node.classList.contains('filled');
                      const label = isFilled ? `${pos.position_code} - ${pos.position_name} (REPLACE)` : `${pos.position_code} - ${pos.position_name}`;
-                     
+
                      positionSelect.append(
                         `<option value="${pos.id}">${label}</option>`
                      );
