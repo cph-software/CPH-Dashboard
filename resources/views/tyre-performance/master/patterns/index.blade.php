@@ -28,7 +28,6 @@
             <table class="datatables-patterns table border-top table-hover">
                <thead>
                   <tr>
-                     <th>Brand</th>
                      <th>Pattern Name</th>
                      <th>Status</th>
                      <th class="text-center">Actions</th>
@@ -37,16 +36,7 @@
                <tbody class="table-border-bottom-0">
                   @foreach ($patterns as $pattern)
                      <tr>
-                        <td>
-                           <div class="d-flex align-items-center">
-                              <div class="avatar avatar-sm me-2">
-                                 <span class="avatar-initial rounded bg-label-secondary">
-                                    {{ substr($pattern->brand->brand_name ?? 'B', 0, 1) }}
-                                 </span>
-                              </div>
-                              <strong>{{ $pattern->brand->brand_name ?? '-' }}</strong>
-                           </div>
-                        </td>
+
                         <td><strong>{{ $pattern->name }}</strong></td>
                         <td>
                            <span class="badge bg-label-{{ $pattern->status == 'Active' ? 'success' : 'secondary' }}">
@@ -58,8 +48,7 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
                                  data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
-                                 data-brand-id="{{ $pattern->tyre_brand_id }}" data-status="{{ $pattern->status }}"
-                                 title="Edit">
+                                 data-status="{{ $pattern->status }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
@@ -93,15 +82,7 @@
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
                <div class="modal-body pt-4">
-                  <div class="mb-3">
-                     <label for="tyre_brand_id" class="form-label fw-bold">Brand</label>
-                     <select name="tyre_brand_id" class="form-select select2" data-placeholder="Select Brand" required>
-                        <option value="">Select Brand</option>
-                        @foreach ($brands as $brand)
-                           <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
-                        @endforeach
-                     </select>
-                  </div>
+
                   <div class="mb-3">
                      <label for="name" class="form-label fw-bold">Pattern Name</label>
                      <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rough Terrain (R150)"
@@ -136,15 +117,7 @@
                @csrf
                @method('PUT')
                <div class="modal-body pt-4">
-                  <div class="mb-3">
-                     <label for="edit_brand_id" class="form-label fw-bold">Brand</label>
-                     <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2" required>
-                        <option value="">Select Brand</option>
-                        @foreach ($brands as $brand)
-                           <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
-                        @endforeach
-                     </select>
-                  </div>
+
                   <div class="mb-3">
                      <label for="edit_name" class="form-label fw-bold">Pattern Name</label>
                      <input type="text" id="edit_name" name="name" class="form-control" required>
@@ -178,10 +151,7 @@
    <script>
       $(document).ready(function () {
          $('.datatables-patterns').DataTable({
-            order: [
-               [0, 'asc'],
-               [1, 'asc']
-            ],
+            order: [[0, 'asc']],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
          });
@@ -191,12 +161,11 @@
          $(document).on('click', '.edit-pattern', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
-            const brandId = $(this).data('brand-id');
             const status = $(this).data('status');
 
             editForm.attr('action', `{{ url('master_data_tyre/master_pattern') }}/${id}`);
             $('#edit_name').val(name);
-            $('#edit_brand_id').val(brandId).trigger('change');
+
             $('#edit_status').val(status);
          });
 

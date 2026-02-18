@@ -15,6 +15,27 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            // Check Access to Tyre Performance App (ID 20)
+            $userApps = getAplikasiPerRole($user->role_id);
+            if (!$userApps->contains('id', 20)) {
+                if ($request->ajax()) {
+                    return response()->json(['error' => 'Akses Ditolak: Anda tidak memiliki izin untuk mengakses Tyre Monitoring.'], 403);
+                }
+                return redirect('/dashboard')->with('error', 'Akses Ditolak: Anda tidak memiliki izin untuk mengakses Tyre Monitoring.');
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         // ========================================
