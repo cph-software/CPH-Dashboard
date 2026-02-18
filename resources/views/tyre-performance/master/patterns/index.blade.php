@@ -88,8 +88,7 @@
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary py-3">
                <h5 class="modal-title text-white">Add New Pattern</h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
@@ -105,8 +104,8 @@
                   </div>
                   <div class="mb-3">
                      <label for="name" class="form-label fw-bold">Pattern Name</label>
-                     <input type="text" id="name" name="name" class="form-control"
-                        placeholder="e.g. Rough Terrain (R150)" required>
+                     <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rough Terrain (R150)"
+                        required>
                   </div>
                   <div class="mb-3">
                      <label for="status" class="form-label fw-bold">Status</label>
@@ -177,7 +176,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-patterns').DataTable({
             order: [
                [0, 'asc'],
@@ -189,19 +188,19 @@
 
          const editForm = $('#editPatternForm');
 
-         $(document).on('click', '.edit-pattern', function() {
+         $(document).on('click', '.edit-pattern', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const brandId = $(this).data('brand-id');
             const status = $(this).data('status');
 
-            editForm.attr('action', `{{ url('tyre_performance/master_pattern') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data/master_pattern') }}/${id}`);
             $('#edit_name').val(name);
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-pattern', function() {
+         $(document).on('click', '.delete-pattern', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -220,7 +219,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('tyre_performance/master_pattern') }}/${id}`;
+                  form.action = `{{ url('master_data/master_pattern') }}/${id}`;
                   form.submit();
                }
             });
@@ -245,7 +244,7 @@
          @endif
 
          // Initialize Select2 with Modal fix
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

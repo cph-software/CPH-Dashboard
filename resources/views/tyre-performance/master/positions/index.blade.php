@@ -110,7 +110,7 @@
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
          // Show success/error toast
          @if (session('success'))
             Swal.fire({
@@ -140,7 +140,7 @@
 
          // Delete confirmation
          document.querySelectorAll('.delete-config').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                const configId = this.getAttribute('data-id');
                const configName = this.getAttribute('data-name');
 
@@ -159,7 +159,7 @@
                }).then((result) => {
                   if (result.isConfirmed) {
                      const form = document.getElementById('deleteForm');
-                     form.action = `{{ url('tyre_performance/master_position') }}/${configId}`;
+                     form.action = `{{ url('master_data/master_position') }}/${configId}`;
                      form.submit();
                   }
                });

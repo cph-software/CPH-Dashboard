@@ -59,8 +59,7 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-segment"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSegmentModal"
                                  data-id="{{ $segment->id }}" data-segment-id="{{ $segment->segment_id }}"
-                                 data-name="{{ $segment->segment_name }}"
-                                 data-location-id="{{ $segment->tyre_location_id }}"
+                                 data-name="{{ $segment->segment_name }}" data-location-id="{{ $segment->tyre_location_id }}"
                                  data-terrain="{{ $segment->terrain_type }}" data-status="{{ $segment->status }}"
                                  title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
@@ -99,8 +98,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="segment_id" class="form-label">Segment ID</label>
-                        <input type="text" id="segment_id" name="segment_id" class="form-control"
-                           placeholder="e.g. BB-01" required>
+                        <input type="text" id="segment_id" name="segment_id" class="form-control" placeholder="e.g. BB-01"
+                           required>
                      </div>
                      <div class="col mb-3">
                         <label for="segment_name" class="form-label">Segment Name</label>
@@ -216,12 +215,12 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-segments').DataTable();
 
          const editForm = $('#editSegmentForm');
 
-         $(document).on('click', '.edit-segment', function() {
+         $(document).on('click', '.edit-segment', function () {
             const id = $(this).data('id');
             const segmentId = $(this).data('segment-id');
             const name = $(this).data('name');
@@ -229,7 +228,7 @@
             const terrain = $(this).data('terrain');
             const status = $(this).data('status');
 
-            editForm.attr('action', `{{ url('tyre_performance/master_segment') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data/master_segment') }}/${id}`);
             $('#edit_segment_id').val(segmentId);
             $('#edit_segment_name').val(name);
             $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || ''));
@@ -237,7 +236,7 @@
             $('#edit_segment_status').val(status);
          });
 
-         $(document).on('click', '.delete-segment', function() {
+         $(document).on('click', '.delete-segment', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -256,7 +255,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('tyre_performance/master_segment') }}/${id}`;
+                  form.action = `{{ url('master_data/master_segment') }}/${id}`;
                   form.submit();
                }
             });
@@ -281,7 +280,7 @@
          @endif
 
          // Initialize Select2
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

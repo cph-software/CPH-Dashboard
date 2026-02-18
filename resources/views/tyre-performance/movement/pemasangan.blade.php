@@ -311,11 +311,11 @@
          function formatTyreResult(tyre) {
             if (tyre.loading) return tyre.text;
             return $(`
-                                       <div class='select2-result-tyre'>
-                                          <div class='fw-bold'>${tyre.sn}</div>
-                                          <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
-                                       </div>
-                                    `);
+                                          <div class='select2-result-tyre'>
+                                             <div class='fw-bold'>${tyre.sn}</div>
+                                             <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
+                                          </div>
+                                       `);
          }
 
          function formatTyreSelection(tyre) {
@@ -344,7 +344,7 @@
             }
 
             segmentSelect.prop('disabled', false);
-            fetch(`{{ url('tyre_performance/segments') }}/${locId}`)
+            fetch(`{{ url('master_data/segments') }}/${locId}`)
                .then(response => response.json())
                .then(data => {
                   data.forEach(seg => {
@@ -371,7 +371,7 @@
             }
 
             // Fetch Vehicle Detail for auto-fill
-            fetch(`{{ url('tyre_performance/vehicle-detail') }}/${vehicleId}`)
+            fetch(`{{ url('master_data/vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
@@ -380,7 +380,7 @@
 
             // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
-            fetch(`{{ url('tyre_performance/layout') }}/${vehicleId}`)
+            fetch(`{{ url('master_data/layout') }}/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -389,7 +389,7 @@
 
             // Load Positions
             fetch(
-               `{{ url('tyre_performance/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
+               `{{ url('master_data/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
             )
                .then(response => response.json())
                .then(data => {
@@ -537,7 +537,7 @@
                   btn.innerHTML =
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
-                  fetch(`{{ url('tyre_performance/store') }}`, {
+                  fetch(`{{ url('master_data/store') }}`, {
                      method: 'POST',
                      body: formData,
                      headers: {
