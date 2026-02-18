@@ -8,6 +8,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <style>
       .kpi-card {
          transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -58,6 +59,76 @@
          color: #a1acb8;
          margin-bottom: 1rem;
       }
+
+      .fleet-gauge-number {
+         font-size: 2.5rem;
+         font-weight: 800;
+         line-height: 1;
+      }
+
+      .chart-filter-bar {
+         padding: 0.5rem 0;
+         border-bottom: 1px solid #f1f1f1;
+         margin-bottom: 0.5rem;
+      }
+
+      .chart-filter-bar .form-select {
+         font-size: 0.8rem;
+         padding: 0.25rem 2rem 0.25rem 0.5rem;
+         border-radius: 0.375rem;
+      }
+
+      .chart-filter-bar {
+         transition: all 0.2s ease;
+         background-color: #f1f0f2 !important;
+         /* Elegant light grey/blue */
+         border: 1px solid #dbdade !important;
+      }
+
+      .chart-filter-bar:hover {
+         border-color: #7367f0 !important;
+      }
+
+      /* Select2 Custom Styling - Solid, not transparent */
+      .select2-container--default .select2-selection--single {
+         border: 1px solid #dbdade !important;
+         background-color: #ffffff !important;
+         height: 38px !important;
+         display: flex;
+         align-items: center;
+         border-radius: 0.375rem !important;
+         transition: all 0.2s ease;
+      }
+
+      .select2-container--default.select2-container--focus .select2-selection--single {
+         border-color: #7367f0 !important;
+         box-shadow: 0 0.125rem 0.25rem rgba(115, 103, 240, 0.1);
+      }
+
+      .select2-container--default .select2-selection--single .select2-selection__rendered {
+         line-height: normal !important;
+         padding-left: 12px !important;
+         font-size: 0.85rem;
+         font-weight: 600;
+         color: #5d596c !important;
+      }
+
+      .select2-container--default .select2-selection--single .select2-selection__arrow {
+         height: 36px !important;
+         right: 8px !important;
+      }
+
+      .select2-dropdown {
+         border: 1px solid #dbdade !important;
+         box-shadow: 0 0.25rem 1rem rgba(161, 172, 184, 0.45);
+         border-radius: 0.375rem !important;
+      }
+
+      .select2-container--default .select2-search--dropdown .select2-search__field {
+         border: 1px solid #dbdade !important;
+         border-radius: 0.375rem !important;
+         padding: 0.4375rem 0.875rem !important;
+      }
    </style>
 @endsection
 
@@ -65,48 +136,50 @@
    <div class="container-xxl flex-grow-1 container-p-y">
 
       {{-- Page Header --}}
-      <div class="d-flex justify-content-between align-items-center mb-4">
-         <div>
+      <div class="row align-items-center mb-4 g-3">
+         <div class="col-md-6 col-lg-5">
             <h4 class="fw-bold mb-1"><i class="icon-base ri ri-dashboard-3-line me-2 text-primary"></i>Tyre Performance
                Dashboard</h4>
             <p class="text-muted mb-0 small">Overview real-time performa ban di seluruh unit kendaraan</p>
          </div>
-         <div>
-            <span class="badge bg-label-secondary rounded-pill">
-               <i class="icon-base ri ri-time-line me-1"></i>Data per {{ now()->format('d M Y H:i') }}
-            </span>
+         <div class="col-md-6 col-lg-7 text-md-end">
+            <form action="{{ route('master_data.dashboard') }}" method="GET"
+               class="d-inline-flex align-items-center gap-2">
+               <div class="d-flex align-items-center bg-white rounded shadow-sm border p-1"
+                  style="border-color: #dbdade !important;">
+                  <div class="px-2" style="border-right: 1px solid #eee;">
+                     <label class="d-block small text-muted text-start fw-bold"
+                        style="font-size: 0.6rem; text-transform: uppercase;">Mulai</label>
+                     <input type="date" name="start_date"
+                        class="form-control form-control-sm border-0 p-0 shadow-none fw-bold"
+                        style="width: 115px; font-size: 0.85rem; color: #5d596c;"
+                        value="{{ $startDate->format('Y-m-d') }}">
+                  </div>
+                  <div class="px-2">
+                     <label class="d-block small text-muted text-start fw-bold"
+                        style="font-size: 0.6rem; text-transform: uppercase;">Sampai</label>
+                     <input type="date" name="end_date"
+                        class="form-control form-control-sm border-0 p-0 shadow-none fw-bold"
+                        style="width: 115px; font-size: 0.85rem; color: #5d596c;" value="{{ $endDate->format('Y-m-d') }}">
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-sm px-3 ms-1 py-2" style="border-radius: 6px;"
+                     title="Terapkan Filter">
+                     <i class="ri-filter-3-line me-1"></i> Filter
+                  </button>
+                  @if(request()->filled('start_date') || request()->filled('end_date'))
+                     <a href="{{ route('master_data.dashboard') }}" class="btn btn-label-secondary btn-sm px-3 ms-1 py-2"
+                        style="border-radius: 6px;" title="Reset Filter">
+                        <i class="ri-refresh-line me-1"></i> Reset
+                     </a>
+                  @endif
+               </div>
+            </form>
          </div>
       </div>
 
       {{-- ============================================== --}}
-      {{-- DASHBOARD FILTERS --}}
+      {{-- ROW 1: KPI CARDS --}}
       {{-- ============================================== --}}
-      {{-- <div class="card mb-4">
-         <div class="card-body py-3">
-            <form action="{{ route('master_data.dashboard') }}" method="GET" class="row g-3 align-items-end">
-               <div class="col-md-3">
-                  <label class="form-label fw-semibold">Rentang Tanggal:</label>
-                  <div class="input-group input-group-sm">
-                     <span class="input-group-text"><i class="icon-base ri ri-calendar-line"></i></span>
-                     <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
-                     <span class="input-group-text">sampai</span>
-                     <input type="date" name="end_date" class="form-control" value="{{ $endDate->format('Y-m-d') }}">
-                  </div>
-               </div>
-               <div class="col-md-3">
-                  <button type="submit" class="btn btn-sm btn-primary">
-                     <i class="icon-base ri ri-filter-3-line me-1"></i>Terapkan Filter
-                  </button>
-                  <a href="{{ route('master_data.dashboard') }}" class="btn btn-sm btn-outline-secondary">
-                     <i class="icon-base ri ri-refresh-line me-1"></i>Reset
-                  </a>
-               </div>
-               <div class="col-md-6 text-md-end">
-                  <span class="badge bg-label-info">Zona Waktu: WITA (Asia/Makassar)</span>
-               </div>
-            </form>
-         </div>
-      </div> --}}
       <div class="row g-4 mb-4">
          {{-- Total Tyres --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
@@ -261,25 +334,153 @@
       </div>
 
       {{-- ============================================== --}}
-      {{-- ROW 3: PERFORMANCE ANALYSIS --}}
+      {{-- ROW 3: PERFORMANCE ANALYSIS (with Filters) --}}
       {{-- ============================================== --}}
       <div class="row g-4 mb-4">
-         {{-- 3a. Brand Performance Comparison --}}
+         {{-- 3a. Brand Performance Comparison (with Filters) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-bar-chart-horizontal-line me-1 text-primary"></i> Performa
-                     Brand (Avg
-                     Lifetime KM)</h6>
+                     Brand (Avg Lifetime KM)</h6>
                   <p class="kpi-sub mb-0">Perbandingan umur rata-rata ban per brand</p>
                </div>
                <div class="card-body">
+                  {{-- Filter Bar --}}
+                  <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
+                     <div class="row g-3">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-ruler-2-line me-1"></i>
+                              Size</label>
+                           <select id="brandFilterSize" class="form-select select2">
+                              <option value="">Semua Size</option>
+                              @foreach ($filterSizes as $s)
+                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-focus-3-line me-1"></i>
+                              Type</label>
+                           <select id="brandFilterType" class="form-select select2">
+                              <option value="">Semua Type</option>
+                              @foreach ($filterTypes as $t)
+                                 <option value="{{ $t }}">{{ $t }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-road-map-line me-1"></i>
+                              Pattern</label>
+                           <select id="brandFilterPattern" class="form-select select2">
+                              <option value="">Semua Pattern</option>
+                              @foreach ($filterPatterns as $p)
+                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     </div>
+                  </div>
                   <div id="brandPerformanceChart" style="min-height:280px;"></div>
+                  <div id="brandPerformanceSample" class="text-center mt-1"></div>
                </div>
             </div>
          </div>
 
-         {{-- 3b. Stock by Location --}}
+         {{-- 3b. Cost Per KM by Brand (Dedicated Chart with Filters) --}}
+         <div class="col-xl-6">
+            <div class="card chart-card h-100">
+               <div class="card-header pb-0">
+                  <h6 class="mb-1"><i class="icon-base ri ri-money-dollar-circle-line me-1 text-warning"></i> Cost Per
+                     KM by Brand (CPK)</h6>
+                  <p class="kpi-sub mb-0">Perbandingan biaya per KM antar brand</p>
+               </div>
+               <div class="card-body">
+                  {{-- Filter Bar --}}
+                  <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
+                     <div class="row g-3">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-ruler-2-line me-1"></i>
+                              Size</label>
+                           <select id="cpkFilterSize" class="form-select select2">
+                              <option value="">Semua Size</option>
+                              @foreach ($filterSizes as $s)
+                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-focus-3-line me-1"></i>
+                              Type</label>
+                           <select id="cpkFilterType" class="form-select select2">
+                              <option value="">Semua Type</option>
+                              @foreach ($filterTypes as $t)
+                                 <option value="{{ $t }}">{{ $t }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-road-map-line me-1"></i>
+                              Pattern</label>
+                           <select id="cpkFilterPattern" class="form-select select2">
+                              <option value="">Semua Pattern</option>
+                              @foreach ($filterPatterns as $p)
+                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+                  <div id="cpkByBrandChart" style="min-height:280px;"></div>
+                  <div id="cpkBrandSample" class="text-center mt-1"></div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      {{-- ============================================== --}}
+      {{-- ROW 4: FLEET HEALTH & STOCK --}}
+      {{-- ============================================== --}}
+      <div class="row g-4 mb-4">
+         {{-- 4a. Fleet Health (Percentage Based) --}}
+         <div class="col-xl-6">
+            <div class="card chart-card h-100">
+               <div class="card-header pb-0">
+                  <div class="d-flex justify-content-between align-items-start">
+                     <div>
+                        <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Fleet
+                           Health (% Tread Remaining)</h6>
+                        <p class="kpi-sub mb-0">Distribusi kondisi ban terpasang berdasarkan % sisa tapak</p>
+                     </div>
+                     <div class="text-center">
+                        @php
+                           $healthColor = $fleetHealthData['avgHealth'] >= 60 ? 'success' : ($fleetHealthData['avgHealth'] >= 40 ? 'info' : ($fleetHealthData['avgHealth'] >= 20 ? 'warning' : 'danger'));
+                        @endphp
+                        <div class="fleet-gauge-number text-{{ $healthColor }}">
+                           {{ $fleetHealthData['avgHealth'] }}%
+                        </div>
+                        <span class="kpi-sub">Rata-rata Fleet</span>
+                     </div>
+                  </div>
+               </div>
+               <div class="card-body">
+                  <div id="fleetHealthChart" style="min-height:280px;"></div>
+                  <div class="d-flex justify-content-between mt-2">
+                     <span class="badge bg-label-primary sample-badge">
+                        <i class="ri-database-2-line me-1"></i>{{ $fleetHealthData['totalWithData'] }} ban terukur
+                     </span>
+                     @if ($fleetHealthData['noDataCount'] > 0)
+                        <span class="badge bg-label-secondary sample-badge">
+                           <i class="ri-question-line me-1"></i>{{ $fleetHealthData['noDataCount'] }} ban belum
+                           terukur
+                        </span>
+                     @endif
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         {{-- 4b. Stock by Location --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
@@ -294,49 +495,98 @@
          </div>
       </div>
 
+      {{-- ============================================== --}}
+      {{-- ROW 5: AXLE ANALYSIS & FAILURE --}}
+      {{-- ============================================== --}}
       <div class="row g-4 mb-4">
-         {{-- 4a. Fleet Health (RTD Distribution) --}}
+         {{-- 5a. Axle Analysis (Scrap Frequency) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
-               <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Fleet Health (RTD
-                     Distribution and Population)</h6>
-                  <p class="kpi-sub mb-0">Distribusi Ketebalan Tapak Ban Terpasang</p>
+               <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                  <div>
+                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by Position
+                        Analysis</h6>
+                     <p class="kpi-sub mb-0">Frekuensi Scrap Ban per Posisi</p>
+                  </div>
+                  <div class="ms-auto" id="axleTotalScrapBadge"></div>
                </div>
                <div class="card-body">
-                  <div id="rtdDistributionChart" style="min-height:280px;"></div>
+                  {{-- Filter Bar --}}
+                  <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
+                     <div class="row g-3">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-danger"><i class="ri-ruler-2-line me-1"></i>
+                              Size</label>
+                           <select id="axleFilterSize" class="form-select select2">
+                              <option value="">Semua Size</option>
+                              @foreach ($filterSizes as $s)
+                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-danger"><i class="ri-focus-3-line me-1"></i>
+                              Type</label>
+                           <select id="axleFilterType" class="form-select select2">
+                              <option value="">Semua Type</option>
+                              @foreach ($filterTypes as $t)
+                                 <option value="{{ $t }}">{{ $t }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-danger"><i class="ri-road-map-line me-1"></i>
+                              Pattern</label>
+                           <select id="axleFilterPattern" class="form-select select2">
+                              <option value="">Semua Pattern</option>
+                              @foreach ($filterPatterns as $p)
+                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+                  <div id="axleAnalysisChart" style="min-height:280px;"></div>
+                  <div id="axleAnalysisSample" class="text-center mt-1"></div>
                </div>
             </div>
          </div>
 
-         {{-- 4b. Axle Analysis (Scrap Frequency) --}}
+         {{-- 5b. Failure Code Distribution --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-primary"></i> Axle Analysis
-                     (Scrap
-                     Frequency)</h6>
-                  <p class="kpi-sub mb-0">Frekuensi Pelepasan per Posisi</p>
+                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab
+                     Pelepasan
+                  </h6>
+                  <p class="kpi-sub mb-0">Distribusi Failure Code</p>
                </div>
-               <div class="card-body">
-                  <div id="axleAnalysisChart" style="min-height:280px;"></div>
+               <div class="card-body d-flex align-items-center justify-content-center">
+                  @if ($failureDistribution->count() > 0)
+                     <div id="failureDonutChart" style="min-height: 280px; width: 100%;"></div>
+                  @else
+                     <div class="text-center py-5 text-muted">
+                        <i class="icon-base ri ri-shield-check-line ri-3x mb-2 d-block text-success opacity-50"></i>
+                        <p class="mb-0">Belum ada data pelepasan dengan failure code</p>
+                     </div>
+                  @endif
                </div>
             </div>
          </div>
       </div>
 
       {{-- ============================================== --}}
-      {{-- ROW 5: ALERTS & OPERATIONAL TABLE --}}
+      {{-- ROW 6: ALERTS & OPERATIONAL TABLE --}}
       {{-- ============================================== --}}
       <div class="row g-4 mb-4">
-         {{-- 4a. Low RTD Alert --}}
+         {{-- 6a. Low RTD Alert --}}
          <div class="col-xl-5">
             <div class="card h-100 mb-4">
                <div class="card-header pb-2 d-flex justify-content-between align-items-center">
                   <div>
                      <h6 class="mb-1"><i class="icon-base ri ri-alarm-warning-line me-1 text-danger"></i> Ban Perlu
                         Perhatian</h6>
-                     <p class="kpi-sub mb-0">Ban dengan RTD terendah (terpasang)</p>
+                     <p class="kpi-sub mb-0">Ban dengan sisa tread terendah (terpasang)</p>
                   </div>
                   <span class="badge bg-danger rounded-pill">{{ $lowRtdTyres->count() }}</span>
                </div>
@@ -350,16 +600,23 @@
                                  <th>Kendaraan</th>
                                  <th>OTD</th>
                                  <th>RTD</th>
-                                 <th>Wear</th>
+                                 <th>% Sisa</th>
                               </tr>
                            </thead>
                            <tbody>
                               @foreach ($lowRtdTyres as $t)
                                  @php
-                                    $otd = $t->initial_tread_depth ?? 20;
+                                    $otd = $t->initial_tread_depth ?? 0;
                                     $rtd = $t->current_tread_depth ?? 0;
-                                    $wearPct = $otd > 0 ? round((($otd - $rtd) / $otd) * 100, 0) : 0;
-                                    $barColor = $wearPct > 80 ? '#ea5455' : ($wearPct > 60 ? '#ff9f43' : '#28c76f');
+                                    $pctRemaining = $otd > 0 ? round(($rtd / $otd) * 100, 0) : 0;
+                                    $barColor =
+                                       $pctRemaining < 20
+                                       ? '#ea5455'
+                                       : ($pctRemaining < 40
+                                          ? '#ff9f43'
+                                          : ($pctRemaining < 60
+                                             ? '#00cfe8'
+                                             : '#28c76f'));
                                  @endphp
                                  <tr class="alert-tyre-row">
                                     <td class="ps-3">
@@ -373,15 +630,16 @@
                                     <td class="small">{{ $otd }} mm</td>
                                     <td>
                                        <span
-                                          class="fw-bold {{ $rtd < 5 ? 'text-danger' : ($rtd < 8 ? 'text-warning' : 'text-success') }}">
+                                          class="fw-bold {{ $pctRemaining < 20 ? 'text-danger' : ($pctRemaining < 40 ? 'text-warning' : 'text-success') }}">
                                           {{ $rtd }} mm
                                        </span>
                                     </td>
                                     <td style="min-width:80px">
                                        <div class="d-flex align-items-center">
-                                          <span class="small me-2">{{ $wearPct }}%</span>
+                                          <span class="small me-2">{{ $pctRemaining }}%</span>
                                           <div class="rtd-bar flex-grow-1">
-                                             <div class="rtd-bar-inner" style="width:{{ $wearPct }}%;background:{{ $barColor }}">
+                                             <div class="rtd-bar-inner"
+                                                style="width:{{ $pctRemaining }}%;background:{{ $barColor }}">
                                              </div>
                                           </div>
                                        </div>
@@ -409,18 +667,20 @@
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-tools-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">1. Diagnosa & Pelepasan</p>
-                           <p class="mb-0 kpi-sub">Jika RTD < 5mm, segera lakukan <strong>Pelepasan</strong> melalui menu
-                                 <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai sebagai panduan
-                                 (Scrap/Repair).</p>
+                           <p class="mb-0 kpi-sub">Jika % sisa < 20%, segera lakukan <strong>Pelepasan</strong>
+                                 melalui menu
+                                 <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai.
+                           </p>
                         </div>
                      </div>
                      <div class="d-flex align-items-start border-top pt-2">
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-refresh-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">2. Update Status Ban</p>
-                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban di
-                              <em>Master Tyre</em> menjadi <strong>Scrap</strong> (jika rusak) atau
-                              <strong>Repaired</strong> (siap pakai kembali).
+                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban
+                              di
+                              <em>Master Tyre</em> menjadi <strong>Scrap</strong> atau
+                              <strong>Repaired</strong>.
                            </p>
                         </div>
                      </div>
@@ -429,7 +689,7 @@
                         <div>
                            <p class="mb-0 small fw-bold">3. Pencatatan Otomatis</p>
                            <p class="mb-0 kpi-sub">Setiap pergerakan dan update status akan <strong>tercatat
-                                 otomatis</strong> di log <em>Tyre Performance</em> (Tyre Movement History).</p>
+                                 otomatis</strong> di log <em>Tyre Performance</em>.</p>
                         </div>
                      </div>
                   </div>
@@ -437,86 +697,60 @@
             </div>
          </div>
 
-         {{-- 4b. Failure Code Distribution + Recent Movements --}}
+         {{-- 6b. Recent Movements --}}
          <div class="col-xl-7">
             <div class="card h-100">
                <div class="card-header pb-0">
-                  <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                     <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#recentTab" role="tab">
-                           <i class="icon-base ri ri-history-line me-1"></i> Aktivitas Terbaru
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#failureTab" role="tab">
-                           <i class="icon-base ri ri-error-warning-line me-1"></i> Penyebab Lepas
-                        </a>
-                     </li>
-                  </ul>
+                  <h6 class="mb-1"><i class="icon-base ri ri-history-line me-1 text-primary"></i> Aktivitas Terbaru
+                  </h6>
+                  <p class="kpi-sub mb-0">10 pergerakan terakhir</p>
                </div>
                <div class="card-body">
-                  <div class="tab-content">
-                     {{-- Recent Movements Tab --}}
-                     <div class="tab-pane fade show active" id="recentTab" role="tabpanel">
-                        @if ($recentMovements->count() > 0)
-                           <div class="table-responsive">
-                              <table class="table table-sm table-hover mb-0">
-                                 <thead class="table-light">
-                                    <tr>
-                                       <th>Tanggal</th>
-                                       <th>Tipe</th>
-                                       <th>Ban</th>
-                                       <th>Kendaraan</th>
-                                       <th>KM</th>
-                                       <th>HM</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody>
-                                    @foreach ($recentMovements as $m)
-                                       <tr>
-                                          <td class="small">
-                                             {{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}
-                                          </td>
-                                          <td>
-                                             <span
-                                                class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : 'danger' }} rounded-pill"
-                                                style="font-size:.65rem">
-                                                {{ $m->movement_type === 'Installation' ? 'Pasang' : 'Lepas' }}
-                                             </span>
-                                          </td>
-                                          <td class="small fw-medium">{{ $m->tyre->serial_number ?? '-' }}</td>
-                                          <td class="small">{{ $m->vehicle->kode_kendaraan ?? '-' }}</td>
-                                          <td class="small">
-                                             {{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
-                                          </td>
-                                          <td class="small">
-                                             {{ $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-' }}
-                                          </td>
-                                       </tr>
-                                    @endforeach
-                                 </tbody>
-                              </table>
-                           </div>
-                        @else
-                           <div class="text-center py-5 text-muted">
-                              <i class="icon-base ri ri-file-list-line ri-3x mb-2 d-block opacity-25"></i>
-                              <p class="mb-0">Belum ada aktivitas pergerakan</p>
-                           </div>
-                        @endif
+                  @if ($recentMovements->count() > 0)
+                     <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                           <thead class="table-light">
+                              <tr>
+                                 <th>Tanggal</th>
+                                 <th>Tipe</th>
+                                 <th>Ban</th>
+                                 <th>Kendaraan</th>
+                                 <th>KM</th>
+                                 <th>HM</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              @foreach ($recentMovements as $m)
+                                 <tr>
+                                    <td class="small">
+                                       {{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}
+                                    </td>
+                                    <td>
+                                       <span
+                                          class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : 'danger' }} rounded-pill"
+                                          style="font-size:.65rem">
+                                          {{ $m->movement_type === 'Installation' ? 'Pasang' : 'Lepas' }}
+                                       </span>
+                                    </td>
+                                    <td class="small fw-medium">{{ $m->tyre->serial_number ?? '-' }}</td>
+                                    <td class="small">{{ $m->vehicle->kode_kendaraan ?? '-' }}</td>
+                                    <td class="small">
+                                       {{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
+                                    </td>
+                                    <td class="small">
+                                       {{ $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-' }}
+                                    </td>
+                                 </tr>
+                              @endforeach
+                           </tbody>
+                        </table>
                      </div>
-
-                     {{-- Failure Code Tab --}}
-                     <div class="tab-pane fade" id="failureTab" role="tabpanel">
-                        @if ($failureDistribution->count() > 0)
-                           <div id="failureDonutChart" style="min-height: 280px;"></div>
-                        @else
-                           <div class="text-center py-5 text-muted">
-                              <i class="icon-base ri ri-shield-check-line ri-3x mb-2 d-block text-success opacity-50"></i>
-                              <p class="mb-0">Belum ada data pelepasan dengan failure code</p>
-                           </div>
-                        @endif
+                  @else
+                     <div class="text-center py-5 text-muted">
+                        <i class="icon-base ri ri-file-list-line ri-3x mb-2 d-block opacity-25"></i>
+                        <p class="mb-0">Belum ada aktivitas pergerakan</p>
                      </div>
-                  </div>
+                  @endif
                </div>
             </div>
          </div>
@@ -570,7 +804,9 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
-   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}">
+   </script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
 @endsection
 
 @section('page-script')
@@ -592,13 +828,25 @@
             dark: '#4b4b4b'
          };
 
+         // Initialize Select2
+         if ($.fn.select2) {
+            $('.select2').each(function () {
+               var $this = $(this);
+               $this.select2({
+                  placeholder: 'Pilih opsi',
+                  dropdownParent: $this.parent(),
+                  width: '100%'
+               });
+            });
+         }
+
          // ==========================================
          // DRILL-DOWN HELPER FUNCTION
          // ==========================================
          const drillDownUrl = '{{ route('master_data.drill-down') }}';
          let drillDownDT = null;
 
-         function openDrillDown(type, value) {
+         function openDrillDown(type, value, extraParams) {
             const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
             document.getElementById('drillDownLoading').style.display = 'block';
             document.getElementById('drillDownContent').style.display = 'none';
@@ -613,25 +861,34 @@
 
             modal.show();
 
+            // Merge base params with extra filter params
+            let ajaxData = {
+               type: type,
+               value: value
+            };
+            if (extraParams) {
+               Object.assign(ajaxData, extraParams);
+            }
+
             $.ajax({
                url: drillDownUrl,
-               data: {
-                  type: type,
-                  value: value
-               },
+               data: ajaxData,
                dataType: 'json',
                success: function (res) {
                   document.getElementById('drillDownLoading').style.display = 'none';
 
                   if (!res.data || res.data.length === 0) {
                      document.getElementById('drillDownEmpty').style.display = 'block';
-                     document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
+                     document.getElementById('drillDownTitleText').textContent = res.title ||
+                        'Detail Data';
                      return;
                   }
 
                   document.getElementById('drillDownContent').style.display = 'block';
-                  document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
-                  document.getElementById('drillDownCount').textContent = res.total + ' data ditemukan';
+                  document.getElementById('drillDownTitleText').textContent = res.title ||
+                     'Detail Data';
+                  document.getElementById('drillDownCount').textContent = res.total +
+                     ' data ditemukan';
 
                   // Link
                   const linkEl = document.getElementById('drillDownLink');
@@ -645,7 +902,6 @@
                   // Build table header
                   let headHtml = '<tr>';
                   res.columns.forEach(col => headHtml += '<th>' + col + '</th>');
-                  // Add action column for types with tyre id
                   if (res.data[0] && res.data[0].id) headHtml += '<th>Aksi</th>';
                   headHtml += '</tr>';
                   document.getElementById('drillDownHead').innerHTML = headHtml;
@@ -656,7 +912,6 @@
                      bodyHtml += '<tr>';
                      res.keys.forEach(key => {
                         let val = row[key] ?? '-';
-                        // Color code status badges
                         if (key === 'status') {
                            let cls = 'secondary';
                            if (val === 'Installed') cls = 'success';
@@ -664,14 +919,16 @@
                            else if (val === 'Retread') cls = 'info';
                            else if (val === 'Scrap') cls = 'danger';
                            else if (val === 'Repaired') cls = 'warning';
-                           val = '<span class="badge bg-label-' + cls + ' rounded-pill">' +
+                           val =
+                              '<span class="badge bg-label-' + cls +
+                              ' rounded-pill">' +
                               val + '</span>';
                         }
                         bodyHtml += '<td>' + val + '</td>';
                      });
-                     // View detail link
                      if (row.id) {
-                        bodyHtml += '<td><a href="/master_data_tyre/master_tyre/' + row.id +
+                        bodyHtml +=
+                           '<td><a href="/master_data_tyre/master_tyre/' + row.id +
                            '" class="btn btn-sm btn-icon btn-text-primary" title="Detail"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
@@ -760,7 +1017,8 @@
                            show: true,
                            label: 'Total',
                            fontSize: '0.8rem',
-                           formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0) + ' ban'
+                           formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b,
+                              0) + ' ban'
                         }
                      }
                   }
@@ -806,6 +1064,10 @@
             ],
             xaxis: {
                categories: monthlyData.map(m => m.month),
+               title: {
+                  text: 'Bulan',
+                  style: { fontWeight: 600 }
+               },
                labels: {
                   style: {
                      fontSize: '11px'
@@ -819,9 +1081,10 @@
                   }
                },
                title: {
-                  text: 'Jumlah',
+                  text: 'Jumlah Ban',
                   style: {
-                     fontSize: '12px'
+                     fontSize: '12px',
+                     fontWeight: 600
                   }
                }
             },
@@ -855,12 +1118,32 @@
          }).render();
 
          // ==========================================
-         // 3. BRAND PERFORMANCE CHART (Horizontal Bar)
+         // 3. BRAND PERFORMANCE CHART (with AJAX Filters)
          // ==========================================
-         const brandData = @json($brandPerformance);
+         const brandPerformanceUrl = '{{ route('master_data.brand-performance') }}';
+         let brandChart = null;
 
-         if (brandData.length > 0) {
-            new ApexCharts(document.querySelector('#brandPerformanceChart'), {
+         function renderBrandChart(data) {
+            if (brandChart) {
+               brandChart.destroy();
+               brandChart = null;
+            }
+
+            const container = document.querySelector('#brandPerformanceChart');
+            const sampleContainer = document.querySelector('#brandPerformanceSample');
+
+            if (!data || data.length === 0) {
+               container.innerHTML =
+                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-bar-chart-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data lifetime untuk filter ini</p></div>';
+               sampleContainer.innerHTML = '';
+               return;
+            }
+
+            const totalSample = data.reduce((sum, b) => sum + b.count, 0);
+            sampleContainer.innerHTML = '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+               totalSample + ' ban</span>';
+
+            brandChart = new ApexCharts(container, {
                chart: {
                   type: 'bar',
                   height: 280,
@@ -869,21 +1152,35 @@
                   },
                   events: {
                      dataPointSelection: function (event, chartContext, config) {
-                        const brandName = brandData[config.dataPointIndex].brand;
-                        openDrillDown('brand', brandName);
+                        const brandName = data[config.dataPointIndex].brand;
+                        openDrillDown('brand_performance', brandName, {
+                           size_id: $('#brandFilterSize').val(),
+                           filter_type: $('#brandFilterType').val(),
+                           pattern_id: $('#brandFilterPattern').val()
+                        });
                      }
                   }
                },
                series: [{
                   name: 'Avg KM',
-                  data: brandData.map(b => b.avg_km)
+                  data: data.map(b => b.avg_km)
                }],
                xaxis: {
-                  categories: brandData.map(b => b.brand),
+                  categories: data.map(b => b.brand),
+                  title: {
+                     text: 'Rata-rata Lifetime (KM)',
+                     style: { fontWeight: 600 }
+                  },
                   labels: {
                      style: {
                         fontSize: '12px'
                      }
+                  }
+               },
+               yaxis: {
+                  title: {
+                     text: 'Brand',
+                     style: { fontWeight: 600 }
                   }
                },
                colors: [colors.primary],
@@ -899,7 +1196,10 @@
                },
                dataLabels: {
                   enabled: true,
-                  formatter: val => val.toLocaleString() + ' km',
+                  formatter: function (val, opt) {
+                     const count = data[opt.dataPointIndex].count;
+                     return val.toLocaleString() + ' km (' + count + ' ban)';
+                  },
                   style: {
                      fontSize: '11px',
                      fontWeight: 600,
@@ -912,17 +1212,240 @@
                },
                tooltip: {
                   y: {
-                     formatter: val => val.toLocaleString() + ' km'
+                     formatter: function (val, opt) {
+                        const idx = opt.dataPointIndex;
+                        const count = data[idx].count;
+                        return val.toLocaleString() + ' km (sample: ' + count + ' ban)';
+                     }
                   }
                }
-            }).render();
-         } else {
-            document.querySelector('#brandPerformanceChart').innerHTML =
-               '<div class="text-center text-muted py-5"><i class="icon-base ri ri-bar-chart-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data lifetime</p></div>';
+            });
+            brandChart.render();
          }
 
+         // Initial render
+         renderBrandChart(@json($brandPerformance));
+
+         // Filter event listeners for Brand Performance
+         function loadBrandPerformance() {
+            const sizeId = $('#brandFilterSize').val();
+            const type = $('#brandFilterType').val();
+            const patternId = $('#brandFilterPattern').val();
+
+            $.ajax({
+               url: brandPerformanceUrl,
+               data: {
+                  size_id: sizeId,
+                  type: type,
+                  pattern_id: patternId
+               },
+               dataType: 'json',
+               success: function (res) {
+                  if (res.success) {
+                     renderBrandChart(res.data);
+                  }
+               }
+            });
+         }
+
+         $('#brandFilterSize, #brandFilterType, #brandFilterPattern').on('change', loadBrandPerformance);
+
          // ==========================================
-         // 4. LOCATION STOCK CHART (Grouped Bar)
+         // 4. CPK BY BRAND CHART (Dedicated, with AJAX Filters)
+         // ==========================================
+         const cpkByBrandUrl = '{{ route('master_data.cpk-by-brand') }}';
+         let cpkChart = null;
+
+         function renderCpkChart(data) {
+            if (cpkChart) {
+               cpkChart.destroy();
+               cpkChart = null;
+            }
+
+            const container = document.querySelector('#cpkByBrandChart');
+            const sampleContainer = document.querySelector('#cpkBrandSample');
+
+            if (!data || data.length === 0) {
+               container.innerHTML =
+                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-money-dollar-circle-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data CPK untuk filter ini</p></div>';
+               sampleContainer.innerHTML = '';
+               return;
+            }
+
+            // Sort by CPK ascending (cheapest first)
+            data.sort((a, b) => a.cpk - b.cpk);
+
+            const totalSample = data.reduce((sum, b) => sum + b.count, 0);
+            sampleContainer.innerHTML = '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+               totalSample + ' ban</span>';
+
+            cpkChart = new ApexCharts(container, {
+               chart: {
+                  type: 'bar',
+                  height: 280,
+                  toolbar: {
+                     show: false
+                  },
+                  events: {
+                     dataPointSelection: function (event, chartContext, config) {
+                        const brandName = data[config.dataPointIndex].brand;
+                        openDrillDown('brand_cpk', brandName, {
+                           size_id: $('#cpkFilterSize').val(),
+                           filter_type: $('#cpkFilterType').val(),
+                           pattern_id: $('#cpkFilterPattern').val()
+                        });
+                     }
+                  }
+               },
+               series: [{
+                  name: 'CPK (Rp/km)',
+                  data: data.map(b => b.cpk)
+               }],
+               xaxis: {
+                  categories: data.map(b => b.brand),
+                  title: {
+                     text: 'Biaya per KM (Rp/km)',
+                     style: { fontWeight: 600 }
+                  },
+                  labels: {
+                     style: {
+                        fontSize: '12px'
+                     }
+                  }
+               },
+               yaxis: {
+                  title: {
+                     text: 'Brand',
+                     style: { fontWeight: 600 }
+                  }
+               },
+               colors: [colors.warning],
+               plotOptions: {
+                  bar: {
+                     horizontal: true,
+                     borderRadius: 6,
+                     barHeight: '50%',
+                     dataLabels: {
+                        position: 'center'
+                     }
+                  }
+               },
+               dataLabels: {
+                  enabled: true,
+                  formatter: function (val, opt) {
+                     const count = data[opt.dataPointIndex].count;
+                     return 'Rp ' + val.toLocaleString() + '/km (' + count + ' ban)';
+                  },
+                  style: {
+                     fontSize: '11px',
+                     fontWeight: 600,
+                     colors: ['#fff']
+                  }
+               },
+               grid: {
+                  borderColor: '#f1f1f1',
+                  strokeDashArray: 3
+               },
+               tooltip: {
+                  y: {
+                     formatter: function (val, opt) {
+                        const idx = opt.dataPointIndex;
+                        const count = data[idx].count;
+                        return 'Rp ' + val.toLocaleString() + '/km (sample: ' + count + ' ban)';
+                     }
+                  }
+               }
+            });
+            cpkChart.render();
+         }
+
+         // Initial render
+         renderCpkChart(@json($cpkByBrand));
+
+         // Filter event listeners for CPK
+         function loadCpkByBrand() {
+            const sizeId = $('#cpkFilterSize').val();
+            const type = $('#cpkFilterType').val();
+            const patternId = $('#cpkFilterPattern').val();
+
+            $.ajax({
+               url: cpkByBrandUrl,
+               data: {
+                  size_id: sizeId,
+                  type: type,
+                  pattern_id: patternId
+               },
+               dataType: 'json',
+               success: function (res) {
+                  if (res.success) {
+                     renderCpkChart(res.data);
+                  }
+               }
+            });
+         }
+
+         $('#cpkFilterSize, #cpkFilterType, #cpkFilterPattern').on('change', loadCpkByBrand);
+
+         // ==========================================
+         // 5. FLEET HEALTH CHART (Percentage Based)
+         // ==========================================
+         const fleetHealthData = @json($fleetHealthData);
+         const healthCategories = fleetHealthData.categories;
+         const healthLabels = Object.keys(healthCategories);
+         const healthValues = Object.values(healthCategories);
+
+         new ApexCharts(document.querySelector('#fleetHealthChart'), {
+            chart: {
+               type: 'donut',
+               height: 280,
+               events: {
+                  dataPointSelection: function (event, chartContext, config) {
+                     const label = healthLabels[config.dataPointIndex];
+                     openDrillDown('rtd', label);
+                  }
+               }
+            },
+            series: healthValues,
+            labels: healthLabels,
+            colors: [colors.danger, colors.warning, colors.info, colors.success],
+            plotOptions: {
+               pie: {
+                  donut: {
+                     size: '65%',
+                     labels: {
+                        show: true,
+                        name: {
+                           show: true,
+                           fontSize: '12px'
+                        },
+                        value: {
+                           show: true,
+                           fontSize: '1.5rem',
+                           fontWeight: 700,
+                           formatter: val => val + ' ban'
+                        },
+                        total: {
+                           show: true,
+                           label: 'Total Terukur',
+                           fontSize: '0.75rem',
+                           formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b,
+                              0) + ' ban'
+                        }
+                     }
+                  }
+               }
+            },
+            legend: {
+               position: 'bottom',
+               fontSize: '11px'
+            },
+            dataLabels: {
+               enabled: false
+            }
+         }).render();
+
+         // ==========================================
+         // 6. LOCATION STOCK CHART (Grouped Bar)
          // ==========================================
          const locationData = @json($locationStock);
 
@@ -951,10 +1474,20 @@
             ],
             xaxis: {
                categories: locationData.map(l => l.location_name),
+               title: {
+                  text: 'Lokasi Gudang',
+                  style: { fontWeight: 600 }
+               },
                labels: {
                   style: {
                      fontSize: '11px'
                   }
+               }
+            },
+            yaxis: {
+               title: {
+                  text: 'Jumlah Ban',
+                  style: { fontWeight: 600 }
                }
             },
             colors: [colors.info, '#82868b'],
@@ -979,7 +1512,7 @@
          }).render();
 
          // ==========================================
-         // 5. FAILURE CODE DONUT CHART
+         // 7. FAILURE CODE DONUT CHART
          // ==========================================
          const failureData = @json($failureDistribution);
 
@@ -1033,114 +1566,124 @@
          }
 
          // ==========================================
-         // 6. FLEET HEALTH (RTD DISTRIBUTION) CHART
+         // 7. AXLE ANALYSIS CHART (Scrap by Position)
          // ==========================================
-         const rtdData = @json($rtdDistribution);
-         const rtdLabels = Object.keys(rtdData);
-         const rtdValues = Object.values(rtdData);
+         const axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
+         let axleChart = null;
 
-         new ApexCharts(document.querySelector('#rtdDistributionChart'), {
-            chart: {
-               type: 'bar',
-               height: 280,
-               toolbar: {
-                  show: false
-               },
-               events: {
-                  dataPointSelection: function (event, chartContext, config) {
-                     const label = rtdLabels[config.dataPointIndex];
-                     openDrillDown('rtd', label);
-                  }
-               }
-            },
-            series: [{
-               name: 'Jumlah Ban',
-               data: rtdValues
-            }],
-            xaxis: {
-               categories: rtdLabels,
-               labels: {
-                  style: {
-                     fontSize: '11px'
-                  }
-               }
-            },
-            colors: [function ({
-               value,
-               seriesIndex,
-               dataPointIndex,
-               w
-            }) {
-               if (dataPointIndex === 0) return colors.danger;
-               if (dataPointIndex === 1) return colors.warning;
-               if (dataPointIndex === 2) return colors.info;
-               return colors.success;
-            }],
-            plotOptions: {
-               bar: {
-                  distributed: true,
-                  borderRadius: 4,
-                  columnWidth: '50%',
-               }
-            },
-            legend: {
-               show: false
-            },
-            grid: {
-               borderColor: '#f1f1f1',
-               strokeDashArray: 3
+         function renderAxleChart(data) {
+            if (axleChart) {
+               axleChart.destroy();
+               axleChart = null;
             }
-         }).render();
 
-         // ==========================================
-         // 7. AXLE ANALYSIS (SCRAP FREQUENCY) CHART
-         // ==========================================
-         const axleData = @json($axleAnalysis);
+            const container = document.querySelector('#axleAnalysisChart');
+            const totalBadgeContainer = document.querySelector('#axleTotalScrapBadge');
 
-         if (axleData.length > 0) {
-            new ApexCharts(document.querySelector('#axleAnalysisChart'), {
+            if (!data || data.length === 0) {
+               container.innerHTML =
+                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-error-warning-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data scrap untuk filter ini</p></div>';
+               totalBadgeContainer.innerHTML = '';
+               return;
+            }
+
+            const totalScrap = data.reduce((sum, item) => sum + item.total, 0);
+            totalBadgeContainer.innerHTML = '<span class="badge bg-danger rounded-pill shadow-sm py-2 px-3 fw-bold"><i class="ri-delete-bin-line me-1"></i> Total: ' + totalScrap + ' Ban Scrap</span>';
+
+            axleChart = new ApexCharts(container, {
                chart: {
                   type: 'bar',
-                  height: 280,
+                  height: 350,
                   toolbar: {
                      show: false
                   },
                   events: {
                      dataPointSelection: function (event, chartContext, config) {
-                        const posName = axleData[config.dataPointIndex].position;
-                        openDrillDown('axle', posName);
+                        const position = data[config.dataPointIndex].position;
+                        openDrillDown('scrap_position', position, {
+                           size_id: $('#axleFilterSize').val(),
+                           filter_type: $('#axleFilterType').val(),
+                           pattern_id: $('#axleFilterPattern').val(),
+                           start_date: $('input[name="start_date"]').val(),
+                           end_date: $('input[name="end_date"]').val()
+                        });
                      }
                   }
                },
                series: [{
-                  name: 'Total Pelepasan',
-                  data: axleData.map(a => a.total)
+                  name: 'Jumlah Scrap',
+                  data: data.map(item => item.total)
                }],
                xaxis: {
-                  categories: axleData.map(a => a.position),
+                  categories: data.map(item => item.position),
+                  title: {
+                     text: 'Scrap Quantity',
+                     style: { fontWeight: 600 }
+                  },
                   labels: {
                      style: {
-                        fontSize: '11px'
+                        fontSize: '12px'
                      }
                   }
                },
+               yaxis: {
+                  title: {
+                     text: 'Tyre Position',
+                     style: { fontWeight: 600 }
+                  }
+               },
+               colors: [colors.danger],
                plotOptions: {
                   bar: {
                      horizontal: true,
-                     borderRadius: 4,
-                     barHeight: '60%',
+                     borderRadius: 6,
+                     barHeight: '70%',
+                     dataLabels: { position: 'center' }
                   }
                },
-               colors: [colors.primary],
-               grid: {
-                  borderColor: '#f1f1f1',
-                  strokeDashArray: 3
+               dataLabels: {
+                  enabled: true,
+                  formatter: (val) => val + ' ban',
+                  style: { fontSize: '11px', fontWeight: 600, colors: ['#fff'] }
+               },
+               grid: { borderColor: '#f1f1f1', strokeDashArray: 3 },
+               tooltip: {
+                  y: { formatter: (val) => val + ' ban' }
                }
-            }).render();
-         } else {
-            document.querySelector('#axleAnalysisChart').innerHTML =
-               '<div class="text-center text-muted py-5"><i class="icon-base ri ri-bar-chart-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data pelepasan</p></div>';
+            });
+            axleChart.render();
          }
+
+         // Initial render
+         renderAxleChart(@json($axleAnalysis));
+
+         // Filter event listeners for Axle
+         function loadAxleAnalysis() {
+            const sizeId = $('#axleFilterSize').val();
+            const type = $('#axleFilterType').val();
+            const patternId = $('#axleFilterPattern').val();
+            const startDate = $('input[name="start_date"]').val();
+            const endDate = $('input[name="end_date"]').val();
+
+            $.ajax({
+               url: axleAnalysisUrl,
+               data: {
+                  size_id: sizeId,
+                  type: type,
+                  pattern_id: patternId,
+                  start_date: startDate,
+                  end_date: endDate
+               },
+               dataType: 'json',
+               success: function (res) {
+                  if (res.success) {
+                     renderAxleChart(res.data);
+                  }
+               }
+            });
+         }
+
+         $('#axleFilterSize, #axleFilterType, #axleFilterPattern').on('change', loadAxleAnalysis);
 
       });
    </script>
