@@ -83,7 +83,7 @@
       {{-- ============================================== --}}
       {{-- <div class="card mb-4">
          <div class="card-body py-3">
-            <form action="{{ route('tyre_performance.dashboard') }}" method="GET" class="row g-3 align-items-end">
+            <form action="{{ route('master_data.dashboard') }}" method="GET" class="row g-3 align-items-end">
                <div class="col-md-3">
                   <label class="form-label fw-semibold">Rentang Tanggal:</label>
                   <div class="input-group input-group-sm">
@@ -97,7 +97,7 @@
                   <button type="submit" class="btn btn-sm btn-primary">
                      <i class="icon-base ri ri-filter-3-line me-1"></i>Terapkan Filter
                   </button>
-                  <a href="{{ route('tyre_performance.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                  <a href="{{ route('master_data.dashboard') }}" class="btn btn-sm btn-outline-secondary">
                      <i class="icon-base ri ri-refresh-line me-1"></i>Reset
                   </a>
                </div>
@@ -595,7 +595,7 @@
          // ==========================================
          // DRILL-DOWN HELPER FUNCTION
          // ==========================================
-         const drillDownUrl = '{{ route('tyre_performance.drill-down') }}';
+         const drillDownUrl = '{{ route('master_data.drill-down') }}';
          let drillDownDT = null;
 
          function openDrillDown(type, value) {
@@ -671,7 +671,7 @@
                      });
                      // View detail link
                      if (row.id) {
-                        bodyHtml += '<td><a href="/tyre_performance/master_tyre/' + row.id +
+                        bodyHtml += '<td><a href="/master_data/master_tyre/' + row.id +
                            '" class="btn btn-sm btn-icon btn-text-primary" title="Detail"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';

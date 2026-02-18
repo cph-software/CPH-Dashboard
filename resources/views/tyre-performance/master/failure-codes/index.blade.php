@@ -155,7 +155,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('tyre_performance/master_failure_code') }}/${id}`;
+                  form.action = `{{ url('master_data/master_failure_code') }}/${id}`;
                   form.submit();
                }
             });
@@ -178,7 +178,7 @@
                text: '{{ session('error') }}',
             });
          @endif
-            });
+               });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);

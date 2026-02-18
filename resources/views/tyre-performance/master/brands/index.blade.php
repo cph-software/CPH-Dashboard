@@ -165,7 +165,7 @@
             const name = $(this).data('name');
             const status = $(this).data('status');
 
-            editForm.attr('action', `{{ url('tyre_performance/master_brand') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data/master_brand') }}/${id}`);
             $('#edit_brand_name').val(name);
             $('#edit_status').val(status);
          });
@@ -189,7 +189,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('tyre_performance/master_brand') }}/${id}`;
+                  form.action = `{{ url('master_data/master_brand') }}/${id}`;
                   form.submit();
                }
             });
@@ -212,6 +212,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-         });
+            });
    </script>
 @endsection

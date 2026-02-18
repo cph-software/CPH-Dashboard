@@ -4,7 +4,7 @@
 
 ### 1. PEMASANGAN BAN (Installation)
 
-Ketika user mengisi form pemasangan (`/tyre_performance/movement/pemasangan`), sistem akan melakukan update otomatis:
+Ketika user mengisi form pemasangan (`/master_data/movement/pemasangan`), sistem akan melakukan update otomatis:
 
 #### Tabel: `tyres` (Master Ban)
 
@@ -38,7 +38,7 @@ Ketika user mengisi form pemasangan (`/tyre_performance/movement/pemasangan`), s
 
 ### 2. PELEPASAN BAN (Removal)
 
-Ketika user mengisi form pelepasan (`/tyre_performance/movement/pelepasan`), sistem akan:
+Ketika user mengisi form pelepasan (`/master_data/movement/pelepasan`), sistem akan:
 
 #### Tabel: `tyres` (Master Ban)
 
@@ -144,7 +144,7 @@ try {
 ## 📍 Route untuk Detail Ban
 
 ```php
-URL:        /tyre_performance/master_tyre/{id}
+URL:        /master_data/master_tyre/{id}
 Route Name: tyre-master.show
 Method:     GET
 Controller: TyreMasterController@show
@@ -153,8 +153,8 @@ Controller: TyreMasterController@show
 **Contoh:**
 
 ```
-/tyre_performance/master_tyre/1  → Detail ban ID 1
-/tyre_performance/master_tyre/25 → Detail ban ID 25
+/master_data/master_tyre/1  → Detail ban ID 1
+/master_data/master_tyre/25 → Detail ban ID 25
 ```
 
 ---

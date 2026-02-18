@@ -189,7 +189,7 @@
             layoutContainer.innerHTML =
                '<div class="py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Sedang memuat layout...</p></div>';
 
-            fetch(`/tyre_performance/layout/${vehicleId}`)
+            fetch(`/master_data/layout/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -295,7 +295,7 @@
                buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  fetch(`/tyre_performance/rollback/${id}`, {
+                  fetch(`/master_data/rollback/${id}`, {
                      method: 'DELETE',
                      headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content

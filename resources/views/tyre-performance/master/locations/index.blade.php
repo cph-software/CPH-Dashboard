@@ -53,8 +53,7 @@
                               <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location"
                                  href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editLocationModal"
                                  data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}"
-                                 data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}"
-                                 title="Edit">
+                                 data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}" title="Edit">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </a>
                               <button type="button"
@@ -129,8 +128,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_location_name" class="form-label">Location Name</label>
-                        <input type="text" id="edit_location_name" name="location_name" class="form-control"
-                           required>
+                        <input type="text" id="edit_location_name" name="location_name" class="form-control" required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -170,7 +168,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-locations').DataTable({
             order: [
                [0, 'desc']
@@ -181,19 +179,19 @@
 
          const editForm = $('#editLocationForm');
 
-         $(document).on('click', '.edit-location', function() {
+         $(document).on('click', '.edit-location', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const type = $(this).data('type');
             const capacity = $(this).data('capacity');
 
-            editForm.attr('action', `{{ url('tyre_performance/master_location') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data/master_location') }}/${id}`);
             $('#edit_location_name').val(name);
             $('#edit_location_type').val(type);
             $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
          });
 
-         $(document).on('click', '.delete-location', function() {
+         $(document).on('click', '.delete-location', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -212,7 +210,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('tyre_performance/master_location') }}/${id}`;
+                  form.action = `{{ url('master_data/master_location') }}/${id}`;
                   form.submit();
                }
             });
@@ -235,6 +233,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-      });
+         });
    </script>
 @endsection
