@@ -60,48 +60,197 @@
          </a>
       </li> --}}
 
-      <li class="menu-header small">
+      <!-- <li class="menu-header small">
          <span class="menu-header-text" data-i18n="APPLICATIONS">APPLICATIONS</span>
-      </li>
+      </li> -->
 
-      {{-- DYNAMIC MENUS - Based on Aplikasi and Role --}}
+      {{-- DYNAMIC MENUS LOGIC --}}
       @php
-         $aplikasiList = getAplikasiPerRole(auth()->user()->role_id);
+         $user = auth()->user();
+         $rawAplikasiList = getAplikasiPerRole($user->role_id);
+         
+         // 1. Check Access to Tyre Performance (ID 20) for Logic Handling
+         $tyreApp = $rawAplikasiList->firstWhere('id', 20);
+
+         // 2. Filter Application List to Display
+         if ($user->role->name !== 'Super Admin') {
+             // Non-Super Admin: Only show Tyre Performance
+             $aplikasiList = $rawAplikasiList->where('id', 20);
+         } else {
+             // Super Admin: Show Tyre Performance AND User Management (CPH Dashboard)
+             // We filter out any other potentially unrelated apps to keep it clean as requested
+             $aplikasiList = $rawAplikasiList->filter(function($app) {
+                 return $app->id == 20 || $app->name == 'CPH Dashboard' || $app->name == 'User Management';
+             });
+         }
       @endphp
 
+      {{-- STATIC DASHBOARD - Only if user has access to Tyre App --}}
+      @if ($tyreApp)
+          <li class="menu-header small text-uppercase">
+             <span class="menu-header-text">Monitoring</span>
+          </li>
+          {{-- Active state check: Route name master_data.dashboard OR URL match --}}
+          <li class="menu-item {{ request()->routeIs('master_data.dashboard') || request()->is('master_data_tyre/dashboard*') ? 'active' : '' }}">
+             <a href="{{ route('master_data.dashboard') }}" class="menu-link">
+                <i class="menu-icon icon-base ri ri-dashboard-3-line"></i>
+                <div data-i18n="Tyre Dashboard">Tyre Dashboard</div>
+             </a>
+          </li>
+      @endif
+
+      {{-- LOOP APPLICATIONS --}}
       @foreach ($aplikasiList as $aplikasi)
          @php
-            $appPrefix = spaceToUL($aplikasi->name);
-            // Fix: Override prefix for Master Data Tyre app to match web.php route
-            if ($aplikasi->id == 20) {
-               $appPrefix = 'master_data_tyre';
-            }
-            // Check if any child menu is active to open the app dropdown
-            $isAppActive = request()->is($appPrefix . '*');
-            $roleMenus = getRoleMenu(auth()->user()->role_id, $aplikasi->id);
+             $roleMenus = getRoleMenu($user->role_id, $aplikasi->id);
+             
+             // Setup Prefix
+             $appPrefix = spaceToUL($aplikasi->name);
+             if ($aplikasi->id == 20) {
+                $appPrefix = 'master_data_tyre';
+             }
+
+             // Common: Get Top Level Menus
+             $topLevelMenus = $roleMenus->filter(function($item) {
+                 return is_null($item->menu->parent_id);
+             })->sortBy(function($item) {
+                 return $item->menu->order_no;
+             });
+
+             // Check if App Active (for Dropdown Style)
+             $isAppActive = request()->is($appPrefix . '*');
          @endphp
+         
+         @if ($aplikasi->id == 20)
+            {{-- STYLE 1: TYRE PERFORMANCE (FLAT HEADER) --}}
+            @if ($topLevelMenus->count() > 0)
+               <li class="menu-header small text-uppercase">
+                  <span class="menu-header-text">{{ $aplikasi->name }} Menu</span>
+               </li>
 
-         @if ($roleMenus->count() > 0)
-            {{-- APLIKASI SEBAGAI PARENT DROPDOWN (Standard for all apps) --}}
-            <li class="menu-item {{ $isAppActive ? 'active open' : '' }}">
-               <a href="javascript:void(0);" class="menu-link menu-toggle">
-                  <i class="menu-icon icon-base ri ri-apps-2-line"></i>
-                  <div data-i18n="{{ $aplikasi->name }}">{{ $aplikasi->name }}</div>
-               </a>
-               <ul class="menu-sub">
-                  @foreach ($roleMenus as $roleMenu)
-                     @php
-                        $menu = $roleMenu->menu;
-                        $fullUrl = $appPrefix . '/' . $menu->url;
-                        $isMenuActive = request()->is($fullUrl . '*');
-                     @endphp
+               @foreach ($topLevelMenus as $roleMenu)
+                  @php
+                     $menu = $roleMenu->menu;
+                     $fullUrl = $appPrefix . '/' . $menu->url;
+                     
+                     // Skip Dashboard here since we have Static Dashboard above
+                     if ($menu->url === 'dashboard') continue;
 
-                     {{-- Single Menu Item (Level 2) --}}
-                     <li class="menu-item {{ $isMenuActive ? 'active' : '' }}">
+                     // Find Children
+                     $children = $roleMenus->filter(function($item) use ($menu) {
+                        return $item->menu->parent_id == $menu->id;
+                     })->sortBy(function($item) {
+                        return $item->menu->order_no;
+                     });
+
+                     $hasChildren = $children->count() > 0;
+                     $isActive = false; $isOpen = false;
+
+                     if ($hasChildren) {
+                        foreach($children as $child) {
+                           $childUrl = $appPrefix . '/' . $child->menu->url;
+                           if (request()->is($childUrl . '*')) {
+                              $isActive = true; $isOpen = true; break;
+                           }
+                        }
+                     } else {
+                        $isActive = request()->is($fullUrl . '*');
+                     }
+                  @endphp
+
+                  @if ($hasChildren)
+                     {{-- FLAT - DROPDOWN MENU --}}
+                     <li class="menu-item {{ $isOpen ? 'active open' : '' }}">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle">
+                           <i class="menu-icon icon-base ri {{ $menu->icon }}"></i>
+                           <div data-i18n="{{ $menu->name }}">{{ $menu->name }}</div>
+                        </a>
+                        <ul class="menu-sub">
+                           @foreach ($children as $childRoleMenu)
+                              @php
+                                 $childMenu = $childRoleMenu->menu;
+                                 $childUrl = $appPrefix . '/' . $childMenu->url;
+                                 $isChildActive = request()->is($childUrl . '*');
+                              @endphp
+                              <li class="menu-item {{ $isChildActive ? 'active' : '' }}">
+                                 <a href="{{ url($childUrl) }}" class="menu-link">
+                                    <div data-i18n="{{ $childMenu->name }}">{{ $childMenu->name }}</div>
+                                 </a>
+                              </li>
+                           @endforeach
+                        </ul>
+                     </li>
+                  @else
+                     {{-- FLAT - SINGLE LINK --}}
+                     <li class="menu-item {{ $isActive ? 'active' : '' }}">
                         <a href="{{ url($fullUrl) }}" class="menu-link">
+                           <i class="menu-icon icon-base ri {{ $menu->icon }}"></i>
                            <div data-i18n="{{ $menu->name }}">{{ $menu->name }}</div>
                         </a>
                      </li>
+                  @endif
+               @endforeach
+            @endif
+
+         @elseif ($roleMenus->count() > 0)
+            {{-- STYLE 2: OTHER APPS (STANDARD DROPDOWN WRAPPER) --}}
+            <li class="menu-item {{ $isAppActive ? 'active open' : '' }}">
+               <a href="javascript:void(0);" class="menu-link menu-toggle">
+                  <i class="menu-icon icon-base ri ri-settings-4-line"></i> {{-- General Icon --}}
+                  <div data-i18n="{{ $aplikasi->name }}">{{ $aplikasi->name }}</div>
+               </a>
+               <ul class="menu-sub">
+                  @foreach ($topLevelMenus as $roleMenu)
+                     @php
+                        $menu = $roleMenu->menu;
+                        $fullUrl = $appPrefix . '/' . $menu->url;
+                        
+                        $children = $roleMenus->filter(function($item) use ($menu) {
+                           return $item->menu->parent_id == $menu->id;
+                        })->sortBy(function($item) { return $item->menu->order_no; });
+                        
+                        $hasChildren = $children->count() > 0;
+                        $isActive = false; $isOpen = false;
+
+                        if ($hasChildren) {
+                           foreach($children as $child) {
+                              $childUrl = $appPrefix . '/' . $child->menu->url;
+                              if (request()->is($childUrl . '*')) { $isActive = true; $isOpen = true; break; }
+                           }
+                        } else {
+                           $isActive = request()->is($fullUrl . '*');
+                        }
+                     @endphp
+
+                     @if ($hasChildren)
+                        {{-- NESTED DROPDOWN (Level 3) --}}
+                         <li class="menu-item {{ $isOpen ? 'active open' : '' }}">
+                           <a href="javascript:void(0);" class="menu-link menu-toggle">
+                              <div data-i18n="{{ $menu->name }}">{{ $menu->name }}</div>
+                           </a>
+                           <ul class="menu-sub">
+                              @foreach ($children as $childRoleMenu)
+                                 @php
+                                    $childMenu = $childRoleMenu->menu;
+                                    $childUrl = $appPrefix . '/' . $childMenu->url;
+                                    $isChildActive = request()->is($childUrl . '*');
+                                 @endphp
+                                 <li class="menu-item {{ $isChildActive ? 'active' : '' }}">
+                                    <a href="{{ url($childUrl) }}" class="menu-link">
+                                       <div data-i18n="{{ $childMenu->name }}">{{ $childMenu->name }}</div>
+                                    </a>
+                                 </li>
+                              @endforeach
+                           </ul>
+                        </li>
+                     @else
+                        {{-- SINGLE LINK (Level 2) --}}
+                        <li class="menu-item {{ $isActive ? 'active' : '' }}">
+                           <a href="{{ url($fullUrl) }}" class="menu-link">
+                              <div data-i18n="{{ $menu->name }}">{{ $menu->name }}</div>
+                           </a>
+                        </li>
+                     @endif
                   @endforeach
                </ul>
             </li>
