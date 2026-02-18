@@ -152,7 +152,7 @@ if (!function_exists('getDashboardRedirectUrl')) {
         }
 
         if ($hasTyreAccess) {
-            return '/master_data/dashboard';
+            return '/master_data_tyre/dashboard';
         }
 
         return '/dashboard';

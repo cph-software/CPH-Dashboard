@@ -671,7 +671,7 @@
                      });
                      // View detail link
                      if (row.id) {
-                        bodyHtml += '<td><a href="/master_data/master_tyre/' + row.id +
+                        bodyHtml += '<td><a href="/master_data_tyre/master_tyre/' + row.id +
                            '" class="btn btn-sm btn-icon btn-text-primary" title="Detail"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';

@@ -288,7 +288,7 @@
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
 
-            editForm.attr('action', `{{ url('master_data/master_kendaraan') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data_tyre/master_kendaraan') }}/${id}`);
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
             $('#edit_total_positions').val(positions);
@@ -316,7 +316,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data/master_kendaraan') }}/${id}`;
+                  form.action = `{{ url('master_data_tyre/master_kendaraan') }}/${id}`;
                   form.submit();
                }
             });
@@ -333,7 +333,7 @@
                '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
             );
 
-            fetch(`/master_data/master_position/${configId}/layout`)
+            fetch(`/master_data_tyre/master_position/${configId}/layout`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.html(html);

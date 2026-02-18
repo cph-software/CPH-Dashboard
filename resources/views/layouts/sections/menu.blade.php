@@ -23,13 +23,13 @@
                      d="M7.82901 2.22569C8.87231 0.444187 11.1726 -0.172113 12.9668 0.849138C14.7611 1.87039 15.3698 4.14247 14.3265 5.92397L7.38656 17.7743C6.34325 19.5558 4.04298 20.1721 2.24875 19.1509C0.454514 18.1296 -0.154233 15.8575 0.88907 14.076L7.82901 2.22569Z"
                      fill="currentColor" />
                   <defs>
-                     <linearGradient id="paint0_linear_2989_100980" x1="5.36642" y1="0.849138" x2="10.532"
-                        y2="24.104" gradientUnits="userSpaceOnUse">
+                     <linearGradient id="paint0_linear_2989_100980" x1="5.36642" y1="0.849138" x2="10.532" y2="24.104"
+                        gradientUnits="userSpaceOnUse">
                         <stop offset="0" stop-opacity="1" />
                         <stop offset="1" stop-opacity="0" />
                      </linearGradient>
-                     <linearGradient id="paint1_linear_2989_100980" x1="5.19475" y1="0.849139" x2="10.3357"
-                        y2="24.1155" gradientUnits="userSpaceOnUse">
+                     <linearGradient id="paint1_linear_2989_100980" x1="5.19475" y1="0.849139" x2="10.3357" y2="24.1155"
+                        gradientUnits="userSpaceOnUse">
                         <stop offset="0" stop-opacity="1" />
                         <stop offset="1" stop-opacity="0" />
                      </linearGradient>
@@ -72,6 +72,10 @@
       @foreach ($aplikasiList as $aplikasi)
          @php
             $appPrefix = spaceToUL($aplikasi->name);
+            // Fix: Override prefix for Master Data Tyre app to match web.php route
+            if ($aplikasi->id == 20) {
+               $appPrefix = 'master_data_tyre';
+            }
             // Check if any child menu is active to open the app dropdown
             $isAppActive = request()->is($appPrefix . '*');
             $roleMenus = getRoleMenu(auth()->user()->role_id, $aplikasi->id);
