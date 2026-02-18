@@ -373,7 +373,7 @@
                   return `
                                                                               <div class="d-flex align-items-center">
                                                                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                                                                    href="/master_data/master_tyre/${row.id}"
+                                                                                    href="/master_data_tyre/master_tyre/${row.id}"
                                                                                     title="View Details">
                                                                                     <i class="icon-base ri ri-eye-line"></i>
                                                                                  </a>
@@ -421,7 +421,7 @@
             const currentTread = $(this).data('current-tread');
             const retreadCount = $(this).data('retread-count');
 
-            editForm.attr('action', `{{ url('master_data/master_tyre') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data_tyre/master_tyre') }}/${id}`);
             $('#edit_serial_number').val(serial);
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
@@ -519,7 +519,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data/master_tyre') }}/${id}`;
+                  form.action = `{{ url('master_data_tyre/master_tyre') }}/${id}`;
                   form.submit();
                }
             });

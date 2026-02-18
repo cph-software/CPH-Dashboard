@@ -155,7 +155,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data/master_failure_code') }}/${id}`;
+                  form.action = `{{ url('master_data_tyre/master_failure_code') }}/${id}`;
                   form.submit();
                }
             });

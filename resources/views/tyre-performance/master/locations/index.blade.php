@@ -185,7 +185,7 @@
             const type = $(this).data('type');
             const capacity = $(this).data('capacity');
 
-            editForm.attr('action', `{{ url('master_data/master_location') }}/${id}`);
+            editForm.attr('action', `{{ url('master_data_tyre/master_location') }}/${id}`);
             $('#edit_location_name').val(name);
             $('#edit_location_type').val(type);
             $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
@@ -210,7 +210,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data/master_location') }}/${id}`;
+                  form.action = `{{ url('master_data_tyre/master_location') }}/${id}`;
                   form.submit();
                }
             });

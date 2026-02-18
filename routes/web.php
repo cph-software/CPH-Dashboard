@@ -50,7 +50,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Tyre Performance Application Routes
-    Route::prefix('master_data')->group(function () {
+    Route::prefix('master_data_tyre')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'index'])->name('master_data.dashboard');
         Route::get('/dashboard/drill-down', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'drillDown'])->name('master_data.drill-down');
 

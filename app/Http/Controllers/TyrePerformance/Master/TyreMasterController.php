@@ -96,6 +96,18 @@ class TyreMasterController extends Controller
         return view('tyre-performance.master.tyres.show', compact('tyre'));
     }
 
+    public function edit($id)
+    {
+        $tyre = Tyre::findOrFail($id);
+        $brands = TyreBrand::where('status', 'Active')->get();
+        $sizes = TyreSize::with('pattern')->get();
+        $segments = TyreSegment::where('status', 'Active')->get();
+        $patterns = TyrePattern::all();
+        $locations = TyreLocation::all();
+
+        return view('tyre-performance.master.tyres.edit', compact('tyre', 'brands', 'sizes', 'segments', 'patterns', 'locations'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([

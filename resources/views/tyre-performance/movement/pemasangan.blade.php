@@ -344,7 +344,7 @@
             }
 
             segmentSelect.prop('disabled', false);
-            fetch(`{{ url('master_data/segments') }}/${locId}`)
+            fetch(`{{ url('master_data_tyre/segments') }}/${locId}`)
                .then(response => response.json())
                .then(data => {
                   data.forEach(seg => {
@@ -371,7 +371,7 @@
             }
 
             // Fetch Vehicle Detail for auto-fill
-            fetch(`{{ url('master_data/vehicle-detail') }}/${vehicleId}`)
+            fetch(`{{ url('master_data_tyre/vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
@@ -380,7 +380,7 @@
 
             // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
-            fetch(`{{ url('master_data/layout') }}/${vehicleId}`)
+            fetch(`{{ url('master_data_tyre/layout') }}/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -389,7 +389,7 @@
 
             // Load Positions
             fetch(
-               `{{ url('master_data/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
+               `{{ url('master_data_tyre/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
             )
                .then(response => response.json())
                .then(data => {
@@ -537,7 +537,7 @@
                   btn.innerHTML =
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
-                  fetch(`{{ url('master_data/store') }}`, {
+                  fetch(`{{ url('master_data_tyre/store') }}`, {
                      method: 'POST',
                      body: formData,
                      headers: {
