@@ -53,6 +53,9 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('master_data_tyre')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'index'])->name('master_data.dashboard');
         Route::get('/dashboard/drill-down', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'drillDown'])->name('master_data.drill-down');
+        Route::get('/dashboard/brand-performance', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'brandPerformanceAjax'])->name('master_data.brand-performance');
+        Route::get('/dashboard/cpk-by-brand', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'cpkByBrandAjax'])->name('master_data.cpk-by-brand');
+        Route::get('/dashboard/scrap-by-position', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'scrapByPositionAjax'])->name('master_data.scrap-by-position');
 
         // Master Data Routes
         // Master Data Routes
