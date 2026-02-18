@@ -83,6 +83,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('history', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'apiHistory'])->name('tyre-movement.history');
         Route::delete('rollback/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'rollback'])->name('tyre-movement.rollback');
         Route::post('store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store']);
+
+        // Tyre Examination Routes
+        Route::get('examination/data', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'data'])->name('examination.data');
+        Route::get('examination/vehicle-tyres/{vehicleId}', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'getVehicleTyres'])->name('examination.get-vehicle-tyres');
+        Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class);
+
         Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns');
     });
 
