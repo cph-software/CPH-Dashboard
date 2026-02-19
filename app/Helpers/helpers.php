@@ -36,7 +36,7 @@ if (!function_exists('setLogActivity')) {
         try {
             \App\Models\ActivityLog::create([
                 'user_id'     => $userId,
-                'project'     => $options['project'] ?? 'CPH-Dashboard',
+                'project'     => $options['project'] ?? 'CPH Dashboard',
                 'activity'    => $message,
                 'action_type' => $options['action_type'] ?? null,
                 'module'      => $options['module'] ?? null,
