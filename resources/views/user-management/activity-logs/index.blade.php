@@ -33,12 +33,13 @@
          <div class="col-md-6">
             <form action="{{ url()->current() }}" method="GET">
                <div class="input-group input-group-merge shadow-sm">
-                  <span class="input-group-text border-0"><i class="ri-search-line"></i></span>
+                  <span class="input-group-text border-0"><i class="icon-base ri ri-search-line"></i></span>
                   <input type="text" name="search" class="form-control border-0"
                      placeholder="Cari aktivitas, modul, atau user..." value="{{ request('search') }}">
                   <button type="submit" class="btn btn-primary">Cari</button>
                   @if (request('search'))
-                     <a href="{{ url()->current() }}" class="btn btn-outline-secondary"><i class="ri-refresh-line"></i></a>
+                     <a href="{{ url()->current() }}" class="btn btn-outline-secondary"><i
+                           class="icon-base ri ri-refresh-line"></i></a>
                   @endif
                </div>
             </form>
@@ -114,14 +115,14 @@
                         <td>
                            <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect view-detail"
                               data-id="{{ $log->id }}">
-                              <i class="ri-eye-line"></i>
+                              <i class="icon-base ri ri-eye-line"></i>
                            </button>
                         </td>
                      </tr>
                   @empty
                      <tr>
                         <td colspan="7" class="text-center py-5">
-                           <i class="ri-information-line ri-3x text-light mb-3"></i>
+                           <i class="icon-base ri ri-information-line ri-3x text-light mb-3"></i>
                            <p class="text-muted">Tidak ada data aktivitas ditemukan.</p>
                         </td>
                      </tr>
@@ -146,7 +147,7 @@
       <div class="modal-dialog modal-lg modal-dialog-centered">
          <div class="modal-content shadow-lg border-0">
             <div class="modal-header bg-label-primary py-3">
-               <h5 class="modal-title"><i class="ri-information-line me-2"></i>Detail Aktivitas</h5>
+               <h5 class="modal-title"><i class="icon-base ri ri-information-line me-2"></i>Detail Aktivitas</h5>
                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-4">

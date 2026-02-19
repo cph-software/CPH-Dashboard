@@ -56,6 +56,12 @@ class UserController extends Controller
             'foto' => ''
         ]);
 
+        setLogActivity(auth()->id(), 'Menambah user baru (Employee: ' . $request->master_karyawan_id . ')', [
+            'action_type' => 'create',
+            'module' => 'Users',
+            'data_after' => $request->except('password')
+        ]);
+
         return redirect()->back()->with('success', 'User created successfully');
     }
 
@@ -92,6 +98,12 @@ class UserController extends Controller
 
         $this->userService->update($id, $data);
 
+        setLogActivity(auth()->id(), 'Memperbarui user ID: ' . $id, [
+            'action_type' => 'update',
+            'module' => 'Users',
+            'data_after' => $request->except('password')
+        ]);
+
         return redirect()->back()->with('success', 'User updated successfully');
     }
 
@@ -103,6 +115,11 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
+        setLogActivity(auth()->id(), 'Menghapus user ID: ' . $id, [
+            'action_type' => 'delete',
+            'module' => 'Users'
+        ]);
+
         $this->userService->delete($id);
         return redirect()->back()->with('success', 'User deleted successfully');
     }

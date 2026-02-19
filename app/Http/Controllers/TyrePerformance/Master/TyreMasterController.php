@@ -126,6 +126,12 @@ class TyreMasterController extends Controller
 
         Tyre::create($request->all());
 
+        setLogActivity(auth()->id(), 'Menambah ban baru: ' . $request->serial_number, [
+            'action_type' => 'create',
+            'module' => 'Master Tyre',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Tyre created successfully');
     }
 
@@ -148,6 +154,12 @@ class TyreMasterController extends Controller
         $tyre = Tyre::findOrFail($id);
         $tyre->update($request->all());
 
+        setLogActivity(auth()->id(), 'Memperbarui ban: ' . $request->serial_number, [
+            'action_type' => 'update',
+            'module' => 'Master Tyre',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Tyre updated successfully');
     }
 
@@ -158,6 +170,12 @@ class TyreMasterController extends Controller
         if ($tyre->movements()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete tyre. it has movement history records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus ban: ' . $tyre->serial_number, [
+            'action_type' => 'delete',
+            'module' => 'Master Tyre',
+            'data_before' => $tyre->toArray()
+        ]);
 
         $tyre->delete();
 

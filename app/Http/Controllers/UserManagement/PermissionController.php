@@ -55,6 +55,13 @@ class PermissionController extends Controller
 
         $this->roleService->updateWithPermissions($roleId, [], $menuIds, $menuPermissions);
 
+        $role = Role::find($roleId);
+        setLogActivity(auth()->id(), 'Memperbarui permission matrix untuk role: ' . ($role->name ?? $roleId), [
+            'action_type' => 'update',
+            'module' => 'Permissions',
+            'data_after' => ['role_id' => $roleId, 'menu_count' => count($menuIds)]
+        ]);
+
         return redirect()->back()->with('success', 'Permission matrix updated successfully');
     }
 }

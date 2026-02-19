@@ -28,6 +28,12 @@ class TyreSegmentController extends Controller
 
         TyreSegment::create($request->all());
 
+        setLogActivity(auth()->id(), 'Menambah segment: ' . $request->segment_name, [
+            'action_type' => 'create',
+            'module' => 'Segments',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Segment created successfully');
     }
 
@@ -44,6 +50,12 @@ class TyreSegmentController extends Controller
         $segment = TyreSegment::findOrFail($id);
         $segment->update($request->all());
 
+        setLogActivity(auth()->id(), 'Memperbarui segment: ' . $request->segment_name, [
+            'action_type' => 'update',
+            'module' => 'Segments',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Segment updated successfully');
     }
 
@@ -54,6 +66,12 @@ class TyreSegmentController extends Controller
         if ($segment->tyres()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete segment. It is currently being used by some tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus segment: ' . $segment->segment_name, [
+            'action_type' => 'delete',
+            'module' => 'Segments',
+            'data_before' => $segment->toArray()
+        ]);
 
         $segment->delete();
 

@@ -21,7 +21,13 @@ class TyreBrandController extends Controller
             'status' => 'required|in:Active,Inactive',
         ]);
 
-        TyreBrand::create($request->all());
+        $brand = TyreBrand::create($request->all());
+
+        setLogActivity(auth()->id(), 'Menambah brand ban: ' . $request->brand_name, [
+            'action_type' => 'create',
+            'module' => 'Brands',
+            'data_after' => $request->all()
+        ]);
 
         return redirect()->back()->with('success', 'Brand created successfully');
     }
@@ -34,7 +40,15 @@ class TyreBrandController extends Controller
         ]);
 
         $brand = TyreBrand::findOrFail($id);
+        $dataBefore = $brand->toArray();
         $brand->update($request->all());
+
+        setLogActivity(auth()->id(), 'Memperbarui brand ban: ' . $request->brand_name, [
+            'action_type' => 'update',
+            'module' => 'Brands',
+            'data_before' => $dataBefore,
+            'data_after' => $request->all()
+        ]);
 
         return redirect()->back()->with('success', 'Brand updated successfully');
     }
@@ -46,6 +60,12 @@ class TyreBrandController extends Controller
         if ($brand->tyres()->exists() || $brand->sizes()->exists() || $brand->patterns()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete brand. It is currently being used by some size, pattern, or tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus brand ban: ' . $brand->brand_name, [
+            'action_type' => 'delete',
+            'module' => 'Brands',
+            'data_before' => $brand->toArray()
+        ]);
 
         $brand->delete();
 

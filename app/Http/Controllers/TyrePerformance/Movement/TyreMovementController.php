@@ -380,6 +380,21 @@ class TyreMovementController extends Controller
             }
 
             DB::commit();
+
+            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
+            $vehicleCode = $vehicle->kode_kendaraan ?? $request->vehicle_id;
+            setLogActivity(Auth::id(), ($request->movement_type === 'Installation' ? 'Pemasangan' : 'Pelepasan') . ' ban pada kendaraan ' . $vehicleCode, [
+                'action_type' => 'create',
+                'module' => 'Tyre Movement',
+                'data_after' => [
+                    'movement_type' => $request->movement_type,
+                    'vehicle' => $vehicleCode,
+                    'position_id' => $request->position_id,
+                    'tyre_id' => $request->tyre_id,
+                    'odometer' => $request->odometer,
+                ]
+            ]);
+
             return response()->json(['success' => true, 'message' => 'Transaksi berhasil disimpan']);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -517,6 +532,17 @@ class TyreMovementController extends Controller
             $movement->delete();
 
             DB::commit();
+
+            setLogActivity(Auth::id(), 'Rollback ' . $movement->movement_type . ' ban SN: ' . ($tyre->serial_number ?? '-'), [
+                'action_type' => 'delete',
+                'module' => 'Tyre Movement',
+                'data_before' => [
+                    'movement_type' => $movement->movement_type,
+                    'tyre_sn' => $tyre->serial_number ?? '-',
+                    'movement_date' => $movement->movement_date,
+                ]
+            ]);
+
             return response()->json(['success' => true, 'message' => 'Transaksi berhasil di-rollback.']);
         } catch (\Exception $e) {
             DB::rollBack();

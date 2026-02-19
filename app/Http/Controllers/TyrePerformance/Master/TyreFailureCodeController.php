@@ -45,6 +45,12 @@ class TyreFailureCodeController extends Controller
 
         TyreFailureCode::create($data);
 
+        setLogActivity(auth()->id(), 'Menambah failure code: ' . $request->failure_code . ' - ' . $request->failure_name, [
+            'action_type' => 'create',
+            'module' => 'Failure Codes',
+            'data_after' => $request->except(['image_1', 'image_2'])
+        ]);
+
         return redirect()->route('tyre-failure-codes.index')->with('success', 'Failure code created successfully');
     }
 
@@ -88,6 +94,12 @@ class TyreFailureCodeController extends Controller
 
         $failureCode->update($data);
 
+        setLogActivity(auth()->id(), 'Memperbarui failure code: ' . $request->failure_code, [
+            'action_type' => 'update',
+            'module' => 'Failure Codes',
+            'data_after' => $request->except(['image_1', 'image_2'])
+        ]);
+
         return redirect()->route('tyre-failure-codes.index')->with('success', 'Failure code updated successfully');
     }
 
@@ -98,6 +110,12 @@ class TyreFailureCodeController extends Controller
         if ($failureCode->movements()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete failure code. It is currently associated with some movement history records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus failure code: ' . $failureCode->failure_code, [
+            'action_type' => 'delete',
+            'module' => 'Failure Codes',
+            'data_before' => $failureCode->toArray()
+        ]);
 
         $failureCode->delete();
 

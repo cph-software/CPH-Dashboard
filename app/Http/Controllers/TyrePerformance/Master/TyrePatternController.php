@@ -23,6 +23,12 @@ class TyrePatternController extends Controller
 
         TyrePattern::create($request->all());
 
+        setLogActivity(auth()->id(), 'Menambah pattern ban: ' . $request->name, [
+            'action_type' => 'create',
+            'module' => 'Patterns',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Pattern created successfully');
     }
 
@@ -36,6 +42,12 @@ class TyrePatternController extends Controller
         $pattern = TyrePattern::findOrFail($id);
         $pattern->update($request->all());
 
+        setLogActivity(auth()->id(), 'Memperbarui pattern ban: ' . $request->name, [
+            'action_type' => 'update',
+            'module' => 'Patterns',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Pattern updated successfully');
     }
 
@@ -46,6 +58,12 @@ class TyrePatternController extends Controller
         if ($pattern->tyres()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete pattern. It is currently being used by some tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus pattern ban: ' . $pattern->name, [
+            'action_type' => 'delete',
+            'module' => 'Patterns',
+            'data_before' => $pattern->toArray()
+        ]);
 
         $pattern->delete();
 

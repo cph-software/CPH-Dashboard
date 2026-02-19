@@ -42,6 +42,12 @@ class TyreSizeController extends Controller
 
         TyreSize::create($data);
 
+        setLogActivity(auth()->id(), 'Menambah ukuran ban: ' . $request->size, [
+            'action_type' => 'create',
+            'module' => 'Sizes',
+            'data_after' => $data
+        ]);
+
         return redirect()->back()->with('success', 'Size created successfully');
     }
 
@@ -70,6 +76,12 @@ class TyreSizeController extends Controller
 
         $size->update($data);
 
+        setLogActivity(auth()->id(), 'Memperbarui ukuran ban: ' . $request->size, [
+            'action_type' => 'update',
+            'module' => 'Sizes',
+            'data_after' => $data
+        ]);
+
         return redirect()->back()->with('success', 'Size updated successfully');
     }
 
@@ -80,6 +92,12 @@ class TyreSizeController extends Controller
         if ($size->tyres()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete size. It is currently being used by some tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus ukuran ban: ' . $size->size, [
+            'action_type' => 'delete',
+            'module' => 'Sizes',
+            'data_before' => $size->toArray()
+        ]);
 
         $size->delete();
 

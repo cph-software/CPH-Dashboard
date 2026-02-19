@@ -78,6 +78,12 @@ class TyrePositionController extends Controller
 
             DB::commit();
 
+            setLogActivity(auth()->id(), 'Menambah konfigurasi posisi ban: ' . $validated['name'] . ' (' . $validated['code'] . ')', [
+                'action_type' => 'create',
+                'module' => 'Position Layouts',
+                'data_after' => $validated
+            ]);
+
             return redirect()->route('tyre-positions.index')
                 ->with('success', 'Konfigurasi posisi ban berhasil dibuat dengan ' . $totalPositions . ' posisi');
         } catch (\Exception $e) {
@@ -179,6 +185,12 @@ class TyrePositionController extends Controller
 
             DB::commit();
 
+            setLogActivity(auth()->id(), 'Memperbarui konfigurasi posisi ban: ' . $validated['name'], [
+                'action_type' => 'update',
+                'module' => 'Position Layouts',
+                'data_after' => $validated
+            ]);
+
             return redirect()->route('tyre-positions.index')
                 ->with('success', 'Konfigurasi posisi ban berhasil diupdate');
         } catch (\Exception $e) {
@@ -208,6 +220,12 @@ class TyrePositionController extends Controller
             
             // Delete configuration
             $configuration->delete();
+
+            setLogActivity(auth()->id(), 'Menghapus konfigurasi posisi ban: ' . $configuration->name, [
+                'action_type' => 'delete',
+                'module' => 'Position Layouts',
+                'data_before' => $configuration->toArray()
+            ]);
 
             DB::commit();
 
