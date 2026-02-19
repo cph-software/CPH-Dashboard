@@ -15,13 +15,39 @@ if (!function_exists('format_date')) {
 }
 
 if (!function_exists('setLogActivity')) {
-    function setLogActivity($userId, $message)
+    /**
+     * Log aktivitas user ke database.
+     * 
+     * Backward compatible dengan pemanggilan lama: setLogActivity($userId, $message)
+     * Pemanggilan baru: setLogActivity($userId, $message, [
+     *     'action_type' => 'create',    // login, create, update, delete, import, export, view
+     *     'module'      => 'BA',        // BA, Invoice, Tyre, User, etc.
+     *     'data_before' => [...],       // array/object sebelum perubahan
+     *     'data_after'  => [...],       // array/object setelah perubahan
+     *     'ip_address'  => '...',       // opsional, default dari request
+     * ])
+     * 
+     * @param int $userId
+     * @param string $message
+     * @param array $options
+     */
+    function setLogActivity($userId, $message, $options = [])
     {
-        // For now, we can just log to laravel.log or ignore if table doesn't exist
-        \Log::info("User ID {$userId}: {$message}");
-
-        // If you have an ActivityLog model, you can do:
-        // \App\Models\ActivityLog::create(['user_id' => $userId, 'activity' => $message]);
+        try {
+            \App\Models\ActivityLog::create([
+                'user_id'     => $userId,
+                'activity'    => $message,
+                'action_type' => $options['action_type'] ?? null,
+                'module'      => $options['module'] ?? null,
+                'data_before' => isset($options['data_before']) ? json_encode($options['data_before']) : null,
+                'data_after'  => isset($options['data_after']) ? json_encode($options['data_after']) : null,
+                'ip_address'  => $options['ip_address'] ?? (request() ? request()->ip() : null),
+            ]);
+        } catch (\Exception $e) {
+            // Fallback ke file log jika DB gagal (backward compat)
+            \Log::info("User ID {$userId}: {$message}");
+            \Log::warning("ActivityLog DB write failed: " . $e->getMessage());
+        }
     }
 }
 
@@ -136,19 +162,25 @@ if (!function_exists('getDashboardRedirectUrl')) {
         if (!$user)
             return '/login';
 
-        // Check if user has access to 'Tyre Performance' (ID 20)
+        // Check if user has access to Tyre app (by name, not hardcoded ID)
         $roleId = $user->role_id;
-        $hasTyreAccess = \App\Models\Aplikasi::where('id', 20)
-            ->whereHas('roles', function ($q) use ($roleId) {
-                $q->where('role.id', $roleId);
-            })->exists();
+        $tyreApp = \App\Models\Aplikasi::where('name', 'Master Data Tyre')->first();
+        $tyreAppId = $tyreApp ? $tyreApp->id : null;
 
-        // Secondary check via menus if explicit link is missing
-        if (!$hasTyreAccess) {
-            $hasTyreAccess = \App\Models\Menu::where('aplikasi_id', 20)
+        $hasTyreAccess = false;
+        if ($tyreAppId) {
+            $hasTyreAccess = \App\Models\Aplikasi::where('id', $tyreAppId)
                 ->whereHas('roles', function ($q) use ($roleId) {
                     $q->where('role.id', $roleId);
                 })->exists();
+
+            // Secondary check via menus if explicit link is missing
+            if (!$hasTyreAccess) {
+                $hasTyreAccess = \App\Models\Menu::where('aplikasi_id', $tyreAppId)
+                    ->whereHas('roles', function ($q) use ($roleId) {
+                        $q->where('role.id', $roleId);
+                    })->exists();
+            }
         }
 
         if ($hasTyreAccess) {
