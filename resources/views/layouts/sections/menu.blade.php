@@ -67,6 +67,9 @@
       {{-- DYNAMIC MENUS LOGIC --}}
       @php
          $user = auth()->user();
+         if (!$user || !$user->role) {
+             return; // Or handle as needed, but this prevents the crash
+         }
          $rawAplikasiList = getAplikasiPerRole($user->role_id);
 
          // 1. Check Access to Tyre Performance (ID 20) for Logic Handling
