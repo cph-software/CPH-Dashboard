@@ -51,6 +51,11 @@ Route::middleware(['auth'])->group(function () {
         // Activity Logs (Cross-app access)
         Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('cph.activity-logs.index');
         Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('cph.activity-logs.show');
+
+        // Coming Soon for this prefix
+        Route::get('/coming-soon', function () {
+            return view('pages.under-development', ['featureName' => request('feature')]);
+        });
     });
 
     // Tyre Performance Application Routes
@@ -97,8 +102,15 @@ Route::middleware(['auth'])->group(function () {
         // Activity Logs
         Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
         Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('activity-logs.show')->middleware('tyre.permission:All Activity');
+
+        // Coming Soon for this prefix
+        Route::get('/coming-soon', function () {
+            return view('pages.under-development', ['featureName' => request('feature')]);
+        });
     });
 
-    // Example of using permission middleware
-    // Route::get('/tyre', [TyreController::class, 'index'])->middleware('permission:Tyre Master,view');
+    // Coming Soon / Under Development Page
+    Route::get('/coming-soon', function () {
+        return view('pages.under-development', ['featureName' => request('feature')]);
+    })->name('coming-soon');
 });

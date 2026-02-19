@@ -146,6 +146,7 @@ class TyrePositionController extends Controller
         ]);
 
         $configuration = TyrePositionConfiguration::findOrFail($id);
+        $dataBefore = $configuration->toArray();
         
         DB::beginTransaction();
         try {
@@ -188,6 +189,7 @@ class TyrePositionController extends Controller
             setLogActivity(auth()->id(), 'Memperbarui konfigurasi posisi ban: ' . $validated['name'], [
                 'action_type' => 'update',
                 'module' => 'Position Layouts',
+                'data_before' => $dataBefore,
                 'data_after' => $validated
             ]);
 

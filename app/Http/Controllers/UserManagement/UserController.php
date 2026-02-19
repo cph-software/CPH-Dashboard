@@ -96,11 +96,14 @@ class UserController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
+        $userBefore = \App\Models\User::find($id);
+
         $this->userService->update($id, $data);
 
         setLogActivity(auth()->id(), 'Memperbarui user ID: ' . $id, [
             'action_type' => 'update',
             'module' => 'Users',
+            'data_before' => $userBefore ? $userBefore->toArray() : null,
             'data_after' => $request->except('password')
         ]);
 

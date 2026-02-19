@@ -77,9 +77,17 @@
                         <td>
                            @php
                               $user = $log->user;
-                              $name = $user
-                                  ? $user->karyawan->nama ?? ($user->karyawan->employee_name ?? $user->name)
-                                  : 'System';
+                              $name = 'System';
+                              if ($user) {
+                                  if ($user->karyawan) {
+                                      $name =
+                                          $user->karyawan->full_name ??
+                                          ($user->karyawan->nama ?? ($user->karyawan->employee_name ?? $user->name)) ?:
+                                          'User #' . $user->id;
+                                  } else {
+                                      $name = $user->name ?: 'User #' . $user->id;
+                                  }
+                              }
                            @endphp
                            <div class="d-flex align-items-center">
                               <div class="avatar avatar-xs me-2">
@@ -230,9 +238,10 @@
 
                let userName = 'System';
                if (data.user) {
-                  userName = data.user.name;
+                  userName = data.user.name || ('User #' + data.user.id);
                   if (data.user.karyawan) {
-                     userName = data.user.karyawan.nama || data.user.karyawan.employee_name || userName;
+                     userName = data.user.karyawan.full_name || data.user.karyawan.nama || data.user
+                        .karyawan.employee_name || userName;
                   }
                }
                $('#detailUser').text(userName);

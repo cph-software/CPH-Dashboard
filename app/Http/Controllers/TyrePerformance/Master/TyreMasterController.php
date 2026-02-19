@@ -152,11 +152,13 @@ class TyreMasterController extends Controller
         ]);
 
         $tyre = Tyre::findOrFail($id);
+        $dataBefore = $tyre->toArray();
         $tyre->update($request->all());
 
         setLogActivity(auth()->id(), 'Memperbarui ban: ' . $request->serial_number, [
             'action_type' => 'update',
             'module' => 'Master Tyre',
+            'data_before' => $dataBefore,
             'data_after' => $request->all()
         ]);
 

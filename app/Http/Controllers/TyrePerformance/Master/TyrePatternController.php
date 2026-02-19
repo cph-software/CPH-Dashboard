@@ -40,11 +40,13 @@ class TyrePatternController extends Controller
         ]);
 
         $pattern = TyrePattern::findOrFail($id);
+        $dataBefore = $pattern->toArray();
         $pattern->update($request->all());
 
         setLogActivity(auth()->id(), 'Memperbarui pattern ban: ' . $request->name, [
             'action_type' => 'update',
             'module' => 'Patterns',
+            'data_before' => $dataBefore,
             'data_after' => $request->all()
         ]);
 

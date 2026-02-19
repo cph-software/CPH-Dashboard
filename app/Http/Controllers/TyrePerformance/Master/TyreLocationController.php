@@ -42,11 +42,13 @@ class TyreLocationController extends Controller
         ]);
 
         $location = TyreLocation::findOrFail($id);
+        $dataBefore = $location->toArray();
         $location->update($request->all());
 
         setLogActivity(auth()->id(), 'Memperbarui lokasi: ' . $request->location_name, [
             'action_type' => 'update',
             'module' => 'Locations',
+            'data_before' => $dataBefore,
             'data_after' => $request->all()
         ]);
 

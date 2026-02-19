@@ -48,11 +48,13 @@ class TyreSegmentController extends Controller
         ]);
 
         $segment = TyreSegment::findOrFail($id);
+        $dataBefore = $segment->toArray();
         $segment->update($request->all());
 
         setLogActivity(auth()->id(), 'Memperbarui segment: ' . $request->segment_name, [
             'action_type' => 'update',
             'module' => 'Segments',
+            'data_before' => $dataBefore,
             'data_after' => $request->all()
         ]);
 

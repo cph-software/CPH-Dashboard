@@ -28,7 +28,12 @@ class ActivityLogController extends Controller
                   ->orWhere('module', 'like', "%$search%")
                   ->orWhere('action_type', 'like', "%$search%")
                   ->orWhereHas('user', function($qu) use ($search) {
-                      $qu->where('name', 'like', "%$search%");
+                      $qu->where('name', 'like', "%$search%")
+                    ->orWhereHas('karyawan', function($qk) use ($search) {
+                        $qk->where('full_name', 'like', "%$search%")
+                           ->orWhere('nama', 'like', "%$search%")
+                           ->orWhere('employee_name', 'like', "%$search%");
+                    });
                   });
             });
         }
@@ -44,10 +49,6 @@ class ActivityLogController extends Controller
     public function show($id)
     {
         $log = ActivityLog::with('user.karyawan')->findOrFail($id);
-        
-        // Manual JSON decode if needed
-        $log->data_before = is_string($log->data_before) ? json_decode($log->data_before, true) : $log->data_before;
-        $log->data_after = is_string($log->data_after) ? json_decode($log->data_after, true) : $log->data_after;
 
         return response()->json($log);
     }

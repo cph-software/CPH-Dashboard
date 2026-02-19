@@ -91,6 +91,8 @@ class MenuController extends Controller
             'url' => 'required'
         ]);
 
+        $menuBefore = \App\Models\Menu::find($id);
+
         $this->menuService->update($id, [
             'aplikasi_id' => $request->aplikasi_id,
             'name' => $request->name,
@@ -101,6 +103,7 @@ class MenuController extends Controller
         setLogActivity(auth()->id(), 'Memperbarui menu: ' . $request->name, [
             'action_type' => 'update',
             'module' => 'Menus',
+            'data_before' => $menuBefore ? $menuBefore->toArray() : null,
             'data_after' => $request->all()
         ]);
 

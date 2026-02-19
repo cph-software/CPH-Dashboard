@@ -62,18 +62,14 @@ class User extends Authenticatable
     }
 
     /**
-     * Get display name: prioritas name column, lalu karyawan relation
+     * Get display name: prioritas karyawan relation (full_name), lalu name column
      */
     public function getDisplayNameAttribute()
     {
-        if ($this->name) {
-            return $this->name;
-        }
-
         if ($this->karyawan) {
-            return $this->karyawan->nama ?? $this->karyawan->employee_name ?? 'User #' . $this->id;
+            return $this->karyawan->full_name ?? $this->karyawan->nama ?? $this->karyawan->employee_name ?? ($this->name ?: 'User #' . $this->id);
         }
 
-        return 'User #' . $this->id;
+        return $this->name ?: 'User #' . $this->id;
     }
 }

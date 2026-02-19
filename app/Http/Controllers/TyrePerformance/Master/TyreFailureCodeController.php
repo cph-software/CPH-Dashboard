@@ -81,6 +81,7 @@ class TyreFailureCodeController extends Controller
         ]);
 
         $failureCode = TyreFailureCode::findOrFail($id);
+        $dataBefore = $failureCode->toArray();
         $data = $request->except(['image_1', 'image_2']);
 
         if ($request->hasFile('image_1')) {
@@ -97,6 +98,7 @@ class TyreFailureCodeController extends Controller
         setLogActivity(auth()->id(), 'Memperbarui failure code: ' . $request->failure_code, [
             'action_type' => 'update',
             'module' => 'Failure Codes',
+            'data_before' => $dataBefore,
             'data_after' => $request->except(['image_1', 'image_2'])
         ]);
 
