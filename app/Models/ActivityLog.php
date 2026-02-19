@@ -32,6 +32,7 @@ class ActivityLog extends Model
      */
     public function getDataBeforeAttribute($value)
     {
+        if (is_array($value)) return $value;
         return $value ? json_decode($value, true) : null;
     }
 
@@ -40,6 +41,7 @@ class ActivityLog extends Model
      */
     public function getDataAfterAttribute($value)
     {
+        if (is_array($value)) return $value;
         return $value ? json_decode($value, true) : null;
     }
 
