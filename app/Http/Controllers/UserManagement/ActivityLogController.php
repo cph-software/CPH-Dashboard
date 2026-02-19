@@ -14,10 +14,7 @@ class ActivityLogController extends Controller
     public function index(Request $request)
     {
         $query = ActivityLog::with('user.karyawan')
-            ->where(function($q) {
-                $q->where('project', 'CPH-Dashboard')
-                  ->orWhereNull('project');
-            })
+            ->where('project', 'CPH-Dashboard')
             ->orderBy('created_at', 'desc');
 
         // Simple Search
