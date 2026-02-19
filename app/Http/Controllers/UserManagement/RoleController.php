@@ -54,10 +54,17 @@ class RoleController extends Controller
             'name' => 'required|unique:role,name',
         ]);
 
-        $this->roleService->storeWithPermissions(
+        $role = $this->roleService->storeWithPermissions(
             $request->only('name'),
-            $request->input('menu_ids', [])
+            $request->input('menu_ids', []),
+            $request->input('menu_permissions', [])
         );
+
+        setLogActivity(auth()->id(), 'Menambah role baru: ' . $request->name, [
+            'action_type' => 'create',
+            'module'      => 'Roles',
+            'data_after'  => $request->all()
+        ]);
 
         return redirect()->route('roles.index')->with('success', 'Role created successfully');
     }
@@ -93,8 +100,15 @@ class RoleController extends Controller
         $this->roleService->updateWithPermissions(
             $id,
             $request->only('name'),
-            $request->input('menu_ids', [])
+            $request->input('menu_ids', []),
+            $request->input('menu_permissions', [])
         );
+
+        setLogActivity(auth()->id(), 'Memperbarui role: ' . $request->name, [
+            'action_type' => 'update',
+            'module'      => 'Roles',
+            'data_after'  => $request->all()
+        ]);
 
         return redirect()->route('roles.index')->with('success', 'Role updated successfully');
     }
@@ -107,7 +121,15 @@ class RoleController extends Controller
      */
     public function destroy($id)
     {
+        $role = \App\Models\Role::findOrFail($id);
+        $roleName = $role->name;
         $this->roleService->delete($id);
+
+        setLogActivity(auth()->id(), 'Menghapus role: ' . $roleName, [
+            'action_type' => 'delete',
+            'module'      => 'Roles'
+        ]);
+
         return redirect()->back()->with('success', 'Role deleted successfully');
     }
 }

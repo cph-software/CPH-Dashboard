@@ -23,13 +23,13 @@
                      d="M7.82901 2.22569C8.87231 0.444187 11.1726 -0.172113 12.9668 0.849138C14.7611 1.87039 15.3698 4.14247 14.3265 5.92397L7.38656 17.7743C6.34325 19.5558 4.04298 20.1721 2.24875 19.1509C0.454514 18.1296 -0.154233 15.8575 0.88907 14.076L7.82901 2.22569Z"
                      fill="currentColor" />
                   <defs>
-                     <linearGradient id="paint0_linear_2989_100980" x1="5.36642" y1="0.849138" x2="10.532" y2="24.104"
-                        gradientUnits="userSpaceOnUse">
+                     <linearGradient id="paint0_linear_2989_100980" x1="5.36642" y1="0.849138" x2="10.532"
+                        y2="24.104" gradientUnits="userSpaceOnUse">
                         <stop offset="0" stop-opacity="1" />
                         <stop offset="1" stop-opacity="0" />
                      </linearGradient>
-                     <linearGradient id="paint1_linear_2989_100980" x1="5.19475" y1="0.849139" x2="10.3357" y2="24.1155"
-                        gradientUnits="userSpaceOnUse">
+                     <linearGradient id="paint1_linear_2989_100980" x1="5.19475" y1="0.849139" x2="10.3357"
+                        y2="24.1155" gradientUnits="userSpaceOnUse">
                         <stop offset="0" stop-opacity="1" />
                         <stop offset="1" stop-opacity="0" />
                      </linearGradient>
@@ -68,18 +68,17 @@
       @php
          $user = auth()->user();
          $rawAplikasiList = getAplikasiPerRole($user->role_id);
-         
+
          // 1. Check Access to Tyre Performance (ID 20) for Logic Handling
          $tyreApp = $rawAplikasiList->firstWhere('id', 20);
 
          // 2. Filter Application List to Display
-         if ($user->role->name !== 'Super Admin') {
+         if (!in_array($user->role->name, ['Super Admin', 'Administrator'])) {
              // Non-Super Admin: Only show Tyre Performance
              $aplikasiList = $rawAplikasiList->where('id', 20);
          } else {
-             // Super Admin: Show Tyre Performance AND User Management (CPH Dashboard)
-             // We filter out any other potentially unrelated apps to keep it clean as requested
-             $aplikasiList = $rawAplikasiList->filter(function($app) {
+             // Super Admin / Administrator: Show Tyre Performance AND User Management
+             $aplikasiList = $rawAplikasiList->filter(function ($app) {
                  return $app->id == 20 || $app->name == 'CPH Dashboard' || $app->name == 'User Management';
              });
          }
@@ -87,40 +86,45 @@
 
       {{-- STATIC DASHBOARD - Only if user has access to Tyre App --}}
       @if ($tyreApp)
-          <li class="menu-header small text-uppercase">
-             <span class="menu-header-text">Monitoring</span>
-          </li>
-          {{-- Active state check: Route name master_data.dashboard OR URL match --}}
-          <li class="menu-item {{ request()->routeIs('master_data.dashboard') || request()->is('master_data_tyre/dashboard*') ? 'active' : '' }}">
-             <a href="{{ route('master_data.dashboard') }}" class="menu-link">
-                <i class="menu-icon icon-base ri ri-dashboard-3-line"></i>
-                <div data-i18n="Tyre Dashboard">Tyre Dashboard</div>
-             </a>
-          </li>
+         <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Monitoring</span>
+         </li>
+         {{-- Active state check: Route name master_data.dashboard OR URL match --}}
+         <li
+            class="menu-item {{ request()->routeIs('master_data.dashboard') || request()->is('master_data_tyre/dashboard*') ? 'active' : '' }}">
+            <a href="{{ route('master_data.dashboard') }}" class="menu-link">
+               <i class="menu-icon icon-base ri ri-dashboard-3-line"></i>
+               <div data-i18n="Tyre Dashboard">Tyre Dashboard</div>
+            </a>
+         </li>
       @endif
 
       {{-- LOOP APPLICATIONS --}}
       @foreach ($aplikasiList as $aplikasi)
          @php
-             $roleMenus = getRoleMenu($user->role_id, $aplikasi->id);
-             
-             // Setup Prefix
-             $appPrefix = spaceToUL($aplikasi->name);
-             if ($aplikasi->id == 20) {
+            $roleMenus = getRoleMenu($user->role_id, $aplikasi->id);
+
+            // Setup Prefix
+            $appPrefix = spaceToUL($aplikasi->name);
+            if ($aplikasi->id == 20) {
                 $appPrefix = 'master_data_tyre';
-             }
+            } elseif ($aplikasi->name == 'User Management' || $aplikasi->name == 'CPH Dashboard') {
+                $appPrefix = 'cph_dashboard';
+            }
 
-             // Common: Get Top Level Menus
-             $topLevelMenus = $roleMenus->filter(function($item) {
-                 return is_null($item->menu->parent_id);
-             })->sortBy(function($item) {
-                 return $item->menu->order_no;
-             });
+            // Common: Get Top Level Menus
+            $topLevelMenus = $roleMenus
+                ->filter(function ($item) {
+                    return is_null($item->menu->parent_id);
+                })
+                ->sortBy(function ($item) {
+                    return $item->menu->order_no;
+                });
 
-             // Check if App Active (for Dropdown Style)
-             $isAppActive = request()->is($appPrefix . '*');
+            // Check if App Active (for Dropdown Style)
+            $isAppActive = request()->is($appPrefix . '*');
          @endphp
-         
+
          @if ($aplikasi->id == 20)
             {{-- STYLE 1: TYRE PERFORMANCE (FLAT HEADER) --}}
             @if ($topLevelMenus->count() > 0)
@@ -132,29 +136,36 @@
                   @php
                      $menu = $roleMenu->menu;
                      $fullUrl = $appPrefix . '/' . $menu->url;
-                     
+
                      // Skip Dashboard here since we have Static Dashboard above
-                     if ($menu->url === 'dashboard') continue;
+                     if ($menu->url === 'dashboard') {
+                         continue;
+                     }
 
                      // Find Children
-                     $children = $roleMenus->filter(function($item) use ($menu) {
-                        return $item->menu->parent_id == $menu->id;
-                     })->sortBy(function($item) {
-                        return $item->menu->order_no;
-                     });
+                     $children = $roleMenus
+                         ->filter(function ($item) use ($menu) {
+                             return $item->menu->parent_id == $menu->id;
+                         })
+                         ->sortBy(function ($item) {
+                             return $item->menu->order_no;
+                         });
 
                      $hasChildren = $children->count() > 0;
-                     $isActive = false; $isOpen = false;
+                     $isActive = false;
+                     $isOpen = false;
 
                      if ($hasChildren) {
-                        foreach($children as $child) {
-                           $childUrl = $appPrefix . '/' . $child->menu->url;
-                           if (request()->is($childUrl . '*')) {
-                              $isActive = true; $isOpen = true; break;
-                           }
-                        }
+                         foreach ($children as $child) {
+                             $childUrl = $appPrefix . '/' . $child->menu->url;
+                             if (request()->is($childUrl . '*')) {
+                                 $isActive = true;
+                                 $isOpen = true;
+                                 break;
+                             }
+                         }
                      } else {
-                        $isActive = request()->is($fullUrl . '*');
+                         $isActive = request()->is($fullUrl . '*');
                      }
                   @endphp
 
@@ -191,12 +202,12 @@
                   @endif
                @endforeach
             @endif
-
          @elseif ($roleMenus->count() > 0)
             {{-- STYLE 2: OTHER APPS (STANDARD DROPDOWN WRAPPER) --}}
             <li class="menu-item {{ $isAppActive ? 'active open' : '' }}">
                <a href="javascript:void(0);" class="menu-link menu-toggle">
-                  <i class="menu-icon icon-base ri ri-settings-4-line"></i> {{-- General Icon --}}
+                  <i
+                     class="menu-icon icon-base ri {{ $aplikasi->name == 'User Management' ? 'ri-shield-user-line' : 'ri-settings-4-line' }}"></i>
                   <div data-i18n="{{ $aplikasi->name }}">{{ $aplikasi->name }}</div>
                </a>
                <ul class="menu-sub">
@@ -204,27 +215,36 @@
                      @php
                         $menu = $roleMenu->menu;
                         $fullUrl = $appPrefix . '/' . $menu->url;
-                        
-                        $children = $roleMenus->filter(function($item) use ($menu) {
-                           return $item->menu->parent_id == $menu->id;
-                        })->sortBy(function($item) { return $item->menu->order_no; });
-                        
+
+                        $children = $roleMenus
+                            ->filter(function ($item) use ($menu) {
+                                return $item->menu->parent_id == $menu->id;
+                            })
+                            ->sortBy(function ($item) {
+                                return $item->menu->order_no;
+                            });
+
                         $hasChildren = $children->count() > 0;
-                        $isActive = false; $isOpen = false;
+                        $isActive = false;
+                        $isOpen = false;
 
                         if ($hasChildren) {
-                           foreach($children as $child) {
-                              $childUrl = $appPrefix . '/' . $child->menu->url;
-                              if (request()->is($childUrl . '*')) { $isActive = true; $isOpen = true; break; }
-                           }
+                            foreach ($children as $child) {
+                                $childUrl = $appPrefix . '/' . $child->menu->url;
+                                if (request()->is($childUrl . '*')) {
+                                    $isActive = true;
+                                    $isOpen = true;
+                                    break;
+                                }
+                            }
                         } else {
-                           $isActive = request()->is($fullUrl . '*');
+                            $isActive = request()->is($fullUrl . '*');
                         }
                      @endphp
 
                      @if ($hasChildren)
                         {{-- NESTED DROPDOWN (Level 3) --}}
-                         <li class="menu-item {{ $isOpen ? 'active open' : '' }}">
+                        <li class="menu-item {{ $isOpen ? 'active open' : '' }}">
                            <a href="javascript:void(0);" class="menu-link menu-toggle">
                               <div data-i18n="{{ $menu->name }}">{{ $menu->name }}</div>
                            </a>

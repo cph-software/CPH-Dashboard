@@ -47,6 +47,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
         Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
         Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
+
+        // Activity Logs (Cross-app access)
+        Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('cph.activity-logs.index');
+        Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('cph.activity-logs.show');
     });
 
     // Tyre Performance Application Routes
@@ -89,6 +93,10 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class)->middleware('tyre.permission:Examination');
 
         Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns')->middleware('tyre.permission:Patterns');
+
+        // Activity Logs
+        Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
+        Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('activity-logs.show')->middleware('tyre.permission:All Activity');
     });
 
     // Example of using permission middleware

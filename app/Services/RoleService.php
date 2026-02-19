@@ -14,30 +14,30 @@ class RoleService extends BaseService
         parent::__construct($repository);
     }
 
-    public function storeWithPermissions(array $data, array $menuIds)
+    public function storeWithPermissions(array $data, array $menuIds, array $menuPermissions = [])
     {
         $role = $this->repository->create([
             'name' => $data['name'],
             'status' => 'active'
         ]);
 
-        $this->syncRolePermissions($role, $menuIds);
+        $this->syncRolePermissions($role, $menuIds, $menuPermissions);
 
         return $role;
     }
 
-    public function updateWithPermissions($id, array $data, array $menuIds)
+    public function updateWithPermissions($id, array $data, array $menuIds, array $menuPermissions = [])
     {
         $role = $this->repository->update($id, [
             'name' => $data['name']
         ]);
 
-        $this->syncRolePermissions($role, $menuIds);
+        $this->syncRolePermissions($role, $menuIds, $menuPermissions);
 
         return $role;
     }
 
-    protected function syncRolePermissions($role, $menuIds)
+    protected function syncRolePermissions($role, $menuIds, $menuPermissions = [])
     {
         if (empty($menuIds)) {
             $role->menus()->sync([]);
@@ -45,12 +45,13 @@ class RoleService extends BaseService
             return;
         }
 
-        // Sync Menus with default permissions
+        // Sync Menus with specific permissions
         $pivotData = [];
-        $defaultPermissions = json_encode(['view', 'create', 'update', 'delete']);
         foreach ($menuIds as $menuId) {
             if ($menuId) {
-                $pivotData[$menuId] = ['permissions' => $defaultPermissions];
+                // Get permissions for this menu, default to ['view'] if none provided
+                $perms = isset($menuPermissions[$menuId]) ? $menuPermissions[$menuId] : ['view'];
+                $pivotData[$menuId] = ['permissions' => json_encode(array_values($perms))];
             }
         }
         $role->menus()->sync($pivotData);
