@@ -64,12 +64,16 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Transaksi /</span> Pergerakan Ban</h4>
          <div class="d-flex gap-2">
-            <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
-               <i class="ri-add-line me-1"></i> Form Pasang Baru
-            </a>
-            <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
-               <i class="ri-delete-bin-line me-1"></i> Form Lepas Ban
-            </a>
+            @if (hasPermission('Pemasangan (Install)', 'create'))
+               <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
+                  <i class="ri-add-line me-1"></i> Form Pasang Baru
+               </a>
+            @endif
+            @if (hasPermission('Pelepasan (Remove)', 'create'))
+               <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
+                  <i class="ri-delete-bin-line me-1"></i> Form Lepas Ban
+               </a>
+            @endif
          </div>
       </div>
 
@@ -164,18 +168,18 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          const vehicleSelect = $('#vehicle_select');
          const layoutContainer = document.getElementById('layout_container');
 
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             $(this).select2({
                placeholder: $(this).data('placeholder'),
                dropdownParent: $(this).parent()
             });
          });
 
-         vehicleSelect.on('change', function () {
+         vehicleSelect.on('change', function() {
             const vehicleId = this.value;
             if (!vehicleId) {
                document.getElementById('unit_info').style.setProperty('display', 'none', 'important');
@@ -206,19 +210,29 @@
          function attachNodeEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function () {
+               node.addEventListener('click', function() {
                   const vehicleId = vehicleSelect.val();
                   const positionId = this.getAttribute('data-position-id');
                   const sn = this.getAttribute('data-sn'); // Present if filled
 
                   if (sn) {
                      // Ban Terpasang -> Arahkan ke Form Lepas (Removal)
-                     window.location.href =
-                        `{{ route('tyre-movement.pelepasan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                     @if (hasPermission('Pelepasan (Remove)', 'create'))
+                        window.location.href =
+                           `{{ route('tyre-movement.pelepasan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                     @else
+                        Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pelepasan Ban.',
+                           'error');
+                     @endif
                   } else {
-                     // Ban Kosong -> Arahkan ke Form Pasang (Installation)
-                     window.location.href =
-                        `{{ route('tyre-movement.pemasangan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                     // Ban Ban Kosong -> Arahkan ke Form Pasang (Installation)
+                     @if (hasPermission('Pemasangan (Install)', 'create'))
+                        window.location.href =
+                           `{{ route('tyre-movement.pemasangan') }}?vehicle_id=${vehicleId}&position_id=${positionId}`;
+                     @else
+                        Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pemasangan Ban.',
+                           'error');
+                     @endif
                   }
                });
             });
@@ -230,58 +244,59 @@
             serverSide: true,
             ajax: "{{ route('tyre-movement.history') }}",
             columns: [{
-               data: 'movement_date',
-               name: 'movement_date'
-            },
-            {
-               data: 'movement_type',
-               name: 'movement_type',
-               render: function (data, type, row) {
-                  let badgeClass = data === 'Installation' ? 'bg-label-primary' : 'bg-label-danger';
-                  let typeText = data;
+                  data: 'movement_date',
+                  name: 'movement_date'
+               },
+               {
+                  data: 'movement_type',
+                  name: 'movement_type',
+                  render: function(data, type, row) {
+                     let badgeClass = data === 'Installation' ? 'bg-label-primary' : 'bg-label-danger';
+                     let typeText = data;
 
-                  if (data === 'Installation' && row.is_replacement) {
-                     badgeClass = 'bg-label-warning';
-                     typeText = 'Replacement';
+                     if (data === 'Installation' && row.is_replacement) {
+                        badgeClass = 'bg-label-warning';
+                        typeText = 'Replacement';
+                     }
+
+                     let conditionBadge = '';
+                     if (row.install_condition) {
+                        conditionBadge =
+                        `<br><small class="text-muted">${row.install_condition}</small>`;
+                     }
+
+                     return `<span class="badge ${badgeClass}">${typeText}</span>${conditionBadge}`;
                   }
-
-                  let conditionBadge = '';
-                  if (row.install_condition) {
-                     conditionBadge = `<br><small class="text-muted">${row.install_condition}</small>`;
-                  }
-
-                  return `<span class="badge ${badgeClass}">${typeText}</span>${conditionBadge}`;
+               },
+               {
+                  data: 'vehicle_code',
+                  name: 'vehicle_code'
+               },
+               {
+                  data: 'position_name',
+                  name: 'position_name'
+               },
+               {
+                  data: 'tyre_sn',
+                  name: 'tyre_sn'
+               },
+               {
+                  data: 'failure_info',
+                  name: 'failure_info'
+               },
+               {
+                  data: 'action',
+                  name: 'action',
+                  orderable: false,
+                  searchable: false
                }
-            },
-            {
-               data: 'vehicle_code',
-               name: 'vehicle_code'
-            },
-            {
-               data: 'position_name',
-               name: 'position_name'
-            },
-            {
-               data: 'tyre_sn',
-               name: 'tyre_sn'
-            },
-            {
-               data: 'failure_info',
-               name: 'failure_info'
-            },
-            {
-               data: 'action',
-               name: 'action',
-               orderable: false,
-               searchable: false
-            }
             ],
             order: [
                [0, 'desc']
             ]
          });
 
-         window.rollbackMovement = function (id) {
+         window.rollbackMovement = function(id) {
             Swal.fire({
                title: 'Konfirmasi Rollback',
                text: 'Anda akan membatalkan transaksi ini. Status ban dan posisi akan dikembalikan ke kondisi sebelum transaksi. Lanjutkan?',
@@ -296,11 +311,11 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   fetch(`/master_data_tyre/rollback/${id}`, {
-                     method: 'DELETE',
-                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                     }
-                  })
+                        method: 'DELETE',
+                        headers: {
+                           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                     })
                      .then(response => response.json())
                      .then(data => {
                         if (data.success) {

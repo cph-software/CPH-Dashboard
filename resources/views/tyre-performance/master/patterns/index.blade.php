@@ -18,9 +18,12 @@
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Patterns</h4>
             <small class="text-muted">Manajemen pola kembangan (pattern) ban berdasarkan brand</small>
          </div>
-         <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addPatternModal">
-            <i class="ri-add-line me-1"></i> Add Pattern
-         </button>
+         @if (hasPermission('Patterns', 'create'))
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+               data-bs-target="#addPatternModal">
+               <i class="ri-add-line me-1"></i> Add Pattern
+            </button>
+         @endif
       </div>
 
       <div class="card shadow-sm border-0">
@@ -45,17 +48,21 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center justify-content-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
-                                 data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
-                                 data-status="{{ $pattern->status }}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-pattern"
-                                 data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
+                              @if (hasPermission('Patterns', 'update'))
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
+                                    href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
+                                    data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
+                                    data-status="{{ $pattern->status }}" title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                              @endif
+                              @if (hasPermission('Patterns', 'delete'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-pattern"
+                                    data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -77,7 +84,8 @@
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary py-3">
                <h5 class="modal-title text-white">Add New Pattern</h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
@@ -85,8 +93,8 @@
 
                   <div class="mb-3">
                      <label for="name" class="form-label fw-bold">Pattern Name</label>
-                     <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rough Terrain (R150)"
-                        required>
+                     <input type="text" id="name" name="name" class="form-control"
+                        placeholder="e.g. Rough Terrain (R150)" required>
                   </div>
                   <div class="mb-3">
                      <label for="status" class="form-label fw-bold">Status</label>
@@ -149,16 +157,18 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-patterns').DataTable({
-            order: [[0, 'asc']],
+            order: [
+               [0, 'asc']
+            ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
          });
 
          const editForm = $('#editPatternForm');
 
-         $(document).on('click', '.edit-pattern', function () {
+         $(document).on('click', '.edit-pattern', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -169,7 +179,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-pattern', function () {
+         $(document).on('click', '.delete-pattern', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -213,7 +223,7 @@
          @endif
 
          // Initialize Select2 with Modal fix
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

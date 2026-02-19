@@ -10,9 +10,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Posisi Ban</h4>
-         <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
-            <i class="icon-base ri ri-add-line me-1"></i> Buat Konfigurasi Baru
-         </a>
+         @if (hasPermission('Position Layouts', 'create'))
+            <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
+               <i class="icon-base ri ri-add-line me-1"></i> Buat Konfigurasi Baru
+            </a>
+         @endif
       </div>
 
       <div class="row">
@@ -66,14 +68,18 @@
                            class="btn btn-sm btn-outline-primary flex-fill">
                            <i class="icon-base ri ri-eye-line me-1"></i> Lihat Detail
                         </a>
-                        <a href="{{ route('tyre-positions.edit', $config->id) }}"
-                           class="btn btn-sm btn-icon btn-outline-secondary" title="Edit">
-                           <i class="icon-base ri ri-pencil-line"></i>
-                        </a>
-                        <button type="button" class="btn btn-sm btn-icon btn-outline-danger delete-config"
-                           data-id="{{ $config->id }}" data-name="{{ $config->name }}" title="Hapus">
-                           <i class="icon-base ri ri-delete-bin-line"></i>
-                        </button>
+                        @if (hasPermission('Position Layouts', 'update'))
+                           <a href="{{ route('tyre-positions.edit', $config->id) }}"
+                              class="btn btn-sm btn-icon btn-outline-secondary" title="Edit">
+                              <i class="icon-base ri ri-pencil-line"></i>
+                           </a>
+                        @endif
+                        @if (hasPermission('Position Layouts', 'delete'))
+                           <button type="button" class="btn btn-sm btn-icon btn-outline-danger delete-config"
+                              data-id="{{ $config->id }}" data-name="{{ $config->name }}" title="Hapus">
+                              <i class="icon-base ri ri-delete-bin-line"></i>
+                           </button>
+                        @endif
                      </div>
                   </div>
                </div>
@@ -84,9 +90,11 @@
                   <div class="card-body text-center py-5">
                      <i class="ri-inbox-line" style="font-size: 3rem; color: #ddd;"></i>
                      <p class="text-muted mt-3">Belum ada konfigurasi posisi ban.</p>
-                     <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
-                        <i class="ri-add-line me-1"></i> Buat Konfigurasi Pertama
-                     </a>
+                     @if (hasPermission('Position Layouts', 'create'))
+                        <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
+                           <i class="ri-add-line me-1"></i> Buat Konfigurasi Pertama
+                        </a>
+                     @endif
                   </div>
                </div>
             </div>
@@ -110,7 +118,7 @@
 
 @section('page-script')
    <script>
-      document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('DOMContentLoaded', function() {
          // Show success/error toast
          @if (session('success'))
             Swal.fire({
@@ -140,7 +148,7 @@
 
          // Delete confirmation
          document.querySelectorAll('.delete-config').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                const configId = this.getAttribute('data-id');
                const configName = this.getAttribute('data-name');
 
