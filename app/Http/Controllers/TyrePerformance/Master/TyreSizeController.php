@@ -63,6 +63,7 @@ class TyreSizeController extends Controller
         ]);
 
         $size = TyreSize::findOrFail($id);
+        $dataBefore = $size->toArray();
         $data = $request->all();
 
         // Handle Custom Pattern (Tagging)
@@ -79,6 +80,7 @@ class TyreSizeController extends Controller
         setLogActivity(auth()->id(), 'Memperbarui ukuran ban: ' . $request->size, [
             'action_type' => 'update',
             'module' => 'Sizes',
+            'data_before' => $dataBefore,
             'data_after' => $data
         ]);
 

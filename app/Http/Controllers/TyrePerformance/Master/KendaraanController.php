@@ -122,11 +122,13 @@ class KendaraanController extends Controller
         ]);
 
         $kendaraan = MasterImportKendaraan::findOrFail($id);
+        $dataBefore = $kendaraan->toArray();
         $kendaraan->update($request->all());
 
         setLogActivity(auth()->id(), 'Memperbarui kendaraan: ' . $request->kode_kendaraan, [
             'action_type' => 'update',
             'module' => 'Vehicle Master',
+            'data_before' => $dataBefore,
             'data_after' => $request->all()
         ]);
 
