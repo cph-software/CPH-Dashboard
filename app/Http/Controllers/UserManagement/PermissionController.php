@@ -2,21 +2,26 @@
 
 namespace App\Http\Controllers\UserManagement;
 
-namespace App\Http\Controllers\UserManagement;
-
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\Aplikasi;
 use App\Models\Menu;
-use App\Models\RoleMenu;
+use App\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PermissionController extends Controller
 {
+    protected $roleService;
+
+    public function __construct(RoleService $roleService)
+    {
+        $this->roleService = $roleService;
+    }
+
     public function index()
     {
-        $roles = Role::all();
+        $roles = Role::withCount('users')->get();
         $aplikasi = Aplikasi::orderBy('name')->get();
         return view('user-management.permissions.index', compact('roles', 'aplikasi'));
     }
@@ -28,36 +33,35 @@ class PermissionController extends Controller
         
         $roleAppIds = $role->aplikasi->pluck('id')->toArray();
         $roleMenuIds = $role->menus->pluck('id')->toArray();
+        
+        // Map menu permissions for easier JS lookup
+        $rolePermissions = [];
+        foreach ($role->menus as $menu) {
+            $rolePermissions[$menu->id] = json_decode($menu->pivot->permissions, true) ?: [];
+        }
 
         return response()->json([
             'role_app_ids' => $roleAppIds,
-            'role_menu_ids' => $roleMenuIds
+            'role_menu_ids' => $roleMenuIds,
+            'role_permissions' => $rolePermissions
         ]);
     }
 
     public function store(Request $request)
     {
         $roleId = $request->role_id;
-        $appIds = $request->input('aplikasi_ids', []);
         $menuIds = $request->input('menu_ids', []);
+        $menuPermissions = $request->input('menu_permissions', []);
 
-        DB::transaction(function () use ($roleId, $appIds, $menuIds) {
-            $role = Role::findOrFail($roleId);
-            
-            // Sync Applications
-            $role->aplikasi()->sync($appIds);
+        $this->roleService->updateWithPermissions($roleId, [], $menuIds, $menuPermissions);
 
-            // Sync Menus with default permissions
-            $pivotData = [];
-            $defaultPermissions = json_encode(['view', 'create', 'update', 'delete']);
-            foreach ($menuIds as $menuId) {
-                if ($menuId) {
-                    $pivotData[$menuId] = ['permissions' => $defaultPermissions];
-                }
-            }
-            $role->menus()->sync($pivotData);
-        });
+        $role = Role::find($roleId);
+        setLogActivity(auth()->id(), 'Memperbarui permission matrix untuk role: ' . ($role->name ?? $roleId), [
+            'action_type' => 'update',
+            'module' => 'Permissions',
+            'data_after' => ['role_id' => $roleId, 'menu_count' => count($menuIds)]
+        ]);
 
-        return redirect()->back()->with('success', 'Permissions updated successfully');
+        return redirect()->back()->with('success', 'Permission matrix updated successfully');
     }
 }

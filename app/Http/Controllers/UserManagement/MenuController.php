@@ -55,6 +55,12 @@ class MenuController extends Controller
             'icon' => $request->icon ?: 'ri-circle-line',
         ]);
 
+        setLogActivity(auth()->id(), 'Menambah menu baru: ' . $request->name, [
+            'action_type' => 'create',
+            'module' => 'Menus',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Menu created successfully');
     }
 
@@ -92,6 +98,12 @@ class MenuController extends Controller
             'icon' => $request->icon ?: 'ri-circle-line',
         ]);
 
+        setLogActivity(auth()->id(), 'Memperbarui menu: ' . $request->name, [
+            'action_type' => 'update',
+            'module' => 'Menus',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Menu updated successfully');
     }
 
@@ -103,6 +115,11 @@ class MenuController extends Controller
      */
     public function destroy($id)
     {
+        setLogActivity(auth()->id(), 'Menghapus menu ID: ' . $id, [
+            'action_type' => 'delete',
+            'module' => 'Menus'
+        ]);
+
         $this->menuService->delete($id);
         return redirect()->back()->with('success', 'Menu deleted successfully');
     }

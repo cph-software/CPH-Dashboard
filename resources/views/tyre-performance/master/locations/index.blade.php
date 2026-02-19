@@ -14,9 +14,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Locations</h4>
-         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
-            <i class="ri-add-line me-1"></i> Add Location
-         </button>
+         @if (hasPermission('Locations', 'create'))
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+               <i class="ri-add-line me-1"></i> Add Location
+            </button>
+         @endif
       </div>
 
       <div class="card">
@@ -50,17 +52,22 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editLocationModal"
-                                 data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}"
-                                 data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-location"
-                                 data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
+                              @if (hasPermission('Locations', 'update'))
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-location"
+                                    href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editLocationModal"
+                                    data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}"
+                                    data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}"
+                                    title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                              @endif
+                              @if (hasPermission('Locations', 'delete'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-location"
+                                    data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -128,7 +135,8 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_location_name" class="form-label">Location Name</label>
-                        <input type="text" id="edit_location_name" name="location_name" class="form-control" required>
+                        <input type="text" id="edit_location_name" name="location_name" class="form-control"
+                           required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -168,7 +176,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-locations').DataTable({
             order: [
                [0, 'desc']
@@ -179,7 +187,7 @@
 
          const editForm = $('#editLocationForm');
 
-         $(document).on('click', '.edit-location', function () {
+         $(document).on('click', '.edit-location', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const type = $(this).data('type');
@@ -191,7 +199,7 @@
             $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
          });
 
-         $(document).on('click', '.delete-location', function () {
+         $(document).on('click', '.delete-location', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -233,6 +241,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-         });
+      });
    </script>
 @endsection

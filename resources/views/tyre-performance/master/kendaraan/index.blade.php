@@ -15,9 +15,12 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Vehicles</h4>
-         <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
-            <i class="ri-add-line me-1"></i> Add Vehicle
-         </button>
+         @if (hasPermission('Vehicle Master', 'create'))
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+               data-bs-target="#addVehicleModal">
+               <i class="ri-add-line me-1"></i> Add Vehicle
+            </button>
+         @endif
       </div>
 
       <div class="card shadow-sm border-0">
@@ -47,7 +50,8 @@
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary">
                <h5 class="modal-title text-white">Add New Vehicle</h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-kendaraan.store') }}" method="POST">
                @csrf
@@ -122,7 +126,8 @@
                <div class="modal-body pt-4">
                   <div class="mb-3">
                      <label for="edit_kode_kendaraan" class="form-label fw-bold">Unit Code</label>
-                     <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control" required>
+                     <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control"
+                        required>
                   </div>
                   <div class="mb-3">
                      <label for="edit_jenis_kendaraan" class="form-label fw-bold">Vehicle Type</label>
@@ -172,7 +177,8 @@
          <div class="modal-content shadow-lg border-0">
             <div class="modal-header bg-primary">
                <h5 class="modal-title text-white">Vehicle Tyre Layout: <span id="layoutModalTitle"></span></h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light text-center">
                <div id="layoutContainer">
@@ -199,51 +205,54 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
+         const canUpdate = {{ hasPermission('Vehicle Master', 'update') ? 'true' : 'false' }};
+         const canDelete = {{ hasPermission('Vehicle Master', 'delete') ? 'true' : 'false' }};
+
          const table = $('.datatables-vehicles').DataTable({
             processing: true,
             serverSide: true,
             ajax: "{{ route('tyre-kendaraan.data') }}",
             columns: [{
-               data: 'kode_kendaraan',
-               render: function (data) {
-                  return `<strong>${data}</strong>`;
-               }
-            },
-            {
-               data: 'jenis_kendaraan',
-               defaultContent: '-'
-            },
-            {
-               data: 'tyre_position_configuration.name',
-               defaultContent: '-'
-            },
-            {
-               data: 'total_tyre_position',
-               render: function (data) {
-                  return `${data} Wheels`;
-               }
-            },
-            {
-               data: 'tyre_unit_status',
-               render: function (data) {
-                  const badges = {
-                     'Active': 'success',
-                     'Maintenance': 'warning',
-                     'Inactive': 'secondary'
-                  };
-                  return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
-               }
-            },
-            {
-               data: null,
-               searchable: false,
-               orderable: false,
-               className: 'text-center',
-               render: function (data, type, row) {
-                  let layoutBtn = '';
-                  if (row.tyre_position_configuration_id) {
-                     layoutBtn = `
+                  data: 'kode_kendaraan',
+                  render: function(data) {
+                     return `<strong>${data}</strong>`;
+                  }
+               },
+               {
+                  data: 'jenis_kendaraan',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'tyre_position_configuration.name',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'total_tyre_position',
+                  render: function(data) {
+                     return `${data} Wheels`;
+                  }
+               },
+               {
+                  data: 'tyre_unit_status',
+                  render: function(data) {
+                     const badges = {
+                        'Active': 'success',
+                        'Maintenance': 'warning',
+                        'Inactive': 'secondary'
+                     };
+                     return `<span class="badge bg-label-${badges[data] || 'secondary'}">${data}</span>`;
+                  }
+               },
+               {
+                  data: null,
+                  searchable: false,
+                  orderable: false,
+                  className: 'text-center',
+                  render: function(data, type, row) {
+                     let layoutBtn = '';
+                     if (row.tyre_position_configuration_id) {
+                        layoutBtn = `
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
                                  data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
@@ -252,27 +261,37 @@
                                  <i class="icon-base ri ri-layout-6-line text-primary"></i>
                               </button>
                            `;
+                     }
+
+                     let actions = `<div class="d-flex align-items-center justify-content-center">`;
+
+                     if (canUpdate) {
+                        actions += `
+                        <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
+                           href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                           data-id="${row.id}" data-kode="${row.kode_kendaraan}"
+                           data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
+                           data-config-id="${row.tyre_position_configuration_id}"
+                           data-status="${row.tyre_unit_status}" title="Edit">
+                           <i class="icon-base ri ri-pencil-line"></i>
+                        </a>`;
+                     }
+
+                     actions += layoutBtn;
+
+                     if (canDelete) {
+                        actions += `
+                        <button type="button"
+                           class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
+                           data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
+                           <i class="icon-base ri ri-delete-bin-line"></i>
+                        </button>`;
+                     }
+
+                     actions += `</div>`;
+                     return actions;
                   }
-                  return `
-                           <div class="d-flex align-items-center justify-content-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                 data-id="${row.id}" data-kode="${row.kode_kendaraan}"
-                                 data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
-                                 data-config-id="${row.tyre_position_configuration_id}"
-                                 data-status="${row.tyre_unit_status}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              ${layoutBtn}
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
-                                 data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
-                           </div>
-                        `;
                }
-            }
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
@@ -280,7 +299,7 @@
 
          const editForm = $('#editVehicleForm');
 
-         $(document).on('click', '.edit-vehicle', function () {
+         $(document).on('click', '.edit-vehicle', function() {
             const id = $(this).data('id');
             const kode = $(this).data('kode');
             const jenis = $(this).data('jenis');
@@ -297,7 +316,7 @@
             $('#edit_unit_status').val(status);
          });
 
-         $(document).on('click', '.delete-vehicle', function () {
+         $(document).on('click', '.delete-vehicle', function() {
             const id = $(this).data('id');
             const kode = $(this).data('kode');
 
@@ -322,7 +341,7 @@
             });
          });
 
-         $(document).on('click', '.view-layout', function () {
+         $(document).on('click', '.view-layout', function() {
             const configId = $(this).data('config-id');
             const configName = $(this).data('config-name');
             const layoutContainer = $('#layoutContainer');
@@ -344,7 +363,7 @@
          });
 
          // Auto-detect Total Positions based on Configuration
-         $(document).on('change', '.config-selector', function () {
+         $(document).on('change', '.config-selector', function() {
             const total = $(this).find(':selected').data('total');
             const modal = $(this).closest('.modal');
             if (total) {
@@ -371,7 +390,7 @@
          @endif
 
          // Initialize Select2
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

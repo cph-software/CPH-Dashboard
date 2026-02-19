@@ -113,6 +113,20 @@ class TyreExaminationController extends Controller
             }
 
             DB::commit();
+
+            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
+            setLogActivity(Auth::id(), 'Membuat pemeriksaan ban untuk kendaraan: ' . ($vehicle->kode_kendaraan ?? $request->vehicle_id), [
+                'action_type' => 'create',
+                'module' => 'Examination',
+                'data_after' => [
+                    'examination_id' => $exam->id,
+                    'examination_date' => $request->examination_date,
+                    'vehicle' => $vehicle->kode_kendaraan ?? $request->vehicle_id,
+                    'odometer' => $request->odometer,
+                    'total_details' => count($request->details),
+                ]
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pemeriksaan berhasil disimpan',

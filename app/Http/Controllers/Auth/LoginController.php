@@ -59,7 +59,10 @@ class LoginController extends Controller
                     // Regenerate session to prevent session fixation
                     $request->session()->regenerate();
 
-                    setLogActivity($user->id, 'Melakukan login ke sistem CPH');
+                    setLogActivity($user->id, 'Melakukan login ke sistem CPH Dashboard', [
+                        'action_type' => 'login',
+                        'module'      => 'Authentication'
+                    ]);
 
                     return redirect()->intended(getDashboardRedirectUrl());
                 } else {

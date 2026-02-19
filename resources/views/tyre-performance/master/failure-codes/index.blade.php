@@ -14,9 +14,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Failure Codes</h4>
-         <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
-            <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
-         </a>
+         @if (hasPermission('Failure Codes', 'create'))
+            <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
+               <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
+            </a>
+         @endif
       </div>
 
       <div class="card">
@@ -37,7 +39,7 @@
                      <tr>
                         <td><strong>{{ $fc->failure_code }}</strong></td>
                         <td>
-                           @if($fc->display_name)
+                           @if ($fc->display_name)
                               <span class="fw-bold text-primary">{{ $fc->display_name }}</span><br>
                               <small class="text-muted">({{ $fc->failure_name }})</small>
                            @else
@@ -46,15 +48,17 @@
                         </td>
                         <td>
                            @if ($fc->image_1)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if ($fc->image_2)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1"
+                                    width="100" height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if (!$fc->image_1 && !$fc->image_2)
@@ -79,16 +83,20 @@
                                  title="View Detail (Guidebook)">
                                  <i class="icon-base ri ri-eye-line"></i>
                               </a>
-                              <a href="{{ route('tyre-failure-codes.edit', $fc->id) }}"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                 title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-failure"
-                                 data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
+                              @if (hasPermission('Failure Codes', 'update'))
+                                 <a href="{{ route('tyre-failure-codes.edit', $fc->id) }}"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                                    title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                              @endif
+                              @if (hasPermission('Failure Codes', 'delete'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-failure"
+                                    data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -127,7 +135,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-failures').DataTable({
             order: [
                [0, 'desc']
@@ -136,7 +144,7 @@
             lengthMenu: [10, 25, 50, 75, 100],
          });
 
-         $(document).on('click', '.delete-failure', function () {
+         $(document).on('click', '.delete-failure', function() {
             const id = $(this).data('id');
             const code = $(this).data('code');
 
@@ -178,7 +186,7 @@
                text: '{{ session('error') }}',
             });
          @endif
-               });
+      });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);

@@ -24,6 +24,12 @@ class TyreLocationController extends Controller
 
         TyreLocation::create($request->all());
 
+        setLogActivity(auth()->id(), 'Menambah lokasi: ' . $request->location_name, [
+            'action_type' => 'create',
+            'module' => 'Locations',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Location created successfully');
     }
 
@@ -38,6 +44,12 @@ class TyreLocationController extends Controller
         $location = TyreLocation::findOrFail($id);
         $location->update($request->all());
 
+        setLogActivity(auth()->id(), 'Memperbarui lokasi: ' . $request->location_name, [
+            'action_type' => 'update',
+            'module' => 'Locations',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Location updated successfully');
     }
 
@@ -48,6 +60,12 @@ class TyreLocationController extends Controller
         if ($location->tyres()->exists() || $location->segments()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete location. It is currently being used by some segment or tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus lokasi: ' . $location->location_name, [
+            'action_type' => 'delete',
+            'module' => 'Locations',
+            'data_before' => $location->toArray()
+        ]);
 
         $location->delete();
 

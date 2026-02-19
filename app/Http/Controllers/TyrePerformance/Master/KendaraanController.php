@@ -93,6 +93,12 @@ class KendaraanController extends Controller
 
         MasterImportKendaraan::create($request->all());
 
+        setLogActivity(auth()->id(), 'Menambah kendaraan: ' . $request->kode_kendaraan . ' (' . $request->no_polisi . ')', [
+            'action_type' => 'create',
+            'module' => 'Vehicle Master',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Vehicle created successfully');
     }
 
@@ -118,6 +124,12 @@ class KendaraanController extends Controller
         $kendaraan = MasterImportKendaraan::findOrFail($id);
         $kendaraan->update($request->all());
 
+        setLogActivity(auth()->id(), 'Memperbarui kendaraan: ' . $request->kode_kendaraan, [
+            'action_type' => 'update',
+            'module' => 'Vehicle Master',
+            'data_after' => $request->all()
+        ]);
+
         return redirect()->back()->with('success', 'Vehicle updated successfully');
     }
 
@@ -128,6 +140,12 @@ class KendaraanController extends Controller
         if ($kendaraan->tyres()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete vehicle. It is currently associated with some tyre records.');
         }
+
+        setLogActivity(auth()->id(), 'Menghapus kendaraan: ' . $kendaraan->kode_kendaraan, [
+            'action_type' => 'delete',
+            'module' => 'Vehicle Master',
+            'data_before' => $kendaraan->toArray()
+        ]);
 
         $kendaraan->delete();
 

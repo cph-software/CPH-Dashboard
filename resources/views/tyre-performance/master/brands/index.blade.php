@@ -14,9 +14,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Brands</h4>
-         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBrandModal">
-            <i class="icon-base ri ri-add-line me-1"></i> Add Brand
-         </button>
+         @if (hasPermission('Brands', 'create'))
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBrandModal">
+               <i class="icon-base ri ri-add-line me-1"></i> Add Brand
+            </button>
+         @endif
       </div>
 
       <div class="card">
@@ -40,17 +42,21 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editBrandModal"
-                                 data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}"
-                                 data-status="{{ $brand->status }}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-brand"
-                                 data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
+                              @if (hasPermission('Brands', 'update'))
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand"
+                                    href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editBrandModal"
+                                    data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}"
+                                    data-status="{{ $brand->status }}" title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                              @endif
+                              @if (hasPermission('Brands', 'delete'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-brand"
+                                    data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -149,7 +155,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-brands').DataTable({
             order: [
                [0, 'desc']
@@ -160,7 +166,7 @@
 
          const editForm = $('#editBrandForm');
 
-         $(document).on('click', '.edit-brand', function () {
+         $(document).on('click', '.edit-brand', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -170,7 +176,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-brand', function () {
+         $(document).on('click', '.delete-brand', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -212,6 +218,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-            });
+      });
    </script>
 @endsection

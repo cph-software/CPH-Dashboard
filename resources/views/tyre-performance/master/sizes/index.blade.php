@@ -15,9 +15,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Sizes</h4>
-         <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
-            <i class="icon-base ri ri-add-line me-1"></i> Add Size
-         </a>
+         @if (hasPermission('Sizes', 'create'))
+            <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
+               <i class="icon-base ri ri-add-line me-1"></i> Add Size
+            </a>
+         @endif
       </div>
 
       <div class="card">
@@ -45,19 +47,23 @@
                         <td>{{ $size->ply_rating ?? '-' }}</td>
                         <td>
                            <div class="d-flex align-items-center">
-                              <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
-                                 href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
-                                 data-id="{{ $size->id }}" data-size="{{ $size->size }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
-                                 data-type="{{ $size->type }}" data-otd="{{ $size->std_otd }}"
-                                 data-ply="{{ $size->ply_rating }}" title="Edit">
-                                 <i class="icon-base ri ri-pencil-line"></i>
-                              </a>
-                              <button type="button"
-                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
-                                 data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">
-                                 <i class="icon-base ri ri-delete-bin-line"></i>
-                              </button>
+                              @if (hasPermission('Sizes', 'update'))
+                                 <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
+                                    href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
+                                    data-id="{{ $size->id }}" data-size="{{ $size->size }}"
+                                    data-brand-id="{{ $size->tyre_brand_id }}"
+                                    data-pattern-id="{{ $size->tyre_pattern_id }}" data-type="{{ $size->type }}"
+                                    data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" title="Edit">
+                                    <i class="icon-base ri ri-pencil-line"></i>
+                                 </a>
+                              @endif
+                              @if (hasPermission('Sizes', 'delete'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
+                                    data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                 </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -82,7 +88,8 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="size" class="form-label">Size</label>
-                        <input type="text" id="size" name="size" class="form-control" placeholder="e.g. 11.00R20" required>
+                        <input type="text" id="size" name="size" class="form-control"
+                           placeholder="e.g. 11.00R20" required>
                      </div>
                   </div>
                   <div class="row">
@@ -125,7 +132,8 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="ply_rating" class="form-label">Ply Rating</label>
-                        <input type="number" id="ply_rating" name="ply_rating" class="form-control" placeholder="e.g. 16">
+                        <input type="number" id="ply_rating" name="ply_rating" class="form-control"
+                           placeholder="e.g. 16">
                      </div>
                   </div>
                </div>
@@ -220,7 +228,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-sizes').DataTable({
             order: [
                [0, 'desc']
@@ -231,7 +239,7 @@
 
          const editForm = $('#editSizeForm');
 
-         $(document).on('click', '.edit-size', function () {
+         $(document).on('click', '.edit-size', function() {
             const id = $(this).data('id');
             const size = $(this).data('size');
             const brandId = $(this).data('brand-id');
@@ -249,7 +257,7 @@
             $('#edit_ply').val(ply === 'null' || ply === null ? '' : ply);
          });
 
-         $(document).on('click', '.delete-size', function () {
+         $(document).on('click', '.delete-size', function() {
             const id = $(this).data('id');
             const sizeValue = $(this).data('size');
 
@@ -301,14 +309,14 @@
             return null;
          }
 
-         $('#size').on('input', function () {
+         $('#size').on('input', function() {
             const type = detectType($(this).val());
             if (type) {
                $('select[name="type"]').val(type);
             }
          });
 
-         $('#edit_size').on('input', function () {
+         $('#edit_size').on('input', function() {
             const type = detectType($(this).val());
             if (type) {
                $('#edit_type').val(type);
@@ -316,7 +324,7 @@
          });
 
          // Initialize Select2
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
@@ -325,7 +333,7 @@
          });
 
          // Initialize Select2 with Tags
-         $('.select2-tags').each(function () {
+         $('.select2-tags').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
