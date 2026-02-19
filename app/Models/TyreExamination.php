@@ -14,6 +14,16 @@ class TyreExamination extends Model
         return $this->belongsTo(MasterImportKendaraan::class, 'vehicle_id');
     }
 
+    public function location()
+    {
+        return $this->belongsTo(TyreLocation::class, 'location_id');
+    }
+
+    public function segment()
+    {
+        return $this->belongsTo(TyreSegment::class, 'operational_segment_id');
+    }
+
     public function details()
     {
         return $this->hasMany(TyreExaminationDetail::class, 'examination_id');

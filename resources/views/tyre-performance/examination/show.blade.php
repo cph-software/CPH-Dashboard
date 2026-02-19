@@ -67,8 +67,16 @@
                     <div class="col-md-3 border-end">
                         <p class="text-muted mb-1">DATE</p>
                         <h6 class="fw-bold">{{ \Carbon\Carbon::parse($exam->examination_date)->format('d F Y') }}</h6>
-                        <p class="text-muted mb-1 mt-3">LOCATION</p>
-                        <h6 class="fw-bold">{{ $exam->location ?: '-' }}</h6>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <p class="text-muted mb-1">LOCATION</p>
+                                <h6 class="fw-bold">{{ $exam->location->location_name ?? '-' }}</h6>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-muted mb-1">SEGMENT</p>
+                                <h6 class="fw-bold">{{ $exam->segment->segment_name ?? '-' }}</h6>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-3 border-end">
                         <p class="text-muted mb-1">KM (ODO/RETASE)</p>
@@ -126,7 +134,8 @@
                                 <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
                                 <td>{{ $tyre->pattern->name ?? '-' }}</td>
                                 <td>{{ $tyre->size->size ?? '-' }}
-                                    {{ $tyre->size->ply_rating ? '/ ' . $tyre->size->ply_rating . ' PR' : '' }}</td>
+                                    {{ $tyre->size->ply_rating ? '/ ' . $tyre->size->ply_rating . ' PR' : '' }}
+                                </td>
                                 <td class="fw-bold">{{ $tyre->serial_number ?? '-' }}</td>
                                 <td class="text-center">{{ $detail->psi_reading ?: '-' }}</td>
                                 <td class="text-center">{{ $detail->rtd_1 ?: '-' }}</td>

@@ -11,6 +11,7 @@ use App\Models\TyreExaminationDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\TyreLocation;
 use Carbon\Carbon;
 
 class TyreExaminationController extends Controller
@@ -25,7 +26,8 @@ class TyreExaminationController extends Controller
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
             ->select('id', 'kode_kendaraan', 'no_polisi')
             ->get();
-        return view('tyre-performance.examination.create', compact('kendaraans'));
+        $locations = TyreLocation::all();
+        return view('tyre-performance.examination.create', compact('kendaraans', 'locations'));
     }
 
     public function getVehicleTyres($vehicleId)
@@ -68,7 +70,8 @@ class TyreExaminationController extends Controller
             // 1. Create Header
             $exam = TyreExamination::create([
                 'examination_date' => $request->examination_date,
-                'location' => $request->location,
+                'location_id' => $request->location_id,
+                'operational_segment_id' => $request->operational_segment_id,
                 'odometer' => $request->odometer,
                 'hour_meter' => $request->hour_meter,
                 'vehicle_id' => $request->vehicle_id,
@@ -164,7 +167,15 @@ class TyreExaminationController extends Controller
 
     public function show($id)
     {
-        $exam = TyreExamination::with(['vehicle', 'details.position', 'details.tyre.brand', 'details.tyre.pattern', 'details.tyre.size'])->findOrFail($id);
+        $exam = TyreExamination::with([
+            'vehicle',
+            'location',
+            'segment',
+            'details.position',
+            'details.tyre.brand',
+            'details.tyre.pattern',
+            'details.tyre.size'
+        ])->findOrFail($id);
         return view('tyre-performance.examination.show', compact('exam'));
     }
 }

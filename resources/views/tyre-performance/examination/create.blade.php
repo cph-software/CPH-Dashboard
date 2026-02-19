@@ -81,7 +81,19 @@
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label fw-bold small">LOCATION</label>
-                            <input type="text" name="location" class="form-control" placeholder="barru">
+                            <select name="location_id" id="location_id" class="form-select select2" required>
+                                <option value="">-- Pilih Lokasi --</option>
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold small">SEGMENT</label>
+                            <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                                required>
+                                <option value="">-- Pilih Segmen --</option>
+                            </select>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label fw-bold small">HM (Hour Meter)</label>
@@ -170,6 +182,24 @@
     <script>
         $(function () {
             $('.select2').select2();
+
+            $('#location_id').on('change', function () {
+                const locationId = $(this).val();
+                const $segmentSelect = $('#operational_segment_id');
+
+                $segmentSelect.html('<option value="">-- Pilih Segmen --</option>');
+
+                if (locationId) {
+                    $.ajax({
+                        url: "{{ route('tyre-movement.get-segments', '') }}/" + locationId,
+                        success: function (res) {
+                            res.forEach(function (segment) {
+                                $segmentSelect.append(`<option value="${segment.id}">${segment.segment_name}</option>`);
+                            });
+                        }
+                    });
+                }
+            });
 
             $('#vehicle_id').on('change', function () {
                 const vehicleId = $(this).val();
