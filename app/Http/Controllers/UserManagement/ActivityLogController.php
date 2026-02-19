@@ -14,8 +14,22 @@ class ActivityLogController extends Controller
     public function index(Request $request)
     {
         $query = ActivityLog::with('user.karyawan')
-            ->where('project', 'CPH Dashboard')
+            ->where(function($q) {
+                $q->where('project', 'like', '%CPH Dashboard%')
+                  ->orWhere('project', 'like', '%CPH-Dashboard%')
+                  ->orWhere('activity', 'like', '%CPH%')
+                  ->orWhere('activity', 'like', '%Dashboard%')
+                  ->orWhere('activity', 'like', '%Tyre%')
+                  ->orWhere('activity', 'like', '%Ban%')
+                  ->orWhere('module', 'like', '%Tyre%')
+                  ->orWhere('module', 'like', '%User%');
+            })
             ->orderBy('created_at', 'desc');
+
+        // Safety fallback: if no specific logs found, show all so user isn't stuck with blank screen
+        if ($query->count() == 0) {
+            $query = ActivityLog::with('user.karyawan')->orderBy('created_at', 'desc');
+        }
 
         // Simple Search
         if ($request->filled('search')) {
