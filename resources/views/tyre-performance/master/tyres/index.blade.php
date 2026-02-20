@@ -16,9 +16,20 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyres</h4>
          <div class="d-flex gap-2">
-            <a href="{{ route('master_data.export', ['type' => 'assets']) }}" class="btn btn-outline-primary">
-               <i class="ri-download-2-line me-1"></i> Export CSV
-            </a>
+            <div class="btn-group">
+               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="ri-download-2-line me-1"></i> Export Data
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'csv']) }}"><i
+                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
+                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
+               </ul>
+            </div>
             @if (hasPermission('Master Tyre', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">

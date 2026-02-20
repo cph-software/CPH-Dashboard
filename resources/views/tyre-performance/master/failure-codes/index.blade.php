@@ -14,11 +14,31 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Failure Codes</h4>
-         @if (hasPermission('Failure Codes', 'create'))
-            <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
-               <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
-            </a>
-         @endif
+         <div class="d-flex gap-2">
+            <div class="btn-group">
+               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="ri-download-2-line me-1"></i> Export Data
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'failure_codes', 'format' => 'csv']) }}"><i
+                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'failure_codes', 'format' => 'excel']) }}"><i
+                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
+               </ul>
+            </div>
+            @if (hasPermission('Failure Codes', 'create'))
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
+                  <i class="ri-upload-2-line me-1"></i> Import
+               </button>
+               <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
+                  <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
+               </a>
+            @endif
+         </div>
       </div>
 
       <div class="card">

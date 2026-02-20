@@ -957,24 +957,57 @@ class DashboardController extends Controller
     public function export(Request $request)
     {
         $type = $request->input('type', 'movements');
+        $format = $request->input('format', 'csv'); // csv or excel
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(5)->startOfMonth();
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
-        $filename = "Export_{$type}_" . now()->format('Ymd_His') . ".csv";
+        $filename = "Export_{$type}_" . now()->format('Ymd_His');
         
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+        if ($format === 'excel') {
+            $filename .= ".xls";
+            $headers = [
+                "Content-Type"        => "application/vnd.ms-excel",
+                "Content-Disposition" => "attachment; filename=$filename",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+        } else {
+            $filename .= ".csv";
+            $headers = [
+                "Content-type"        => "text/csv",
+                "Content-Disposition" => "attachment; filename=$filename",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+        }
 
-        $callback = function() use ($type, $startDate, $endDate) {
+        $callback = function() use ($type, $format, $startDate, $endDate) {
             $file = fopen('php://output', 'w');
 
+            // Helper to write row
+            $writeRow = function($row, $isHeader = false) use ($file, $format) {
+                if ($format === 'excel') {
+                    echo "<tr>";
+                    foreach ($row as $cell) {
+                        $tag = $isHeader ? "th" : "td";
+                        $style = $isHeader ? "background-color: #f0f0f0; font-weight: bold; border: 1px solid #000;" : "border: 1px solid #000;";
+                        $cellContent = htmlspecialchars((string)$cell);
+                        echo "<$tag style='$style'>$cellContent</$tag>";
+                    }
+                    echo "</tr>";
+                } else {
+                    fputcsv($file, $row);
+                }
+            };
+
+            if ($format === 'excel') {
+                echo "<table border='1' cellpadding='5' cellspacing='0'>";
+            }
+
             if ($type === 'movements') {
-                fputcsv($file, ['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark']);
+                $writeRow(['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark'], true);
                 
                 $data = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
                     ->whereBetween('movement_date', [$startDate, $endDate])
@@ -982,11 +1015,11 @@ class DashboardController extends Controller
                     ->get();
 
                 foreach ($data as $row) {
-                    fputcsv($file, [
+                    $writeRow([
                         $row->movement_date,
                         $row->tyre->serial_number ?? '-',
                         $row->vehicle->kode_kendaraan ?? '-',
-                        $row->position->position_name ?? ($row->position->position_code ?? '-'),
+                        $row->position->position_full_code ?? '-',
                         $row->movement_type,
                         $row->odometer_reading,
                         $row->hour_meter_reading,
@@ -997,7 +1030,7 @@ class DashboardController extends Controller
                     ]);
                 }
             } elseif ($type === 'failures') {
-                fputcsv($file, ['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure']);
+                $writeRow(['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure'], true);
                 
                 $data = TyreMovement::where('movement_type', 'Removal')
                     ->whereNotNull('failure_code_id')
@@ -1014,15 +1047,15 @@ class DashboardController extends Controller
                     ->get();
 
                 foreach ($data as $row) {
-                    fputcsv($file, [$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)]);
+                    $writeRow([$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)]);
                 }
             } elseif ($type === 'assets') {
-                fputcsv($file, ['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM']);
+                $writeRow(['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'], true);
                 
                 $data = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
 
                 foreach ($data as $row) {
-                    fputcsv($file, [
+                    $writeRow([
                         $row->serial_number,
                         $row->brand->brand_name ?? '-',
                         $row->size->size ?? '-',
@@ -1038,12 +1071,12 @@ class DashboardController extends Controller
                     ]);
                 }
             } elseif ($type === 'vehicles') {
-                fputcsv($file, ['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status']);
+                $writeRow(['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status'], true);
                 
                 $data = \App\Models\MasterImportKendaraan::with('tyrePositionConfiguration')->get();
 
                 foreach ($data as $row) {
-                    fputcsv($file, [
+                    $writeRow([
                         $row->kode_kendaraan,
                         $row->jenis_kendaraan,
                         $row->tyrePositionConfiguration->name ?? '-',
@@ -1051,13 +1084,60 @@ class DashboardController extends Controller
                         $row->tyre_unit_status
                     ]);
                 }
+            } elseif ($type === 'brands') {
+                $writeRow(['ID', 'Brand Name'], true);
+                
+                $data = \App\Models\TyreBrand::orderBy('brand_name')->get();
+
+                foreach ($data as $row) {
+                    $writeRow([
+                        $row->id,
+                        $row->brand_name,
+                    ]);
+                }
+            } elseif ($type === 'sizes') {
+                $writeRow(['ID', 'Size', 'Parent Size (Optional)'], true);
+                
+                $data = \App\Models\TyreSize::orderBy('size')->get();
+
+                foreach ($data as $row) {
+                    $writeRow([
+                        $row->id,
+                        $row->size,
+                        $row->parent_id ?? '-'
+                    ]);
+                }
+            } elseif ($type === 'patterns') {
+                $writeRow(['ID', 'Pattern Name', 'Brand'], true);
+                
+                $data = \App\Models\TyrePattern::with('brand')->orderBy('name')->get();
+
+                foreach ($data as $row) {
+                    $writeRow([
+                        $row->id,
+                        $row->name,
+                        $row->brand->brand_name ?? '-'
+                    ]);
+                }
+            } elseif ($type === 'failure_codes') {
+                $writeRow(['Failure Code', 'Failure Name', 'Category'], true);
+                
+                $data = \App\Models\TyreFailureCode::orderBy('failure_code')->get();
+
+                foreach ($data as $row) {
+                    $writeRow([
+                        $row->failure_code,
+                        $row->failure_name,
+                        $row->default_category
+                    ]);
+                }
             } elseif ($type === 'examinations') {
-                fputcsv($file, ['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status']);
+                $writeRow(['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'], true);
                 
                 $data = \App\Models\TyreExamination::with(['vehicle'])->withCount('details')->get();
 
                 foreach ($data as $row) {
-                    fputcsv($file, [
+                    $writeRow([
                         $row->examination_date,
                         $row->vehicle->kode_kendaraan ?? '-',
                         $row->odometer,
@@ -1066,6 +1146,10 @@ class DashboardController extends Controller
                         $row->status
                     ]);
                 }
+            }
+
+            if ($format === 'excel') {
+                echo "</table>";
             }
 
             fclose($file);
@@ -1112,6 +1196,18 @@ class DashboardController extends Controller
                 case 'Failure Codes':
                     fputcsv($file, ['failure_code', 'failure_name', 'default_category']);
                     fputcsv($file, ['CUT', 'Cut Separation', 'Major Damage']);
+                    break;
+                case 'Tyre Brand':
+                    fputcsv($file, ['brand_name']);
+                    fputcsv($file, ['BRIDGESTONE']);
+                    break;
+                case 'Tyre Size':
+                    fputcsv($file, ['size']);
+                    fputcsv($file, ['11.00-20']);
+                    break;
+                case 'Tyre Pattern':
+                    fputcsv($file, ['pattern_name', 'brand']);
+                    fputcsv($file, ['G580', 'BRIDGESTONE']);
                     break;
             }
 

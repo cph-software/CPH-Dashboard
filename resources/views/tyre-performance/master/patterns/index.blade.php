@@ -18,12 +18,32 @@
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Patterns</h4>
             <small class="text-muted">Manajemen pola kembangan (pattern) ban berdasarkan brand</small>
          </div>
-         @if (hasPermission('Patterns', 'create'))
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
-               data-bs-target="#addPatternModal">
-               <i class="ri-add-line me-1"></i> Add Pattern
-            </button>
-         @endif
+         <div class="d-flex gap-2">
+            <div class="btn-group">
+               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="ri-download-2-line me-1"></i> Export Data
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'csv']) }}"><i
+                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'excel']) }}"><i
+                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
+               </ul>
+            </div>
+            @if (hasPermission('Patterns', 'create'))
+               <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
+                  <i class="ri-upload-2-line me-1"></i> Import
+               </button>
+               <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                  data-bs-target="#addPatternModal">
+                  <i class="ri-add-line me-1"></i> Add Pattern
+               </button>
+            @endif
+         </div>
       </div>
 
       <div class="card shadow-sm border-0">
