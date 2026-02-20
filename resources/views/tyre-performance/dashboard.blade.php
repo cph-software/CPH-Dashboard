@@ -166,12 +166,37 @@
                      title="Terapkan Filter">
                      <i class="ri-filter-3-line me-1"></i> Filter
                   </button>
-                  @if(request()->filled('start_date') || request()->filled('end_date'))
+                  @if (request()->filled('start_date') || request()->filled('end_date'))
                      <a href="{{ route('master_data.dashboard') }}" class="btn btn-label-secondary btn-sm px-3 ms-1 py-2"
                         style="border-radius: 6px;" title="Reset Filter">
                         <i class="ri-refresh-line me-1"></i> Reset
                      </a>
                   @endif
+               </div>
+               <div class="btn-group ms-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
+                     style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
+                     <i class="ri-download-2-line me-1"></i> Export
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                     <li>
+                        <h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6>
+                     </li>
+                     <li><a class="dropdown-item"
+                           href="{{ route('master_data.export', ['type' => 'movements', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                              class="ri-history-line me-1"></i> Movements Raw Data</a></li>
+                     <li><a class="dropdown-item"
+                           href="{{ route('master_data.export', ['type' => 'failures', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                              class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
+                     <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'assets']) }}"><i
+                              class="ri-disc-line me-1"></i> Tyre Master List</a></li>
+                     <li>
+                        <hr class="dropdown-divider">
+                     </li>
+                     <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
+                           data-bs-target="#importModal"><i class="ri-upload-2-line me-1"></i>
+                           Admin: Import Data</a></li>
+                  </ul>
                </div>
             </form>
          </div>
@@ -454,7 +479,14 @@
                      </div>
                      <div class="text-center">
                         @php
-                           $healthColor = $fleetHealthData['avgHealth'] >= 60 ? 'success' : ($fleetHealthData['avgHealth'] >= 40 ? 'info' : ($fleetHealthData['avgHealth'] >= 20 ? 'warning' : 'danger'));
+                           $healthColor =
+                               $fleetHealthData['avgHealth'] >= 60
+                                   ? 'success'
+                                   : ($fleetHealthData['avgHealth'] >= 40
+                                       ? 'info'
+                                       : ($fleetHealthData['avgHealth'] >= 20
+                                           ? 'warning'
+                                           : 'danger'));
                         @endphp
                         <div class="fleet-gauge-number text-{{ $healthColor }}">
                            {{ $fleetHealthData['avgHealth'] }}%
@@ -504,7 +536,8 @@
             <div class="card chart-card h-100">
                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                   <div>
-                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by Position
+                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by
+                        Position
                         Analysis</h6>
                      <p class="kpi-sub mb-0">Frekuensi Scrap Ban per Posisi</p>
                   </div>
@@ -610,18 +643,19 @@
                                     $rtd = $t->current_tread_depth ?? 0;
                                     $pctRemaining = $otd > 0 ? round(($rtd / $otd) * 100, 0) : 0;
                                     $barColor =
-                                       $pctRemaining < 20
-                                       ? '#ea5455'
-                                       : ($pctRemaining < 40
-                                          ? '#ff9f43'
-                                          : ($pctRemaining < 60
-                                             ? '#00cfe8'
-                                             : '#28c76f'));
+                                        $pctRemaining < 20
+                                            ? '#ea5455'
+                                            : ($pctRemaining < 40
+                                                ? '#ff9f43'
+                                                : ($pctRemaining < 60
+                                                    ? '#00cfe8'
+                                                    : '#28c76f'));
                                  @endphp
                                  <tr class="alert-tyre-row">
                                     <td class="ps-3">
                                        <strong class="d-block small">{{ $t->serial_number }}</strong>
-                                       <span class="text-muted" style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
+                                       <span class="text-muted"
+                                          style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
                                     </td>
                                     <td>
                                        <span
@@ -769,7 +803,8 @@
                   <i class="icon-base ri ri-search-eye-line me-2"></i>
                   <span id="drillDownTitleText">Detail Data</span>
                </h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <div class="modal-body">
                <div id="drillDownLoading" class="text-center py-5">
@@ -804,8 +839,7 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
-   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}">
-   </script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
 @endsection
 
@@ -813,7 +847,7 @@
    <script>
       'use strict';
 
-      document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('DOMContentLoaded', function() {
 
          // ==========================================
          // Color Palette
@@ -830,7 +864,7 @@
 
          // Initialize Select2
          if ($.fn.select2) {
-            $('.select2').each(function () {
+            $('.select2').each(function() {
                var $this = $(this);
                $this.select2({
                   placeholder: 'Pilih opsi',
@@ -874,7 +908,7 @@
                url: drillDownUrl,
                data: ajaxData,
                dataType: 'json',
-               success: function (res) {
+               success: function(res) {
                   document.getElementById('drillDownLoading').style.display = 'none';
 
                   if (!res.data || res.data.length === 0) {
@@ -954,7 +988,7 @@
                      }
                   });
                },
-               error: function () {
+               error: function() {
                   document.getElementById('drillDownLoading').style.display = 'none';
                   document.getElementById('drillDownEmpty').style.display = 'block';
                   document.getElementById('drillDownTitleText').textContent = 'Error memuat data';
@@ -989,7 +1023,7 @@
                type: 'donut',
                height: 280,
                events: {
-                  dataPointSelection: function (event, chartContext, config) {
+                  dataPointSelection: function(event, chartContext, config) {
                      const label = statusLabels[config.dataPointIndex];
                      openDrillDown('status', label);
                   }
@@ -1046,7 +1080,7 @@
                   show: false
                },
                events: {
-                  dataPointSelection: function (event, chartContext, config) {
+                  dataPointSelection: function(event, chartContext, config) {
                      const monthLabel = monthlyData[config.dataPointIndex].month;
                      const seriesName = config.seriesIndex === 0 ? 'Installation' : 'Removal';
                      openDrillDown('movement', monthLabel + '|' + seriesName);
@@ -1054,19 +1088,21 @@
                }
             },
             series: [{
-               name: 'Pemasangan',
-               data: monthlyData.map(m => m.installations)
-            },
-            {
-               name: 'Pelepasan',
-               data: monthlyData.map(m => m.removals)
-            }
+                  name: 'Pemasangan',
+                  data: monthlyData.map(m => m.installations)
+               },
+               {
+                  name: 'Pelepasan',
+                  data: monthlyData.map(m => m.removals)
+               }
             ],
             xaxis: {
                categories: monthlyData.map(m => m.month),
                title: {
                   text: 'Bulan',
-                  style: { fontWeight: 600 }
+                  style: {
+                     fontWeight: 600
+                  }
                },
                labels: {
                   style: {
@@ -1140,7 +1176,8 @@
             }
 
             const totalSample = data.reduce((sum, b) => sum + b.count, 0);
-            sampleContainer.innerHTML = '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+            sampleContainer.innerHTML =
+               '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
                totalSample + ' ban</span>';
 
             brandChart = new ApexCharts(container, {
@@ -1151,7 +1188,7 @@
                      show: false
                   },
                   events: {
-                     dataPointSelection: function (event, chartContext, config) {
+                     dataPointSelection: function(event, chartContext, config) {
                         const brandName = data[config.dataPointIndex].brand;
                         openDrillDown('brand_performance', brandName, {
                            size_id: $('#brandFilterSize').val(),
@@ -1169,7 +1206,9 @@
                   categories: data.map(b => b.brand),
                   title: {
                      text: 'Rata-rata Lifetime (KM)',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   },
                   labels: {
                      style: {
@@ -1180,7 +1219,9 @@
                yaxis: {
                   title: {
                      text: 'Brand',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   }
                },
                colors: [colors.primary],
@@ -1196,7 +1237,7 @@
                },
                dataLabels: {
                   enabled: true,
-                  formatter: function (val, opt) {
+                  formatter: function(val, opt) {
                      const count = data[opt.dataPointIndex].count;
                      return val.toLocaleString() + ' km (' + count + ' ban)';
                   },
@@ -1212,7 +1253,7 @@
                },
                tooltip: {
                   y: {
-                     formatter: function (val, opt) {
+                     formatter: function(val, opt) {
                         const idx = opt.dataPointIndex;
                         const count = data[idx].count;
                         return val.toLocaleString() + ' km (sample: ' + count + ' ban)';
@@ -1240,7 +1281,7 @@
                   pattern_id: patternId
                },
                dataType: 'json',
-               success: function (res) {
+               success: function(res) {
                   if (res.success) {
                      renderBrandChart(res.data);
                   }
@@ -1276,7 +1317,8 @@
             data.sort((a, b) => a.cpk - b.cpk);
 
             const totalSample = data.reduce((sum, b) => sum + b.count, 0);
-            sampleContainer.innerHTML = '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+            sampleContainer.innerHTML =
+               '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
                totalSample + ' ban</span>';
 
             cpkChart = new ApexCharts(container, {
@@ -1287,7 +1329,7 @@
                      show: false
                   },
                   events: {
-                     dataPointSelection: function (event, chartContext, config) {
+                     dataPointSelection: function(event, chartContext, config) {
                         const brandName = data[config.dataPointIndex].brand;
                         openDrillDown('brand_cpk', brandName, {
                            size_id: $('#cpkFilterSize').val(),
@@ -1305,7 +1347,9 @@
                   categories: data.map(b => b.brand),
                   title: {
                      text: 'Biaya per KM (Rp/km)',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   },
                   labels: {
                      style: {
@@ -1316,7 +1360,9 @@
                yaxis: {
                   title: {
                      text: 'Brand',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   }
                },
                colors: [colors.warning],
@@ -1332,7 +1378,7 @@
                },
                dataLabels: {
                   enabled: true,
-                  formatter: function (val, opt) {
+                  formatter: function(val, opt) {
                      const count = data[opt.dataPointIndex].count;
                      return 'Rp ' + val.toLocaleString() + '/km (' + count + ' ban)';
                   },
@@ -1348,7 +1394,7 @@
                },
                tooltip: {
                   y: {
-                     formatter: function (val, opt) {
+                     formatter: function(val, opt) {
                         const idx = opt.dataPointIndex;
                         const count = data[idx].count;
                         return 'Rp ' + val.toLocaleString() + '/km (sample: ' + count + ' ban)';
@@ -1376,7 +1422,7 @@
                   pattern_id: patternId
                },
                dataType: 'json',
-               success: function (res) {
+               success: function(res) {
                   if (res.success) {
                      renderCpkChart(res.data);
                   }
@@ -1399,7 +1445,7 @@
                type: 'donut',
                height: 280,
                events: {
-                  dataPointSelection: function (event, chartContext, config) {
+                  dataPointSelection: function(event, chartContext, config) {
                      const label = healthLabels[config.dataPointIndex];
                      openDrillDown('rtd', label);
                   }
@@ -1457,26 +1503,28 @@
                   show: false
                },
                events: {
-                  dataPointSelection: function (event, chartContext, config) {
+                  dataPointSelection: function(event, chartContext, config) {
                      const locName = locationData[config.dataPointIndex].location_name;
                      openDrillDown('location', locName);
                   }
                }
             },
             series: [{
-               name: 'Current Stock',
-               data: locationData.map(l => l.current_stock)
-            },
-            {
-               name: 'Capacity',
-               data: locationData.map(l => l.capacity)
-            }
+                  name: 'Current Stock',
+                  data: locationData.map(l => l.current_stock)
+               },
+               {
+                  name: 'Capacity',
+                  data: locationData.map(l => l.capacity)
+               }
             ],
             xaxis: {
                categories: locationData.map(l => l.location_name),
                title: {
                   text: 'Lokasi Gudang',
-                  style: { fontWeight: 600 }
+                  style: {
+                     fontWeight: 600
+                  }
                },
                labels: {
                   style: {
@@ -1487,7 +1535,9 @@
             yaxis: {
                title: {
                   text: 'Jumlah Ban',
-                  style: { fontWeight: 600 }
+                  style: {
+                     fontWeight: 600
+                  }
                }
             },
             colors: [colors.info, '#82868b'],
@@ -1522,7 +1572,7 @@
                   type: 'donut',
                   height: 280,
                   events: {
-                     dataPointSelection: function (event, chartContext, config) {
+                     dataPointSelection: function(event, chartContext, config) {
                         const label = failureData[config.dataPointIndex].label;
                         openDrillDown('failure', label);
                      }
@@ -1588,7 +1638,9 @@
             }
 
             const totalScrap = data.reduce((sum, item) => sum + item.total, 0);
-            totalBadgeContainer.innerHTML = '<span class="badge bg-danger rounded-pill shadow-sm py-2 px-3 fw-bold"><i class="ri-delete-bin-line me-1"></i> Total: ' + totalScrap + ' Ban Scrap</span>';
+            totalBadgeContainer.innerHTML =
+               '<span class="badge bg-danger rounded-pill shadow-sm py-2 px-3 fw-bold"><i class="ri-delete-bin-line me-1"></i> Total: ' +
+               totalScrap + ' Ban Scrap</span>';
 
             axleChart = new ApexCharts(container, {
                chart: {
@@ -1598,7 +1650,7 @@
                      show: false
                   },
                   events: {
-                     dataPointSelection: function (event, chartContext, config) {
+                     dataPointSelection: function(event, chartContext, config) {
                         const position = data[config.dataPointIndex].position;
                         openDrillDown('scrap_position', position, {
                            size_id: $('#axleFilterSize').val(),
@@ -1618,7 +1670,9 @@
                   categories: data.map(item => item.position),
                   title: {
                      text: 'Scrap Quantity',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   },
                   labels: {
                      style: {
@@ -1629,7 +1683,9 @@
                yaxis: {
                   title: {
                      text: 'Tyre Position',
-                     style: { fontWeight: 600 }
+                     style: {
+                        fontWeight: 600
+                     }
                   }
                },
                colors: [colors.danger],
@@ -1638,17 +1694,28 @@
                      horizontal: true,
                      borderRadius: 6,
                      barHeight: '70%',
-                     dataLabels: { position: 'center' }
+                     dataLabels: {
+                        position: 'center'
+                     }
                   }
                },
                dataLabels: {
                   enabled: true,
                   formatter: (val) => val + ' ban',
-                  style: { fontSize: '11px', fontWeight: 600, colors: ['#fff'] }
+                  style: {
+                     fontSize: '11px',
+                     fontWeight: 600,
+                     colors: ['#fff']
+                  }
                },
-               grid: { borderColor: '#f1f1f1', strokeDashArray: 3 },
+               grid: {
+                  borderColor: '#f1f1f1',
+                  strokeDashArray: 3
+               },
                tooltip: {
-                  y: { formatter: (val) => val + ' ban' }
+                  y: {
+                     formatter: (val) => val + ' ban'
+                  }
                }
             });
             axleChart.render();
@@ -1675,7 +1742,7 @@
                   end_date: endDate
                },
                dataType: 'json',
-               success: function (res) {
+               success: function(res) {
                   if (res.success) {
                      renderAxleChart(res.data);
                   }
@@ -1687,4 +1754,42 @@
 
       });
    </script>
+
+   {{-- Modal Import Data --}}
+   <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+         <form action="{{ route('import.store') }}" method="POST" enctype="multipart/form-data"
+            class="modal-content">
+            @csrf
+            <div class="modal-header">
+               <h5 class="modal-title"><i class="ri-upload-2-line me-1"></i> Import/Request Data</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <div class="alert alert-info py-2 small">
+                  <i class="ri-information-line me-1"></i> Data yang diupload tidak akan langsung masuk ke database,
+                  melainkan harus disetujui dahulu oleh Supervisor/Manager.
+               </div>
+               <div class="mb-3">
+                  <label class="form-label fw-bold">Pilih Modul</label>
+                  <select name="module" class="form-select" required>
+                     <option value="" selected disabled>-- Pilih Modul --</option>
+                     <option value="Tyre Master">Tyre Master</option>
+                     <option value="Movement History">Tyre Movement</option>
+                     <option value="Failure Codes">Failure Codes</option>
+                  </select>
+               </div>
+               <div class="mb-3">
+                  <label class="form-label fw-bold">File CSV</label>
+                  <input type="file" name="file" class="form-control" accept=".csv" required>
+                  <div class="form-text small">Gunakan format CSV dengan header di baris pertama.</div>
+               </div>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+               <button type="submit" class="btn btn-primary">Upload & Kirim Request</button>
+            </div>
+         </form>
+      </div>
+   </div>
 @endsection

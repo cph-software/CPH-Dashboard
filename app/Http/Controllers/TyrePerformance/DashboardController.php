@@ -953,4 +953,101 @@ class DashboardController extends Controller
                 return response()->json(['data' => [], 'total' => 0]);
         }
     }
+
+    public function export(Request $request)
+    {
+        $type = $request->input('type', 'movements');
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(5)->startOfMonth();
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
+
+        $filename = "Export_{$type}_" . now()->format('Ymd_His') . ".csv";
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($type, $startDate, $endDate) {
+            $file = fopen('php://output', 'w');
+
+            if ($type === 'movements') {
+                fputcsv($file, ['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark']);
+                
+                $data = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
+                    ->whereBetween('movement_date', [$startDate, $endDate])
+                    ->orderBy('movement_date', 'desc')
+                    ->get();
+
+                foreach ($data as $row) {
+                    fputcsv($file, [
+                        $row->movement_date,
+                        $row->tyre->serial_number ?? '-',
+                        $row->vehicle->kode_kendaraan ?? '-',
+                        $row->position->position_name ?? ($row->position->position_code ?? '-'),
+                        $row->movement_type,
+                        $row->odometer_reading,
+                        $row->hour_meter_reading,
+                        $row->rtd_reading,
+                        $row->psi_reading,
+                        $row->failureCode->failure_code ?? '-',
+                        $row->remarks
+                    ]);
+                }
+            } elseif ($type === 'failures') {
+                fputcsv($file, ['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure']);
+                
+                $data = TyreMovement::where('movement_type', 'Removal')
+                    ->whereNotNull('failure_code_id')
+                    ->whereBetween('movement_date', [$startDate, $endDate])
+                    ->join('tyre_failure_codes', 'tyre_movements.failure_code_id', '=', 'tyre_failure_codes.id')
+                    ->select(
+                        'tyre_failure_codes.failure_code',
+                        'tyre_failure_codes.failure_name',
+                        'tyre_failure_codes.default_category',
+                        DB::raw('COUNT(*) as total'),
+                        DB::raw('AVG(rtd_reading) as avg_rtd')
+                    )
+                    ->groupBy('tyre_failure_codes.id', 'tyre_failure_codes.failure_code', 'tyre_failure_codes.failure_name', 'tyre_failure_codes.default_category')
+                    ->get();
+
+                foreach ($data as $row) {
+                    fputcsv($file, [$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)]);
+                }
+            } elseif ($type === 'assets') {
+                fputcsv($file, ['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM']);
+                
+                $data = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
+
+                foreach ($data as $row) {
+                    fputcsv($file, [
+                        $row->serial_number,
+                        $row->brand->brand_name ?? '-',
+                        $row->size->size ?? '-',
+                        $row->pattern->name ?? '-',
+                        $row->status,
+                        $row->currentVehicle->kode_kendaraan ?? '-',
+                        $row->currentPosition->position_code ?? '-',
+                        $row->current_tread_depth,
+                        $row->initial_tread_depth,
+                        $row->price,
+                        $row->total_lifetime_km,
+                        $row->total_lifetime_hm
+                    ]);
+                }
+            }
+
+            fclose($file);
+        };
+
+        setLogActivity(auth()->id(), "Mengekspor data mentah $type", [
+            'module' => 'Dashboard',
+            'type'   => $type,
+            'period' => $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d')
+        ]);
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

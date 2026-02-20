@@ -52,6 +52,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('cph.activity-logs.index');
         Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('cph.activity-logs.show');
 
+        // Import Approval
+        Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])->name('import-approval.index');
+        Route::get('import-approval/{id}', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'show'])->name('import-approval.show');
+        // Use POST for actions like approve/reject for better security
+        Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])->name('import-approval.approve');
+        Route::post('import-approval/{id}/reject', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'reject'])->name('import-approval.reject');
+
+        // Import Action (Uploader)
+        Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])->name('import.store');
+
         // Coming Soon for this prefix
         Route::get('/coming-soon', function () {
             return view('pages.under-development', ['featureName' => request('feature')]);
@@ -65,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/brand-performance', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'brandPerformanceAjax'])->name('master_data.brand-performance')->middleware('tyre.permission:Dashboard');
         Route::get('/dashboard/cpk-by-brand', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'cpkByBrandAjax'])->name('master_data.cpk-by-brand')->middleware('tyre.permission:Dashboard');
         Route::get('/dashboard/scrap-by-position', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'scrapByPositionAjax'])->name('master_data.scrap-by-position')->middleware('tyre.permission:Dashboard');
+        Route::get('/dashboard/export', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'export'])->name('master_data.export')->middleware('tyre.permission:Dashboard');
 
         // Master Data Routes
         Route::resource('master_brand', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands')->middleware('tyre.permission:Brands');
