@@ -223,10 +223,6 @@
                   Swal.close();
                   if (res.success) {
                      $('#tyre_list_body').html(res.html);
-                     $('.select2-remarks').select2({
-                        dropdownParent: $('#tyre_list_table'),
-                        width: '100%'
-                     });
                   }
                },
                error: function() {

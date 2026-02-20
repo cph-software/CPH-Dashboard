@@ -6,8 +6,8 @@
    <tr>
       <td class="pos-code">{{ $pos->position_code }}</td>
       <td>
-         <input type="hidden" name="details[{{ $index }}][position_id]" value="{{ $pos->id }}">
          @if ($tyre)
+            <input type="hidden" name="details[{{ $index }}][position_id]" value="{{ $pos->id }}">
             <input type="hidden" name="details[{{ $index }}][tyre_id]" value="{{ $tyre->id }}">
             {{ $tyre->brand->brand_name ?? '-' }}
          @else
@@ -43,19 +43,8 @@
             @if (!$tyre) disabled @endif>
       </td>
       <td>
-         <select name="details[{{ $index }}][remarks]" class="form-select select2-remarks"
-            data-placeholder="Keterangan..." @if (!$tyre) disabled @endif>
-            <option value=""></option>
-            <option value="Pasang">Pasang</option>
-            <option value="Pindah">Pindah</option>
-            <option value="Lepas">Lepas</option>
-            <option value="Tergores">Tergores</option>
-            <option value="Kembung">Kembung</option>
-            <option value="Pecah">Pecah</option>
-            <option value="Sobek">Sobek</option>
-            <option value="Tertusuk">Tertusuk</option>
-            <option value="Telapak Lepas">Telapak Lepas</option>
-         </select>
+         <input type="text" name="details[{{ $index }}][remarks]" class="form-control form-control-sm"
+            placeholder="Keterangan..." @if (!$tyre) disabled @endif>
       </td>
    </tr>
 @empty
