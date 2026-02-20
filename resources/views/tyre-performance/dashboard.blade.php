@@ -1754,42 +1754,4 @@
 
       });
    </script>
-
-   {{-- Modal Import Data --}}
-   <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-         <form action="{{ route('import.store') }}" method="POST" enctype="multipart/form-data"
-            class="modal-content">
-            @csrf
-            <div class="modal-header">
-               <h5 class="modal-title"><i class="ri-upload-2-line me-1"></i> Import/Request Data</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-               <div class="alert alert-info py-2 small">
-                  <i class="ri-information-line me-1"></i> Data yang diupload tidak akan langsung masuk ke database,
-                  melainkan harus disetujui dahulu oleh Supervisor/Manager.
-               </div>
-               <div class="mb-3">
-                  <label class="form-label fw-bold">Pilih Modul</label>
-                  <select name="module" class="form-select" required>
-                     <option value="" selected disabled>-- Pilih Modul --</option>
-                     <option value="Tyre Master">Tyre Master</option>
-                     <option value="Movement History">Tyre Movement</option>
-                     <option value="Failure Codes">Failure Codes</option>
-                  </select>
-               </div>
-               <div class="mb-3">
-                  <label class="form-label fw-bold">File CSV</label>
-                  <input type="file" name="file" class="form-control" accept=".csv" required>
-                  <div class="form-text small">Gunakan format CSV dengan header di baris pertama.</div>
-               </div>
-            </div>
-            <div class="modal-footer">
-               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-               <button type="submit" class="btn btn-primary">Upload & Kirim Request</button>
-            </div>
-         </form>
-      </div>
-   </div>
 @endsection

@@ -99,6 +99,7 @@
 
    @yield('vendor-script')
    @yield('page-script')
+   @include('layouts.sections.import_modal')
 </body>
 
 </html>

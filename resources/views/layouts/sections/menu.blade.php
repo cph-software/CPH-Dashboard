@@ -78,12 +78,16 @@
 
             // 2. Filter Application List to Display
             if (!in_array($user->role->name, ['Super Admin', 'Administrator'])) {
-                // Non-Super Admin: Only show Tyre Performance
+                // Non-Admin: Only show Tyre Performance
                 $aplikasiList = $rawAplikasiList->where('id', 20);
             } else {
-                // Super Admin / Administrator: Show Tyre Performance AND User Management
+                // Roles that can see User Management (for Import Approval etc)
                 $aplikasiList = $rawAplikasiList->filter(function ($app) {
-                    return $app->id == 20 || $app->name == 'CPH Dashboard' || $app->name == 'User Management';
+                    // ID 20 = Tyre Performance, ID 25 = User Mgmt (DB), ID 2 = User Mgmt (Old/Seed)
+                    return $app->id == 20 ||
+                        $app->id == 25 ||
+                        $app->name == 'CPH Dashboard' ||
+                        $app->name == 'User Management';
                 });
             }
          @endphp
@@ -140,6 +144,11 @@
                      @php
                         $menu = $roleMenu->menu;
                         $fullUrl = $appPrefix . '/' . $menu->url;
+
+                        // Handle Route Exception for Import Approval (it is not prefixed)
+                        if ($menu->url === 'import-approval') {
+                            $fullUrl = 'import-approval';
+                        }
 
                         // Skip Dashboard here since we have Static Dashboard above
                         if ($menu->url === 'dashboard') {

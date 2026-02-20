@@ -28,9 +28,12 @@ class RoleService extends BaseService
 
     public function updateWithPermissions($id, array $data, array $menuIds, array $menuPermissions = [])
     {
-        $role = $this->repository->update($id, [
-            'name' => $data['name']
-        ]);
+        $updateData = [];
+        if (isset($data['name'])) {
+            $updateData['name'] = $data['name'];
+        }
+
+        $role = $this->repository->update($id, $updateData);
 
         $this->syncRolePermissions($role, $menuIds, $menuPermissions);
 

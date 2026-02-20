@@ -37,36 +37,9 @@ Route::middleware(['auth'])->group(function () {
         return redirect()->route('dashboard');
     })->name('home');
 
-    // CPH Dashboard Aplikasi Routes
-    Route::prefix('cph_dashboard')->group(function () {
-        Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
-        Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
-        Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
-
-        // Permission Management
-        Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
-        Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
-        Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
-
-        // Activity Logs (Cross-app access)
-        Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('cph.activity-logs.index');
-        Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('cph.activity-logs.show');
-
-        // Import Approval
-        Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])->name('import-approval.index');
-        Route::get('import-approval/{id}', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'show'])->name('import-approval.show');
-        // Use POST for actions like approve/reject for better security
-        Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])->name('import-approval.approve');
-        Route::post('import-approval/{id}/reject', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'reject'])->name('import-approval.reject');
-
-        // Import Action (Uploader)
-        Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])->name('import.store');
-
-        // Coming Soon for this prefix
-        Route::get('/coming-soon', function () {
-            return view('pages.under-development', ['featureName' => request('feature')]);
-        });
-    });
+    // Route::prefix('cph_dashboard')->group(function () {
+    //     // Moved to master_data_tyre
+    // });
 
     // Tyre Performance Application Routes
     Route::prefix('master_data_tyre')->group(function () {
@@ -76,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/cpk-by-brand', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'cpkByBrandAjax'])->name('master_data.cpk-by-brand')->middleware('tyre.permission:Dashboard');
         Route::get('/dashboard/scrap-by-position', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'scrapByPositionAjax'])->name('master_data.scrap-by-position')->middleware('tyre.permission:Dashboard');
         Route::get('/dashboard/export', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'export'])->name('master_data.export')->middleware('tyre.permission:Dashboard');
+        Route::get('/dashboard/download-template', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'downloadTemplate'])->name('master_data.download-template')->middleware('tyre.permission:Dashboard');
 
         // Master Data Routes
         Route::resource('master_brand', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands')->middleware('tyre.permission:Brands');
@@ -110,6 +84,25 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class)->middleware('tyre.permission:Examination');
 
         Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns')->middleware('tyre.permission:Patterns');
+
+        // User Management Routes (Moved from cph_dashboard)
+        Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
+        Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
+        Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
+
+        // Permission Management
+        Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
+        Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
+        Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
+
+        // Import Approval
+        Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])->name('import-approval.index');
+        Route::get('import-approval/{id}', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'show'])->name('import-approval.show');
+        Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])->name('import-approval.approve');
+        Route::post('import-approval/{id}/reject', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'reject'])->name('import-approval.reject');
+
+        // Import Action (Uploader)
+        Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])->name('import.store');
 
         // Activity Logs
         Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
