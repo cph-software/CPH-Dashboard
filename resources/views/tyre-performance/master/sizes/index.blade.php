@@ -15,11 +15,31 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Sizes</h4>
-         @if (hasPermission('Sizes', 'create'))
-            <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
-               <i class="icon-base ri ri-add-line me-1"></i> Add Size
-            </a>
-         @endif
+         <div class="d-flex gap-2">
+            <div class="btn-group">
+               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="ri-download-2-line me-1"></i> Export Data
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'sizes', 'format' => 'csv']) }}"><i
+                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
+                  <li><a class="dropdown-item"
+                        href="{{ route('master_data.export', ['type' => 'sizes', 'format' => 'excel']) }}"><i
+                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
+               </ul>
+            </div>
+            @if (hasPermission('Sizes', 'create'))
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
+                  <i class="ri-upload-2-line me-1"></i> Import
+               </button>
+               <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
+                  <i class="icon-base ri ri-add-line me-1"></i> Add Size
+               </a>
+            @endif
+         </div>
       </div>
 
       <div class="card">

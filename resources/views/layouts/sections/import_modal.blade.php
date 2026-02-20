@@ -24,6 +24,10 @@
                         </option>
                         <option value="Movement History" data-template="template_movement.csv">Tyre Movement (Riwayat)
                         </option>
+                        <option value="Tyre Brand" data-template="template_brand.csv">Tyre Brand (Merek Ban)</option>
+                        <option value="Tyre Size" data-template="template_size.csv">Tyre Size (Ukuran Ban)</option>
+                        <option value="Tyre Pattern" data-template="template_pattern.csv">Tyre Pattern (Tipe Kembangan)
+                        </option>
                         <option value="Failure Codes" data-template="template_failure_codes.csv">Failure Codes (Kamus
                            Kerusakan)</option>
                      </select>
@@ -86,7 +90,14 @@
                'Failure Codes': `<strong>Kolom Wajib:</strong><br>
                - failure_code (Kode Kerusakan)<br>
                - failure_name (Deskripsi)<br>
-               - default_category (Category Group)`
+               - default_category (Category Group)`,
+               'Tyre Brand': `<strong>Kolom Wajib:</strong><br>
+               - brand_name (Nama Brand)`,
+               'Tyre Size': `<strong>Kolom Wajib:</strong><br>
+               - size (Ukuran Ban)`,
+               'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
+               - pattern_name (Nama Pattern)<br>
+               - brand (Nama Brand)`
             };
 
             if (moduleSelect) {
