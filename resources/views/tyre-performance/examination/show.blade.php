@@ -4,36 +4,92 @@
 
 @section('page-style')
    <style>
-      .print-header {
-         display: none;
-      }
-
       @media print {
-         .no-print {
-            display: none;
+
+         /* Hide Layout Elements */
+         .layout-menu-relative,
+         .layout-menu,
+         .layout-navbar,
+         .content-footer,
+         .no-print,
+         .btn-buy-now,
+         .content-backdrop,
+         .menu-vertical {
+            display: none !important;
          }
 
-         .print-header {
-            display: block;
+         /* Reset Layout for Print */
+         .layout-page {
+            padding: 0 !important;
+            margin: 0 !important;
          }
 
-         .card {
-            border: none !important;
-            box-shadow: none !important;
+         .layout-wrapper,
+         .layout-container {
+            display: block !important;
+         }
+
+         .content-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
          }
 
          .container-xxl {
             max-width: 100% !important;
             padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
          }
 
-         .table-examination {
-            font-size: 10px;
+         /* Card & Typography Improvements */
+         .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin-bottom: 20px !important;
          }
 
          body {
-            padding: 0;
-            margin: 0;
+            background-color: #fff !important;
+            color: #000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+         }
+
+         .table-examination {
+            font-size: 11px !important;
+            border: 1px solid #000 !important;
+         }
+
+         .table-examination th {
+            background-color: #ffd700 !important;
+            color: #000 !important;
+            border-bottom: 1px solid #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+         }
+
+         .table-examination td {
+            border: 1px solid #000 !important;
+         }
+
+         .bg-yellow-header {
+            background-color: #ffd700 !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border-bottom: 2px solid #000 !important;
+         }
+
+         /* Footer signatures alignment */
+         .signature-box {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+         }
+
+         @page {
+            size: A4 portrait;
+            margin: 1.5cm 1cm;
          }
       }
 
@@ -46,6 +102,13 @@
 
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
+      <!-- PRINT HEADER (Only visible when printing) -->
+      <div class="print-only mb-4 text-center">
+         <h2 class="fw-bold mb-0">EXAMINATION FORM</h2>
+         <p class="mb-0 text-muted">CPH Dashboard - Tyre Performance Module</p>
+         <hr class="border-dark opacity-100">
+      </div>
+
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Examination /</span> Detail #{{ $exam->id }}
          </h4>
@@ -60,13 +123,16 @@
                </button>
                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                   <li>
-                     <a class="dropdown-item py-2" href="javascript:void(0);" onclick="window.print()">
-                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (Browser)
+                     <a class="dropdown-item py-2"
+                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
+                        target="_blank">
+                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (PDF)
                      </a>
                   </li>
                   <li>
-                     <a class="dropdown-item py-2" href="{{ route('examination.export-pdf', $exam->id) }}" target="_blank">
-                        <i class="ri-file-pdf-line me-2 text-danger"></i> Unduh File PDF (Official)
+                     <a class="dropdown-item py-2"
+                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'download']) }}">
+                        <i class="ri-file-pdf-line me-2 text-danger"></i> Simpan File PDF
                      </a>
                   </li>
                   <li>
@@ -182,27 +248,27 @@
                <div class="col border-end">
                   <p class="small text-muted mb-4">Tyre Man</p>
                   <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold">{{ $exam->tyre_man ?: '....................' }}</h6>
+                  <h6 class="mb-0 fw-bold signature-box">{{ $exam->tyre_man ?: '....................' }}</h6>
                </div>
                <div class="col border-end">
                   <p class="small text-muted mb-4">Ka. Kendaraan</p>
                   <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold">....................</h6>
+                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
                </div>
                <div class="col border-end">
                   <p class="small text-muted mb-4">Logistics</p>
                   <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold">....................</h6>
+                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
                </div>
                <div class="col border-end">
                   <p class="small text-muted mb-4">Verified by</p>
                   <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold">....................</h6>
+                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
                </div>
                <div class="col">
                   <p class="small text-muted mb-4">Plant Manager</p>
                   <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold">....................</h6>
+                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
                </div>
             </div>
             @if ($exam->notes)
