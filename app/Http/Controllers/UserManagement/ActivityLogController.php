@@ -28,8 +28,7 @@ class ActivityLogController extends Controller
                       $qu->where('name', 'like', "%$search%")
                     ->orWhereHas('karyawan', function($qk) use ($search) {
                         $qk->where('full_name', 'like', "%$search%")
-                           ->orWhere('nama', 'like', "%$search%")
-                           ->orWhere('employee_name', 'like', "%$search%");
+                           ->orWhere('employee_id', 'like', "%$search%");
                     });
                   });
             });
