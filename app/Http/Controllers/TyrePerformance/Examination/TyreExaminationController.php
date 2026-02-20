@@ -192,4 +192,25 @@ class TyreExaminationController extends Controller
         ])->findOrFail($id);
         return view('tyre-performance.examination.show', compact('exam'));
     }
+
+    public function exportPdf($id)
+    {
+        $exam = TyreExamination::with([
+            'vehicle',
+            'location',
+            'segment',
+            'details.position',
+            'details.tyre.brand',
+            'details.tyre.pattern',
+            'details.tyre.size'
+        ])->findOrFail($id);
+
+        if (class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
+                ->setPaper('a4', 'portrait');
+            return $pdf->download('Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf');
+        }
+
+        return view('tyre-performance.examination.pdf', compact('exam'));
+    }
 }

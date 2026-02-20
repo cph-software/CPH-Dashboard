@@ -52,6 +52,9 @@
          <div class="d-flex gap-2">
             <a href="{{ route('examination.index') }}" class="btn btn-label-secondary"><i class="ri-arrow-left-line me-1"></i>
                Kembali</a>
+            <a href="{{ route('examination.export-pdf', $exam->id) }}" class="btn btn-danger" target="_blank">
+               <i class="ri-file-pdf-line me-1"></i> Download PDF
+            </a>
             <button onclick="window.print()" class="btn btn-primary"><i class="ri-printer-line me-1"></i> Cetak
                Form</button>
          </div>
