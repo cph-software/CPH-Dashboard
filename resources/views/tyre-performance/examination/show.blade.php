@@ -116,36 +116,10 @@
             <a href="{{ route('examination.index') }}" class="btn btn-label-secondary">
                <i class="ri-arrow-left-line me-1"></i> Kembali
             </a>
-            <div class="btn-group">
-               <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-printer-line me-1"></i> Cetak / Export
-               </button>
-               <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                  <li>
-                     <a class="dropdown-item py-2"
-                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
-                        target="_blank">
-                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (PDF)
-                     </a>
-                  </li>
-                  <li>
-                     <a class="dropdown-item py-2"
-                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'download']) }}">
-                        <i class="ri-file-pdf-line me-2 text-danger"></i> Simpan File PDF
-                     </a>
-                  </li>
-                  <li>
-                     <hr class="dropdown-divider">
-                  </li>
-                  <li>
-                     <small class="dropdown-header text-muted pb-0">Format Lainnya</small>
-                     <a class="dropdown-item py-2 disabled" href="javascript:void(0);">
-                        <i class="ri-file-excel-line me-2 text-success"></i> Export Excel (Coming Soon)
-                     </a>
-                  </li>
-               </ul>
-            </div>
+            <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
+               class="btn btn-primary" target="_blank">
+               <i class="ri-printer-line me-1"></i> Cetak Form (PDF)
+            </a>
          </div>
       </div>
 
