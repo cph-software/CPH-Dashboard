@@ -193,7 +193,7 @@ class TyreExaminationController extends Controller
         return view('tyre-performance.examination.show', compact('exam'));
     }
 
-    public function exportPdf($id)
+    public function exportPdf(Request $request, $id)
     {
         $exam = TyreExamination::with([
             'vehicle',
@@ -208,7 +208,14 @@ class TyreExaminationController extends Controller
         if (class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
                 ->setPaper('a4', 'portrait');
-            return $pdf->download('Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf');
+            
+            $filename = 'Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf';
+            
+            if ($request->action == 'stream') {
+                return $pdf->stream($filename);
+            }
+            
+            return $pdf->download($filename);
         }
 
         return view('tyre-performance.examination.pdf', compact('exam'));

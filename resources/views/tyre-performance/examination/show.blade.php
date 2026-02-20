@@ -123,13 +123,16 @@
                </button>
                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                   <li>
-                     <a class="dropdown-item py-2" href="javascript:void(0);" onclick="window.print()">
-                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (Browser)
+                     <a class="dropdown-item py-2"
+                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
+                        target="_blank">
+                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (PDF)
                      </a>
                   </li>
                   <li>
-                     <a class="dropdown-item py-2" href="{{ route('examination.export-pdf', $exam->id) }}" target="_blank">
-                        <i class="ri-file-pdf-line me-2 text-danger"></i> Unduh File PDF (Official)
+                     <a class="dropdown-item py-2"
+                        href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'download']) }}">
+                        <i class="ri-file-pdf-line me-2 text-danger"></i> Simpan File PDF
                      </a>
                   </li>
                   <li>
