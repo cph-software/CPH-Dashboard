@@ -50,13 +50,36 @@
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Examination /</span> Detail #{{ $exam->id }}
          </h4>
          <div class="d-flex gap-2">
-            <a href="{{ route('examination.index') }}" class="btn btn-label-secondary"><i class="ri-arrow-left-line me-1"></i>
-               Kembali</a>
-            <a href="{{ route('examination.export-pdf', $exam->id) }}" class="btn btn-danger" target="_blank">
-               <i class="ri-file-pdf-line me-1"></i> Download PDF
+            <a href="{{ route('examination.index') }}" class="btn btn-label-secondary">
+               <i class="ri-arrow-left-line me-1"></i> Kembali
             </a>
-            <button onclick="window.print()" class="btn btn-primary"><i class="ri-printer-line me-1"></i> Cetak
-               Form</button>
+            <div class="btn-group">
+               <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="ri-printer-line me-1"></i> Cetak / Export
+               </button>
+               <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  <li>
+                     <a class="dropdown-item py-2" href="javascript:void(0);" onclick="window.print()">
+                        <i class="ri-printer-line me-2 text-primary"></i> Cetak Langsung (Browser)
+                     </a>
+                  </li>
+                  <li>
+                     <a class="dropdown-item py-2" href="{{ route('examination.export-pdf', $exam->id) }}" target="_blank">
+                        <i class="ri-file-pdf-line me-2 text-danger"></i> Unduh File PDF (Official)
+                     </a>
+                  </li>
+                  <li>
+                     <hr class="dropdown-divider">
+                  </li>
+                  <li>
+                     <small class="dropdown-header text-muted pb-0">Format Lainnya</small>
+                     <a class="dropdown-item py-2 disabled" href="javascript:void(0);">
+                        <i class="ri-file-excel-line me-2 text-success"></i> Export Excel (Coming Soon)
+                     </a>
+                  </li>
+               </ul>
+            </div>
          </div>
       </div>
 
