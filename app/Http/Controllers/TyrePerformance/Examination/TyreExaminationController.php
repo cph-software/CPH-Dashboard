@@ -207,7 +207,7 @@ class TyreExaminationController extends Controller
 
         if (class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
-                ->setPaper('a4', 'portrait');
+                ->setPaper('a5', 'landscape');
             
             $filename = 'Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf';
             
