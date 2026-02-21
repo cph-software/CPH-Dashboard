@@ -116,7 +116,8 @@
 
                      <div class="mb-3 p-3 bg-light rounded-3 border">
                         <label class="form-label fw-bold font-size-13" for="tyre_id">Pilih Ban (SN)</label>
-                        <select name="tyre_id" id="tyre_id" class="form-select" data-placeholder="Cari SN Ban..." required>
+                        <select name="tyre_id" id="tyre_id" class="form-select" data-placeholder="Cari SN Ban..."
+                           required>
                            <option value="">-- Cari SN Ban --</option>
                         </select>
                         <div id="tyre_info_display" class="mt-2" style="display: none;">
@@ -125,6 +126,10 @@
                               <span class="badge bg-white text-dark border"><small id="info_pattern"></small></span>
                               <span class="badge bg-white text-dark border"><small id="info_size"></small></span>
                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                               <span class="badge bg-label-info"><i class="ri-ruler-line me-1"></i>OTD: <strong id="info_otd">-</strong> mm</span>
+                               <span class="badge bg-label-warning"><i class="ri-ruler-line me-1"></i>RTD: <strong id="info_rtd">-</strong> mm</span>
+                            </div>
                         </div>
                      </div>
 
@@ -233,8 +238,7 @@
 
                      <div class="mb-4">
                         <label class="form-label fw-bold font-size-13">Keterangan Tambahan (Notes)</label>
-                        <textarea name="notes" class="form-control" rows="3"
-                           placeholder="Masukkan catatan tambahan jika ada..."></textarea>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Masukkan catatan tambahan jika ada..."></textarea>
                      </div>
 
                      <div class="d-grid gap-2 mt-4">
@@ -259,7 +263,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          const vehicleSelect = $('#vehicle_id');
          const positionSelect = $('#position_id');
          const tyreSelect = $('#tyre_id');
@@ -267,7 +271,7 @@
          const selectionInfo = document.getElementById('selection_info');
 
          // Initialize Select2 first
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
@@ -283,12 +287,12 @@
                url: "{{ route('tyre-movement.search-tyres') }}",
                dataType: 'json',
                delay: 250,
-               data: function (params) {
+               data: function(params) {
                   return {
                      q: params.term
                   };
                },
-               processResults: function (data) {
+               processResults: function(data) {
                   return {
                      results: data.results
                   };
@@ -301,7 +305,7 @@
          });
 
          // Force load data when opened if empty
-         tyreSelect.on('select2:open', function () {
+         tyreSelect.on('select2:open', function() {
             const searchField = $('.select2-search__field');
             if (searchField.length > 0 && !$(this).val()) {
                searchField.val('').trigger('input');
@@ -310,10 +314,13 @@
 
          function formatTyreResult(tyre) {
             if (tyre.loading) return tyre.text;
+            const otdLabel = tyre.otd ? `OTD: ${tyre.otd}mm` : '';
+            const rtdLabel = tyre.rtd ? `RTD: ${tyre.rtd}mm` : '';
+            const depthInfo = (otdLabel || rtdLabel) ? ` | ${[otdLabel, rtdLabel].filter(Boolean).join(' / ')}` : '';
             return $(`
                                           <div class='select2-result-tyre'>
                                              <div class='fw-bold'>${tyre.sn}</div>
-                                             <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}</div>
+                                             <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}${depthInfo}</div>
                                           </div>
                                        `);
          }
@@ -323,7 +330,7 @@
          }
 
          // Handle Baut Baru Toggle
-         $('#new_bolts').on('change', function () {
+         $('#new_bolts').on('change', function() {
             if (this.checked) {
                $('#bolt_qty_container').fadeIn();
             } else {
@@ -333,7 +340,7 @@
          });
 
          // Handle Location -> Segment Filtering
-         $('#work_location_id').on('change', function () {
+         $('#work_location_id').on('change', function() {
             const locId = $(this).val();
             const segmentSelect = $('#operational_segment_id');
 
@@ -355,7 +362,7 @@
          });
 
          // Handle Vehicle Change
-         vehicleSelect.on('change', function () {
+         vehicleSelect.on('change', function() {
             const vehicleId = $(this).val();
             const text = $(this).find('option:selected').text();
             document.getElementById('unit_code_display').textContent = vehicleId ? text : '-';
@@ -389,8 +396,8 @@
 
             // Load Positions
             fetch(
-               `{{ url('master_data_tyre/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
-            )
+                  `{{ url('master_data_tyre/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
+               )
                .then(response => response.json())
                .then(data => {
                   positionSelect.empty().append('<option value="">-- Pilih Posisi --</option>');
@@ -400,9 +407,12 @@
                   // or better, rely on the position data if it includes occupation info
                   data.positions.forEach(pos => {
                      // Find if this position is currently occupied in the visual layout
-                     const node = document.querySelector(`.m-tyre-node[data-position-id="${pos.id}"]`);
+                     const node = document.querySelector(
+                     `.m-tyre-node[data-position-id="${pos.id}"]`);
                      const isFilled = node && node.classList.contains('filled');
-                     const label = isFilled ? `${pos.position_code} - ${pos.position_name} (REPLACE)` : `${pos.position_code} - ${pos.position_name}`;
+                     const label = isFilled ?
+                        `${pos.position_code} - ${pos.position_name} (REPLACE)` :
+                        `${pos.position_code} - ${pos.position_name}`;
 
                      positionSelect.append(
                         `<option value="${pos.id}">${label}</option>`
@@ -433,19 +443,21 @@
          }
 
          // Handle Tyre Selection Info
-         tyreSelect.on('select2:select', function (e) {
+         tyreSelect.on('select2:select', function(e) {
             const data = e.params.data;
             if (data.id) {
                $('#info_brand').text(data.brand);
                $('#info_pattern').text(data.pattern);
                $('#info_size').text(data.size);
+               $('#info_otd').text(data.otd || '-');
+               $('#info_rtd').text(data.rtd || '-');
                $('#tyre_info_display').slideDown();
             } else {
                $('#tyre_info_display').slideUp();
             }
          });
 
-         tyreSelect.on('select2:unselect', function () {
+         tyreSelect.on('select2:unselect', function() {
             $('#tyre_info_display').slideUp();
          });
 
@@ -453,7 +465,7 @@
          function attachLayoutEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function () {
+               node.addEventListener('click', function() {
                   const posId = this.getAttribute('data-position-id');
                   const isFilled = this.classList.contains('filled');
                   const sn = this.getAttribute('data-sn');
@@ -485,7 +497,7 @@
          }
 
          // Sync dropdown to visual
-         positionSelect.on('change', function () {
+         positionSelect.on('change', function() {
             const posId = $(this).val();
             const nodes = document.querySelectorAll('.m-tyre-node');
 
@@ -506,7 +518,7 @@
          });
 
          // Form Submission
-         document.getElementById('pemasangan_form').addEventListener('submit', function (e) {
+         document.getElementById('pemasangan_form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const posId = positionSelect.val();
@@ -538,12 +550,12 @@
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
                   fetch(`{{ url('master_data_tyre/store') }}`, {
-                     method: 'POST',
-                     body: formData,
-                     headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                     }
-                  })
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                     })
                      .then(response => response.json())
                      .then(data => {
                         if (data.success) {

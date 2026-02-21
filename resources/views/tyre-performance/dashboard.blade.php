@@ -374,7 +374,7 @@
                   {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="brandFilterSize" class="form-select select2">
@@ -384,17 +384,8 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
-                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-focus-3-line me-1"></i>
-                              Type</label>
-                           <select id="brandFilterType" class="form-select select2">
-                              <option value="">Semua Type</option>
-                              @foreach ($filterTypes as $t)
-                                 <option value="{{ $t }}">{{ $t }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                        <div class="col-md-4">
+
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="brandFilterPattern" class="form-select select2">
@@ -424,7 +415,7 @@
                   {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="cpkFilterSize" class="form-select select2">
@@ -434,17 +425,8 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
-                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-focus-3-line me-1"></i>
-                              Type</label>
-                           <select id="cpkFilterType" class="form-select select2">
-                              <option value="">Semua Type</option>
-                              @foreach ($filterTypes as $t)
-                                 <option value="{{ $t }}">{{ $t }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                        <div class="col-md-4">
+
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="cpkFilterPattern" class="form-select select2">
@@ -473,9 +455,9 @@
                <div class="card-header pb-0">
                   <div class="d-flex justify-content-between align-items-start">
                      <div>
-                        <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Fleet
-                           Health (% Tread Remaining)</h6>
-                        <p class="kpi-sub mb-0">Distribusi kondisi ban terpasang berdasarkan % sisa tapak</p>
+                        <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Kondisi
+                           Ban Terpasang (RTD %)</h6>
+                        <p class="kpi-sub mb-0">Distribusi kondisi ban berdasarkan persentase sisa tapak</p>
                      </div>
                      <div class="text-center">
                         @php
@@ -547,7 +529,7 @@
                   {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-danger"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="axleFilterSize" class="form-select select2">
@@ -557,17 +539,8 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
-                           <label class="filter-label mb-1 d-block text-danger"><i class="ri-focus-3-line me-1"></i>
-                              Type</label>
-                           <select id="axleFilterType" class="form-select select2">
-                              <option value="">Semua Type</option>
-                              @foreach ($filterTypes as $t)
-                                 <option value="{{ $t }}">{{ $t }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                        <div class="col-md-4">
+
+                        <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-danger"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="axleFilterPattern" class="form-select select2">
@@ -1177,7 +1150,7 @@
 
             const totalSample = data.reduce((sum, b) => sum + b.count, 0);
             sampleContainer.innerHTML =
-               '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+               '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total Entry: ' +
                totalSample + ' ban</span>';
 
             brandChart = new ApexCharts(container, {
@@ -1192,7 +1165,6 @@
                         const brandName = data[config.dataPointIndex].brand;
                         openDrillDown('brand_performance', brandName, {
                            size_id: $('#brandFilterSize').val(),
-                           filter_type: $('#brandFilterType').val(),
                            pattern_id: $('#brandFilterPattern').val()
                         });
                      }
@@ -1270,7 +1242,6 @@
          // Filter event listeners for Brand Performance
          function loadBrandPerformance() {
             const sizeId = $('#brandFilterSize').val();
-            const type = $('#brandFilterType').val();
             const patternId = $('#brandFilterPattern').val();
 
             $.ajax({
@@ -1289,7 +1260,7 @@
             });
          }
 
-         $('#brandFilterSize, #brandFilterType, #brandFilterPattern').on('change', loadBrandPerformance);
+         $('#brandFilterSize, #brandFilterPattern').on('change', loadBrandPerformance);
 
          // ==========================================
          // 4. CPK BY BRAND CHART (Dedicated, with AJAX Filters)
@@ -1318,7 +1289,7 @@
 
             const totalSample = data.reduce((sum, b) => sum + b.count, 0);
             sampleContainer.innerHTML =
-               '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total sample: ' +
+               '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total Entry: ' +
                totalSample + ' ban</span>';
 
             cpkChart = new ApexCharts(container, {
@@ -1333,7 +1304,6 @@
                         const brandName = data[config.dataPointIndex].brand;
                         openDrillDown('brand_cpk', brandName, {
                            size_id: $('#cpkFilterSize').val(),
-                           filter_type: $('#cpkFilterType').val(),
                            pattern_id: $('#cpkFilterPattern').val()
                         });
                      }
@@ -1411,7 +1381,6 @@
          // Filter event listeners for CPK
          function loadCpkByBrand() {
             const sizeId = $('#cpkFilterSize').val();
-            const type = $('#cpkFilterType').val();
             const patternId = $('#cpkFilterPattern').val();
 
             $.ajax({
@@ -1430,7 +1399,7 @@
             });
          }
 
-         $('#cpkFilterSize, #cpkFilterType, #cpkFilterPattern').on('change', loadCpkByBrand);
+         $('#cpkFilterSize, #cpkFilterPattern').on('change', loadCpkByBrand);
 
          // ==========================================
          // 5. FLEET HEALTH CHART (Percentage Based)
@@ -1654,7 +1623,6 @@
                         const position = data[config.dataPointIndex].position;
                         openDrillDown('scrap_position', position, {
                            size_id: $('#axleFilterSize').val(),
-                           filter_type: $('#axleFilterType').val(),
                            pattern_id: $('#axleFilterPattern').val(),
                            start_date: $('input[name="start_date"]').val(),
                            end_date: $('input[name="end_date"]').val()
@@ -1682,7 +1650,7 @@
                },
                yaxis: {
                   title: {
-                     text: 'Tyre Position',
+                     text: 'Wheel Position',
                      style: {
                         fontWeight: 600
                      }
@@ -1727,7 +1695,6 @@
          // Filter event listeners for Axle
          function loadAxleAnalysis() {
             const sizeId = $('#axleFilterSize').val();
-            const type = $('#axleFilterType').val();
             const patternId = $('#axleFilterPattern').val();
             const startDate = $('input[name="start_date"]').val();
             const endDate = $('input[name="end_date"]').val();
@@ -1750,7 +1717,7 @@
             });
          }
 
-         $('#axleFilterSize, #axleFilterType, #axleFilterPattern').on('change', loadAxleAnalysis);
+         $('#axleFilterSize, #axleFilterPattern').on('change', loadAxleAnalysis);
 
       });
    </script>
