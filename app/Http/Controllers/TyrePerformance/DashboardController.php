@@ -205,7 +205,6 @@ class DashboardController extends Controller
         // Filter Options for Brand Performance & CPK Charts
         // ========================================
         $filterSizes = TyreSize::select('id', 'size')->distinct()->orderBy('size')->get();
-        $filterTypes = TyreSize::select('type')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
         $filterPatterns = TyrePattern::select('id', 'name')->where('status', 'Active')->orderBy('name')->get();
 
         return view('tyre-performance.dashboard', compact(
@@ -242,7 +241,6 @@ class DashboardController extends Controller
             'axleAnalysis',
             // Filter Options
             'filterSizes',
-            'filterTypes',
             'filterPatterns'
         ));
     }
@@ -512,7 +510,6 @@ class DashboardController extends Controller
                             'brand' => $t->brand->brand_name ?? '-',
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'type' => $t->size->type ?? '-',
                             'location' => $t->location->location_name ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
@@ -524,8 +521,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Ban Status: {$value}",
-                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Type', 'Location', 'Kendaraan', 'OTD', 'RTD', 'Lifetime KM', 'Harga'],
-                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'type', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'price'],
+                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'Lifetime KM', 'Harga'],
+                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'price'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                     'link' => route('tyre-master.index') . '?status=' . urlencode($value),
@@ -549,7 +546,6 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'type' => $t->size->type ?? '-',
                             'location' => $t->location->location_name ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
@@ -562,8 +558,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Ban Brand: {$value}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Type', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'type', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
+                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
+                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -587,7 +583,6 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'type' => $t->size->type ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                             'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
@@ -597,8 +592,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Ban di Lokasi: {$value}",
-                    'columns' => ['Serial Number', 'Brand', 'Status', 'Size', 'Pattern', 'Type', 'Kendaraan', 'OTD', 'RTD', 'Retread'],
-                    'keys' => ['serial_number', 'brand', 'status', 'size', 'pattern', 'type', 'vehicle', 'otd', 'rtd', 'retread'],
+                    'columns' => ['Serial Number', 'Brand', 'Status', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', 'Retread'],
+                    'keys' => ['serial_number', 'brand', 'status', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'retread'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -626,7 +621,6 @@ class DashboardController extends Controller
                             'serial' => $m->tyre->serial_number ?? '-',
                             'size' => $m->tyre->size->size ?? '-',
                             'pattern' => $m->tyre->pattern->name ?? '-',
-                            'type' => $m->tyre->size->type ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
                             'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
                             'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
@@ -637,8 +631,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Pelepasan: " . ($fc->display_name ?: "{$fc->failure_code} - {$fc->failure_name}"),
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Type', 'Kendaraan', 'KM', 'HM', 'RTD', 'Notes'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'type', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
+                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'KM', 'HM', 'RTD', 'Notes'],
+                    'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -674,7 +668,6 @@ class DashboardController extends Controller
                             'serial' => $m->tyre->serial_number ?? '-',
                             'size' => $m->tyre->size->size ?? '-',
                             'pattern' => $m->tyre->pattern->name ?? '-',
-                            'type' => $m->tyre->size->type ?? '-',
                             'brand' => $m->tyre->brand->brand_name ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
                             'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
@@ -688,8 +681,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "{$typeLabel} - {$monthStr}",
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Type', 'Brand', 'Kendaraan', 'KM', 'HM', 'PSI', 'RTD'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'type', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
+                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Brand', 'Kendaraan', 'KM', 'HM', 'PSI', 'RTD'],
+                    'keys' => ['date', 'serial', 'size', 'pattern', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -727,7 +720,6 @@ class DashboardController extends Controller
                         'brand' => $t->brand->brand_name ?? '-',
                         'size' => $t->size->size ?? '-',
                         'pattern' => $t->pattern->name ?? '-',
-                        'type' => $t->size->type ?? '-',
                         'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                         'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                         'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
@@ -738,8 +730,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Fleet Health: {$value}",
-                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Type', 'Kendaraan', 'OTD', 'RTD', '% Sisa', 'Lifetime KM'],
-                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'type', 'vehicle', 'otd', 'rtd', 'remaining', 'lifetime_km'],
+                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', '% Sisa', 'Lifetime KM'],
+                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'remaining', 'lifetime_km'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -760,7 +752,6 @@ class DashboardController extends Controller
                             'serial' => $m->tyre->serial_number ?? '-',
                             'size' => $m->tyre->size->size ?? '-',
                             'pattern' => $m->tyre->pattern->name ?? '-',
-                            'type' => $m->tyre->size->type ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
                             'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
                             'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
@@ -770,8 +761,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Scrap Frequency: Posisi {$value}",
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Type', 'Kendaraan', 'KM', 'RTD', 'Notes'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'type', 'vehicle', 'km', 'rtd', 'notes'],
+                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'KM', 'RTD', 'Notes'],
+                    'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'km', 'rtd', 'notes'],
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -821,7 +812,6 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'type' => $t->size->type ?? '-',
                             'location' => $t->location->location_name ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
@@ -834,8 +824,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "Brand Performance: {$value}{$filterLabel}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Type', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'type', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
+                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
+                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -888,7 +878,6 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'type' => $t->size->type ?? '-',
                             'location' => $t->location->location_name ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'lifetime_km' => number_format($t->total_lifetime_km, 0),
@@ -899,8 +888,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "CPK Brand: {$value}{$filterLabel}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Type', 'Location', 'Kendaraan', 'Lifetime KM', 'Harga', 'CPK'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'type', 'location', 'vehicle', 'lifetime_km', 'price', 'cpk'],
+                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'Lifetime KM', 'Harga', 'CPK'],
+                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'lifetime_km', 'price', 'cpk'],
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);

@@ -50,8 +50,8 @@
                   <tr>
                      <th>Unit Code</th>
                      <th>Type</th>
-                     <th>Tyre Layout</th>
-                     <th>Tyre Positions</th>
+                     <th>Axle Layout</th>
+                     <th>Wheels</th>
                      <th>Status</th>
                      <th class="text-center">Actions</th>
                   </tr>
@@ -91,7 +91,7 @@
                         placeholder="e.g. Dump Truck Hino 500">
                   </div>
                   <div class="mb-3">
-                     <label for="tyre_position_configuration_id" class="form-label fw-bold">Tyre Layout
+                     <label for="tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
                         Configuration</label>
                      <select name="tyre_position_configuration_id" class="form-select select2 config-selector"
                         data-placeholder="Select Configuration">
@@ -105,7 +105,7 @@
                   </div>
                   <div class="row g-2">
                      <div class="col-md-6 mb-3">
-                        <label for="total_tyre_position" class="form-label fw-bold">Total Tyre Positions</label>
+                        <label for="total_tyre_position" class="form-label fw-bold">Total Wheels</label>
                         <input type="number" name="total_tyre_position" class="form-control total-pos-input"
                            placeholder="e.g. 10" required>
                      </div>
@@ -154,7 +154,7 @@
                      <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control">
                   </div>
                   <div class="mb-3">
-                     <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Tyre Layout
+                     <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
                         Configuration</label>
                      <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
                         class="form-select select2 config-selector">
@@ -168,7 +168,7 @@
                   </div>
                   <div class="row g-2">
                      <div class="col-md-6 mb-3">
-                        <label for="edit_total_positions" class="form-label fw-bold">Total Tyre Positions</label>
+                        <label for="edit_total_positions" class="form-label fw-bold">Total Wheels</label>
                         <input type="number" id="edit_total_positions" name="total_tyre_position"
                            class="form-control total-pos-input" required>
                      </div>
@@ -196,7 +196,7 @@
       <div class="modal-dialog modal-dialog-centered">
          <div class="modal-content shadow-lg border-0">
             <div class="modal-header bg-primary">
-               <h5 class="modal-title text-white">Vehicle Tyre Layout: <span id="layoutModalTitle"></span></h5>
+               <h5 class="modal-title text-white">Vehicle Axle Layout: <span id="layoutModalTitle"></span></h5>
                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                   aria-label="Close"></button>
             </div>

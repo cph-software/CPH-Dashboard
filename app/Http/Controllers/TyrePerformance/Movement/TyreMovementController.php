@@ -59,7 +59,9 @@ class TyreMovementController extends Controller
                 'brand' => $tyre->brand->brand_name ?? '-',
                 'pattern' => $tyre->pattern->name ?? '-',
                 'size' => $tyre->size->size ?? '-',
-                'sn' => $tyre->serial_number
+                'sn' => $tyre->serial_number,
+                'otd' => $tyre->initial_tread_depth,
+                'rtd' => $tyre->current_tread_depth,
             ];
         });
 

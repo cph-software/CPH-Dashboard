@@ -200,33 +200,7 @@
       </div>
    @endif
 
-   <div class="signature-section">
-      <div class="signature-box">
-         <span class="label">TYRE MAN</span>
-         <div class="signature-line"></div>
-         <span class="value">{{ $exam->tyre_man ?: '....................' }}</span>
-      </div>
-      <div class="signature-box">
-         <span class="label">KA. KENDARAAN</span>
-         <div class="signature-line"></div>
-         <span class="value">....................</span>
-      </div>
-      <div class="signature-box">
-         <span class="label">LOGISTICS</span>
-         <div class="signature-line"></div>
-         <span class="value">....................</span>
-      </div>
-      <div class="signature-box">
-         <span class="label">VERIFIED BY</span>
-         <div class="signature-line"></div>
-         <span class="value">....................</span>
-      </div>
-      <div class="signature-box">
-         <span class="label">PLANT MANAGER</span>
-         <div class="signature-line"></div>
-         <span class="value">....................</span>
-      </div>
-   </div>
+
 
    <div class="footer">
       Generated on: {{ date('d/m/Y H:i') }} | CPH Dashboard System

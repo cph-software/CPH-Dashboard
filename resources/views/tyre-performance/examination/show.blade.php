@@ -215,43 +215,15 @@
          </div>
       </div>
 
-      <!-- FOOTER / SIGNATURES -->
-      <div class="card">
-         <div class="card-body">
-            <div class="row text-center mt-3">
-               <div class="col border-end">
-                  <p class="small text-muted mb-4">Tyre Man</p>
-                  <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold signature-box">{{ $exam->tyre_man ?: '....................' }}</h6>
-               </div>
-               <div class="col border-end">
-                  <p class="small text-muted mb-4">Ka. Kendaraan</p>
-                  <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
-               </div>
-               <div class="col border-end">
-                  <p class="small text-muted mb-4">Logistics</p>
-                  <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
-               </div>
-               <div class="col border-end">
-                  <p class="small text-muted mb-4">Verified by</p>
-                  <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
-               </div>
-               <div class="col">
-                  <p class="small text-muted mb-4">Plant Manager</p>
-                  <div style="height: 60px;"></div>
-                  <h6 class="mb-0 fw-bold signature-box">....................</h6>
-               </div>
-            </div>
-            @if ($exam->notes)
-               <div class="mt-4 p-3 bg-light rounded shadow-sm border-start border-primary border-3">
+      @if ($exam->notes)
+         <div class="card">
+            <div class="card-body">
+               <div class="p-3 bg-light rounded shadow-sm border-start border-primary border-3">
                   <small class="text-muted d-block fw-bold mb-1">NOTES:</small>
                   <p class="mb-0 small italic">{{ $exam->notes }}</p>
                </div>
-            @endif
+            </div>
          </div>
-      </div>
+      @endif
    </div>
 @endsection
