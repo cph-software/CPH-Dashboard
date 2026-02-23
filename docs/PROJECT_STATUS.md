@@ -134,20 +134,20 @@
 
 ### ❌ Belum Dikerjakan
 
-|  #  | Request                                                                                                    | Catatan                                                                                             |   Estimasi Effort    |
-| :-: | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | :------------------: |
-|  1  | **Dashboard "total sample" → "total entry/count"**                                                         | Masih tertulis "Total sample" di 2 tempat (line 1180 & 1321 di `dashboard.blade.php`).              |     🟢 Quick fix     |
-|  2  | **Tambah 1 kolom RTD lagi (RTD 4) di form Examination**                                                    | Belum ada kolom `rtd_4`. Perlu: tambah kolom di DB, update form create, update view show & PDF.     |      🟡 Medium       |
-|  3  | **Dashboard failure code yang tampil sesuai yang customer buat**                                           | Failure code masih global. Perlu relasi customer ↔ failure code.                                    |      🟡 Medium       |
-|  4  | **Penamaan semua istilah/bahasa pada sistem diseragamkan**                                                 | Masih campuran bahasa Inggris dan Indonesia di seluruh sistem. Ini dijadwalkan di akhir pengerjaan. |      🟡 Medium       |
-|  5  | **Form pemasangan/pelepasan: visual layout diperkecil, automasi pengisian form dicek**                     | Layout masih ukuran default. Otomasi beberapa field masih perlu di-review.                          |      🟡 Medium       |
-|  6  | **Tambahan field RTD dari master tyre di form pemasangan**                                                 | Form pemasangan belum menampilkan RTD (OTD/current RTD) dari master tyre saat ban dipilih.          |     🟢 Quick fix     |
-|  7  | **Master Vehicle: ubah "Tyre Layout" → "Axle Layout", "Tyre Positions" → "Wheels"**                        | Masih menggunakan istilah lama di seluruh menu dan label.                                           |     🟢 Quick fix     |
-|  8  | **Master Vehicle: merk, type, konfig roda, konfig ban, curb weight (berat kendaraan) untuk hitung tonase** | Belum ada field-field ini di master vehicle. Perlu tambah kolom di DB + update form.                |       🔴 Major       |
-|  9  | **Examination form dan detail: kolom tanda tangan dihapus**                                                | Masih ada signature boxes di `show.blade.php` (5 box) dan `pdf.blade.php` (5 box).                  |     🟢 Quick fix     |
-| 10  | **Invoicing: 1 menu saja (karena mencakup 3 menu lama) + field status paid/unpaid**                        | Belum ada modul Invoicing sama sekali.                                                              |       🔴 Major       |
-| 11  | **Dashboard: tambahan fitur speed**                                                                        | Belum jelas spesifikasinya. Perlu klarifikasi lebih lanjut.                                         | ❓ Perlu klarifikasi |
-| 12  | **Informasi/Promo sebelum/setelah login**                                                                  | Belum ada. Disimpan di akhir pengerjaan (sesuai kesepakatan).                                       |      🟡 Medium       |
+|     #      | Request                                                                                                    | Catatan                                                                                             |   Estimasi Effort    |
+| :--------: | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | :------------------: |
+|     1      | **Dashboard "total sample" → "total entry/count"**                                                         | Masih tertulis "Total sample" di 2 tempat (line 1180 & 1321 di `dashboard.blade.php`).              |     🟢 Quick fix     |
+| ✅ Selesai | **Tambah 1 kolom RTD lagi (RTD 4) di form Examination**                                                    | Selesai (DB, Form, Show, & PDF)                                                                     |     23 Feb 2026      |
+|     3      | **Dashboard failure code yang tampil sesuai yang customer buat**                                           | Failure code masih global. Perlu relasi customer ↔ failure code.                                    |      🟡 Medium       |
+|     4      | **Penamaan semua istilah/bahasa pada sistem diseragamkan**                                                 | Masih campuran bahasa Inggris dan Indonesia di seluruh sistem. Ini dijadwalkan di akhir pengerjaan. |      🟡 Medium       |
+|     5      | **Form pemasangan/pelepasan: visual layout diperkecil, automasi pengisian form dicek**                     | Layout masih ukuran default. Otomasi beberapa field masih perlu di-review.                          |      🟡 Medium       |
+|     6      | **Tambahan field RTD dari master tyre di form pemasangan**                                                 | Form pemasangan belum menampilkan RTD (OTD/current RTD) dari master tyre saat ban dipilih.          |     🟢 Quick fix     |
+|     7      | **Master Vehicle: ubah "Tyre Layout" → "Axle Layout", "Tyre Positions" → "Wheels"**                        | Masih menggunakan istilah lama di seluruh menu dan label.                                           |     🟢 Quick fix     |
+|     8      | **Master Vehicle: merk, type, konfig roda, konfig ban, curb weight (berat kendaraan) untuk hitung tonase** | Belum ada field-field ini di master vehicle. Perlu tambah kolom di DB + update form.                |       🔴 Major       |
+|     9      | **Examination form dan detail: kolom tanda tangan dihapus**                                                | Masih ada signature boxes di `show.blade.php` (5 box) dan `pdf.blade.php` (5 box).                  |     🟢 Quick fix     |
+|     10     | **Invoicing: 1 menu saja (karena mencakup 3 menu lama) + field status paid/unpaid**                        | Belum ada modul Invoicing sama sekali.                                                              |       🔴 Major       |
+|     11     | **Dashboard: tambahan fitur speed**                                                                        | Belum jelas spesifikasinya. Perlu klarifikasi lebih lanjut.                                         | ❓ Perlu klarifikasi |
+|     12     | **Informasi/Promo sebelum/setelah login**                                                                  | Belum ada. Disimpan di akhir pengerjaan (sesuai kesepakatan).                                       |      🟡 Medium       |
 
 ---
 
@@ -188,8 +188,8 @@
 
 ### 🟡 Medium Priority (Perlu planning, effort sedang)
 
-1. **RTD 4** — tambah kolom di DB + update examination form
-2. **Chart kerusakan** — prematur vs worn out
+1. **RTD 4** — tambah kolom di DB + update examination form ✅ **(SELESAI 23 Feb 2026)**
+2. **Chart kerusakan** — prematur vs worn out (Pindah ke belakang sesuai request user)
 3. **Axle Analysis** breakdown per bulan
 4. **Examination export ke Excel**
 5. **Hitungan kondisi ban %** dari seluruh master ban

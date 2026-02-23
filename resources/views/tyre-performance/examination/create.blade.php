@@ -11,7 +11,6 @@
    <style>
       .form-header-card {
          background: #fdfae0;
-         /* Soft yellow theme from Excel */
          border-left: 5px solid #ffd700;
       }
 
@@ -20,17 +19,77 @@
          color: #000;
       }
 
-      .table-examination input {
-         border: 1px solid #ced4da;
-         padding: 4px 8px;
-         width: 100%;
+      /* Mobile Responsive Checklist */
+      @media (max-width: 767.98px) {
+         .table-examination thead {
+            display: none;
+         }
+
+         .table-examination,
+         .table-examination tbody,
+         .table-examination tr,
+         .table-examination td {
+            display: block;
+            width: 100% !important;
+         }
+
+         .table-examination tr {
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+         }
+
+         .pos-column {
+            background-color: #f3f4f6 !important;
+            padding: 0.75rem !important;
+         }
+
+         .info-column {
+            padding: 1rem !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+         }
+
+         .measure-column {
+            background-color: #fff !important;
+         }
+
+         .measurement-group {
+            border-bottom: 1px solid #f3f4f6;
+         }
+
+         .psi-group {
+            background-color: #fff9db;
+         }
+
+         .border-end-md {
+            border-right: none !important;
+         }
       }
 
-      .pos-code {
-         background: #f8f9fa;
-         font-weight: bold;
-         width: 60px;
-         text-align: center;
+      @media (min-width: 768px) {
+         .border-end-md {
+            border-right: 1px solid #e5e7eb !important;
+         }
+
+         .pos-column {
+            width: 80px;
+         }
+
+         .info-column {
+            width: 300px;
+         }
+      }
+
+      .rtd-input:focus {
+         background-color: #fff9db;
+         border-color: #ffd700;
+      }
+
+      .empty-pos {
+         opacity: 0.7;
+         background-color: #fafafa;
       }
    </style>
 @endsection
@@ -51,8 +110,7 @@
                <div class="row">
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">DATE</label>
-                     <input type="date" name="examination_date" class="form-control" value="{{ date('Y-m-d') }}"
-                        required>
+                     <input type="date" name="examination_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                   </div>
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">No. Pol & Unit</label>
@@ -117,29 +175,22 @@
 
          <!-- TABLE SECTION -->
          <div class="card shadow-sm mb-4">
-            <div class="card-header bg-transparent d-flex justify-content-between">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                <h5 class="mb-0"><i class="ri-list-check me-2"></i>Tyre Check List</h5>
-               <small class="text-muted">Pilih unit untuk memuat daftar ban</small>
+               <span class="badge bg-label-info d-none d-md-inline-block">RTD 1-4: Tread Depth Measurements</span>
             </div>
             <div class="table-responsive">
                <table class="table table-bordered table-examination mb-0" id="tyre_list_table">
                   <thead>
                      <tr>
-                        <th class="text-center" width="50">Pos</th>
-                        <th>Brand</th>
-                        <th>Pattern</th>
-                        <th>Size/PR</th>
-                        <th>Serial Number</th>
-                        <th width="140">PSI</th>
-                        <th width="120">RTD #1</th>
-                        <th width="120">RTD #2</th>
-                        <th width="120">RTD #3</th>
-                        <th>Remarks</th>
+                        <th class="text-center">Pos</th>
+                        <th>Informasi Ban</th>
+                        <th>Pengukuran (PSI & RTD 1-4) & Keterangan</th>
                      </tr>
                   </thead>
                   <tbody id="tyre_list_body">
                      <tr>
-                        <td colspan="10" class="text-center py-5 text-muted">
+                        <td colspan="3" class="text-center py-5 text-muted">
                            Silakan pilih unit kendaraan terlebih dahulu.
                         </td>
                      </tr>
@@ -180,59 +231,60 @@
 
 @section('page-script')
    <script>
-      $(function() {
+      $(function () {
          $('.select2').select2();
 
-         $('#location_id').on('change', function() {
-            const locationId = $(this).val();
-            const $segmentSelect = $('#operational_segment_id');
+         $('#location_id').on('change', function () {
+            var locationId = $(this).val();
+            var $segmentSelect = $('#operational_segment_id');
 
             $segmentSelect.html('<option value="">-- Pilih Segmen --</option>');
 
             if (locationId) {
                $.ajax({
                   url: "{{ route('tyre-movement.get-segments', '') }}/" + locationId,
-                  success: function(res) {
-                     res.forEach(function(segment) {
+                  success: function (res) {
+                     res.forEach(function (segment) {
                         $segmentSelect.append(
-                           `<option value="${segment.id}">${segment.segment_name}</option>`);
+                           '<option value="' + segment.id + '">' + segment.segment_name + '</option>');
                      });
                   }
                });
             }
          });
 
-         $('#vehicle_id').on('change', function() {
-            const vehicleId = $(this).val();
+         $('#vehicle_id').on('change', function () {
+            var vehicleId = $(this).val();
             if (!vehicleId) {
                $('#tyre_list_body').html(
-                  '<tr><td colspan="10" class="text-center py-5 text-muted">Silakan pilih unit kendaraan.</td></tr>'
+                  '<tr><td colspan="3" class="text-center py-5 text-muted">Silakan pilih unit kendaraan.</td></tr>'
                );
                return;
             }
 
             Swal.fire({
                title: 'Memuat data ban...',
-               didOpen: () => Swal.showLoading(),
+               didOpen: function () { Swal.showLoading(); },
                allowOutsideClick: false
             });
 
             $.ajax({
                url: "{{ route('examination.get-vehicle-tyres', '') }}/" + vehicleId,
-               success: function(res) {
+               success: function (res) {
                   Swal.close();
                   if (res.success) {
                      $('#tyre_list_body').html(res.html);
                   }
                },
-               error: function() {
+               error: function () {
                   Swal.fire('Error', 'Gagal memuat layout ban unit', 'error');
                }
             });
          });
 
-         $('#examination_form').on('submit', function(e) {
+         $('#examination_form').on('submit', function (e) {
             e.preventDefault();
+            var form = this;
 
             Swal.fire({
                title: 'Simpan Data?',
@@ -245,33 +297,33 @@
                   cancelButton: 'btn btn-label-secondary'
                },
                buttonsStyling: false
-            }).then((result) => {
+            }).then(function (result) {
                if (result.isConfirmed) {
                   Swal.fire({
                      title: 'Menyimpan...',
-                     didOpen: () => Swal.showLoading(),
+                     didOpen: function () { Swal.showLoading(); },
                      allowOutsideClick: false
                   });
 
                   $.ajax({
                      url: "{{ route('examination.store') }}",
                      method: 'POST',
-                     data: $(this).serialize(),
-                     success: function(res) {
+                     data: $(form).serialize(),
+                     success: function (res) {
                         if (res.success) {
                            Swal.fire({
                               icon: 'success',
                               title: 'Berhasil!',
                               text: res.message,
                               type: 'success'
-                           }).then(() => {
+                           }).then(function () {
                               window.location.href = res.redirect;
                            });
                         }
                      },
-                     error: function(res) {
-                        Swal.fire('Oops!', res.responseJSON?.message ||
-                           'Terjadi kesalahan sistem', 'error');
+                     error: function (res) {
+                        var msg = (res.responseJSON && res.responseJSON.message) ? res.responseJSON.message : 'Terjadi kesalahan sistem';
+                        Swal.fire('Oops!', msg, 'error');
                      }
                   });
                }

@@ -202,9 +202,7 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 1: KPI CARDS --}}
-      {{-- ============================================== --}}
+      {{-- KPI CARDS --}}
       <div class="row g-4 mb-4">
          {{-- Total Tyres --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
@@ -313,9 +311,7 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 2: CHARTS --}}
-      {{-- ============================================== --}}
+      {{-- CHARTS ROW --}}
       <div class="row g-4 mb-4">
          {{-- 2a. Tyre Status Distribution (Donut) --}}
          <div class="col-xl-4 col-lg-5">
@@ -346,8 +342,11 @@
                      <span class="badge bg-label-success rounded-pill me-1">
                         <i class="icon-base ri ri-arrow-down-line"></i> {{ $installationsThisMonth }} Pasang
                      </span>
-                     <span class="badge bg-label-danger rounded-pill">
+                     <span class="badge bg-label-danger rounded-pill me-1">
                         <i class="icon-base ri ri-arrow-up-line"></i> {{ $removalsThisMonth }} Lepas
+                     </span>
+                     <span class="badge bg-label-info rounded-pill">
+                        <i class="icon-base ri ri-search-line"></i> {{ $inspectionsThisMonth }} Inspeksi
                      </span>
                   </div>
                </div>
@@ -358,11 +357,8 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 3: PERFORMANCE ANALYSIS (with Filters) --}}
-      {{-- ============================================== --}}
+      {{-- PERFORMANCE ROW --}}
       <div class="row g-4 mb-4">
-         {{-- 3a. Brand Performance Comparison (with Filters) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
@@ -371,7 +367,6 @@
                   <p class="kpi-sub mb-0">Perbandingan umur rata-rata ban per brand</p>
                </div>
                <div class="card-body">
-                  {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
                         <div class="col-md-6">
@@ -384,7 +379,6 @@
                               @endforeach
                            </select>
                         </div>
-
                         <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
@@ -402,8 +396,6 @@
                </div>
             </div>
          </div>
-
-         {{-- 3b. Cost Per KM by Brand (Dedicated Chart with Filters) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
@@ -412,7 +404,6 @@
                   <p class="kpi-sub mb-0">Perbandingan biaya per KM antar brand</p>
                </div>
                <div class="card-body">
-                  {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
                         <div class="col-md-6">
@@ -425,7 +416,6 @@
                               @endforeach
                            </select>
                         </div>
-
                         <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
@@ -445,46 +435,34 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 4: FLEET HEALTH & STOCK --}}
-      {{-- ============================================== --}}
+      {{-- HEALTH ROW --}}
       <div class="row g-4 mb-4">
-         {{-- 4a. Fleet Health (Percentage Based) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
-               <div class="card-header pb-0">
-                  <div class="d-flex justify-content-between align-items-start">
-                     <div>
-                        <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Kondisi
-                           Ban Terpasang (RTD %)</h6>
-                        <p class="kpi-sub mb-0">Distribusi kondisi ban berdasarkan persentase sisa tapak</p>
+               <div class="card-header pb-0 d-flex justify-content-between align-items-start">
+                  <div>
+                     <h6 class="mb-1"><i class="icon-base ri ri-heart-pulse-line me-1 text-primary"></i> Kondisi
+                        Ban Terpasang (RTD %)</h6>
+                     <p class="kpi-sub mb-0">Distribusi kondisi ban berdasarkan persentase sisa tapak</p>
+                  </div>
+                  <div class="text-center">
+                     @php
+                        $healthColor = $fleetHealthData['avgHealth'] >= 60 ? 'success' : ($fleetHealthData['avgHealth'] >= 40 ? 'info' : ($fleetHealthData['avgHealth'] >= 20 ? 'warning' : 'danger'));
+                     @endphp
+                     <div class="fleet-gauge-number text-{{ $healthColor }}">
+                        {{ $fleetHealthData['avgHealth'] }}%
                      </div>
-                     <div class="text-center">
-                        @php
-                           $healthColor =
-                               $fleetHealthData['avgHealth'] >= 60
-                                   ? 'success'
-                                   : ($fleetHealthData['avgHealth'] >= 40
-                                       ? 'info'
-                                       : ($fleetHealthData['avgHealth'] >= 20
-                                           ? 'warning'
-                                           : 'danger'));
-                        @endphp
-                        <div class="fleet-gauge-number text-{{ $healthColor }}">
-                           {{ $fleetHealthData['avgHealth'] }}%
-                        </div>
-                        <span class="kpi-sub">Rata-rata Fleet</span>
-                     </div>
+                     <span class="kpi-sub">Rata-rata Fleet</span>
                   </div>
                </div>
                <div class="card-body">
                   <div id="fleetHealthChart" style="min-height:280px;"></div>
                   <div class="d-flex justify-content-between mt-2">
-                     <span class="badge bg-label-primary sample-badge">
+                     <span class="badge bg-label-primary sample-badge text-wrap">
                         <i class="ri-database-2-line me-1"></i>{{ $fleetHealthData['totalWithData'] }} ban terukur
                      </span>
                      @if ($fleetHealthData['noDataCount'] > 0)
-                        <span class="badge bg-label-secondary sample-badge">
+                        <span class="badge bg-label-secondary sample-badge text-wrap">
                            <i class="ri-question-line me-1"></i>{{ $fleetHealthData['noDataCount'] }} ban belum
                            terukur
                         </span>
@@ -493,8 +471,6 @@
                </div>
             </div>
          </div>
-
-         {{-- 4b. Stock by Location --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
@@ -509,24 +485,19 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 5: AXLE ANALYSIS & FAILURE --}}
-      {{-- ============================================== --}}
+      {{-- AXLE & FAILURE ROW --}}
       <div class="row g-4 mb-4">
-         {{-- 5a. Axle Analysis (Scrap Frequency) --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                   <div>
-                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by
-                        Position
-                        Analysis</h6>
+                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by Position
+                     </h6>
                      <p class="kpi-sub mb-0">Frekuensi Scrap Ban per Posisi</p>
                   </div>
                   <div class="ms-auto" id="axleTotalScrapBadge"></div>
                </div>
                <div class="card-body">
-                  {{-- Filter Bar --}}
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
                         <div class="col-md-6">
@@ -539,7 +510,6 @@
                               @endforeach
                            </select>
                         </div>
-
                         <div class="col-md-6">
                            <label class="filter-label mb-1 d-block text-danger"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
@@ -553,17 +523,13 @@
                      </div>
                   </div>
                   <div id="axleAnalysisChart" style="min-height:280px;"></div>
-                  <div id="axleAnalysisSample" class="text-center mt-1"></div>
                </div>
             </div>
          </div>
-
-         {{-- 5b. Failure Code Distribution --}}
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab
-                     Pelepasan
+                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab Pelepasan
                   </h6>
                   <p class="kpi-sub mb-0">Distribusi Failure Code</p>
                </div>
@@ -581,11 +547,8 @@
          </div>
       </div>
 
-      {{-- ============================================== --}}
-      {{-- ROW 6: ALERTS & OPERATIONAL TABLE --}}
-      {{-- ============================================== --}}
+      {{-- ALERTS & RECENT --}}
       <div class="row g-4 mb-4">
-         {{-- 6a. Low RTD Alert --}}
          <div class="col-xl-5">
             <div class="card h-100 mb-4">
                <div class="card-header pb-2 d-flex justify-content-between align-items-center">
@@ -615,20 +578,12 @@
                                     $otd = $t->initial_tread_depth ?? 0;
                                     $rtd = $t->current_tread_depth ?? 0;
                                     $pctRemaining = $otd > 0 ? round(($rtd / $otd) * 100, 0) : 0;
-                                    $barColor =
-                                        $pctRemaining < 20
-                                            ? '#ea5455'
-                                            : ($pctRemaining < 40
-                                                ? '#ff9f43'
-                                                : ($pctRemaining < 60
-                                                    ? '#00cfe8'
-                                                    : '#28c76f'));
+                                    $barColor = $pctRemaining < 20 ? '#ea5455' : ($pctRemaining < 40 ? '#ff9f43' : ($pctRemaining < 60 ? '#00cfe8' : '#28c76f'));
                                  @endphp
                                  <tr class="alert-tyre-row">
                                     <td class="ps-3">
                                        <strong class="d-block small">{{ $t->serial_number }}</strong>
-                                       <span class="text-muted"
-                                          style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
+                                       <span class="text-muted" style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
                                     </td>
                                     <td>
                                        <span
@@ -646,8 +601,7 @@
                                           <span class="small me-2">{{ $pctRemaining }}%</span>
                                           <div class="rtd-bar flex-grow-1">
                                              <div class="rtd-bar-inner"
-                                                style="width:{{ $pctRemaining }}%;background:{{ $barColor }}">
-                                             </div>
+                                                style="width:{{ $pctRemaining }}%;background:{{ $barColor }}"></div>
                                           </div>
                                        </div>
                                     </td>
@@ -665,7 +619,6 @@
                </div>
             </div>
 
-            {{-- ADMIN ACTION GUIDE --}}
             <div class="card border-primary shadow-none bg-label-primary">
                <div class="card-body">
                   <h6 class="fw-bold mb-3"><i class="ri-lightbulb-flash-line me-2"></i> Panduan Tindakan Admin</h6>
@@ -674,29 +627,18 @@
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-tools-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">1. Diagnosa & Pelepasan</p>
-                           <p class="mb-0 kpi-sub">Jika % sisa < 20%, segera lakukan <strong>Pelepasan</strong>
-                                 melalui menu
-                                 <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai.
-                           </p>
+                           <p class="mb-0 kpi-sub text-wrap">Jika % sisa < 20%, segera lakukan <strong>Pelepasan</strong>
+                                 melalui menu <em>Movement</em>. Pilih <strong>Failure Code</strong> yang sesuai.</p>
                         </div>
                      </div>
                      <div class="d-flex align-items-start border-top pt-2">
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-refresh-line"></i></div>
                         <div>
                            <p class="mb-0 small fw-bold">2. Update Status Ban</p>
-                           <p class="mb-0 kpi-sub">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate status ban
-                              di
-                              <em>Master Tyre</em> menjadi <strong>Scrap</strong> atau
+                           <p class="mb-0 kpi-sub text-wrap">Setelah dilepas, admin <strong>WAJIB</strong> mengupdate
+                              status ban di <em>Master Tyre</em> menjadi <strong>Scrap</strong> atau
                               <strong>Repaired</strong>.
                            </p>
-                        </div>
-                     </div>
-                     <div class="d-flex align-items-start border-top pt-2">
-                        <div class="badge bg-primary rounded p-1 me-2"><i class="ri-history-line"></i></div>
-                        <div>
-                           <p class="mb-0 small fw-bold">3. Pencatatan Otomatis</p>
-                           <p class="mb-0 kpi-sub">Setiap pergerakan dan update status akan <strong>tercatat
-                                 otomatis</strong> di log <em>Tyre Performance</em>.</p>
                         </div>
                      </div>
                   </div>
@@ -704,12 +646,10 @@
             </div>
          </div>
 
-         {{-- 6b. Recent Movements --}}
          <div class="col-xl-7">
             <div class="card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-history-line me-1 text-primary"></i> Aktivitas Terbaru
-                  </h6>
+                  <h6 class="mb-1"><i class="icon-base ri ri-history-line me-1 text-primary"></i> Aktivitas Terbaru</h6>
                   <p class="kpi-sub mb-0">10 pergerakan terakhir</p>
                </div>
                <div class="card-body">
@@ -729,20 +669,17 @@
                            <tbody>
                               @foreach ($recentMovements as $m)
                                  <tr>
-                                    <td class="small">
-                                       {{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}
-                                    </td>
+                                    <td class="small">{{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}</td>
                                     <td>
                                        <span
-                                          class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : 'danger' }} rounded-pill"
+                                          class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : ($m->movement_type === 'Removal' ? 'danger' : 'info') }} rounded-pill"
                                           style="font-size:.65rem">
-                                          {{ $m->movement_type === 'Installation' ? 'Pasang' : 'Lepas' }}
+                                          {{ $m->movement_type === 'Installation' ? 'Pasang' : ($m->movement_type === 'Removal' ? 'Lepas' : 'Inspeksi') }}
                                        </span>
                                     </td>
                                     <td class="small fw-medium">{{ $m->tyre->serial_number ?? '-' }}</td>
                                     <td class="small">{{ $m->vehicle->kode_kendaraan ?? '-' }}</td>
-                                    <td class="small">
-                                       {{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
+                                    <td class="small">{{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
                                     </td>
                                     <td class="small">
                                        {{ $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-' }}
@@ -762,12 +699,9 @@
             </div>
          </div>
       </div>
-
    </div>
 
-   {{-- ============================================== --}}
-   {{-- DRILL-DOWN MODAL (Universal) --}}
-   {{-- ============================================== --}}
+   {{-- DRILL-DOWN MODAL --}}
    <div class="modal fade" id="drillDownModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl modal-dialog-scrollable">
          <div class="modal-content">
@@ -776,8 +710,7 @@
                   <i class="icon-base ri ri-search-eye-line me-2"></i>
                   <span id="drillDownTitleText">Detail Data</span>
                </h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                <div id="drillDownLoading" class="text-center py-5">
@@ -820,24 +753,18 @@
    <script>
       'use strict';
 
-      document.addEventListener('DOMContentLoaded', function() {
-
-         // ==========================================
-         // Color Palette
-         // ==========================================
-         const colors = {
+      document.addEventListener('DOMContentLoaded', function () {
+         var colors = {
             primary: '#7367f0',
             success: '#28c76f',
             danger: '#ea5455',
             warning: '#ff9f43',
             info: '#00cfe8',
-            secondary: '#a8aaae',
-            dark: '#4b4b4b'
+            secondary: '#a8aaae'
          };
 
-         // Initialize Select2
          if ($.fn.select2) {
-            $('.select2').each(function() {
+            $('.select2').each(function () {
                var $this = $(this);
                $this.select2({
                   placeholder: 'Pilih opsi',
@@ -847,878 +774,228 @@
             });
          }
 
-         // ==========================================
-         // DRILL-DOWN HELPER FUNCTION
-         // ==========================================
-         const drillDownUrl = '{{ route('master_data.drill-down') }}';
-         let drillDownDT = null;
+         var drillDownUrl = '{{ route('master_data.drill-down') }}';
+         var drillDownDT = null;
 
          function openDrillDown(type, value, extraParams) {
-            const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+            var modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
             document.getElementById('drillDownLoading').style.display = 'block';
             document.getElementById('drillDownContent').style.display = 'none';
             document.getElementById('drillDownEmpty').style.display = 'none';
             document.getElementById('drillDownTitleText').textContent = 'Memuat...';
 
-            // Destroy previous DataTable instance
             if (drillDownDT) {
                drillDownDT.destroy();
                drillDownDT = null;
             }
-
             modal.show();
 
-            // Merge base params with extra filter params
-            let ajaxData = {
-               type: type,
-               value: value
-            };
-            if (extraParams) {
-               Object.assign(ajaxData, extraParams);
-            }
+            var ajaxData = { type: type, value: value };
+            if (extraParams) { $.extend(ajaxData, extraParams); }
 
             $.ajax({
                url: drillDownUrl,
                data: ajaxData,
                dataType: 'json',
-               success: function(res) {
+               success: function (res) {
                   document.getElementById('drillDownLoading').style.display = 'none';
-
                   if (!res.data || res.data.length === 0) {
                      document.getElementById('drillDownEmpty').style.display = 'block';
-                     document.getElementById('drillDownTitleText').textContent = res.title ||
-                        'Detail Data';
+                     document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
                      return;
                   }
-
                   document.getElementById('drillDownContent').style.display = 'block';
-                  document.getElementById('drillDownTitleText').textContent = res.title ||
-                     'Detail Data';
-                  document.getElementById('drillDownCount').textContent = res.total +
-                     ' data ditemukan';
+                  document.getElementById('drillDownTitleText').textContent = res.title || 'Detail Data';
+                  document.getElementById('drillDownCount').textContent = res.total + ' data ditemukan';
 
-                  // Link
-                  const linkEl = document.getElementById('drillDownLink');
-                  if (res.link) {
-                     linkEl.href = res.link;
-                     linkEl.style.display = 'inline-block';
-                  } else {
-                     linkEl.style.display = 'none';
-                  }
-
-                  // Build table header
-                  let headHtml = '<tr>';
-                  res.columns.forEach(col => headHtml += '<th>' + col + '</th>');
+                  var headHtml = '<tr>';
+                  res.columns.forEach(function (col) { headHtml += '<th>' + col + '</th>'; });
                   if (res.data[0] && res.data[0].id) headHtml += '<th>Aksi</th>';
                   headHtml += '</tr>';
                   document.getElementById('drillDownHead').innerHTML = headHtml;
 
-                  // Build table body
-                  let bodyHtml = '';
-                  res.data.forEach(row => {
+                  var bodyHtml = '';
+                  res.data.forEach(function (row) {
                      bodyHtml += '<tr>';
-                     res.keys.forEach(key => {
-                        let val = row[key] ?? '-';
+                     res.keys.forEach(function (key) {
+                        var val = (row[key] !== null) ? row[key] : '-';
                         if (key === 'status') {
-                           let cls = 'secondary';
+                           var cls = 'secondary';
                            if (val === 'Installed') cls = 'success';
                            else if (val === 'New') cls = 'primary';
                            else if (val === 'Retread') cls = 'info';
                            else if (val === 'Scrap') cls = 'danger';
                            else if (val === 'Repaired') cls = 'warning';
-                           val =
-                              '<span class="badge bg-label-' + cls +
-                              ' rounded-pill">' +
-                              val + '</span>';
+                           val = '<span class="badge bg-label-' + cls + ' rounded-pill">' + val + '</span>';
                         }
                         bodyHtml += '<td>' + val + '</td>';
                      });
                      if (row.id) {
-                        bodyHtml +=
-                           '<td><a href="/master_data_tyre/master_tyre/' + row.id +
-                           '" class="btn btn-sm btn-icon btn-text-primary" title="Detail"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                        bodyHtml += '<td><a href="/master_data_tyre/master_tyre/' + row.id + '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
                   });
                   document.getElementById('drillDownBody').innerHTML = bodyHtml;
-
-                  // Init DataTable
                   drillDownDT = $('#drillDownTable').DataTable({
                      paging: true,
                      pageLength: 10,
-                     searching: true,
-                     ordering: true,
-                     info: true,
-                     language: {
-                        search: 'Cari:',
-                        lengthMenu: 'Tampilkan _MENU_ data',
-                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
-                        paginate: {
-                           previous: '&laquo;',
-                           next: '&raquo;'
-                        },
-                        zeroRecords: 'Tidak ada data ditemukan',
-                     }
+                     language: { search: 'Cari:', zeroRecords: 'Tidak ada data ditemukan' }
                   });
-               },
-               error: function() {
-                  document.getElementById('drillDownLoading').style.display = 'none';
-                  document.getElementById('drillDownEmpty').style.display = 'block';
-                  document.getElementById('drillDownTitleText').textContent = 'Error memuat data';
                }
             });
          }
 
-         // ==========================================
-         // 1. STATUS DONUT CHART
-         // ==========================================
-         const statusData = @json($statusDistribution);
-         const statusLabels = Object.keys(statusData);
-         const statusValues = Object.values(statusData);
-         const statusColors = statusLabels.map(s => {
-            if (s.startsWith('New')) return colors.primary;
-            if (s.startsWith('Retread')) return colors.info;
-
-            switch (s) {
-               case 'Installed':
-                  return colors.success;
-               case 'Repaired':
-                  return colors.warning;
-               case 'Scrap':
-                  return colors.danger;
-               default:
-                  return colors.secondary;
-            }
+         var statusData = @json($statusDistribution);
+         var statusLabels = Object.keys(statusData);
+         var statusValues = Object.values(statusData);
+         var statusColorsMap = { 'Installed': colors.success, 'Repaired': colors.warning, 'Scrap': colors.danger };
+         var statusColors = statusLabels.map(function (s) {
+            if (s.indexOf('New') === 0) return colors.primary;
+            if (s.indexOf('Retread') === 0) return colors.info;
+            return statusColorsMap[s] || colors.secondary;
          });
 
          new ApexCharts(document.querySelector('#statusDonutChart'), {
-            chart: {
-               type: 'donut',
-               height: 280,
-               events: {
-                  dataPointSelection: function(event, chartContext, config) {
-                     const label = statusLabels[config.dataPointIndex];
-                     openDrillDown('status', label);
-                  }
-               }
-            },
+            chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('status', statusLabels[cfg.dataPointIndex]); } } },
             series: statusValues,
             labels: statusLabels,
             colors: statusColors,
-            plotOptions: {
-               pie: {
-                  donut: {
-                     size: '65%',
-                     labels: {
-                        show: true,
-                        name: {
-                           show: true
-                        },
-                        value: {
-                           show: true,
-                           fontSize: '1.5rem',
-                           fontWeight: 700,
-                           formatter: val => val + ' ban'
-                        },
-                        total: {
-                           show: true,
-                           label: 'Total',
-                           fontSize: '0.8rem',
-                           formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b,
-                              0) + ' ban'
-                        }
-                     }
-                  }
-               }
-            },
-            legend: {
-               position: 'bottom',
-               fontSize: '12px'
-            },
-            dataLabels: {
-               enabled: false
-            }
+            plotOptions: { pie: { donut: { size: '65%', labels: { show: true, value: { fontWeight: 700, formatter: function (v) { return v + ' ban'; } }, total: { show: true, label: 'Total', formatter: function (w) { return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' ban'; } } } } } }
          }).render();
 
-         // ==========================================
-         // 2. MONTHLY MOVEMENT TREND CHART
-         // ==========================================
-         const monthlyData = @json($monthlyMovements);
-
+         var monthlyData = @json($monthlyMovements);
          new ApexCharts(document.querySelector('#movementTrendChart'), {
             chart: {
-               type: 'bar',
-               height: 300,
-               toolbar: {
-                  show: false
-               },
-               events: {
-                  dataPointSelection: function(event, chartContext, config) {
-                     const monthLabel = monthlyData[config.dataPointIndex].month;
-                     const seriesName = config.seriesIndex === 0 ? 'Installation' : 'Removal';
-                     openDrillDown('movement', monthLabel + '|' + seriesName);
+               type: 'bar', height: 300, toolbar: { show: false }, events: {
+                  dataPointSelection: function (e, c, cfg) {
+                     var m = monthlyData[cfg.dataPointIndex].month;
+                     var s = 'Installation';
+                     if (cfg.seriesIndex === 1) s = 'Removal';
+                     if (cfg.seriesIndex === 2) s = 'Inspection';
+                     openDrillDown('movement', m + '|' + s);
                   }
                }
             },
-            series: [{
-                  name: 'Pemasangan',
-                  data: monthlyData.map(m => m.installations)
-               },
-               {
-                  name: 'Pelepasan',
-                  data: monthlyData.map(m => m.removals)
-               }
+            series: [
+               { name: 'Pemasangan', data: monthlyData.map(function (m) { return m.installations; }) },
+               { name: 'Pelepasan', data: monthlyData.map(function (m) { return m.removals; }) },
+               { name: 'Inspeksi', data: monthlyData.map(function (m) { return m.inspections || 0; }) }
             ],
-            xaxis: {
-               categories: monthlyData.map(m => m.month),
-               title: {
-                  text: 'Bulan',
-                  style: {
-                     fontWeight: 600
-                  }
-               },
-               labels: {
-                  style: {
-                     fontSize: '11px'
-                  }
-               }
-            },
-            yaxis: {
-               labels: {
-                  style: {
-                     fontSize: '11px'
-                  }
-               },
-               title: {
-                  text: 'Jumlah Ban',
-                  style: {
-                     fontSize: '12px',
-                     fontWeight: 600
-                  }
-               }
-            },
-            colors: [colors.success, colors.danger],
-            plotOptions: {
-               bar: {
-                  columnWidth: '40%',
-                  borderRadius: 4,
-                  dataLabels: {
-                     position: 'top'
-                  }
-               }
-            },
-            dataLabels: {
-               enabled: true,
-               offsetY: -18,
-               style: {
-                  fontSize: '11px',
-                  fontWeight: 600
-               }
-            },
-            legend: {
-               position: 'top',
-               horizontalAlign: 'right',
-               fontSize: '12px'
-            },
-            grid: {
-               borderColor: '#f1f1f1',
-               strokeDashArray: 3
-            }
+            xaxis: { categories: monthlyData.map(function (m) { return m.month; }) },
+            colors: [colors.success, colors.danger, colors.info],
+            plotOptions: { bar: { columnWidth: '40%', borderRadius: 4, dataLabels: { position: 'top' } } }
          }).render();
-
-         // ==========================================
-         // 3. BRAND PERFORMANCE CHART (with AJAX Filters)
-         // ==========================================
-         const brandPerformanceUrl = '{{ route('master_data.brand-performance') }}';
-         let brandChart = null;
 
          function renderBrandChart(data) {
-            if (brandChart) {
-               brandChart.destroy();
-               brandChart = null;
-            }
-
-            const container = document.querySelector('#brandPerformanceChart');
-            const sampleContainer = document.querySelector('#brandPerformanceSample');
-
+            var container = document.querySelector('#brandPerformanceChart');
             if (!data || data.length === 0) {
-               container.innerHTML =
-                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-bar-chart-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data lifetime untuk filter ini</p></div>';
-               sampleContainer.innerHTML = '';
+               container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
-
-            const totalSample = data.reduce((sum, b) => sum + b.count, 0);
-            sampleContainer.innerHTML =
-               '<span class="badge bg-label-primary sample-badge"><i class="ri-database-2-line me-1"></i>Total Entry: ' +
-               totalSample + ' ban</span>';
-
-            brandChart = new ApexCharts(container, {
-               chart: {
-                  type: 'bar',
-                  height: 280,
-                  toolbar: {
-                     show: false
-                  },
-                  events: {
-                     dataPointSelection: function(event, chartContext, config) {
-                        const brandName = data[config.dataPointIndex].brand;
-                        openDrillDown('brand_performance', brandName, {
-                           size_id: $('#brandFilterSize').val(),
-                           pattern_id: $('#brandFilterPattern').val()
-                        });
-                     }
-                  }
-               },
-               series: [{
-                  name: 'Avg KM',
-                  data: data.map(b => b.avg_km)
-               }],
-               xaxis: {
-                  categories: data.map(b => b.brand),
-                  title: {
-                     text: 'Rata-rata Lifetime (KM)',
-                     style: {
-                        fontWeight: 600
-                     }
-                  },
-                  labels: {
-                     style: {
-                        fontSize: '12px'
-                     }
-                  }
-               },
-               yaxis: {
-                  title: {
-                     text: 'Brand',
-                     style: {
-                        fontWeight: 600
-                     }
-                  }
-               },
+            new ApexCharts(container, {
+               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('brand_performance', data[cfg.dataPointIndex].brand, { size_id: $('#brandFilterSize').val(), pattern_id: $('#brandFilterPattern').val() }); } } },
+               series: [{ name: 'Avg KM', data: data.map(function (b) { return b.avg_km; }) }],
+               xaxis: { categories: data.map(function (b) { return b.brand; }) },
                colors: [colors.primary],
-               plotOptions: {
-                  bar: {
-                     horizontal: true,
-                     borderRadius: 6,
-                     barHeight: '50%',
-                     dataLabels: {
-                        position: 'center'
-                     }
-                  }
-               },
-               dataLabels: {
-                  enabled: true,
-                  formatter: function(val, opt) {
-                     const count = data[opt.dataPointIndex].count;
-                     return val.toLocaleString() + ' km (' + count + ' ban)';
-                  },
-                  style: {
-                     fontSize: '11px',
-                     fontWeight: 600,
-                     colors: ['#fff']
-                  }
-               },
-               grid: {
-                  borderColor: '#f1f1f1',
-                  strokeDashArray: 3
-               },
-               tooltip: {
-                  y: {
-                     formatter: function(val, opt) {
-                        const idx = opt.dataPointIndex;
-                        const count = data[idx].count;
-                        return val.toLocaleString() + ' km (sample: ' + count + ' ban)';
-                     }
-                  }
-               }
-            });
-            brandChart.render();
-         }
-
-         // Initial render
-         renderBrandChart(@json($brandPerformance));
-
-         // Filter event listeners for Brand Performance
-         function loadBrandPerformance() {
-            const sizeId = $('#brandFilterSize').val();
-            const patternId = $('#brandFilterPattern').val();
-
-            $.ajax({
-               url: brandPerformanceUrl,
-               data: {
-                  size_id: sizeId,
-                  type: type,
-                  pattern_id: patternId
-               },
-               dataType: 'json',
-               success: function(res) {
-                  if (res.success) {
-                     renderBrandChart(res.data);
-                  }
-               }
-            });
-         }
-
-         $('#brandFilterSize, #brandFilterPattern').on('change', loadBrandPerformance);
-
-         // ==========================================
-         // 4. CPK BY BRAND CHART (Dedicated, with AJAX Filters)
-         // ==========================================
-         const cpkByBrandUrl = '{{ route('master_data.cpk-by-brand') }}';
-         let cpkChart = null;
-
-         function renderCpkChart(data) {
-            if (cpkChart) {
-               cpkChart.destroy();
-               cpkChart = null;
-            }
-
-            const container = document.querySelector('#cpkByBrandChart');
-            const sampleContainer = document.querySelector('#cpkBrandSample');
-
-            if (!data || data.length === 0) {
-               container.innerHTML =
-                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-money-dollar-circle-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data CPK untuk filter ini</p></div>';
-               sampleContainer.innerHTML = '';
-               return;
-            }
-
-            // Sort by CPK ascending (cheapest first)
-            data.sort((a, b) => a.cpk - b.cpk);
-
-            const totalSample = data.reduce((sum, b) => sum + b.count, 0);
-            sampleContainer.innerHTML =
-               '<span class="badge bg-label-warning sample-badge"><i class="ri-database-2-line me-1"></i>Total Entry: ' +
-               totalSample + ' ban</span>';
-
-            cpkChart = new ApexCharts(container, {
-               chart: {
-                  type: 'bar',
-                  height: 280,
-                  toolbar: {
-                     show: false
-                  },
-                  events: {
-                     dataPointSelection: function(event, chartContext, config) {
-                        const brandName = data[config.dataPointIndex].brand;
-                        openDrillDown('brand_cpk', brandName, {
-                           size_id: $('#cpkFilterSize').val(),
-                           pattern_id: $('#cpkFilterPattern').val()
-                        });
-                     }
-                  }
-               },
-               series: [{
-                  name: 'CPK (Rp/km)',
-                  data: data.map(b => b.cpk)
-               }],
-               xaxis: {
-                  categories: data.map(b => b.brand),
-                  title: {
-                     text: 'Biaya per KM (Rp/km)',
-                     style: {
-                        fontWeight: 600
-                     }
-                  },
-                  labels: {
-                     style: {
-                        fontSize: '12px'
-                     }
-                  }
-               },
-               yaxis: {
-                  title: {
-                     text: 'Brand',
-                     style: {
-                        fontWeight: 600
-                     }
-                  }
-               },
-               colors: [colors.warning],
-               plotOptions: {
-                  bar: {
-                     horizontal: true,
-                     borderRadius: 6,
-                     barHeight: '50%',
-                     dataLabels: {
-                        position: 'center'
-                     }
-                  }
-               },
-               dataLabels: {
-                  enabled: true,
-                  formatter: function(val, opt) {
-                     const count = data[opt.dataPointIndex].count;
-                     return 'Rp ' + val.toLocaleString() + '/km (' + count + ' ban)';
-                  },
-                  style: {
-                     fontSize: '11px',
-                     fontWeight: 600,
-                     colors: ['#fff']
-                  }
-               },
-               grid: {
-                  borderColor: '#f1f1f1',
-                  strokeDashArray: 3
-               },
-               tooltip: {
-                  y: {
-                     formatter: function(val, opt) {
-                        const idx = opt.dataPointIndex;
-                        const count = data[idx].count;
-                        return 'Rp ' + val.toLocaleString() + '/km (sample: ' + count + ' ban)';
-                     }
-                  }
-               }
-            });
-            cpkChart.render();
-         }
-
-         // Initial render
-         renderCpkChart(@json($cpkByBrand));
-
-         // Filter event listeners for CPK
-         function loadCpkByBrand() {
-            const sizeId = $('#cpkFilterSize').val();
-            const patternId = $('#cpkFilterPattern').val();
-
-            $.ajax({
-               url: cpkByBrandUrl,
-               data: {
-                  size_id: sizeId,
-                  type: type,
-                  pattern_id: patternId
-               },
-               dataType: 'json',
-               success: function(res) {
-                  if (res.success) {
-                     renderCpkChart(res.data);
-                  }
-               }
-            });
-         }
-
-         $('#cpkFilterSize, #cpkFilterPattern').on('change', loadCpkByBrand);
-
-         // ==========================================
-         // 5. FLEET HEALTH CHART (Percentage Based)
-         // ==========================================
-         const fleetHealthData = @json($fleetHealthData);
-         const healthCategories = fleetHealthData.categories;
-         const healthLabels = Object.keys(healthCategories);
-         const healthValues = Object.values(healthCategories);
-
-         new ApexCharts(document.querySelector('#fleetHealthChart'), {
-            chart: {
-               type: 'donut',
-               height: 280,
-               events: {
-                  dataPointSelection: function(event, chartContext, config) {
-                     const label = healthLabels[config.dataPointIndex];
-                     openDrillDown('rtd', label);
-                  }
-               }
-            },
-            series: healthValues,
-            labels: healthLabels,
-            colors: [colors.danger, colors.warning, colors.info, colors.success],
-            plotOptions: {
-               pie: {
-                  donut: {
-                     size: '65%',
-                     labels: {
-                        show: true,
-                        name: {
-                           show: true,
-                           fontSize: '12px'
-                        },
-                        value: {
-                           show: true,
-                           fontSize: '1.5rem',
-                           fontWeight: 700,
-                           formatter: val => val + ' ban'
-                        },
-                        total: {
-                           show: true,
-                           label: 'Total Terukur',
-                           fontSize: '0.75rem',
-                           formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b,
-                              0) + ' ban'
-                        }
-                     }
-                  }
-               }
-            },
-            legend: {
-               position: 'bottom',
-               fontSize: '11px'
-            },
-            dataLabels: {
-               enabled: false
-            }
-         }).render();
-
-         // ==========================================
-         // 6. LOCATION STOCK CHART (Grouped Bar)
-         // ==========================================
-         const locationData = @json($locationStock);
-
-         new ApexCharts(document.querySelector('#locationStockChart'), {
-            chart: {
-               type: 'bar',
-               height: 280,
-               toolbar: {
-                  show: false
-               },
-               events: {
-                  dataPointSelection: function(event, chartContext, config) {
-                     const locName = locationData[config.dataPointIndex].location_name;
-                     openDrillDown('location', locName);
-                  }
-               }
-            },
-            series: [{
-                  name: 'Current Stock',
-                  data: locationData.map(l => l.current_stock)
-               },
-               {
-                  name: 'Capacity',
-                  data: locationData.map(l => l.capacity)
-               }
-            ],
-            xaxis: {
-               categories: locationData.map(l => l.location_name),
-               title: {
-                  text: 'Lokasi Gudang',
-                  style: {
-                     fontWeight: 600
-                  }
-               },
-               labels: {
-                  style: {
-                     fontSize: '11px'
-                  }
-               }
-            },
-            yaxis: {
-               title: {
-                  text: 'Jumlah Ban',
-                  style: {
-                     fontWeight: 600
-                  }
-               }
-            },
-            colors: [colors.info, '#82868b'],
-            plotOptions: {
-               bar: {
-                  columnWidth: '50%',
-                  borderRadius: 4,
-               }
-            },
-            dataLabels: {
-               enabled: false
-            },
-            legend: {
-               position: 'top',
-               horizontalAlign: 'right',
-               fontSize: '12px'
-            },
-            grid: {
-               borderColor: '#f1f1f1',
-               strokeDashArray: 3
-            }
-         }).render();
-
-         // ==========================================
-         // 7. FAILURE CODE DONUT CHART
-         // ==========================================
-         const failureData = @json($failureDistribution);
-
-         if (failureData.length > 0) {
-            new ApexCharts(document.querySelector('#failureDonutChart'), {
-               chart: {
-                  type: 'donut',
-                  height: 280,
-                  events: {
-                     dataPointSelection: function(event, chartContext, config) {
-                        const label = failureData[config.dataPointIndex].label;
-                        openDrillDown('failure', label);
-                     }
-                  }
-               },
-               series: failureData.map(f => f.total),
-               labels: failureData.map(f => f.label),
-               colors: [colors.danger, colors.warning, colors.info, colors.primary, colors.secondary],
-               plotOptions: {
-                  pie: {
-                     donut: {
-                        size: '60%',
-                        labels: {
-                           show: true,
-                           name: {
-                              show: true,
-                              fontSize: '11px'
-                           },
-                           value: {
-                              show: true,
-                              fontSize: '1.2rem',
-                              fontWeight: 700
-                           },
-                           total: {
-                              show: true,
-                              label: 'Total Removal',
-                              formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
-                           }
-                        }
-                     }
-                  }
-               },
-               legend: {
-                  position: 'bottom',
-                  fontSize: '11px'
-               },
-               dataLabels: {
-                  enabled: false
-               }
+               plotOptions: { bar: { horizontal: true, borderRadius: 6, dataLabels: { position: 'center' } } },
+               dataLabels: { enabled: true, formatter: function (v, o) { return v.toLocaleString() + ' km (' + data[o.dataPointIndex].count + ' ban)'; } }
             }).render();
          }
+         renderBrandChart(@json($brandPerformance));
 
-         // ==========================================
-         // 7. AXLE ANALYSIS CHART (Scrap by Position)
-         // ==========================================
-         const axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
-         let axleChart = null;
+         $('#brandFilterSize, #brandFilterPattern').on('change', function () {
+            $.ajax({
+               url: brandPerformanceUrl,
+               data: { size_id: $('#brandFilterSize').val(), pattern_id: $('#brandFilterPattern').val() },
+               success: function (res) { if (res.success) renderBrandChart(res.data); }
+            });
+         });
 
-         function renderAxleChart(data) {
-            if (axleChart) {
-               axleChart.destroy();
-               axleChart = null;
-            }
 
-            const container = document.querySelector('#axleAnalysisChart');
-            const totalBadgeContainer = document.querySelector('#axleTotalScrapBadge');
-
+         function renderCpkChart(data) {
+            var container = document.querySelector('#cpkByBrandChart');
             if (!data || data.length === 0) {
-               container.innerHTML =
-                  '<div class="text-center text-muted py-5"><i class="icon-base ri ri-error-warning-line ri-3x opacity-25 d-block mb-2"></i><p>Belum ada data scrap untuk filter ini</p></div>';
-               totalBadgeContainer.innerHTML = '';
+               container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
+            data.sort(function (a, b) { return a.cpk - b.cpk; });
+            new ApexCharts(container, {
+               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('brand_cpk', data[cfg.dataPointIndex].brand, { size_id: $('#cpkFilterSize').val(), pattern_id: $('#cpkFilterPattern').val() }); } } },
+               series: [{ name: 'CPK', data: data.map(function (b) { return b.cpk; }) }],
+               xaxis: { categories: data.map(function (b) { return b.brand; }) },
+               colors: [colors.warning],
+               plotOptions: { bar: { horizontal: true, borderRadius: 6, dataLabels: { position: 'center' } } },
+               dataLabels: { enabled: true, formatter: function (v, o) { return 'Rp ' + v.toLocaleString() + ' (' + data[o.dataPointIndex].count + ' ban)'; } }
+            }).render();
+         }
+         renderCpkChart(@json($cpkByBrand));
 
-            const totalScrap = data.reduce((sum, item) => sum + item.total, 0);
-            totalBadgeContainer.innerHTML =
-               '<span class="badge bg-danger rounded-pill shadow-sm py-2 px-3 fw-bold"><i class="ri-delete-bin-line me-1"></i> Total: ' +
-               totalScrap + ' Ban Scrap</span>';
+         $('#cpkFilterSize, #cpkFilterPattern').on('change', function () {
+            $.ajax({
+               url: cpkByBrandUrl,
+               data: { size_id: $('#cpkFilterSize').val(), pattern_id: $('#cpkFilterPattern').val() },
+               success: function (res) { if (res.success) renderCpkChart(res.data); }
+            });
+         });
 
+
+         var fleetHealthData = @json($fleetHealthData);
+         var healthLabels = Object.keys(fleetHealthData.categories);
+         new ApexCharts(document.querySelector('#fleetHealthChart'), {
+            chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('rtd', healthLabels[cfg.dataPointIndex]); } } },
+            series: Object.values(fleetHealthData.categories),
+            labels: healthLabels,
+            colors: [colors.danger, colors.warning, colors.info, colors.success],
+            plotOptions: { pie: { donut: { size: '65%', labels: { show: true, value: { fontWeight: 700 }, total: { show: true, label: 'Total', formatter: function (w) { return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' ban'; } } } } } }
+         }).render();
+
+         var locationData = @json($locationStock);
+         new ApexCharts(document.querySelector('#locationStockChart'), {
+            chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('location', locationData[cfg.dataPointIndex].location_name); } } },
+            series: [{ name: 'Stock', data: locationData.map(function (l) { return l.current_stock; }) }, { name: 'Capacity', data: locationData.map(function (l) { return l.capacity; }) }],
+            xaxis: { categories: locationData.map(function (l) { return l.location_name; }) },
+            colors: [colors.info, '#82868b'],
+            plotOptions: { bar: { columnWidth: '50%', borderRadius: 4 } }
+         }).render();
+
+         var axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
+         var axleChart = null;
+         function renderAxleChart(data) {
+            var container = document.querySelector('#axleAnalysisChart');
+            if (axleChart) { axleChart.destroy(); }
+            if (!data || data.length === 0) {
+               container.innerHTML = '<div class="text-center py-5">Belum ada data scrap</div>';
+               return;
+            }
             axleChart = new ApexCharts(container, {
-               chart: {
-                  type: 'bar',
-                  height: 350,
-                  toolbar: {
-                     show: false
-                  },
-                  events: {
-                     dataPointSelection: function(event, chartContext, config) {
-                        const position = data[config.dataPointIndex].position;
-                        openDrillDown('scrap_position', position, {
-                           size_id: $('#axleFilterSize').val(),
-                           pattern_id: $('#axleFilterPattern').val(),
-                           start_date: $('input[name="start_date"]').val(),
-                           end_date: $('input[name="end_date"]').val()
-                        });
-                     }
-                  }
-               },
-               series: [{
-                  name: 'Jumlah Scrap',
-                  data: data.map(item => item.total)
-               }],
-               xaxis: {
-                  categories: data.map(item => item.position),
-                  title: {
-                     text: 'Scrap Quantity',
-                     style: {
-                        fontWeight: 600
-                     }
-                  },
-                  labels: {
-                     style: {
-                        fontSize: '12px'
-                     }
-                  }
-               },
-               yaxis: {
-                  title: {
-                     text: 'Wheel Position',
-                     style: {
-                        fontWeight: 600
-                     }
-                  }
-               },
+               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('scrap_position', data[cfg.dataPointIndex].position); } } },
+               series: [{ name: 'Scrap', data: data.map(function (a) { return a.total; }) }],
+               xaxis: { categories: data.map(function (a) { return a.position; }) },
                colors: [colors.danger],
-               plotOptions: {
-                  bar: {
-                     horizontal: true,
-                     borderRadius: 6,
-                     barHeight: '70%',
-                     dataLabels: {
-                        position: 'center'
-                     }
-                  }
-               },
-               dataLabels: {
-                  enabled: true,
-                  formatter: (val) => val + ' ban',
-                  style: {
-                     fontSize: '11px',
-                     fontWeight: 600,
-                     colors: ['#fff']
-                  }
-               },
-               grid: {
-                  borderColor: '#f1f1f1',
-                  strokeDashArray: 3
-               },
-               tooltip: {
-                  y: {
-                     formatter: (val) => val + ' ban'
-                  }
-               }
+               plotOptions: { bar: { horizontal: true, borderRadius: 6 } }
             });
             axleChart.render();
          }
-
-         // Initial render
          renderAxleChart(@json($axleAnalysis));
 
-         // Filter event listeners for Axle
-         function loadAxleAnalysis() {
-            const sizeId = $('#axleFilterSize').val();
-            const patternId = $('#axleFilterPattern').val();
-            const startDate = $('input[name="start_date"]').val();
-            const endDate = $('input[name="end_date"]').val();
-
+         $('#axleFilterSize, #axleFilterPattern').on('change', function () {
             $.ajax({
                url: axleAnalysisUrl,
-               data: {
-                  size_id: sizeId,
-                  type: type,
-                  pattern_id: patternId,
-                  start_date: startDate,
-                  end_date: endDate
-               },
-               dataType: 'json',
-               success: function(res) {
-                  if (res.success) {
-                     renderAxleChart(res.data);
-                  }
-               }
+               data: { size_id: $('#axleFilterSize').val(), pattern_id: $('#axleFilterPattern').val() },
+               success: function (res) { if (res.success) renderAxleChart(res.data); }
             });
+         });
+
+         var failureData = @json($failureDistribution);
+         if (failureData.length > 0) {
+            new ApexCharts(document.querySelector('#failureDonutChart'), {
+               chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('failure', failureData[cfg.dataPointIndex].label); } } },
+               series: failureData.map(function (f) { return f.total; }),
+               labels: failureData.map(function (f) { return f.label; }),
+               colors: [colors.danger, colors.warning, colors.info, colors.primary, colors.secondary],
+               plotOptions: { pie: { donut: { size: '60%', labels: { show: true, total: { show: true, label: 'Total' } } } } }
+            }).render();
          }
-
-         $('#axleFilterSize, #axleFilterPattern').on('change', loadAxleAnalysis);
-
       });
    </script>
 @endsection

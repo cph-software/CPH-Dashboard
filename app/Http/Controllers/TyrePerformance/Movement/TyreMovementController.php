@@ -444,6 +444,7 @@ class TyreMovementController extends Controller
                 'id' => $row->id,
                 'movement_date' => \Carbon\Carbon::parse($row->movement_date)->format('d/m/Y'),
                 'movement_type' => $row->movement_type,
+                'movement_type_display' => $row->movement_type === 'Installation' ? 'Pasang' : ($row->movement_type === 'Removal' ? 'Lepas' : 'Inspeksi'),
                 'install_condition' => $row->install_condition,
                 'is_replacement' => $row->is_replacement,
                 'tyre_sn' => $row->tyre->serial_number ?? '-',

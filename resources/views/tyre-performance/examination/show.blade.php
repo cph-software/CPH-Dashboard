@@ -189,6 +189,7 @@
                      <th class="text-center" width="100">RTD #1</th>
                      <th class="text-center" width="100">RTD #2</th>
                      <th class="text-center" width="100">RTD #3</th>
+                     <th class="text-center" width="100">RTD #4</th>
                      <th>REMARKS</th>
                   </tr>
                </thead>
@@ -207,6 +208,7 @@
                         <td class="text-center">{{ $detail->rtd_1 ?: '-' }}</td>
                         <td class="text-center">{{ $detail->rtd_2 ?: '-' }}</td>
                         <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
+                        <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                         <td>{{ $detail->remarks ?: '-' }}</td>
                      </tr>
                   @endforeach
