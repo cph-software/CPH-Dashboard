@@ -1,7 +1,7 @@
 # 📋 CPH Tyre Dashboard — Status Pengerjaan Project
 
-> **Terakhir diperbarui:** 21 Februari 2026  
-> **Dibuat oleh:** Developer (auto-generated dari review codebase)  
+> **Terakhir diperbarui:** 23 Februari 2026  
+> **Dibuat oleh:** Developer (Ingat GSI Feedback)  
 > **Referensi:** Chat WhatsApp Pak Agus CPH & Notulensi Meeting
 
 ---
@@ -22,11 +22,11 @@
 
 | Status     | Jumlah Item | Keterangan                               |
 | ---------- | :---------: | ---------------------------------------- |
-| ✅ Selesai |   **15**    | Sudah diimplementasikan dan berjalan     |
-| ⚠️ Partial |    **5**    | Sebagian dikerjakan, perlu penyempurnaan |
-| ❌ Belum   |   **20**    | Belum dikerjakan sama sekali             |
+| ✅ Selesai |   **20**    | Sudah diimplementasikan dan berjalan     |
+| ⚠️ Partial |    **3**    | Sebagian dikerjakan, perlu penyempurnaan |
+| ❌ Belum   |   **17**    | Belum dikerjakan sama sekali             |
 
-**Estimasi keseluruhan: ~37.5% selesai**
+**Estimasi keseluruhan: ~45% selesai**
 
 ---
 
@@ -129,8 +129,12 @@
 | :-: | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 |  1  | **Performa Brand tambah filter keterangan size, type, pattern** | Chart "Performa Brand (Avg Lifetime KM)" sudah punya 3 filter dropdown (Size, Type, Pattern) dengan AJAX endpoint `brandPerformanceAjax()`. | `dashboard.blade.php` line 374-410, `DashboardController.php` line 385-400 |
 |  2  | **CPK by Brand filter**                                         | Chart "Cost Per KM by Brand" sudah punya filter yang sama.                                                                                  | `dashboard.blade.php` line 424-460, `DashboardController.php` line 402-417 |
-|  3  | **Axle Analysis scrap per posisi & filter**                     | Chart "Scrap by Position Analysis" dengan filter Size/Type/Pattern, total scrap badge, dan drill-down detail.                               | `dashboard.blade.php` line 534-584, `DashboardController.php` line 419-472 |
+|  3  | **Axle Analysis scrap per posisi & filter**                     | Chart "Scrap by Position Analysis" dengan filter Size/Pattern, total scrap badge, dan drill-down detail.                                    | `dashboard.blade.php`, `DashboardController.php`                           |
 |  4  | **Examination PDF**                                             | Cetak langsung (stream) dan unduh file PDF sudah berjalan.                                                                                  | `TyreExaminationController.php` → `exportPdf()`                            |
+|  5  | **Dashboard Fix & Stabilization**                               | Perbaikan total JavaScript Dashboard (ES5 compatibility), perbaikan filter AJAX, dan perbaikan error `SyntaxError`.                         | `resources/views/tyre-performance/dashboard.blade.php`                     |
+|  6  | **Visibilitas Tipe 'Inspection'**                               | Data inspeksi sekarang muncul konsisten di Grafik bulanan, tabel aktivitas terbaru, dan riwayat pergerakan.                                 | `DashboardController.php`, `TyreMovementController.php`                    |
+|  7  | **Optimasi Simpan Examination**                                 | Menambahkan validasi agar hanya ban yang diisi datanya yang tersimpan dalam riwayat inspeksi (skip baris kosong).                           | `TyreExaminationController.php`                                            |
+|  8  | **Git Workflow Cleanup**                                        | Menambahkan `composer.lock` ke `.gitignore` untuk mencegah update berkala ikut ter-push ke repository.                                      | `.gitignore`                                                               |
 
 ### ❌ Belum Dikerjakan
 
@@ -189,13 +193,17 @@
 ### 🟡 Medium Priority (Perlu planning, effort sedang)
 
 1. **RTD 4** — tambah kolom di DB + update examination form ✅ **(SELESAI 23 Feb 2026)**
-2. **Chart kerusakan** — prematur vs worn out (Pindah ke belakang sesuai request user)
-3. **Axle Analysis** breakdown per bulan
-4. **Examination export ke Excel**
-5. **Hitungan kondisi ban %** dari seluruh master ban
-6. **Failure code per customer** (adjustable)
-7. **Seragamkan bahasa/istilah** di seluruh sistem
-8. **Informasi/Promo** (di akhir pengerjaan)
+2. **Dashboard Stabilization** — perbaikan ES5 compatibility & logic filter ✅ **(SELESAI 23 Feb 2026)**
+3. **Optimasi Log Inspeksi** — hanya simpan data yang terisi (PSI/RTD/Notes) ✅ **(SELESAI 23 Feb 2026)**
+4. **Visibilitas Inspeksi Dashboard** — muncul di chart bulanan & recent table ✅ **(SELESAI 23 Feb 2026)**
+5. **Git Configuration** — ignore `composer.lock` ✅ **(SELESAI 23 Feb 2026)**
+6. **Chart kerusakan** — prematur vs worn out (Pindah ke belakang sesuai request user)
+7. **Axle Analysis** breakdown per bulan
+8. **Examination export ke Excel**
+9. **Hitungan kondisi ban %** dari seluruh master ban
+10. **Failure code per customer** (adjustable)
+11. **Seragamkan bahasa/istilah** di seluruh sistem
+12. **Informasi/Promo** (di akhir pengerjaan)
 
 ### 🔴 Major Features (Butuh design & planning matang)
 

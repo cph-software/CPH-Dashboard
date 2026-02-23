@@ -48,7 +48,7 @@ class TyreMovementController extends Controller
             $query->where('serial_number', 'like', "%$search%");
         }
 
-        $tyres = $query->with(['brand', 'size', 'pattern'])
+        $tyres = $query->with(['brand', 'size', 'pattern', 'latestInstallation'])
             ->limit(20)
             ->get();
 
@@ -62,6 +62,9 @@ class TyreMovementController extends Controller
                 'sn' => $tyre->serial_number,
                 'otd' => $tyre->initial_tread_depth,
                 'rtd' => $tyre->current_tread_depth,
+                'location_id' => $tyre->work_location_id,
+                'latest_rim_size' => $tyre->latestInstallation->rim_size ?? null,
+                'latest_segment_id' => $tyre->latestInstallation->operational_segment_id ?? null,
             ];
         });
 
