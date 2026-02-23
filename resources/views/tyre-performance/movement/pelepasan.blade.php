@@ -47,11 +47,11 @@
                   </div>
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold font-size-13">KM Saat Lepas</label>
-                     <input type="number" name="odometer" class="form-control" placeholder="Odometer">
+                     <input type="number" name="odometer" class="form-control" placeholder="Odometer" required>
                   </div>
                   <div class="col-md-2 mb-3">
                      <label class="form-label fw-bold font-size-13">HM Saat Lepas</label>
-                     <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter">
+                     <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter" required>
                   </div>
                   <div class="col-md-4 mb-3">
                      <label class="form-label fw-bold font-size-13">Vehicle Type</label>
@@ -209,12 +209,12 @@
                      <div class="row g-2 mb-3">
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Pressure (PSI)</label>
-                           <input type="number" name="psi_reading" class="form-control" placeholder="PSI">
+                           <input type="number" name="psi_reading" class="form-control" placeholder="PSI" required>
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">RTD (mm)</label>
                            <input type="number" name="rtd_reading" id="rtd_reading" class="form-control" placeholder="RTD"
-                              step="0.01">
+                              step="0.01" required>
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Rim Size</label>

@@ -1014,7 +1014,7 @@ class DashboardController extends Controller
                         $row->movement_date,
                         $row->tyre->serial_number ?? '-',
                         $row->vehicle->kode_kendaraan ?? '-',
-                        $row->position->position_full_code ?? '-',
+                        $row->position ? ($row->position->position_code . ' - ' . $row->position->position_name) : '-',
                         $row->movement_type,
                         $row->odometer_reading,
                         $row->hour_meter_reading,
@@ -1022,7 +1022,7 @@ class DashboardController extends Controller
                         $row->psi_reading,
                         $row->failureCode->failure_code ?? '-',
                         $row->remarks
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'failures') {
                 $writeRow(['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure'], true);
@@ -1042,7 +1042,7 @@ class DashboardController extends Controller
                     ->get();
 
                 foreach ($data as $row) {
-                    $writeRow([$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)]);
+                    $writeRow([$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)], false);
                 }
             } elseif ($type === 'assets') {
                 $writeRow(['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'], true);
@@ -1063,7 +1063,7 @@ class DashboardController extends Controller
                         $row->price,
                         $row->total_lifetime_km,
                         $row->total_lifetime_hm
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'vehicles') {
                 $writeRow(['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status'], true);
@@ -1077,7 +1077,7 @@ class DashboardController extends Controller
                         $row->tyrePositionConfiguration->name ?? '-',
                         $row->total_tyre_position,
                         $row->tyre_unit_status
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'brands') {
                 $writeRow(['ID', 'Brand Name'], true);
@@ -1088,7 +1088,7 @@ class DashboardController extends Controller
                     $writeRow([
                         $row->id,
                         $row->brand_name,
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'sizes') {
                 $writeRow(['ID', 'Size', 'Parent Size (Optional)'], true);
@@ -1100,7 +1100,7 @@ class DashboardController extends Controller
                         $row->id,
                         $row->size,
                         $row->parent_id ?? '-'
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'patterns') {
                 $writeRow(['ID', 'Pattern Name', 'Brand'], true);
@@ -1112,7 +1112,7 @@ class DashboardController extends Controller
                         $row->id,
                         $row->name,
                         $row->brand->brand_name ?? '-'
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'failure_codes') {
                 $writeRow(['Failure Code', 'Failure Name', 'Category'], true);
@@ -1124,7 +1124,7 @@ class DashboardController extends Controller
                         $row->failure_code,
                         $row->failure_name,
                         $row->default_category
-                    ]);
+                    ], false);
                 }
             } elseif ($type === 'examinations') {
                 $writeRow(['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'], true);
@@ -1139,7 +1139,7 @@ class DashboardController extends Controller
                         $row->tyre_man ?? '-',
                         $row->details_count,
                         $row->status
-                    ]);
+                    ], false);
                 }
             }
 

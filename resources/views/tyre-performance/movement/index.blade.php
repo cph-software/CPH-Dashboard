@@ -78,12 +78,7 @@
                            class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
                </ul>
             </div>
-            @if (hasPermission('Pemasangan (Install)', 'create') || hasPermission('Pelepasan (Remove)', 'create'))
-               <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
-                  data-bs-target="#importModal">
-                  <i class="ri-upload-2-line me-1"></i> Import
-               </button>
-            @endif
+
             @if (hasPermission('Pemasangan (Install)', 'create'))
                <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
                   <i class="ri-add-line me-1"></i> Form Pasang Baru
@@ -123,7 +118,8 @@
                               <small class="text-muted d-block">Konfigurasi Roda</small>
                               <span id="info_config" class="fw-bold fs-5">-</span>
                            </div>
-                           <div class="ms-auto align-self-center">
+                           <div class="ms-auto align-self-center text-end">
+                              <small class="text-muted d-block mb-1">Legenda Status:</small>
                               <span class="badge bg-label-success me-2"><i class="ri-checkbox-circle-line me-1"></i>
                                  Terpasang</span>
                               <span class="badge bg-label-secondary"><i class="ri-checkbox-blank-circle-line me-1"></i>
@@ -193,8 +189,9 @@
          const layoutContainer = document.getElementById('layout_container');
 
          $('.select2').each(function () {
-            $(this).select2({
-               placeholder: $(this).data('placeholder'),
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
                dropdownParent: $(this).parent()
             });
          });
@@ -225,6 +222,15 @@
                      '<div class="alert alert-danger mx-4 mt-4">Gagal memuat layout kendaraan.</div>';
                   document.getElementById('layout_loading').style.display = 'none';
                });
+
+            // Fetch Vehicle Detail for info card
+            fetch(`/master_data_tyre/vehicle-detail/${vehicleId}`)
+               .then(response => response.json())
+               .then(data => {
+                  document.getElementById('info_tipe').textContent = data.jenis_kendaraan || '-';
+                  document.getElementById('info_config').textContent = data.tyre_position_configuration ? data.tyre_position_configuration.name : (data.total_tyre_position + ' Wheels');
+               })
+               .catch(err => console.error('Error fetching vehicle detail:', err));
          });
 
          function attachNodeEvents() {
@@ -244,7 +250,7 @@
                         Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pelepasan Ban.',
                            'error');
                      @endif
-                        } else {
+                              } else {
                      // Ban Ban Kosong -> Arahkan ke Form Pasang (Installation)
                      @if (hasPermission('Pemasangan (Install)', 'create'))
                         window.location.href =
@@ -253,7 +259,7 @@
                         Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pemasangan Ban.',
                            'error');
                      @endif
-                        }
+                              }
                });
             });
          }
