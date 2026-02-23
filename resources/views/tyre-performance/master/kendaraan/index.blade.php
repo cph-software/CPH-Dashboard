@@ -99,6 +99,13 @@
                            placeholder="e.g. Dump Truck">
                      </div>
                      <div class="col-md-6 mb-3">
+                        <label for="vehicle_brand" class="form-label fw-bold">Merk Kendaraan</label>
+                        <input type="text" id="vehicle_brand" name="vehicle_brand" class="form-control"
+                           placeholder="e.g. Volvo, Hino, Isuzu">
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col-md-6 mb-3">
                         <label for="area" class="form-label fw-bold">Operational Area</label>
                         <select name="area" id="area" class="form-select select2" required data-placeholder="Select Area">
                            <option value="">-- Select Area --</option>
@@ -107,19 +114,34 @@
                            @endforeach
                         </select>
                      </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="operational_segment_id" class="form-label fw-bold">Default Working Segment</label>
+                        <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                           data-placeholder="Select Segment">
+                           <option value="">-- Select Segment --</option>
+                           @foreach ($segments as $seg)
+                              <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
                   </div>
-                  <div class="mb-3">
-                     <label for="operational_segment_id" class="form-label fw-bold">Default Working Segment</label>
-                     <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                        data-placeholder="Select Segment">
-                        <option value="">-- Select Segment --</option>
-                        @foreach ($segments as $seg)
-                           <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
-                        @endforeach
-                     </select>
-                     <div class="form-text small text-info">Info: Ban yang dipasang di unit ini akan otomatis menyarankan
-                        segmen ini.</div>
+                  <div class="row g-2">
+                     <div class="col-md-6 mb-3">
+                        <label for="curb_weight" class="form-label fw-bold">Curb Weight <span
+                              class="text-muted fw-normal">(kg)</span></label>
+                        <input type="number" id="curb_weight" name="curb_weight" class="form-control"
+                           placeholder="e.g. 12000" min="0">
+                        <div class="form-text text-muted">Berat kosong kendaraan</div>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="payload_capacity" class="form-label fw-bold">Payload Capacity <span
+                              class="text-muted fw-normal">(ton)</span></label>
+                        <input type="number" id="payload_capacity" name="payload_capacity" class="form-control"
+                           placeholder="e.g. 30" min="0" step="0.01">
+                        <div class="form-text text-muted">Kapasitas muat maksimum</div>
+                     </div>
                   </div>
+
                   <div class="mb-3">
                      <label for="tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
                         Configuration</label>
@@ -188,6 +210,13 @@
                         <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control">
                      </div>
                      <div class="col-md-6 mb-3">
+                        <label for="edit_vehicle_brand" class="form-label fw-bold">Merk Kendaraan</label>
+                        <input type="text" id="edit_vehicle_brand" name="vehicle_brand" class="form-control"
+                           placeholder="e.g. Volvo, Hino">
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col-md-6 mb-3">
                         <label for="edit_area" class="form-label fw-bold">Operational Area (Gudang Base)</label>
                         <select name="area" id="edit_area" class="form-select select2" required
                            data-placeholder="Select Area">
@@ -197,17 +226,30 @@
                            @endforeach
                         </select>
                      </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_operational_segment_id" class="form-label fw-bold">Default Working Segment</label>
+                        <select name="operational_segment_id" id="edit_operational_segment_id" class="form-select select2"
+                           data-placeholder="Select Segment">
+                           <option value="">-- Select Segment --</option>
+                           @foreach ($segments as $seg)
+                              <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
                   </div>
-
-                  <div class="mb-3">
-                     <label for="edit_operational_segment_id" class="form-label fw-bold">Default Working Segment</label>
-                     <select name="operational_segment_id" id="edit_operational_segment_id" class="form-select select2"
-                        data-placeholder="Select Segment">
-                        <option value="">-- Select Segment --</option>
-                        @foreach ($segments as $seg)
-                           <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
-                        @endforeach
-                     </select>
+                  <div class="row g-2">
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_curb_weight" class="form-label fw-bold">Curb Weight <span
+                              class="text-muted fw-normal">(kg)</span></label>
+                        <input type="number" id="edit_curb_weight" name="curb_weight" class="form-control"
+                           placeholder="e.g. 12000" min="0">
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_payload_capacity" class="form-label fw-bold">Payload Capacity <span
+                              class="text-muted fw-normal">(ton)</span></label>
+                        <input type="number" id="edit_payload_capacity" name="payload_capacity" class="form-control"
+                           placeholder="e.g. 30" min="0" step="0.01">
+                     </div>
                   </div>
                   <div class="mb-3">
                      <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
@@ -340,41 +382,50 @@
                   let layoutBtn = '';
                   if (row.tyre_position_configuration_id) {
                      layoutBtn = `
-                                                <button type="button"
-                                                   class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
-                                                   data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
-                                                   data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
-                                                   data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
-                                                   <i class="icon-base ri ri-layout-6-line text-primary"></i>
-                                                </button>
-                                             `;
+                                                               <button type="button"
+                                                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
+                                                                  data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
+                                                                  data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
+                                                                  data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
+                                                                  <i class="icon-base ri ri-layout-6-line text-primary"></i>
+                                                               </button>
+                                                            `;
                   }
 
                   let actions = `<div class="d-flex align-items-center justify-content-center">`;
 
+                  // Detail button (always visible)
+                  // actions += `<a class="btn btn-sm btn-icon btn-text-primary rounded-pill waves-effect waves-light me-1"
+                  //                       href="{{ url('master_data_tyre/master_kendaraan') }}/${row.id}" title="Lihat Detail">
+                  //                       <i class="icon-base ri ri-eye-line"></i>
+                  //                   </a>`;
+
                   if (canUpdate) {
                      actions += `
-                                          <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
-                                             href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                             data-id="${row.id}" data-kode="${row.kode_kendaraan}"
-                                             data-nopol="${row.no_polisi}" data-area="${row.area}"
-                                             data-segment-id="${row.operational_segment_id}"
-                                             data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
-                                             data-config-id="${row.tyre_position_configuration_id}"
-                                             data-status="${row.tyre_unit_status}" title="Edit">
-                                             <i class="icon-base ri ri-pencil-line"></i>
-                                          </a>`;
+                                                         <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
+                                                            href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                                                            data-id="${row.id}" data-kode="${row.kode_kendaraan}"
+                                                            data-nopol="${row.no_polisi}" data-area="${row.area}"
+                                                            data-segment-id="${row.operational_segment_id}"
+                                                            data-brand="${row.vehicle_brand}"
+                                                            data-curb-weight="${row.curb_weight}"
+                                                            data-payload="${row.payload_capacity}"
+                                                            data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
+                                                            data-config-id="${row.tyre_position_configuration_id}"
+                                                            data-status="${row.tyre_unit_status}" title="Edit">
+                                                            <i class="icon-base ri ri-pencil-line"></i>
+                                                         </a>`;
                   }
 
                   actions += layoutBtn;
 
                   if (canDelete) {
                      actions += `
-                                          <button type="button"
-                                             class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
-                                             data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
-                                             <i class="icon-base ri ri-delete-bin-line"></i>
-                                          </button>`;
+                                                         <button type="button"
+                                                            class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
+                                                            data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
+                                                            <i class="icon-base ri ri-delete-bin-line"></i>
+                                                         </button>`;
                   }
 
                   actions += `</div>`;
@@ -395,6 +446,9 @@
             const area = $(this).data('area');
             const segmentId = $(this).data('segment-id');
             const jenis = $(this).data('jenis');
+            const brand = $(this).data('brand');
+            const curbWeight = $(this).data('curb-weight');
+            const payload = $(this).data('payload');
             const positions = $(this).data('positions');
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
@@ -405,9 +459,11 @@
             $('#edit_area').val(area).trigger('change');
             $('#edit_operational_segment_id').val(segmentId === 'null' ? '' : (segmentId || '')).trigger('change');
             $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
+            $('#edit_vehicle_brand').val(brand === 'null' ? '' : (brand || ''));
+            $('#edit_curb_weight').val(curbWeight === 'null' ? '' : (curbWeight || ''));
+            $('#edit_payload_capacity').val(payload === 'null' ? '' : (payload || ''));
             $('#edit_total_positions').val(positions);
-            $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || '')).trigger(
-               'change');
+            $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || '')).trigger('change');
             $('#edit_unit_status').val(status);
          });
 

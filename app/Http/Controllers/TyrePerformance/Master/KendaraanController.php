@@ -21,6 +21,42 @@ class KendaraanController extends Controller
         return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments'));
     }
 
+    public function show($id)
+    {
+        $kendaraan = MasterImportKendaraan::with([
+            'tyrePositionConfiguration',
+            'segment',
+            'tyres.brand',
+            'tyres.size',
+            'tyres.pattern',
+            'tyres.currentPosition',
+        ])->findOrFail($id);
+
+        // Movement history for this vehicle
+        $movements = \App\Models\TyreMovement::with(['tyre.brand', 'tyre.size', 'position'])
+            ->where('vehicle_id', $id)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Stats
+        $installedCount = $kendaraan->tyres->count();
+        $totalPositions = $kendaraan->total_tyre_position ?? 0;
+        $removalCount = $movements->where('movement_type', 'Removal')->count();
+        $installCount = $movements->where('movement_type', 'Installation')->count();
+
+        return view('tyre-performance.master.kendaraan.show', compact(
+            'kendaraan',
+            'movements',
+            'installedCount',
+            'totalPositions',
+            'removalCount',
+            'installCount'
+        ));
+    }
+
+
     /**
      * Data for Server-Side DataTables
      */
@@ -83,6 +119,9 @@ class KendaraanController extends Controller
             'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan',
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
+            'vehicle_brand' => 'nullable|string|max:255',
+            'curb_weight' => 'nullable|integer|min:0',
+            'payload_capacity' => 'nullable|numeric|min:0',
             'area' => 'required|string|max:255',
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'tipe_kendaraan' => 'nullable|string|max:255',
@@ -114,6 +153,9 @@ class KendaraanController extends Controller
             'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,' . $id,
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
+            'vehicle_brand' => 'nullable|string|max:255',
+            'curb_weight' => 'nullable|integer|min:0',
+            'payload_capacity' => 'nullable|numeric|min:0',
             'area' => 'required|string|max:255',
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'tipe_kendaraan' => 'nullable|string|max:255',
