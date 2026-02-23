@@ -213,7 +213,8 @@
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">RTD (mm)</label>
-                           <input type="number" name="rtd_reading" class="form-control" placeholder="RTD" step="0.01">
+                           <input type="number" name="rtd_reading" id="rtd_reading" class="form-control" placeholder="RTD"
+                              step="0.01">
                         </div>
                         <div class="col-4">
                            <label class="form-label fw-bold font-size-13 small">Rim Size</label>
@@ -450,6 +451,12 @@
                document.getElementById('info_brand').textContent = tyre.brand ? tyre.brand.brand_name : '-';
                document.getElementById('info_pattern_size').textContent =
                   `${tyre.pattern ? tyre.pattern.name : '-'} / ${tyre.size ? tyre.size.size : '-'}`;
+
+               // Auto-fill Current RTD
+               if (tyre.current_tread_depth !== undefined) {
+                  $('#rtd_reading').val(tyre.current_tread_depth);
+               }
+
                infoArea.style.display = 'block';
 
                // --- AUTO-FILL LOGIC FROM LATEST INSTALLATION ---
