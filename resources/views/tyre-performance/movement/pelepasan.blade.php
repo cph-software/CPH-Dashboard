@@ -37,7 +37,9 @@
                         required>
                         <option value="">-- Pilih Unit --</option>
                         @foreach ($kendaraans as $v)
-                           <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}</option>
+                           <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}
+                              {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }}
+                           </option>
                         @endforeach
                      </select>
                   </div>
@@ -166,13 +168,20 @@
                                  <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                               @endforeach
                            </select>
+                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Pilih Gudang
+                              Tujuan</small>
                         </div>
                         <div class="col-6">
                            <label class="form-label fw-bold font-size-13">Operational Segment</label>
                            <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                              data-placeholder="Pilih Segmen..." disabled>
-                              <option value=""></option>
+                              data-placeholder="Pilih Segmen...">
+                              <option value="">-- Pilih Segmen --</option>
+                              @foreach ($segments as $seg)
+                                 <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                              @endforeach
                            </select>
+                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Auto-fill dari
+                              History Pasang</small>
                         </div>
                      </div>
 
@@ -309,38 +318,12 @@
             }
          });
 
-         // Handle Location -> Segment Filtering
-         $('#work_location_id').on('change', function () {
-            const locId = $(this).val();
-            const segmentSelect = $('#operational_segment_id');
-
-            segmentSelect.empty().append('<option value=""></option>');
-            if (!locId) {
-               segmentSelect.prop('disabled', true).trigger('change');
-               return;
+         // Suggested segment handling
+         function applySuggestedSegment() {
+            if (suggestedSegmentId) {
+               $('#operational_segment_id').val(suggestedSegmentId).trigger('change');
             }
-
-            segmentSelect.prop('disabled', false);
-            fetch(`{{ url('master_data_tyre/segments') }}/${locId}`)
-               .then(response => response.json())
-               .then(data => {
-                  data.forEach(seg => {
-                     segmentSelect.append(`<option value="${seg.id}">${seg.segment_name}</option>`);
-                  });
-
-                  // Auto-select segment if suggested via tyre history
-                  if (suggestedSegmentId) {
-                     segmentSelect.val(suggestedSegmentId);
-                     // Verify if selection worked (it might not be in this location list)
-                     if (!segmentSelect.val()) {
-                        // Reset if not found in this location
-                        suggestedSegmentId = null;
-                     }
-                  }
-
-                  segmentSelect.trigger('change');
-               });
-         });
+         }
 
          vehicleSelect.on('change', function () {
             const vehicleId = $(this).val();
@@ -358,12 +341,28 @@
                return;
             }
 
-            // Fetch Vehicle Detail
+            // Fetch Vehicle Detail for auto-fill
             fetch(`{{ url('master_data_tyre/vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
-               });
+
+                  if (data.operational_segment_id) {
+                     suggestedSegmentId = data.operational_segment_id;
+                     applySuggestedSegment();
+
+                     // If vehicle has area(location), auto-select it
+                     if (data.area && !$('#work_location_id').val()) {
+                        const locOption = $('#work_location_id option').filter(function () {
+                           return $(this).text().trim() === data.area;
+                        });
+                        if (locOption.length) {
+                           $('#work_location_id').val(locOption.val()).trigger('change');
+                        }
+                     }
+                  }
+               })
+               .catch(err => console.error('Error fetching vehicle detail:', err));
 
             // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
@@ -471,15 +470,10 @@
                      $('#work_location_id').val(tyre.latest_installation.work_location_id).trigger('change');
                   }
 
-                  // 3. Operational Segment (Set suggestion for location change)
+                  // 3. Operational Segment (Set suggestion)
                   if (tyre.latest_installation.operational_segment_id) {
                      suggestedSegmentId = tyre.latest_installation.operational_segment_id;
-
-                     // If location is already selected and segments loaded, try to select immediately
-                     const currentSegmentVal = $('#operational_segment_id').val();
-                     if (!currentSegmentVal && $('#operational_segment_id option').length > 1) {
-                        $('#operational_segment_id').val(suggestedSegmentId).trigger('change');
-                     }
+                     applySuggestedSegment();
                   }
                } else {
                   // Clear if no history

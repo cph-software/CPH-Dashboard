@@ -36,7 +36,9 @@
                         data-placeholder="Cari Unit Kendaraan..." required>
                         <option value="">-- Pilih Unit --</option>
                         @foreach ($kendaraans as $v)
-                           <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}</option>
+                           <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}
+                              {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }}
+                           </option>
                         @endforeach
                      </select>
                   </div>
@@ -155,13 +157,20 @@
                                  <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                               @endforeach
                            </select>
+                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Dari Lokasi
+                              Ban</small>
                         </div>
                         <div class="col-6">
                            <label class="form-label fw-bold font-size-13">Operational Segment</label>
                            <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                              data-placeholder="Pilih Segmen..." disabled>
-                              <option value=""></option>
+                              data-placeholder="Pilih Segmen...">
+                              <option value="">-- Pilih Segmen --</option>
+                              @foreach ($segments as $seg)
+                                 <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                              @endforeach
                            </select>
+                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Dari Segmen
+                              Unit</small>
                         </div>
                      </div>
 
@@ -326,11 +335,11 @@
             const rtdLabel = tyre.rtd ? `RTD: ${tyre.rtd}mm` : '';
             const depthInfo = (otdLabel || rtdLabel) ? ` | ${[otdLabel, rtdLabel].filter(Boolean).join(' / ')}` : '';
             return $(`
-                                                      <div class='select2-result-tyre'>
-                                                         <div class='fw-bold'>${tyre.sn}</div>
-                                                         <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}${depthInfo}</div>
-                                                      </div>
-                                                   `);
+                                                                  <div class='select2-result-tyre'>
+                                                                     <div class='fw-bold'>${tyre.sn}</div>
+                                                                     <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}${depthInfo}</div>
+                                                                  </div>
+                                                               `);
          }
 
          function formatTyreSelection(tyre) {
@@ -347,36 +356,12 @@
             }
          });
 
-         // Handle Location -> Segment Filtering
-         $('#work_location_id').on('change', function () {
-            const locId = $(this).val();
-            const segmentSelect = $('#operational_segment_id');
-
-            segmentSelect.empty().append('<option value=""></option>');
-            if (!locId) {
-               segmentSelect.prop('disabled', true).trigger('change');
-               return;
+         // Suggested segment handling
+         function applySuggestedSegment() {
+            if (suggestedSegmentId) {
+               $('#operational_segment_id').val(suggestedSegmentId).trigger('change');
             }
-
-            segmentSelect.prop('disabled', false);
-            fetch(`{{ url('master_data_tyre/segments') }}/${locId}`)
-               .then(response => response.json())
-               .then(data => {
-                  data.forEach(seg => {
-                     segmentSelect.append(`<option value="${seg.id}">${seg.segment_name}</option>`);
-                  });
-
-                  // Auto-select segment if suggested via tyre selection
-                  if (suggestedSegmentId) {
-                     segmentSelect.val(suggestedSegmentId);
-                     if (!segmentSelect.val()) {
-                        suggestedSegmentId = null;
-                     }
-                  }
-
-                  segmentSelect.trigger('change');
-               });
-         });
+         }
 
          // Handle Vehicle Change
          vehicleSelect.on('change', function () {
@@ -399,6 +384,21 @@
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
+
+                  if (data.operational_segment_id) {
+                     suggestedSegmentId = data.operational_segment_id;
+                     applySuggestedSegment();
+
+                     // If vehicle has area(location), auto-select it
+                     if (data.area && !$('#work_location_id').val()) {
+                        const locOption = $('#work_location_id option').filter(function () {
+                           return $(this).text().trim() === data.area;
+                        });
+                        if (locOption.length) {
+                           $('#work_location_id').val(locOption.val()).trigger('change');
+                        }
+                     }
+                  }
                })
                .catch(err => console.error('Error fetching vehicle detail:', err));
 
@@ -482,11 +482,7 @@
 
                if (data.latest_segment_id) {
                   suggestedSegmentId = data.latest_segment_id;
-                  // If location already has segments loaded, try selecting
-                  const currentSegments = $('#operational_segment_id option').length;
-                  if (currentSegments > 1) {
-                     $('#operational_segment_id').val(suggestedSegmentId).trigger('change');
-                  }
+                  applySuggestedSegment();
                }
 
                $('#tyre_info_display').slideDown();

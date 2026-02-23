@@ -27,13 +27,13 @@ class TyreMovementController extends Controller
     public function pemasangan()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
-            ->select('id', 'kode_kendaraan')
+            ->select('id', 'kode_kendaraan', 'no_polisi')
             ->get();
         // Removed eager loading of all tyres to avoid memory bloat
         // Available tyres will be fetched via AJAX search
         $availableTyres = collect();
         $locations = \App\Models\TyreLocation::all();
-        $segments = collect(); // Will be loaded via AJAX based on location
+        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
         return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments', 'locations'));
     }
 
@@ -75,11 +75,11 @@ class TyreMovementController extends Controller
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
             ->whereHas('tyres') // Only vehicles with tyres
-            ->select('id', 'kode_kendaraan')
+            ->select('id', 'kode_kendaraan', 'no_polisi')
             ->get();
         $failureCodes = TyreFailureCode::where('status', 'Active')->select('id', 'failure_name', 'failure_code')->get();
         $locations = \App\Models\TyreLocation::all();
-        $segments = collect();
+        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
         return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments', 'locations'));
     }
 
@@ -110,7 +110,7 @@ class TyreMovementController extends Controller
 
     public function getVehicleDetail($id)
     {
-        $vehicle = MasterImportKendaraan::findOrFail($id);
+        $vehicle = MasterImportKendaraan::with('segment')->findOrFail($id);
         return response()->json($vehicle);
     }
 
