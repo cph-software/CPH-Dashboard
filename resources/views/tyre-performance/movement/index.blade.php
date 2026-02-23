@@ -188,18 +188,18 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          const vehicleSelect = $('#vehicle_select');
          const layoutContainer = document.getElementById('layout_container');
 
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             $(this).select2({
                placeholder: $(this).data('placeholder'),
                dropdownParent: $(this).parent()
             });
          });
 
-         vehicleSelect.on('change', function() {
+         vehicleSelect.on('change', function () {
             const vehicleId = this.value;
             if (!vehicleId) {
                document.getElementById('unit_info').style.setProperty('display', 'none', 'important');
@@ -230,7 +230,7 @@
          function attachNodeEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function() {
+               node.addEventListener('click', function () {
                   const vehicleId = vehicleSelect.val();
                   const positionId = this.getAttribute('data-position-id');
                   const sn = this.getAttribute('data-sn'); // Present if filled
@@ -244,7 +244,7 @@
                         Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pelepasan Ban.',
                            'error');
                      @endif
-                  } else {
+                        } else {
                      // Ban Ban Kosong -> Arahkan ke Form Pasang (Installation)
                      @if (hasPermission('Pemasangan (Install)', 'create'))
                         window.location.href =
@@ -253,7 +253,7 @@
                         Swal.fire('Unauthorized', 'Anda tidak memiliki hak akses untuk Pemasangan Ban.',
                            'error');
                      @endif
-                  }
+                        }
                });
             });
          }
@@ -264,59 +264,61 @@
             serverSide: true,
             ajax: "{{ route('tyre-movement.history') }}",
             columns: [{
-                  data: 'movement_date',
-                  name: 'movement_date'
-               },
-               {
-                  data: 'movement_type',
-                  name: 'movement_type',
-                  render: function(data, type, row) {
-                     let badgeClass = data === 'Installation' ? 'bg-label-primary' : 'bg-label-danger';
-                     let typeText = data;
+               data: 'movement_date',
+               name: 'movement_date'
+            },
+            {
+               data: 'movement_type',
+               name: 'movement_type',
+               render: function (data, type, row) {
+                  var badgeClass = 'bg-label-info';
+                  var typeText = 'Inspeksi';
 
-                     if (data === 'Installation' && row.is_replacement) {
-                        badgeClass = 'bg-label-warning';
-                        typeText = 'Replacement';
-                     }
-
-                     let conditionBadge = '';
-                     if (row.install_condition) {
-                        conditionBadge =
-                           `<br><small class="text-muted">${row.install_condition}</small>`;
-                     }
-
-                     return `<span class="badge ${badgeClass}">${typeText}</span>${conditionBadge}`;
+                  if (data === 'Installation') {
+                     badgeClass = row.is_replacement ? 'bg-label-warning' : 'bg-label-primary';
+                     typeText = row.is_replacement ? 'Replacement' : 'Pasang';
+                  } else if (data === 'Removal') {
+                     badgeClass = 'bg-label-danger';
+                     typeText = 'Lepas';
                   }
-               },
-               {
-                  data: 'vehicle_code',
-                  name: 'vehicle_code'
-               },
-               {
-                  data: 'position_name',
-                  name: 'position_name'
-               },
-               {
-                  data: 'tyre_sn',
-                  name: 'tyre_sn'
-               },
-               {
-                  data: 'failure_info',
-                  name: 'failure_info'
-               },
-               {
-                  data: 'action',
-                  name: 'action',
-                  orderable: false,
-                  searchable: false
+
+                  var conditionBadge = '';
+                  if (row.install_condition) {
+                     conditionBadge = '<br><small class="text-muted">' + row.install_condition + '</small>';
+                  }
+
+                  return '<span class="badge ' + badgeClass + '">' + typeText + '</span>' + conditionBadge;
                }
+            },
+            {
+               data: 'vehicle_code',
+               name: 'vehicle_code'
+            },
+            {
+               data: 'position_name',
+               name: 'position_name'
+            },
+            {
+               data: 'tyre_sn',
+               name: 'tyre_sn'
+            },
+            {
+               data: 'failure_info',
+               name: 'failure_info'
+            },
+            {
+               data: 'action',
+               name: 'action',
+               orderable: false,
+               searchable: false
+            }
             ],
             order: [
                [0, 'desc']
             ]
          });
 
-         window.rollbackMovement = function(id) {
+         window.rollbackMovement = function (id) {
             Swal.fire({
                title: 'Konfirmasi Rollback',
                text: 'Anda akan membatalkan transaksi ini. Status ban dan posisi akan dikembalikan ke kondisi sebelum transaksi. Lanjutkan?',
@@ -331,11 +333,11 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   fetch(`/master_data_tyre/rollback/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
-                     })
+                     method: 'DELETE',
+                     headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                     }
+                  })
                      .then(response => response.json())
                      .then(data => {
                         if (data.success) {

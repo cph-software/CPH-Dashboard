@@ -11,8 +11,10 @@ use App\Models\TyreExaminationDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\TyreMovement;
 use App\Models\TyreLocation;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TyreExaminationController extends Controller
 {
@@ -55,14 +57,26 @@ class TyreExaminationController extends Controller
     {
         $request->validate([
             'examination_date' => 'required|date',
+            'location_id' => 'required|exists:tyre_locations,id',
+            'operational_segment_id' => 'required|exists:tyre_segments,id',
             'vehicle_id' => 'required|exists:master_import_kendaraan,id',
             'odometer' => 'nullable|numeric',
             'hour_meter' => 'nullable|numeric',
             'start_time' => 'nullable',
             'end_time' => 'nullable',
+            'driver_1' => 'nullable|string|max:255',
+            'driver_2' => 'nullable|string|max:255',
+            'tyre_man' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
             'details' => 'required|array',
             'details.*.position_id' => 'required|exists:tyre_position_details,id',
             'details.*.tyre_id' => 'required|exists:tyres,id',
+            'details.*.psi' => 'nullable|numeric',
+            'details.*.rtd_1' => 'nullable|numeric',
+            'details.*.rtd_2' => 'nullable|numeric',
+            'details.*.rtd_3' => 'nullable|numeric',
+            'details.*.rtd_4' => 'nullable|numeric',
+            'details.*.remarks' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -84,8 +98,31 @@ class TyreExaminationController extends Controller
                 'notes' => $request->notes,
             ]);
 
-            // 2. Create Details & Update Tyre RTD
+            // 2. Create Details, Update Tyre RTD & Create Movement History
             foreach ($request->details as $detail) {
+                // Skip if position doesn't have a tyre
+                if (empty($detail['tyre_id']))
+                    continue;
+
+                // Calculate average RTD and check if any data is filled
+                $rtds = array_filter([
+                    $detail['rtd_1'] ?? null,
+                    $detail['rtd_2'] ?? null,
+                    $detail['rtd_3'] ?? null,
+                    $detail['rtd_4'] ?? null
+                ], function ($v) {
+                    return $v !== null && $v !== '';
+                });
+
+                $hasPsi = !empty($detail['psi']);
+                $hasRtd = count($rtds) > 0;
+                $hasRemarks = !empty($detail['remarks']);
+
+                // ONLY save if at least one field is filled
+                if (!$hasPsi && !$hasRtd && !$hasRemarks) {
+                    continue;
+                }
+
                 TyreExaminationDetail::create([
                     'examination_id' => $exam->id,
                     'position_id' => $detail['position_id'],
@@ -94,22 +131,32 @@ class TyreExaminationController extends Controller
                     'rtd_1' => $detail['rtd_1'] ?? null,
                     'rtd_2' => $detail['rtd_2'] ?? null,
                     'rtd_3' => $detail['rtd_3'] ?? null,
+                    'rtd_4' => $detail['rtd_4'] ?? null,
                     'remarks' => $detail['remarks'] ?? null,
                 ]);
 
-                // Update current RTD of the tyre to the average or most recent reading
-                $tyre = Tyre::find($detail['tyre_id']);
-                if ($tyre) {
-                    $avgRtd = null;
-                    $rtds = array_filter([$detail['rtd_1'], $detail['rtd_2'], $detail['rtd_3']]);
-                    if (count($rtds) > 0) {
-                        $avgRtd = array_sum($rtds) / count($rtds);
-                    }
+                $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : null;
 
-                    if ($avgRtd !== null) {
-                        $tyre->update(['current_tread_depth' => $avgRtd]);
-                    }
+                // Update current RTD of the tyre if measured
+                $tyre = Tyre::find($detail['tyre_id']);
+                if ($tyre && $avgRtd !== null) {
+                    $tyre->update(['current_tread_depth' => $avgRtd]);
                 }
+
+                // IMPORTANT: Record this inspection in movement history
+                TyreMovement::create([
+                    'tyre_id' => $detail['tyre_id'],
+                    'vehicle_id' => $request->vehicle_id,
+                    'position_id' => $detail['position_id'],
+                    'movement_type' => 'Inspection',
+                    'movement_date' => $request->examination_date,
+                    'odometer_reading' => $request->odometer,
+                    'hour_meter_reading' => $request->hour_meter,
+                    'psi_reading' => $detail['psi'] ?? null,
+                    'rtd_reading' => $avgRtd,
+                    'notes' => 'Pemeriksaan rutin: ' . ($detail['remarks'] ?? '-'),
+                    'created_by' => Auth::id(),
+                ]);
             }
 
             DB::commit();
@@ -205,16 +252,16 @@ class TyreExaminationController extends Controller
             'details.tyre.size'
         ])->findOrFail($id);
 
-        if (class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
+        if (class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
+            $pdf = Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
                 ->setPaper('a5', 'landscape');
-            
+
             $filename = 'Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf';
-            
+
             if ($request->action == 'stream') {
                 return $pdf->stream($filename);
             }
-            
+
             return $pdf->download($filename);
         }
 

@@ -170,6 +170,7 @@
             <th width="35" class="text-center">RTD 1</th>
             <th width="35" class="text-center">RTD 2</th>
             <th width="35" class="text-center">RTD 3</th>
+            <th width="35" class="text-center">RTD 4</th>
             <th>REMARKS</th>
          </tr>
       </thead>
@@ -181,12 +182,14 @@
                <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
                <td>{{ $tyre->pattern->name ?? '-' }}</td>
                <td>{{ $tyre->size->size ?? '-' }}
-                  {{ $tyre->size->ply_rating ? '/ ' . $tyre->size->ply_rating . ' PR' : '' }}</td>
+                  {{ $tyre->size->ply_rating ? '/ ' . $tyre->size->ply_rating . ' PR' : '' }}
+               </td>
                <td><strong>{{ $tyre->serial_number ?? '-' }}</strong></td>
                <td class="text-center">{{ $detail->psi_reading ?: '-' }}</td>
                <td class="text-center">{{ $detail->rtd_1 ?: '-' }}</td>
                <td class="text-center">{{ $detail->rtd_2 ?: '-' }}</td>
                <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
+               <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                <td>{{ $detail->remarks ?: '-' }}</td>
             </tr>
          @endforeach

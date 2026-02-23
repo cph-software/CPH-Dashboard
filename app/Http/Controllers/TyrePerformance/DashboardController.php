@@ -85,6 +85,8 @@ class DashboardController extends Controller
             ->whereBetween('movement_date', [$startDate, $endDate])->count();
         $removalsThisMonth = TyreMovement::where('movement_type', 'Removal')
             ->whereBetween('movement_date', [$startDate, $endDate])->count();
+        $inspectionsThisMonth = TyreMovement::where('movement_type', 'Inspection')
+            ->whereBetween('movement_date', [$startDate, $endDate])->count();
 
         // ========================================
         // ROW 2: Charts Data
@@ -125,11 +127,14 @@ class DashboardController extends Controller
                 ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
             $removals = TyreMovement::where('movement_type', 'Removal')
                 ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
+            $inspections = TyreMovement::where('movement_type', 'Inspection')
+                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
 
             $monthlyMovements[] = [
                 'month' => $monthLabel,
                 'installations' => $installs,
                 'removals' => $removals,
+                'inspections' => $inspections,
             ];
         }
 
@@ -223,6 +228,7 @@ class DashboardController extends Controller
             'scrapRate',
             'installationsThisMonth',
             'removalsThisMonth',
+            'inspectionsThisMonth',
             // Charts
             'statusDistribution',
             'monthlyMovements',
@@ -677,7 +683,7 @@ class DashboardController extends Controller
                         ];
                     });
 
-                $typeLabel = $movType === 'Installation' ? 'Pemasangan' : 'Pelepasan';
+                $typeLabel = $movType === 'Installation' ? 'Pemasangan' : ($movType === 'Removal' ? 'Pelepasan' : 'Inspeksi');
 
                 return response()->json([
                     'title' => "{$typeLabel} - {$monthStr}",
@@ -951,38 +957,38 @@ class DashboardController extends Controller
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
         $filename = "Export_{$type}_" . now()->format('Ymd_His');
-        
+
         if ($format === 'excel') {
             $filename .= ".xls";
             $headers = [
-                "Content-Type"        => "application/vnd.ms-excel",
+                "Content-Type" => "application/vnd.ms-excel",
                 "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma"              => "no-cache",
-                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-                "Expires"             => "0"
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
             ];
         } else {
             $filename .= ".csv";
             $headers = [
-                "Content-type"        => "text/csv",
+                "Content-type" => "text/csv",
                 "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma"              => "no-cache",
-                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-                "Expires"             => "0"
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
             ];
         }
 
-        $callback = function() use ($type, $format, $startDate, $endDate) {
+        $callback = function () use ($type, $format, $startDate, $endDate) {
             $file = fopen('php://output', 'w');
 
             // Helper to write row
-            $writeRow = function($row, $isHeader = false) use ($file, $format) {
+            $writeRow = function ($row, $isHeader = false) use ($file, $format) {
                 if ($format === 'excel') {
                     echo "<tr>";
                     foreach ($row as $cell) {
                         $tag = $isHeader ? "th" : "td";
                         $style = $isHeader ? "background-color: #f0f0f0; font-weight: bold; border: 1px solid #000;" : "border: 1px solid #000;";
-                        $cellContent = htmlspecialchars((string)$cell);
+                        $cellContent = htmlspecialchars((string) $cell);
                         echo "<$tag style='$style'>$cellContent</$tag>";
                     }
                     echo "</tr>";
@@ -997,7 +1003,7 @@ class DashboardController extends Controller
 
             if ($type === 'movements') {
                 $writeRow(['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark'], true);
-                
+
                 $data = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
                     ->whereBetween('movement_date', [$startDate, $endDate])
                     ->orderBy('movement_date', 'desc')
@@ -1020,7 +1026,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'failures') {
                 $writeRow(['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure'], true);
-                
+
                 $data = TyreMovement::where('movement_type', 'Removal')
                     ->whereNotNull('failure_code_id')
                     ->whereBetween('movement_date', [$startDate, $endDate])
@@ -1040,7 +1046,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'assets') {
                 $writeRow(['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'], true);
-                
+
                 $data = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
 
                 foreach ($data as $row) {
@@ -1061,7 +1067,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'vehicles') {
                 $writeRow(['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status'], true);
-                
+
                 $data = \App\Models\MasterImportKendaraan::with('tyrePositionConfiguration')->get();
 
                 foreach ($data as $row) {
@@ -1075,7 +1081,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'brands') {
                 $writeRow(['ID', 'Brand Name'], true);
-                
+
                 $data = \App\Models\TyreBrand::orderBy('brand_name')->get();
 
                 foreach ($data as $row) {
@@ -1086,7 +1092,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'sizes') {
                 $writeRow(['ID', 'Size', 'Parent Size (Optional)'], true);
-                
+
                 $data = \App\Models\TyreSize::orderBy('size')->get();
 
                 foreach ($data as $row) {
@@ -1098,7 +1104,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'patterns') {
                 $writeRow(['ID', 'Pattern Name', 'Brand'], true);
-                
+
                 $data = \App\Models\TyrePattern::with('brand')->orderBy('name')->get();
 
                 foreach ($data as $row) {
@@ -1110,7 +1116,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'failure_codes') {
                 $writeRow(['Failure Code', 'Failure Name', 'Category'], true);
-                
+
                 $data = \App\Models\TyreFailureCode::orderBy('failure_code')->get();
 
                 foreach ($data as $row) {
@@ -1122,7 +1128,7 @@ class DashboardController extends Controller
                 }
             } elseif ($type === 'examinations') {
                 $writeRow(['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'], true);
-                
+
                 $data = \App\Models\TyreExamination::with(['vehicle'])->withCount('details')->get();
 
                 foreach ($data as $row) {
@@ -1146,7 +1152,7 @@ class DashboardController extends Controller
 
         setLogActivity(auth()->id(), "Mengekspor data mentah $type", [
             'module' => 'Dashboard',
-            'type'   => $type,
+            'type' => $type,
             'period' => $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d')
         ]);
 
@@ -1159,14 +1165,14 @@ class DashboardController extends Controller
         $filename = "Template_" . str_replace(' ', '_', $module) . ".csv";
 
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
         ];
 
-        $callback = function() use ($module) {
+        $callback = function () use ($module) {
             $file = fopen('php://output', 'w');
 
             switch ($module) {
