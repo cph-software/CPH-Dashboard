@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterImportKendaraan;
 use App\Models\TyrePositionConfiguration;
 use App\Models\TyreLocation;
+use App\Models\TyreSegment;
 use Illuminate\Http\Request;
 
 class KendaraanController extends Controller
@@ -16,7 +17,8 @@ class KendaraanController extends Controller
         // Data will be loaded via AJAX for the DataTable
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
         $locations = TyreLocation::all();
-        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations'));
+        $segments = TyreSegment::all();
+        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments'));
     }
 
     /**
@@ -24,15 +26,16 @@ class KendaraanController extends Controller
      */
     public function data(Request $request)
     {
-        $query = MasterImportKendaraan::with('tyrePositionConfiguration');
+        $query = MasterImportKendaraan::with(['tyrePositionConfiguration', 'segment']);
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
             $searchValue = $request->input('search.value');
-            $query->where(function($q) use ($searchValue) {
+            $query->where(function ($q) use ($searchValue) {
                 $q->where('kode_kendaraan', 'like', "%$searchValue%")
-                  ->orWhere('jenis_kendaraan', 'like', "%$searchValue%")
-                  ->orWhere('no_polisi', 'like', "%$searchValue%");
+                    ->orWhere('jenis_kendaraan', 'like', "%$searchValue%")
+                    ->orWhere('no_polisi', 'like', "%$searchValue%")
+                    ->orWhere('area', 'like', "%$searchValue%");
             });
         }
 
@@ -43,15 +46,17 @@ class KendaraanController extends Controller
         if ($request->has('order')) {
             $columnIndex = $request->input('order.0.column');
             $columnDir = $request->input('order.0.dir');
-            
+
             $cols = [
                 0 => 'kode_kendaraan',
-                1 => 'jenis_kendaraan',
-                2 => 'tyre_position_configuration_id',
-                3 => 'total_tyre_position',
-                4 => 'tyre_unit_status'
+                1 => 'no_polisi',
+                2 => 'jenis_kendaraan',
+                3 => 'area',
+                4 => 'tyre_position_configuration_id',
+                5 => 'total_tyre_position',
+                6 => 'tyre_unit_status'
             ];
-            
+
             if (isset($cols[$columnIndex])) {
                 $query->orderBy($cols[$columnIndex], $columnDir);
             }
@@ -65,10 +70,10 @@ class KendaraanController extends Controller
         $kendaraans = $query->skip($start)->take($length)->get();
 
         return response()->json([
-            "draw"            => intval($request->input('draw')),
-            "recordsTotal"    => intval($totalRecords),
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalRecords),
             "recordsFiltered" => intval($filteredRecords),
-            "data"            => $kendaraans
+            "data" => $kendaraans
         ]);
     }
 
@@ -79,6 +84,7 @@ class KendaraanController extends Controller
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
             'area' => 'required|string|max:255',
+            'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'tipe_kendaraan' => 'nullable|string|max:255',
             'tahun_rakit' => 'nullable|string|max:4',
             'usia_kendaraan' => 'nullable|string|max:255',
@@ -109,6 +115,7 @@ class KendaraanController extends Controller
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
             'area' => 'required|string|max:255',
+            'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'tipe_kendaraan' => 'nullable|string|max:255',
             'tahun_rakit' => 'nullable|string|max:4',
             'usia_kendaraan' => 'nullable|string|max:255',
