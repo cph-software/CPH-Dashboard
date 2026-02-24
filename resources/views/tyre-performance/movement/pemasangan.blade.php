@@ -12,232 +12,339 @@
       .select2-container {
          width: 100% !important;
       }
+
+      .sticky-panel {
+         position: sticky;
+         top: 85px;
+         z-index: 10;
+         transition: all 0.3s ease;
+      }
+
+      .form-section-header {
+         display: flex;
+         align-items: center;
+         margin-bottom: 1.25rem;
+         padding-bottom: 0.5rem;
+         border-bottom: 1px solid #ebedef;
+      }
+
+      .form-section-title {
+         font-weight: 700;
+         color: #5d596c;
+         margin-bottom: 0;
+         display: flex;
+         align-items: center;
+      }
+
+      .form-section-icon {
+         width: 32px;
+         height: 32px;
+         background: rgba(115, 103, 240, 0.1);
+         color: #7367f0;
+         border-radius: 8px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         margin-right: 12px;
+         font-size: 1.2rem;
+      }
+
+      .premium-card {
+         border: none;
+         box-shadow: 0 0.125rem 0.25rem rgba(165, 163, 174, 0.3);
+         border-radius: 0.75rem;
+         transition: transform 0.2s;
+      }
+
+      .premium-card:hover {
+         transform: translateY(-2px);
+      }
+
+      .tyre-info-display-box {
+         background: #f8f7fa;
+         border-radius: 12px;
+         padding: 15px;
+         border: 1px dashed #dcdfe6;
+      }
+
+      .visual-layout-card {
+         border-radius: 1rem;
+         overflow: hidden;
+         background: #fff;
+         border: 1px solid #e9e9e9;
+      }
+
+      /* Fix Select2 Clipping */
+      .card,
+      .card-body {
+         overflow: visible !important;
+      }
+
+      @media (max-width: 991.98px) {
+         .sticky-panel {
+            position: static !important;
+         }
+      }
    </style>
 @endsection
 
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
-      <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Transaksi /</span> Pemasangan Ban</h4>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+         <h4 class="fw-bold mb-0"><span class="text-muted fw-light">Transaksi /</span> Pemasangan Ban</h4>
+         <a href="{{ route('tyre-movement.index') }}" class="btn btn-outline-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+         </a>
+      </div>
 
       <form id="pemasangan_form">
          @csrf
          <input type="hidden" name="movement_type" value="Installation">
 
-         <!-- Top Row: Identifikasi Unit -->
-         <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-transparent border-bottom">
-               <h5 class="mb-0 fw-bold"><i class="ri-truck-line me-2"></i>Identifikasi Unit</h5>
-            </div>
-            <div class="card-body pt-3">
-               <div class="row">
-                  <div class="col-md-4 mb-3">
-                     <label class="form-label fw-bold font-size-13" for="vehicle_id">Pilih Unit / Kendaraan</label>
-                     <select name="vehicle_id" id="vehicle_id" class="form-select select2"
-                        data-placeholder="Cari Unit Kendaraan..." required>
-                        <option value="">-- Pilih Unit --</option>
-                        @foreach ($kendaraans as $v)
-                           <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}
-                              {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }}
-                           </option>
-                        @endforeach
-                     </select>
-                  </div>
-                  <div class="col-md-3 mb-3">
-                     <label class="form-label fw-bold font-size-13">Tanggal Pemasangan</label>
-                     <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                  </div>
-                  <div class="col-md-3 mb-3">
-                     <label class="form-label fw-bold font-size-13">KM Saat Pasang</label>
-                     <input type="number" name="odometer" class="form-control" placeholder="Odometer" required>
-                  </div>
-                  <div class="col-md-2 mb-3">
-                     <label class="form-label fw-bold font-size-13">HM Saat Pasang</label>
-                     <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter" required>
-                  </div>
-                  <div class="col-md-4 mb-3">
-                     <label class="form-label fw-bold font-size-13">Vehicle Type</label>
-                     <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
-                        placeholder="Auto-filled">
-                  </div>
-                  <div class="col-md-8 pt-2">
-                     <div class="d-flex align-items-center justify-content-end h-100">
-                        <span class="badge bg-label-primary text-uppercase px-3 py-2">Installation</span>
+         <div class="row g-4">
+            <!-- LEFT PANEL: Sticky Visual Layout -->
+            <div class="col-lg-5 col-xl-4 order-2 order-lg-1">
+               <div class="sticky-panel">
+                  <div class="visual-layout-card shadow-sm mb-4">
+                     <div
+                        class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                        <h6 class="mb-0 fw-bold"><i class="ri-mouse-line me-2 text-primary"></i>Visual Axle Layout</h6>
+                        <span class="badge bg-label-secondary" id="unit_code_display">-</span>
                      </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         <div class="row">
-            <!-- Left Column: Layout Ban (Visual) -->
-            <div class="col-xl-6 col-lg-8">
-               <div class="card mb-4 shadow-sm" style="min-height: 450px;">
-                  <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                     <h6 class="mb-0 fw-bold"><i class="ri-layout-grid-line me-2"></i>Visual Layout Ban</h6>
-                     <span class="badge bg-label-secondary" id="unit_code_display">-</span>
-                  </div>
-                  <div class="card-body d-flex flex-column align-items-center justify-content-center p-0">
-                     <div id="layout_container" class="w-100 h-100 d-flex align-items-center justify-content-center p-4">
-                        <div class="text-center text-muted p-5 w-100">
-                           <i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
-                           <p class="mb-0">Pilih Unit di atas untuk memuat layout ban.</p>
+                     <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center"
+                        style="min-height: 480px; background: #fafafa;">
+                        <div id="layout_container"
+                           class="w-100 h-100 d-flex align-items-center justify-content-center p-4">
+                           <div class="text-center text-muted p-5 w-100">
+                              <i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
+                              <p class="mb-0">Pilih Unit Kendaraan untuk memuat visual layout.</p>
+                           </div>
                         </div>
                      </div>
-                  </div>
-                  {{-- Quick Selection Info --}}
-                  <div id="selection_info" class="mx-3 mb-3 p-3 rounded-3 shadow-sm"
-                     style="display: none; background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); color: white;">
-                     <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md bg-white-transparent me-3">
-                           <i class="ri-focus-3-line text-white ri-xl"></i>
-                        </div>
-                        <div>
-                           <h6 class="mb-0 text-white" id="info_pos_name">Posisi -</h6>
-                           <small class="text-white-50" id="info_pos_code">CODE</small>
+                     <!-- Selection Info Overlay (Premium Style) -->
+                     <div id="selection_info" class="m-3 p-3 rounded-3 shadow-sm"
+                        style="display: none; background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); color: white;">
+                        <div class="d-flex align-items-center">
+                           <div
+                              class="avatar avatar-md bg-white-transparent me-3 d-flex align-items-center justify-content-center"
+                              style="background: rgba(255,255,255,0.2); border-radius: 8px;">
+                              <i class="ri-focus-3-line text-white ri-xl"></i>
+                           </div>
+                           <div>
+                              <h6 class="mb-0 text-white" id="info_pos_name">Posisi -</h6>
+                              <small class="text-white-50" id="info_pos_code">CODE</small>
+                           </div>
                         </div>
                      </div>
                   </div>
                </div>
             </div>
 
-            <!-- Right Column: Detail Tyre & Petugas -->
-            <div class="col-xl-6 col-lg-4">
-               <div class="card mb-4 shadow-sm">
-                  <div class="card-header bg-transparent border-bottom">
-                     <h6 class="mb-0 fw-bold"><i class="ri-list-settings-line me-2"></i>Detail Pemasangan</h6>
+            <!-- RIGHT PANEL: Scrollable Form Sections -->
+            <div class="col-lg-7 col-xl-8 order-1 order-lg-2">
+               <!-- SECTION 1: Identifikasi Unit -->
+               <div class="card premium-card mb-4">
+                  <div class="card-body">
+                     <div class="form-section-header">
+                        <div class="form-section-icon"><i class="ri-truck-line"></i></div>
+                        <h5 class="form-section-title">Identifikasi Unit</h5>
+                     </div>
+                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                           <label class="form-label fw-bold" for="vehicle_id">Unit / Kendaraan</label>
+                           <select name="vehicle_id" id="vehicle_id" class="form-select select2" required>
+                              <option value="">-- Pilih Unit --</option>
+                              @foreach ($kendaraans as $v)
+                                 <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}
+                                    {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }}
+                                 </option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                           <label class="form-label fw-bold">Tanggal & Waktu</label>
+                           <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}"
+                              required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                           <label class="form-label fw-bold">KM Saat Pasang</label>
+                           <input type="number" name="odometer" class="form-control" placeholder="Odometer" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                           <label class="form-label fw-bold">HM Saat Pasang</label>
+                           <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                           <label class="form-label fw-bold">Tipe Unit</label>
+                           <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
+                              placeholder="Auto-filled">
+                        </div>
+                     </div>
                   </div>
-                  <div class="card-body pt-3">
-                     <!-- Position selection dropdown also here for sync -->
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13" for="position_id">Posisi Pasang</label>
-                        <select name="position_id" id="position_id" class="form-select select2"
-                           data-placeholder="Pilih Posisi..." required disabled>
-                           <option value="">-- Pilih Posisi --</option>
+               </div>
+
+               <!-- SECTION 2: Konfigurasi Ban -->
+               <div class="card premium-card mb-4 border-start border-primary border-5">
+                  <div class="card-body">
+                     <div class="form-section-header">
+                        <div class="form-section-icon"><i class="ri-steering-line"></i></div>
+                        <h5 class="form-section-title">Konfigurasi Ban</h5>
+                     </div>
+
+                     <div class="mb-4">
+                        <label class="form-label fw-bold text-primary" for="position_id">1. Pilih Posisi Pemasangan</label>
+                        <select name="position_id" id="position_id" class="form-select select2" required disabled>
+                           <option value="">-- Pilih melalui visual layout atau list ini --</option>
                         </select>
                      </div>
 
-                     <div class="mb-3 p-3 bg-light rounded-3 border">
-                        <label class="form-label fw-bold font-size-13" for="tyre_id">Pilih Ban (SN)</label>
-                        <select name="tyre_id" id="tyre_id" class="form-select" data-placeholder="Cari SN Ban..." required>
+                     <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <label class="form-label fw-bold text-primary" for="tyre_id">2. Pilih Ban (Serial Number)</label>
+                        <select name="tyre_id" id="tyre_id" class="form-select" required>
                            <option value="">-- Cari SN Ban --</option>
                         </select>
-                        <div id="tyre_info_display" class="mt-2" style="display: none;">
-                           <div class="d-flex flex-wrap gap-2">
-                              <span class="badge bg-white text-dark border"><small id="info_brand"></small></span>
-                              <span class="badge bg-white text-dark border"><small id="info_pattern"></small></span>
-                              <span class="badge bg-white text-dark border"><small id="info_size"></small></span>
+
+                        <!-- Dynamic Tyre Info Box -->
+                        <div id="tyre_info_display" class="mt-3 tyre-info-display-box" style="display: none;">
+                           <div class="d-flex align-items-center mb-2">
+                              <span class="badge bg-white text-primary border shadow-sm px-3 py-2">
+                                 <i class="ri-price-tag-3-line me-1"></i> <span id="info_brand"></span>
+                              </span>
                            </div>
-                           <div class="d-flex flex-wrap gap-2 mt-2">
-                              <span class="badge bg-label-info"><i class="ri-ruler-line me-1"></i>OTD: <strong
-                                    id="info_otd">-</strong> mm</span>
-                              <span class="badge bg-label-warning"><i class="ri-ruler-line me-1"></i>RTD: <strong
-                                    id="info_rtd">-</strong> mm</span>
+                           <div class="row g-2 mb-2">
+                              <div class="col-6">
+                                 <small class="text-muted d-block">Pattern</small>
+                                 <strong id="info_pattern">-</strong>
+                              </div>
+                              <div class="col-6">
+                                 <small class="text-muted d-block">Size</small>
+                                 <strong id="info_size">-</strong>
+                              </div>
+                           </div>
+                           <div class="d-flex gap-3">
+                              <div class="flex-fill p-2 bg-white rounded border text-center">
+                                 <small class="text-muted d-block">OTD</small>
+                                 <h6 class="mb-0 fw-bold" id="info_otd">-</h6>
+                              </div>
+                              <div class="flex-fill p-2 bg-white rounded border text-center">
+                                 <small class="text-muted d-block">RTD</small>
+                                 <h6 class="mb-0 fw-bold text-success" id="info_rtd">-</h6>
+                              </div>
                            </div>
                         </div>
                      </div>
 
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Kondisi Ban Saat Pasang</label>
-                        <select name="install_condition" id="install_condition" class="form-select select2"
-                           data-placeholder="Pilih Kondisi..." required>
+                     <div class="mb-0">
+                        <label class="form-label fw-bold">Kondisi Ban Saat Pasang</label>
+                        <select name="install_condition" id="install_condition" class="form-select select2" required>
                            <option value=""></option>
                            <option value="New">New (Baru)</option>
                            <option value="Spare">Spare (Bekas/Cadangan)</option>
                            <option value="Repair">Repair (Hasil Perbaikan/Vulkanisir)</option>
                         </select>
                      </div>
+                  </div>
+               </div>
 
-                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                           <label class="form-label fw-bold font-size-13">Lokasi Pengerjaan</label>
-                           <select name="work_location_id" id="work_location_id" class="form-select select2"
-                              data-placeholder="Pilih Lokasi...">
+               <!-- SECTION 3: Technical Specs -->
+               <div class="card premium-card mb-4">
+                  <div class="card-body">
+                     <div class="form-section-header">
+                        <div class="form-section-icon"><i class="ri-ruler-line"></i></div>
+                        <h5 class="form-section-title">Spesifikasi Teknis</h5>
+                     </div>
+                     <div class="row g-3">
+                        <div class="col-md-4">
+                           <label class="form-label fw-bold">Actual RTD (mm)</label>
+                           <div class="input-group">
+                              <input type="number" name="rtd_reading" id="rtd_reading" class="form-control border-primary"
+                                 step="0.01" required>
+                              <span class="input-group-text bg-primary text-white border-primary">mm</span>
+                           </div>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="form-label fw-bold">Pressure (PSI)</label>
+                           <div class="input-group">
+                              <input type="number" name="psi_reading" class="form-control" placeholder="PSI" required>
+                              <span class="input-group-text">PSI</span>
+                           </div>
+                        </div>
+                        <div class="col-md-4">
+                           <label class="form-label fw-bold">Rim Size</label>
+                           <input type="text" name="rim_size" class="form-control" placeholder="Ukuran Rim">
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- SECTION 4: Team & Operation -->
+               <div class="card premium-card mb-4">
+                  <div class="card-body">
+                     <div class="form-section-header">
+                        <div class="form-section-icon"><i class="ri-user-settings-line"></i></div>
+                        <h5 class="form-section-title">Operasional & Petugas</h5>
+                     </div>
+                     <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Lokasi Pengerjaan</label>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2">
                               <option value=""></option>
                               @foreach ($locations as $loc)
                                  <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                               @endforeach
                            </select>
-                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Dari Lokasi
-                              Ban</small>
                         </div>
-                        <div class="col-6">
-                           <label class="form-label fw-bold font-size-13">Operational Segment</label>
-                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                              data-placeholder="Pilih Segmen...">
-                              <option value="">-- Pilih Segmen --</option>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Operational Segment</label>
+                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2">
+                              <option value=""></option>
                               @foreach ($segments as $seg)
                                  <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
                               @endforeach
                            </select>
-                           <small class="text-info fs-tiny mt-1 d-block"><i class="ri-information-line"></i> Dari Segmen
-                              Unit</small>
+                        </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Tyreman 1</label>
+                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama Petugas Utama">
+                        </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Tyreman 2 (Helper)</label>
+                           <input type="text" name="tyreman_2" class="form-control" placeholder="Nama Helper">
+                        </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Waktu Mulai</label>
+                           <input type="time" name="start_time" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Waktu Selesai</label>
+                           <input type="time" name="end_time" class="form-control">
                         </div>
                      </div>
 
+                     <div class="divider text-start fw-bold mb-3"><span class="text-muted">Keterangan & Tambahan</span>
+                     </div>
+
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Penggunaan Baut Baru</label>
-                        <div class="d-flex align-items-center gap-3">
-                           <div class="form-check form-switch">
+                        <label class="form-label fw-bold">Penggunaan Baut Baru</label>
+                        <div class="d-flex align-items-center gap-4 p-2 rounded bg-light border">
+                           <div class="form-check form-switch m-0">
                               <input class="form-check-input" type="checkbox" name="new_bolts_used" id="new_bolts"
                                  value="1">
-                              <label class="form-check-label" for="new_bolts">Ya</label>
+                              <label class="form-check-label" for="new_bolts">Ya, Gunakan Baut Baru</label>
                            </div>
                            <div id="bolt_qty_container" style="display: none;">
                               <div class="input-group input-group-sm">
-                                 <span class="input-group-text bg-primary text-white border-primary">Jumlah Baut
-                                    Baru</span>
-                                 <input type="number" name="new_bolts_quantity" class="form-control border-primary"
-                                    placeholder="Qty" style="width: 80px;">
+                                 <span class="input-group-text badge bg-primary">Qty Baut</span>
+                                 <input type="number" name="new_bolts_quantity" class="form-control" placeholder="Qty"
+                                    style="width: 80px;">
                               </div>
                            </div>
                         </div>
                      </div>
 
-                     <div class="row g-2 mb-3">
-                        <div class="col-4">
-                           <label class="form-label fw-bold font-size-13 small">Pressure (PSI)</label>
-                           <input type="number" name="psi_reading" class="form-control" placeholder="PSI" required>
-                        </div>
-                        <div class="col-4">
-                           <label class="form-label fw-bold font-size-13 small">RTD (mm)</label>
-                           <input type="number" name="rtd_reading" id="rtd_reading" class="form-control" placeholder="RTD"
-                              step="0.01" required>
-                        </div>
-                        <div class="col-4">
-                           <label class="form-label fw-bold font-size-13 small">Rim Size</label>
-                           <input type="text" name="rim_size" class="form-control" placeholder="Size">
-                        </div>
-                     </div>
-
                      <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Waktu Pengerjaan (Start - End)</label>
-                        <div class="row g-2">
-                           <div class="col-6">
-                              <input type="time" name="start_time" class="form-control small">
-                              <small class="text-muted fs-tiny">Jam Mulai</small>
-                           </div>
-                           <div class="col-6">
-                              <input type="time" name="end_time" class="form-control small">
-                              <small class="text-muted fs-tiny">Jam Selesai</small>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                           <label class="form-label fw-bold font-size-13">Tyreman 1</label>
-                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama">
-                        </div>
-                        <div class="col-6">
-                           <label class="form-label fw-bold font-size-13">Tyreman 2 (Helper)</label>
-                           <input type="text" name="tyreman_2" class="form-control" placeholder="Nama">
-                        </div>
-                     </div>
-
-
-                     <div class="mb-3">
-                        <label class="form-label fw-bold font-size-13">Remarks (Keterangan Dropdown)</label>
-                        <select name="remarks" class="form-select select2" data-placeholder="Pilih Keterangan...">
+                        <label class="form-label fw-bold">Remarks</label>
+                        <select name="remarks" class="form-select select2">
                            <option value=""></option>
                            <option value="Pasang">Pasang</option>
                            <option value="Pindah">Pindah</option>
@@ -252,17 +359,15 @@
                      </div>
 
                      <div class="mb-4">
-                        <label class="form-label fw-bold font-size-13">Keterangan Tambahan (Notes)</label>
+                        <label class="form-label fw-bold">Catatan (Notes)</label>
                         <textarea name="notes" class="form-control" rows="3"
                            placeholder="Masukkan catatan tambahan jika ada..."></textarea>
                      </div>
 
-                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary shadow" id="btn_submit">
-                           <i class="ri-check-line me-1"></i> Simpan Pemasangan
+                     <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg shadow" id="btn_submit">
+                           <i class="ri-save-3-line me-1"></i> Simpan Pemasangan
                         </button>
-                        <a href="{{ route('tyre-movement.index') }}"
-                           class="btn btn-outline-secondary btn-sm text-center">Batal</a>
                      </div>
                   </div>
                </div>
@@ -287,12 +392,12 @@
          const selectionInfo = document.getElementById('selection_info');
          let suggestedSegmentId = null; // Store suggested segment from tyre history
 
-         // Initialize Select2 first
+         // Initialize Select2 (Removed dropdownParent to fix clipping issues)
          $('.select2').each(function () {
             var $this = $(this);
-            $this.wrap('<div class="position-relative"></div>').select2({
-               placeholder: $this.data('placeholder'),
-               dropdownParent: $(this).parent()
+            $this.select2({
+               placeholder: $this.data('placeholder') || $this.attr('placeholder'),
+               allowClear: true
             });
          });
 
@@ -335,11 +440,11 @@
             const rtdLabel = tyre.rtd ? `RTD: ${tyre.rtd}mm` : '';
             const depthInfo = (otdLabel || rtdLabel) ? ` | ${[otdLabel, rtdLabel].filter(Boolean).join(' / ')}` : '';
             return $(`
-                                                                  <div class='select2-result-tyre'>
-                                                                     <div class='fw-bold'>${tyre.sn}</div>
-                                                                     <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}${depthInfo}</div>
-                                                                  </div>
-                                                               `);
+                                                                        <div class='select2-result-tyre'>
+                                                                           <div class='fw-bold'>${tyre.sn}</div>
+                                                                           <div class='small text-muted'>${tyre.brand} | ${tyre.size} | ${tyre.pattern}${depthInfo}</div>
+                                                                        </div>
+                                                                     `);
          }
 
          function formatTyreSelection(tyre) {
