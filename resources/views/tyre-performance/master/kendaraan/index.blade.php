@@ -16,20 +16,10 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Vehicles</h4>
          <div class="d-flex gap-2">
-            <div class="btn-group">
-               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-download-2-line me-1"></i> Export Data
-               </button>
-               <ul class="dropdown-menu">
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'vehicles', 'format' => 'csv']) }}"><i
-                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'vehicles', 'format' => 'excel']) }}"><i
-                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
-               </ul>
-            </div>
+            <a href="{{ route('master_data.export', ['type' => 'vehicles', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
             @if (hasPermission('Vehicle Master', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
@@ -382,14 +372,14 @@
                   let layoutBtn = '';
                   if (row.tyre_position_configuration_id) {
                      layoutBtn = `
-                                                               <button type="button"
-                                                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
-                                                                  data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
-                                                                  data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
-                                                                  data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
-                                                                  <i class="icon-base ri ri-layout-6-line text-primary"></i>
-                                                               </button>
-                                                            `;
+                                                                  <button type="button"
+                                                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
+                                                                     data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
+                                                                     data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
+                                                                     data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
+                                                                     <i class="icon-base ri ri-layout-6-line text-primary"></i>
+                                                                  </button>
+                                                               `;
                   }
 
                   let actions = `<div class="d-flex align-items-center justify-content-center">`;
@@ -402,30 +392,30 @@
 
                   if (canUpdate) {
                      actions += `
-                                                         <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
-                                                            href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                                            data-id="${row.id}" data-kode="${row.kode_kendaraan}"
-                                                            data-nopol="${row.no_polisi}" data-area="${row.area}"
-                                                            data-segment-id="${row.operational_segment_id}"
-                                                            data-brand="${row.vehicle_brand}"
-                                                            data-curb-weight="${row.curb_weight}"
-                                                            data-payload="${row.payload_capacity}"
-                                                            data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
-                                                            data-config-id="${row.tyre_position_configuration_id}"
-                                                            data-status="${row.tyre_unit_status}" title="Edit">
-                                                            <i class="icon-base ri ri-pencil-line"></i>
-                                                         </a>`;
+                                                            <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
+                                                               href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                                                               data-id="${row.id}" data-kode="${row.kode_kendaraan}"
+                                                               data-nopol="${row.no_polisi}" data-area="${row.area}"
+                                                               data-segment-id="${row.operational_segment_id}"
+                                                               data-brand="${row.vehicle_brand}"
+                                                               data-curb-weight="${row.curb_weight}"
+                                                               data-payload="${row.payload_capacity}"
+                                                               data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
+                                                               data-config-id="${row.tyre_position_configuration_id}"
+                                                               data-status="${row.tyre_unit_status}" title="Edit">
+                                                               <i class="icon-base ri ri-pencil-line"></i>
+                                                            </a>`;
                   }
 
                   actions += layoutBtn;
 
                   if (canDelete) {
                      actions += `
-                                                         <button type="button"
-                                                            class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
-                                                            data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
-                                                            <i class="icon-base ri ri-delete-bin-line"></i>
-                                                         </button>`;
+                                                            <button type="button"
+                                                               class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-vehicle"
+                                                               data-id="${row.id}" data-kode="${row.kode_kendaraan}" title="Delete">
+                                                               <i class="icon-base ri ri-delete-bin-line"></i>
+                                                            </button>`;
                   }
 
                   actions += `</div>`;

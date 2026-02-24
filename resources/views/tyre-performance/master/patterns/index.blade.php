@@ -19,20 +19,10 @@
             <small class="text-muted">Manajemen pola kembangan (pattern) ban berdasarkan brand</small>
          </div>
          <div class="d-flex gap-2">
-            <div class="btn-group">
-               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-download-2-line me-1"></i> Export Data
-               </button>
-               <ul class="dropdown-menu">
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'csv']) }}"><i
-                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'excel']) }}"><i
-                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
-               </ul>
-            </div>
+            <a href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
             @if (hasPermission('Patterns', 'create'))
                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="modal"
                   data-bs-target="#importModal">
@@ -104,8 +94,7 @@
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary py-3">
                <h5 class="modal-title text-white">Add New Pattern</h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
@@ -113,8 +102,8 @@
 
                   <div class="mb-3">
                      <label for="name" class="form-label fw-bold">Pattern Name</label>
-                     <input type="text" id="name" name="name" class="form-control"
-                        placeholder="e.g. Rough Terrain (R150)" required>
+                     <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rough Terrain (R150)"
+                        required>
                   </div>
                   <div class="mb-3">
                      <label for="status" class="form-label fw-bold">Status</label>
@@ -177,7 +166,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-patterns').DataTable({
             order: [
                [0, 'asc']
@@ -188,7 +177,7 @@
 
          const editForm = $('#editPatternForm');
 
-         $(document).on('click', '.edit-pattern', function() {
+         $(document).on('click', '.edit-pattern', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -199,7 +188,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-pattern', function() {
+         $(document).on('click', '.delete-pattern', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -243,7 +232,7 @@
          @endif
 
          // Initialize Select2 with Modal fix
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

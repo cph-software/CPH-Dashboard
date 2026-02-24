@@ -15,23 +15,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Failure Codes</h4>
          <div class="d-flex gap-2">
-            <div class="btn-group">
-               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-download-2-line me-1"></i> Export Data
-               </button>
-               <ul class="dropdown-menu">
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'failure_codes', 'format' => 'csv']) }}"><i
-                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'failure_codes', 'format' => 'excel']) }}"><i
-                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
-               </ul>
-            </div>
+            <a href="{{ route('master_data.export', ['type' => 'failure_codes', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
             @if (hasPermission('Failure Codes', 'create'))
-               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
-                  data-bs-target="#importModal">
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
                <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
@@ -68,17 +57,15 @@
                         </td>
                         <td>
                            @if ($fc->image_1)
-                              <a href="javascript:void(0);"
-                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded"
-                                    width="100" height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded" width="100"
+                                    height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if ($fc->image_2)
-                              <a href="javascript:void(0);"
-                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1"
-                                    width="100" height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1" width="100"
+                                    height="100" style="object-fit: cover;">
                               </a>
                            @endif
                            @if (!$fc->image_1 && !$fc->image_2)
@@ -155,7 +142,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-failures').DataTable({
             order: [
                [0, 'desc']
@@ -164,7 +151,7 @@
             lengthMenu: [10, 25, 50, 75, 100],
          });
 
-         $(document).on('click', '.delete-failure', function() {
+         $(document).on('click', '.delete-failure', function () {
             const id = $(this).data('id');
             const code = $(this).data('code');
 
@@ -206,7 +193,7 @@
                text: '{{ session('error') }}',
             });
          @endif
-      });
+         });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);

@@ -16,23 +16,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyres</h4>
          <div class="d-flex gap-2">
-            <div class="btn-group">
-               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-download-2-line me-1"></i> Export Data
-               </button>
-               <ul class="dropdown-menu">
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'csv']) }}"><i
-                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
-                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
-               </ul>
-            </div>
+            <a href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
             @if (hasPermission('Master Tyre', 'create'))
-               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
-                  data-bs-target="#importModal">
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTyreModal">
@@ -209,8 +198,7 @@
                   <div class="row">
                      <div class="col mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
-                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
-                           required>
+                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control" required>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -220,8 +208,8 @@
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
                               <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}"
-                                 data-pattern-id="{{ $size->tyre_pattern_id }}" data-std-otd="{{ $size->std_otd }}">
+                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
+                                 data-std-otd="{{ $size->std_otd }}">
                                  {{ $size->size }}
                               </option>
                            @endforeach
@@ -287,13 +275,13 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
-                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
-                           class="form-control" step="0.01">
+                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth" class="form-control"
+                           step="0.01">
                      </div>
                      <div class="col mb-3">
                         <label for="edit_current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
-                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth"
-                           class="form-control" step="0.01">
+                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth" class="form-control"
+                           step="0.01">
                      </div>
                   </div>
                   <div class="row">
@@ -332,7 +320,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          const canUpdate = {{ hasPermission('Master Tyre', 'update') ? 'true' : 'false' }};
          const canDelete = {{ hasPermission('Master Tyre', 'delete') ? 'true' : 'false' }};
 
@@ -341,99 +329,99 @@
             serverSide: true,
             ajax: "{{ route('tyre-master.data') }}",
             columns: [{
-                  data: 'serial_number',
-                  render: function(data) {
-                     return `<strong>${data}</strong>`;
-                  }
-               },
-               {
-                  data: 'brand.brand_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'size.size',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'pattern.name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'segment.segment_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'size.type',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'location.location_name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'status',
-                  render: function(data, type, row) {
-                     const badges = {
-                        'New': 'primary',
-                        'Installed': 'success',
-                        'Scrap': 'danger',
-                        'Repaired': 'warning',
-                        'Retread': 'info'
-                     };
-
-                     let displayText = data;
-                     if (data === 'New') {
-                        displayText = 'New (R0)';
-                     } else if (data === 'Retread' && row.retread_count) {
-                        displayText = `Retread R${row.retread_count}`;
-                     }
-
-                     return `<span class="badge bg-label-${badges[data] || 'secondary'}">${displayText}</span>`;
-                  }
-               },
-               {
-                  data: null,
-                  searchable: false,
-                  orderable: false,
-                  render: function(data, type, row) {
-                     let actions = `<div class="d-flex align-items-center">
-                     <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                        href="/master_data_tyre/master_tyre/${row.id}"
-                        title="View Details">
-                        <i class="icon-base ri ri-eye-line"></i>
-                     </a>`;
-
-                     if (canUpdate) {
-                        actions += `
-                        <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                           href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                           data-id="${row.id}" data-serial="${row.serial_number}"
-                           data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                           data-pattern-id="${row.tyre_pattern_id}"
-                           data-segment-id="${row.tyre_segment_id}"
-                           data-location-id="${row.work_location_id}" data-status="${row.status}"
-                           data-price="${row.price || ''}"
-                           data-initial-tread="${row.initial_tread_depth || ''}"
-                           data-current-tread="${row.current_tread_depth || ''}"
-                           data-retread-count="${row.retread_count || 0}"
-                           title="Edit">
-                           <i class="icon-base ri ri-pencil-line"></i>
-                        </a>`;
-                     }
-
-                     if (canDelete) {
-                        actions += `
-                        <button type="button"
-                           class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
-                           data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
-                           <i class="icon-base ri ri-delete-bin-line"></i>
-                        </button>`;
-                     }
-
-                     actions += `</div>`;
-                     return actions;
-                  }
+               data: 'serial_number',
+               render: function (data) {
+                  return `<strong>${data}</strong>`;
                }
+            },
+            {
+               data: 'brand.brand_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'size.size',
+               defaultContent: '-'
+            },
+            {
+               data: 'pattern.name',
+               defaultContent: '-'
+            },
+            {
+               data: 'segment.segment_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'size.type',
+               defaultContent: '-'
+            },
+            {
+               data: 'location.location_name',
+               defaultContent: '-'
+            },
+            {
+               data: 'status',
+               render: function (data, type, row) {
+                  const badges = {
+                     'New': 'primary',
+                     'Installed': 'success',
+                     'Scrap': 'danger',
+                     'Repaired': 'warning',
+                     'Retread': 'info'
+                  };
+
+                  let displayText = data;
+                  if (data === 'New') {
+                     displayText = 'New (R0)';
+                  } else if (data === 'Retread' && row.retread_count) {
+                     displayText = `Retread R${row.retread_count}`;
+                  }
+
+                  return `<span class="badge bg-label-${badges[data] || 'secondary'}">${displayText}</span>`;
+               }
+            },
+            {
+               data: null,
+               searchable: false,
+               orderable: false,
+               render: function (data, type, row) {
+                  let actions = `<div class="d-flex align-items-center">
+                        <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
+                           href="/master_data_tyre/master_tyre/${row.id}"
+                           title="View Details">
+                           <i class="icon-base ri ri-eye-line"></i>
+                        </a>`;
+
+                  if (canUpdate) {
+                     actions += `
+                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                              href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                              data-id="${row.id}" data-serial="${row.serial_number}"
+                              data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                              data-pattern-id="${row.tyre_pattern_id}"
+                              data-segment-id="${row.tyre_segment_id}"
+                              data-location-id="${row.work_location_id}" data-status="${row.status}"
+                              data-price="${row.price || ''}"
+                              data-initial-tread="${row.initial_tread_depth || ''}"
+                              data-current-tread="${row.current_tread_depth || ''}"
+                              data-retread-count="${row.retread_count || 0}"
+                              title="Edit">
+                              <i class="icon-base ri ri-pencil-line"></i>
+                           </a>`;
+                  }
+
+                  if (canDelete) {
+                     actions += `
+                           <button type="button"
+                              class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-tyre"
+                              data-id="${row.id}" data-serial="${row.serial_number}" title="Delete">
+                              <i class="icon-base ri ri-delete-bin-line"></i>
+                           </button>`;
+                  }
+
+                  actions += `</div>`;
+                  return actions;
+               }
+            }
             ],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
@@ -441,7 +429,7 @@
 
          const editForm = $('#editTyreForm');
 
-         $(document).on('click', '.edit-tyre', function() {
+         $(document).on('click', '.edit-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
             const brandId = $(this).data('brand-id');
@@ -504,11 +492,11 @@
             }
          }
 
-         $('#tyre_size_id').on('change', function() {
+         $('#tyre_size_id').on('change', function () {
             autoFillBySize($(this).val());
          });
 
-         $(document).on('change', '#edit_size_id', function() {
+         $(document).on('change', '#edit_size_id', function () {
             autoFillBySize($(this).val(), 'edit_');
          });
 
@@ -523,19 +511,19 @@
             }
          }
 
-         $(document).on('input', '.currency-input', function() {
+         $(document).on('input', '.currency-input', function () {
             formatCurrency(this);
          });
 
          // Unformat currency before submit
-         $('form').on('submit', function() {
-            $('.currency-input').each(function() {
+         $('form').on('submit', function () {
+            $('.currency-input').each(function () {
                let value = $(this).val().replace(/\./g, ''); // Remove dots
                $(this).val(value);
             });
          });
 
-         $(document).on('click', '.delete-tyre', function() {
+         $(document).on('click', '.delete-tyre', function () {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
 
@@ -579,7 +567,7 @@
          @endif
 
          // Initialize Select2
-         $('.select2').each(function() {
+         $('.select2').each(function () {
             $(this).wrap('<div class="position-relative"></div>').select2({
                placeholder: $(this).data('placeholder'),
                dropdownParent: $(this).parent()
@@ -587,7 +575,7 @@
          });
 
          // --- RETREAD AUTO-STATUS LOGIC ---
-         $(document).on('change', 'select[name="retread_count"]', function() {
+         $(document).on('change', 'select[name="retread_count"]', function () {
             const retreadVal = parseInt($(this).val()) || 0;
             const form = $(this).closest('form');
             const statusSelect = form.find('select[name="status"]');

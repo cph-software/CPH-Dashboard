@@ -8,12 +8,13 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^7.3|^8.0",
+        "php": "^7.4|^8.0",
         "fideloper/proxy": "^4.2",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
-        "laravel/framework": "^8.0",
-        "laravel/tinker": "^2.0"
+        "laravel/framework": "^8.12",
+        "laravel/tinker": "^2.0",
+        "maatwebsite/excel": "^3.1"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",
@@ -27,6 +28,11 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "audit": {
+            "ignore": [
+                "PKSA-8qx3-n5y5-vvnd"
+            ]
+        },
         "platform": {
             "php": "7.4.33"
         }
@@ -51,7 +57,7 @@
             "Tests\\": "tests/"
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts": {
         "post-autoload-dump": [

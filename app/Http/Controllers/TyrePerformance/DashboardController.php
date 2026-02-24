@@ -11,6 +11,7 @@ use App\Models\TyrePattern;
 use App\Models\TyreLocation;
 use App\Models\TyreFailureCode;
 use App\Models\MasterImportKendaraan;
+use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -958,197 +959,131 @@ class DashboardController extends Controller
 
         $filename = "Export_{$type}_" . now()->format('Ymd_His');
 
-        if ($format === 'excel') {
-            $filename .= ".xls";
-            $headers = [
-                "Content-Type" => "application/vnd.ms-excel",
-                "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma" => "no-cache",
-                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-                "Expires" => "0"
-            ];
-        } else {
-            $filename .= ".csv";
-            $headers = [
-                "Content-type" => "text/csv",
-                "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma" => "no-cache",
-                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-                "Expires" => "0"
-            ];
+        // Prepare data based on type
+        $headers = [];
+        $data = [];
+
+        if ($type === 'movements') {
+            $headers = ['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark'];
+            
+            $movements = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
+                ->whereBetween('movement_date', [$startDate, $endDate])
+                ->orderBy('movement_date', 'desc')
+                ->get();
+
+            foreach ($movements as $row) {
+                $data[] = [
+                    $row->movement_date,
+                    $row->tyre->serial_number ?? '-',
+                    $row->vehicle->kode_kendaraan ?? '-',
+                    $row->position ? ($row->position->position_code . ' - ' . $row->position->position_name) : '-',
+                    $row->movement_type,
+                    $row->odometer_reading,
+                    $row->hour_meter_reading,
+                    $row->rtd_reading,
+                    $row->psi_reading,
+                    $row->failureCode->failure_code ?? '-',
+                    $row->remarks
+                ];
+            }
+        } elseif ($type === 'assets') {
+            $headers = ['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'];
+            
+            $tyres = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
+
+            foreach ($tyres as $row) {
+                $data[] = [
+                    $row->serial_number,
+                    $row->brand->brand_name ?? '-',
+                    $row->size->size ?? '-',
+                    $row->pattern->name ?? '-',
+                    $row->status,
+                    $row->currentVehicle->kode_kendaraan ?? '-',
+                    $row->currentPosition->position_code ?? '-',
+                    $row->current_tread_depth,
+                    $row->initial_tread_depth,
+                    $row->price,
+                    $row->total_lifetime_km,
+                    $row->total_lifetime_hm
+                ];
+            }
+        } elseif ($type === 'vehicles') {
+            $headers = ['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status'];
+            
+            $vehicles = \App\Models\MasterImportKendaraan::with('tyrePositionConfiguration')->get();
+
+            foreach ($vehicles as $row) {
+                $data[] = [
+                    $row->kode_kendaraan,
+                    $row->jenis_kendaraan,
+                    $row->tyrePositionConfiguration->name ?? '-',
+                    $row->total_tyre_position,
+                    $row->tyre_unit_status
+                ];
+            }
+        } elseif ($type === 'brands') {
+            $headers = ['ID', 'Brand Name'];
+            
+            $brands = \App\Models\TyreBrand::orderBy('brand_name')->get();
+
+            foreach ($brands as $row) {
+                $data[] = [
+                    $row->id,
+                    $row->brand_name,
+                ];
+            }
+        } elseif ($type === 'sizes') {
+            $headers = ['ID', 'Size', 'Parent Size (Optional)'];
+            
+            $sizes = \App\Models\TyreSize::orderBy('size')->get();
+
+            foreach ($sizes as $row) {
+                $data[] = [
+                    $row->id,
+                    $row->size,
+                    $row->parent_id ?? '-'
+                ];
+            }
+        } elseif ($type === 'patterns') {
+            $headers = ['ID', 'Pattern Name', 'Brand'];
+            
+            $patterns = \App\Models\TyrePattern::with('brand')->orderBy('name')->get();
+
+            foreach ($patterns as $row) {
+                $data[] = [
+                    $row->id,
+                    $row->name,
+                    $row->brand->brand_name ?? '-'
+                ];
+            }
+        } elseif ($type === 'failure_codes') {
+            $headers = ['Failure Code', 'Failure Name', 'Category'];
+            
+            $failureCodes = \App\Models\TyreFailureCode::orderBy('failure_code')->get();
+
+            foreach ($failureCodes as $row) {
+                $data[] = [
+                    $row->failure_code,
+                    $row->failure_name,
+                    $row->default_category
+                ];
+            }
+        } elseif ($type === 'examinations') {
+            $headers = ['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'];
+            
+            $examinations = \App\Models\TyreExamination::with(['vehicle'])->withCount('details')->get();
+
+            foreach ($examinations as $row) {
+                $data[] = [
+                    $row->examination_date,
+                    $row->vehicle->kode_kendaraan ?? '-',
+                    $row->odometer,
+                    $row->tyre_man ?? '-',
+                    $row->details_count,
+                    $row->status
+                ];
+            }
         }
-
-        $callback = function () use ($type, $format, $startDate, $endDate) {
-            $file = fopen('php://output', 'w');
-
-            // Helper to write row
-            $writeRow = function ($row, $isHeader = false) use ($file, $format) {
-                if ($format === 'excel') {
-                    echo "<tr>";
-                    foreach ($row as $cell) {
-                        $tag = $isHeader ? "th" : "td";
-                        $style = $isHeader ? "background-color: #f0f0f0; font-weight: bold; border: 1px solid #000;" : "border: 1px solid #000;";
-                        $cellContent = htmlspecialchars((string) $cell);
-                        echo "<$tag style='$style'>$cellContent</$tag>";
-                    }
-                    echo "</tr>";
-                } else {
-                    fputcsv($file, $row);
-                }
-            };
-
-            if ($format === 'excel') {
-                echo "<table border='1' cellpadding='5' cellspacing='0'>";
-            }
-
-            if ($type === 'movements') {
-                $writeRow(['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark'], true);
-
-                $data = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
-                    ->whereBetween('movement_date', [$startDate, $endDate])
-                    ->orderBy('movement_date', 'desc')
-                    ->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->movement_date,
-                        $row->tyre->serial_number ?? '-',
-                        $row->vehicle->kode_kendaraan ?? '-',
-                        $row->position ? ($row->position->position_code . ' - ' . $row->position->position_name) : '-',
-                        $row->movement_type,
-                        $row->odometer_reading,
-                        $row->hour_meter_reading,
-                        $row->rtd_reading,
-                        $row->psi_reading,
-                        $row->failureCode->failure_code ?? '-',
-                        $row->remarks
-                    ], false);
-                }
-            } elseif ($type === 'failures') {
-                $writeRow(['Failure Code', 'Failure Name', 'Category', 'Total Occurrences', 'Avg RTD at Failure'], true);
-
-                $data = TyreMovement::where('movement_type', 'Removal')
-                    ->whereNotNull('failure_code_id')
-                    ->whereBetween('movement_date', [$startDate, $endDate])
-                    ->join('tyre_failure_codes', 'tyre_movements.failure_code_id', '=', 'tyre_failure_codes.id')
-                    ->select(
-                        'tyre_failure_codes.failure_code',
-                        'tyre_failure_codes.failure_name',
-                        'tyre_failure_codes.default_category',
-                        DB::raw('COUNT(*) as total'),
-                        DB::raw('AVG(rtd_reading) as avg_rtd')
-                    )
-                    ->groupBy('tyre_failure_codes.id', 'tyre_failure_codes.failure_code', 'tyre_failure_codes.failure_name', 'tyre_failure_codes.default_category')
-                    ->get();
-
-                foreach ($data as $row) {
-                    $writeRow([$row->failure_code, $row->failure_name, $row->default_category, $row->total, round($row->avg_rtd, 2)], false);
-                }
-            } elseif ($type === 'assets') {
-                $writeRow(['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'], true);
-
-                $data = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->serial_number,
-                        $row->brand->brand_name ?? '-',
-                        $row->size->size ?? '-',
-                        $row->pattern->name ?? '-',
-                        $row->status,
-                        $row->currentVehicle->kode_kendaraan ?? '-',
-                        $row->currentPosition->position_code ?? '-',
-                        $row->current_tread_depth,
-                        $row->initial_tread_depth,
-                        $row->price,
-                        $row->total_lifetime_km,
-                        $row->total_lifetime_hm
-                    ], false);
-                }
-            } elseif ($type === 'vehicles') {
-                $writeRow(['Unit Code', 'Type', 'Layout', 'Total Positions', 'Status'], true);
-
-                $data = \App\Models\MasterImportKendaraan::with('tyrePositionConfiguration')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->kode_kendaraan,
-                        $row->jenis_kendaraan,
-                        $row->tyrePositionConfiguration->name ?? '-',
-                        $row->total_tyre_position,
-                        $row->tyre_unit_status
-                    ], false);
-                }
-            } elseif ($type === 'brands') {
-                $writeRow(['ID', 'Brand Name'], true);
-
-                $data = \App\Models\TyreBrand::orderBy('brand_name')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->id,
-                        $row->brand_name,
-                    ], false);
-                }
-            } elseif ($type === 'sizes') {
-                $writeRow(['ID', 'Size', 'Parent Size (Optional)'], true);
-
-                $data = \App\Models\TyreSize::orderBy('size')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->id,
-                        $row->size,
-                        $row->parent_id ?? '-'
-                    ], false);
-                }
-            } elseif ($type === 'patterns') {
-                $writeRow(['ID', 'Pattern Name', 'Brand'], true);
-
-                $data = \App\Models\TyrePattern::with('brand')->orderBy('name')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->id,
-                        $row->name,
-                        $row->brand->brand_name ?? '-'
-                    ], false);
-                }
-            } elseif ($type === 'failure_codes') {
-                $writeRow(['Failure Code', 'Failure Name', 'Category'], true);
-
-                $data = \App\Models\TyreFailureCode::orderBy('failure_code')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->failure_code,
-                        $row->failure_name,
-                        $row->default_category
-                    ], false);
-                }
-            } elseif ($type === 'examinations') {
-                $writeRow(['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'], true);
-
-                $data = \App\Models\TyreExamination::with(['vehicle'])->withCount('details')->get();
-
-                foreach ($data as $row) {
-                    $writeRow([
-                        $row->examination_date,
-                        $row->vehicle->kode_kendaraan ?? '-',
-                        $row->odometer,
-                        $row->tyre_man ?? '-',
-                        $row->details_count,
-                        $row->status
-                    ], false);
-                }
-            }
-
-            if ($format === 'excel') {
-                echo "</table>";
-            }
-
-            fclose($file);
-        };
 
         setLogActivity(auth()->id(), "Mengekspor data mentah $type", [
             'module' => 'Dashboard',
@@ -1156,7 +1091,29 @@ class DashboardController extends Controller
             'period' => $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d')
         ]);
 
-        return response()->stream($callback, 200, $headers);
+        if ($format === 'excel') {
+            return ExcelExportService::generateExcelFile($data, $headers, $filename . '.xlsx');
+        } else {
+            // CSV export
+            $headers = [
+                "Content-type" => "text/csv",
+                "Content-Disposition" => "attachment; filename=\"$filename.csv\"",
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
+            ];
+
+            $callback = function () use ($headers, $data) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, $headers);
+                foreach ($data as $row) {
+                    fputcsv($file, $row);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
     }
 
     public function downloadTemplate(Request $request)
