@@ -15,23 +15,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Brands</h4>
          <div class="d-flex gap-2">
-            <div class="btn-group">
-               <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="ri-download-2-line me-1"></i> Export Data
-               </button>
-               <ul class="dropdown-menu">
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'brands', 'format' => 'csv']) }}"><i
-                           class="ri-file-text-line me-2"></i>CSV Format</a></li>
-                  <li><a class="dropdown-item"
-                        href="{{ route('master_data.export', ['type' => 'brands', 'format' => 'excel']) }}"><i
-                           class="ri-file-excel-2-line me-2"></i>Excel Format</a></li>
-               </ul>
-            </div>
+            <a href="{{ route('master_data.export', ['type' => 'brands', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
             @if (hasPermission('Brands', 'create'))
-               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
-                  data-bs-target="#importModal">
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBrandModal">
@@ -175,7 +164,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function() {
+      $(document).ready(function () {
          $('.datatables-brands').DataTable({
             order: [
                [0, 'desc']
@@ -186,7 +175,7 @@
 
          const editForm = $('#editBrandForm');
 
-         $(document).on('click', '.edit-brand', function() {
+         $(document).on('click', '.edit-brand', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -196,7 +185,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-brand', function() {
+         $(document).on('click', '.delete-brand', function () {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -238,6 +227,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-      });
+         });
    </script>
 @endsection

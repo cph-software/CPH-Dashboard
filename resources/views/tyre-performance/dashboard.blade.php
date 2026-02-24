@@ -183,12 +183,13 @@
                         <h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6>
                      </li>
                      <li><a class="dropdown-item"
-                           href="{{ route('master_data.export', ['type' => 'movements', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                           href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
                               class="ri-history-line me-1"></i> Movements Raw Data</a></li>
                      <li><a class="dropdown-item"
-                           href="{{ route('master_data.export', ['type' => 'failures', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                           href="{{ route('master_data.export', ['type' => 'failures', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
                               class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
-                     <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'assets']) }}"><i
+                     <li><a class="dropdown-item"
+                           href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
                               class="ri-disc-line me-1"></i> Tyre Master List</a></li>
                      <li>
                         <hr class="dropdown-divider">
@@ -196,6 +197,9 @@
                      <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
                            data-bs-target="#importModal"><i class="ri-upload-2-line me-1"></i>
                            Admin: Import Data</a></li>
+                     <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
+                           <i class="ri-check-double-line me-1"></i>
+                           Approval & Riwayat Import</a></li>
                   </ul>
                </div>
             </form>

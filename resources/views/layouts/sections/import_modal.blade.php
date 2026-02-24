@@ -60,58 +60,58 @@
 </div>
 
 <script>
-   document.addEventListener('DOMContentLoaded', function() {
-            const moduleSelect = document.getElementById('importModuleSelect');
-            const guideContent = document.getElementById('importGuideContent');
-            const downloadArea = document.getElementById('templateDownloadArea');
-            const downloadBtn = document.getElementById('btnDownloadTemplate');
+   document.addEventListener('DOMContentLoaded', function () {
+      const moduleSelect = document.getElementById('importModuleSelect');
+      const guideContent = document.getElementById('importGuideContent');
+      const downloadArea = document.getElementById('templateDownloadArea');
+      const downloadBtn = document.getElementById('btnDownloadTemplate');
 
-            const guides = {
-               'Tyre Master': `<strong>Kolom Wajib:</strong><br>
+      const guides = {
+         'Tyre Master': `<strong>Kolom Wajib:</strong><br>
                - serial_number (SN Ban)<br>
                - brand_name (Nama Brand)<br>
                - size_name (Contoh: 11.00-20)<br>
                - pattern_name (Nama Pattern)<br>
                - initial_rtd (OTD Awal)<br>
                - price (Harga Ban)`,
-               'Vehicle Master': `<strong>Kolom Wajib:</strong><br>
+         'Vehicle Master': `<strong>Kolom Wajib:</strong><br>
                - kode_kendaraan (No. Lambung)<br>
                - no_polisi (No. Plat)<br>
                - model_kendaraan (Contoh: DT, HD)<br>
                - brand_kendaraan (Merek Truk)<br>
                - site_location (Site Kerja)`,
-               'Movement History': `<strong>Kolom Wajib:</strong><br>
+         'Movement History': `<strong>Kolom Wajib:</strong><br>
                - serial_number (SN Ban)<br>
                - kode_kendaraan (Unit Truk)<br>
                - movement_type (Installation/Removal)<br>
                - movement_date (YYYY-MM-DD)<br>
                - position_code (Posisi Ban)<br>
                - odometer (KM/HM Kendaraan)`,
-               'Failure Codes': `<strong>Kolom Wajib:</strong><br>
+         'Failure Codes': `<strong>Kolom Wajib:</strong><br>
                - failure_code (Kode Kerusakan)<br>
                - failure_name (Deskripsi)<br>
                - default_category (Category Group)`,
-               'Tyre Brand': `<strong>Kolom Wajib:</strong><br>
+         'Tyre Brand': `<strong>Kolom Wajib:</strong><br>
                - brand_name (Nama Brand)`,
-               'Tyre Size': `<strong>Kolom Wajib:</strong><br>
+         'Tyre Size': `<strong>Kolom Wajib:</strong><br>
                - size (Ukuran Ban)`,
-               'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
+         'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
                - pattern_name (Nama Pattern)<br>
                - brand (Nama Brand)`
-            };
+      };
 
-            if (moduleSelect) {
-               moduleSelect.addEventListener('change', function() {
-                        const selected = this.value;
-                        guideContent.innerHTML = guides[selected] || '<p>Pilih modul terlebih dahulu.</p>';
+      if (moduleSelect) {
+         moduleSelect.addEventListener('change', function () {
+            const selected = this.value;
+            guideContent.innerHTML = guides[selected] || '<p>Pilih modul terlebih dahulu.</p>';
 
-                        if (selected) {
-                           downloadArea.classList.remove('d-none');
-                           downloadBtn.href = \`{{ route('master_data.download-template') }}?module=\${encodeURIComponent(selected)}\`;
-               } else {
-                   downloadArea.classList.add('d-none');
-               }
-           });
-       }
+            if (selected) {
+               downloadArea.classList.remove('d-none');
+               downloadBtn.href = `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}&format=csv`;
+            } else {
+               downloadArea.classList.add('d-none');
+            }
+         });
+      }
    });
 </script>
