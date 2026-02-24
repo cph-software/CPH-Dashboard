@@ -15,11 +15,21 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Segments</h4>
-         @if (hasPermission('Segments', 'create'))
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSegmentModal">
-               <i class="ri-add-line me-1"></i> Add Segment
-            </button>
-         @endif
+         <div class="d-flex gap-2">
+            <a href="{{ route('master_data.export', ['type' => 'segments', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
+            @if (hasPermission('Segments', 'create'))
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
+                  <i class="ri-upload-2-line me-1"></i> Import
+               </button>
+               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSegmentModal">
+                  <i class="ri-add-line me-1"></i> Add Segment
+               </button>
+            @endif
+         </div>
       </div>
 
       @if (session('success'))
@@ -129,7 +139,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="terrain_type" class="form-label">Terrain Type</label>
-                        <select name="terrain_type" class="form-select" required>
+                        <select name="terrain_type" class="form-select select2-tags" required
+                           data-placeholder="Select or Type...">
                            <option value="Muddy">Muddy</option>
                            <option value="Rocky">Rocky</option>
                            <option value="Asphalt">Asphalt</option>
@@ -189,7 +200,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_terrain" class="form-label">Terrain Type</label>
-                        <select id="edit_terrain" name="terrain_type" class="form-select" required>
+                        <select id="edit_terrain" name="terrain_type" class="form-select select2-tags" required
+                           data-placeholder="Select or Type...">
                            <option value="Muddy">Muddy</option>
                            <option value="Rocky">Rocky</option>
                            <option value="Asphalt">Asphalt</option>
@@ -239,8 +251,8 @@
             editForm.attr('action', `{{ url('master_data_tyre/master_segment') }}/${id}`);
             $('#edit_segment_id').val(segmentId);
             $('#edit_segment_name').val(name);
-            $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || ''));
-            $('#edit_terrain').val(terrain);
+            $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || '')).trigger('change');
+            $('#edit_terrain').val(terrain).trigger('change');
             $('#edit_segment_status').val(status);
          });
 
@@ -293,6 +305,16 @@
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),
                dropdownParent: $this.closest('.modal')
+            });
+         });
+
+         // Initialize Select2 with Tags
+         $('.select2-tags').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal'),
+               tags: true
             });
          });
       });

@@ -18,7 +18,7 @@ class TyreLocationController extends Controller
     {
         $request->validate([
             'location_name' => 'required|string|max:255',
-            'location_type' => 'required|in:Warehouse,Service,Disposal',
+            'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
         ]);
 
@@ -37,7 +37,7 @@ class TyreLocationController extends Controller
     {
         $request->validate([
             'location_name' => 'required|string|max:255',
-            'location_type' => 'required|in:Warehouse,Service,Disposal',
+            'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
         ]);
 

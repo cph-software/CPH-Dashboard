@@ -16,7 +16,7 @@ class CreateTyreLocationsTable extends Migration
         Schema::create('tyre_locations', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('location_name');
-            $table->enum('location_type', ['Warehouse', 'Service', 'Disposal']);
+            $table->string('location_type');
             $table->integer('capacity');
             $table->timestamps();
         });

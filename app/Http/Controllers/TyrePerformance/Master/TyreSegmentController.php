@@ -22,7 +22,7 @@ class TyreSegmentController extends Controller
             'segment_id' => 'required|string|max:255',
             'segment_name' => 'required|string|max:255',
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
-            'terrain_type' => 'required|in:Muddy,Rocky,Asphalt',
+            'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
         ]);
 
@@ -43,7 +43,7 @@ class TyreSegmentController extends Controller
             'segment_id' => 'required|string|max:255',
             'segment_name' => 'required|string|max:255',
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
-            'terrain_type' => 'required|in:Muddy,Rocky,Asphalt',
+            'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
         ]);
 

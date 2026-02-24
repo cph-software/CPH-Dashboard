@@ -7,6 +7,7 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 @endsection
 
@@ -14,11 +15,21 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Locations</h4>
-         @if (hasPermission('Locations', 'create'))
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
-               <i class="ri-add-line me-1"></i> Add Location
-            </button>
-         @endif
+         <div class="d-flex gap-2">
+            <a href="{{ route('master_data.export', ['type' => 'locations', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
+               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+            </a>
+            @if (hasPermission('Locations', 'create'))
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
+                  <i class="ri-upload-2-line me-1"></i> Import
+               </button>
+               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+                  <i class="ri-add-line me-1"></i> Add Location
+               </button>
+            @endif
+         </div>
       </div>
 
       <div class="card">
@@ -99,7 +110,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="location_type" class="form-label">Location Type</label>
-                        <select name="location_type" class="form-select" required>
+                        <select name="location_type" class="form-select select2-tags" required
+                           data-placeholder="Select or Type...">
                            <option value="Warehouse">Warehouse</option>
                            <option value="Service">Service</option>
                            <option value="Disposal">Disposal</option>
@@ -142,7 +154,8 @@
                   <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_location_type" class="form-label">Location Type</label>
-                        <select id="edit_location_type" name="location_type" class="form-select" required>
+                        <select id="edit_location_type" name="location_type" class="form-select select2-tags" required
+                           data-placeholder="Select or Type...">
                            <option value="Warehouse">Warehouse</option>
                            <option value="Service">Service</option>
                            <option value="Disposal">Disposal</option>
@@ -171,6 +184,7 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
@@ -195,7 +209,7 @@
 
             editForm.attr('action', `{{ url('master_data_tyre/master_location') }}/${id}`);
             $('#edit_location_name').val(name);
-            $('#edit_location_type').val(type);
+            $('#edit_location_type').val(type).trigger('change');
             $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
          });
 
@@ -241,6 +255,25 @@
                text: '{{ session('error') }}',
             });
          @endif
+
+         // Initialize Select2
+         $('.select2').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal')
+            });
+         });
+
+         // Initialize Select2 with Tags
+         $('.select2-tags').each(function() {
+            var $this = $(this);
+            $this.wrap('<div class="position-relative"></div>').select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.closest('.modal'),
+               tags: true
+            });
+         });
       });
    </script>
 @endsection
