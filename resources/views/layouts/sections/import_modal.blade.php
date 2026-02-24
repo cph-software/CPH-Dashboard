@@ -30,6 +30,8 @@
                         </option>
                         <option value="Failure Codes" data-template="template_failure_codes.csv">Failure Codes (Kamus
                            Kerusakan)</option>
+                        <option value="Locations" data-template="template_locations.csv">Tyre Locations (Lokasi Kerja)</option>
+                        <option value="Segments" data-template="template_segments.csv">Tyre Segments (Segmen Operasi)</option>
                      </select>
                   </div>
                   <div class="mb-3">
@@ -97,7 +99,17 @@
                - size (Ukuran Ban)`,
          'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
                - pattern_name (Nama Pattern)<br>
-               - brand (Nama Brand)`
+               - brand (Nama Brand)`,
+         'Locations': `<strong>Kolom Wajib:</strong><br>
+               - location_name (Nama Lokasi)<br>
+               - location_type (Warehouse/Service/Disposal)<br>
+               - capacity (Kapasitas Ban, angka)`,
+         'Segments': `<strong>Kolom Wajib:</strong><br>
+               - segment_id (ID Segmen, unik)<br>
+               - segment_name (Nama Segmen)<br>
+               - location_name (Nama Lokasi Kerja, harus sudah ada di Locations)<br>
+               - terrain_type (Muddy/Rocky/Asphalt)<br>
+               - status (Active/Inactive)`
       };
 
       if (moduleSelect) {

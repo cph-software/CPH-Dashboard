@@ -9,6 +9,7 @@ use App\Models\TyreBrand;
 use App\Models\TyreSize;
 use App\Models\TyrePattern;
 use App\Models\TyreLocation;
+use App\Models\TyreSegment;
 use App\Models\TyreFailureCode;
 use App\Models\MasterImportKendaraan;
 use App\Services\ExcelExportService;
@@ -1068,6 +1069,34 @@ class DashboardController extends Controller
                     $row->default_category
                 ];
             }
+        } elseif ($type === 'locations') {
+            // Export master locations so user can see/import the same columns
+            $headers = ['location_name', 'location_type', 'capacity'];
+
+            $locations = \App\Models\TyreLocation::orderBy('location_name')->get();
+
+            foreach ($locations as $row) {
+                $data[] = [
+                    $row->location_name,
+                    $row->location_type,
+                    $row->capacity,
+                ];
+            }
+        } elseif ($type === 'segments') {
+            // Export master segments with resolved location name
+            $headers = ['segment_id', 'segment_name', 'location_name', 'terrain_type', 'status'];
+
+            $segments = \App\Models\TyreSegment::with('location')->orderBy('segment_id')->get();
+
+            foreach ($segments as $row) {
+                $data[] = [
+                    $row->segment_id,
+                    $row->segment_name,
+                    $row->location->location_name ?? '-',
+                    $row->terrain_type,
+                    $row->status,
+                ];
+            }
         } elseif ($type === 'examinations') {
             $headers = ['Tanggal', 'Unit', 'Odometer', 'Tyre Man', 'Total Ban Diperiksa', 'Status'];
             
@@ -1088,7 +1117,9 @@ class DashboardController extends Controller
         setLogActivity(auth()->id(), "Mengekspor data mentah $type", [
             'module' => 'Dashboard',
             'type' => $type,
-            'period' => $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d')
+            'period' => isset($startDate, $endDate)
+                ? $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d')
+                : '-'
         ]);
 
         if ($format === 'excel') {
