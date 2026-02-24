@@ -1192,6 +1192,14 @@ class DashboardController extends Controller
                     fputcsv($file, ['pattern_name', 'brand']);
                     fputcsv($file, ['G580', 'BRIDGESTONE']);
                     break;
+                case 'Locations':
+                    fputcsv($file, ['location_name', 'location_type', 'capacity']);
+                    fputcsv($file, ['SITE-A-GUDANG', 'Warehouse', '100']);
+                    break;
+                case 'Segments':
+                    fputcsv($file, ['segment_id', 'segment_name', 'location_name', 'terrain_type', 'status']);
+                    fputcsv($file, ['SEG/HAUL/01', 'Coal Hauling', 'SITE-A-GUDANG', 'Muddy', 'Active']);
+                    break;
             }
 
             fclose($file);
