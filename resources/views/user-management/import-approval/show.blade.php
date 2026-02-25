@@ -76,21 +76,35 @@
                <thead>
                   <tr>
                      <th width="50">#</th>
+                     <th width="100">Status</th>
                      {{-- Find columns from the first item data keys --}}
                      @if ($batch->items->count() > 0)
                         @foreach (array_keys($batch->items->first()->data) as $column)
                            <th>{{ ucwords(str_replace(['_', '-'], ' ', $column)) }}</th>
                         @endforeach
                      @endif
+                     <th>Notes/Error</th>
                   </tr>
                </thead>
                <tbody>
                   @forelse ($batch->items as $idx => $item)
                      <tr>
                         <td>{{ $idx + 1 }}</td>
+                        <td>
+                           @php
+                              $itemStatusClass =
+                                  [
+                                      'Pending' => 'bg-label-warning',
+                                      'Success' => 'bg-label-success',
+                                      'Failed' => 'bg-label-danger',
+                                  ][$item->status] ?? 'bg-label-secondary';
+                           @endphp
+                           <span class="badge {{ $itemStatusClass }} small">{{ $item->status }}</span>
+                        </td>
                         @foreach ($item->data as $val)
                            <td>{{ is_array($val) ? json_encode($val) : $val }}</td>
                         @endforeach
+                        <td class="small text-danger">{{ $item->error_message ?? '-' }}</td>
                      </tr>
                   @empty
                      <tr>

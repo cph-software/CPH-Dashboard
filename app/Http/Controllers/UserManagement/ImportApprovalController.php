@@ -139,11 +139,25 @@ class ImportApprovalController extends Controller
 
     private function processTyreSize($data)
     {
-        // Headers: size
+        // Headers: size, brand_name, type, std_otd, ply_rating
         $size = $data['size'] ?? null;
         if (!$size) throw new \Exception("Size kosong");
 
-        \App\Models\TyreSize::firstOrCreate(['size' => $size]);
+        $brandId = null;
+        if (!empty($data['brand_name'])) {
+            $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => trim($data['brand_name'])]);
+            $brandId = $brand->id;
+        }
+
+        \App\Models\TyreSize::updateOrCreate(
+            ['size' => $size],
+            [
+                'tyre_brand_id' => $brandId,
+                'type' => $data['type'] ?? 'Radial', // Default to Radial if not specified
+                'std_otd' => $data['std_otd'] ?? 0,
+                'ply_rating' => $data['ply_rating'] ?? 0
+            ]
+        );
     }
 
     private function processTyrePattern($data)
@@ -170,7 +184,7 @@ class ImportApprovalController extends Controller
         $sn = $data['sn_ban'] ?? $data['serial_number'] ?? null;
         if (!$sn) throw new \Exception("Serial Number kosong.");
 
-        // Find or Create Relations
+        // 1. Resolve Brand
         $brandId = null;
         $brandName = $data['brand_name'] ?? $data['brand'] ?? null;
         if (!empty($brandName)) {
@@ -178,23 +192,40 @@ class ImportApprovalController extends Controller
             $brandId = $brand->id;
         }
 
+        // 2. Resolve Size (Mandatory in DB, so we auto-create if missing)
         $sizeId = null;
         $sizeName = $data['size_name'] ?? $data['size'] ?? null;
         if (!empty($sizeName)) {
-            $size = \App\Models\TyreSize::firstOrCreate(['size' => trim($sizeName)]);
+            // Find size that matches both the name and the brand
+            $size = \App\Models\TyreSize::where('size', $sizeName)
+                ->where('tyre_brand_id', $brandId)
+                ->first();
+                
+            if (!$size) {
+                // Auto-create size with basic defaults to satisfy DB constraints
+                $size = \App\Models\TyreSize::create([
+                    'size' => $sizeName,
+                    'tyre_brand_id' => $brandId,
+                    'type' => 'Radial',
+                    'std_otd' => (float)($data['initial_rtd'] ?? 0),
+                    'ply_rating' => 0
+                ]);
+            }
             $sizeId = $size->id;
         }
 
+        // 3. Resolve Pattern
         $patternId = null;
         $patternName = $data['pattern_name'] ?? $data['pattern'] ?? null;
         if (!empty($patternName)) {
             $pattern = \App\Models\TyrePattern::firstOrCreate(
                 ['name' => trim($patternName)],
-                ['tyre_brand_id' => $brandId] // relate to brand if creating new
+                ['tyre_brand_id' => $brandId]
             );
             $patternId = $pattern->id;
         }
 
+        // 4. Resolve Location (Mandatory in DB)
         $locationId = null;
         $locationName = $data['location_name'] ?? $data['location'] ?? null;
         if (!empty($locationName)) {
@@ -205,14 +236,12 @@ class ImportApprovalController extends Controller
             $locationId = $location->id;
         }
 
+        // 5. Resolve Segment (Nullable in DB)
         $segmentId = null;
         $segmentName = $data['segment_name'] ?? $data['segment'] ?? null;
         if (!empty($segmentName)) {
-            $segment = \App\Models\TyreSegment::firstOrCreate(
-                ['segment_name' => trim($segmentName)],
-                ['status' => 'Active']
-            );
-            $segmentId = $segment->id;
+            $segment = \App\Models\TyreSegment::where('segment_name', trim($segmentName))->first();
+            $segmentId = $segment ? $segment->id : null;
         }
 
         $initialRtd = $data['initial_rtd'] ?? $data['otd'] ?? $data['initial_tread_depth'] ?? 0;
@@ -225,9 +254,8 @@ class ImportApprovalController extends Controller
                 'tyre_pattern_id' => $patternId,
                 'work_location_id' => $locationId,
                 'tyre_segment_id' => $segmentId,
-                'status' => $data['status'] ?? 'New', // Default to New for master data setup
+                'status' => $data['status'] ?? 'New',
                 'initial_tread_depth' => $initialRtd,
-                // If existing, don't overwrite current_tread_depth unless needed
                 'current_tread_depth' => $data['current_tread_depth'] ?? $initialRtd,
                 'price' => $data['price'] ?? 0
             ]
@@ -236,9 +264,9 @@ class ImportApprovalController extends Controller
 
     private function processVehicleMaster($data)
     {
-        // Headers: unit_code, type, layout, total_positions, status
-        $code = $data['unit_code'] ?? $data['kode_kendaraan'] ?? null;
-        if (!$code) throw new \Exception("Kode Unit kosong.");
+        // Headers matching UI Guide: kode_kendaraan, no_polisi, model_kendaraan, brand_kendaraan, site_location
+        $code = $data['kode_kendaraan'] ?? $data['unit_code'] ?? null;
+        if (!$code) throw new \Exception("Kode Unit (kode_kendaraan) kosong.");
 
         $layoutId = null;
         if (!empty($data['layout'])) {
@@ -249,7 +277,9 @@ class ImportApprovalController extends Controller
         \App\Models\MasterImportKendaraan::updateOrCreate(
             ['kode_kendaraan' => $code],
             [
-                'jenis_kendaraan' => $data['type'] ?? $data['jenis_kendaraan'] ?? 'Unknown',
+                'no_polisi' => $data['no_polisi'] ?? null,
+                'jenis_kendaraan' => $data['model_kendaraan'] ?? $data['type'] ?? 'Unknown',
+                'brand_kendaraan' => $data['brand_kendaraan'] ?? null,
                 'tyre_position_config_id' => $layoutId,
                 'total_tyre_position' => $data['total_positions'] ?? $data['total_ban'] ?? 0,
                 'tyre_unit_status' => $data['status'] ?? 'Active'
@@ -259,29 +289,27 @@ class ImportApprovalController extends Controller
 
     private function processMovementHistory($data)
     {
-        // Headers: tanggal, sn_ban, unit, posisi, tipe_pergerakan, odometer, hm, rtd, psi, failure_code, remark
-        $sn = $data['sn_ban'] ?? null;
-        if (!$sn) throw new \Exception("SN Ban kosong");
+        // Headers matching UI Guide: serial_number, kode_kendaraan, movement_type, movement_date, position_code, odometer, hm, rtd, psi, failure_code, remark
+        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
+        if (!$sn) throw new \Exception("Serial Number (serial_number) kosong");
         
         $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
         if (!$tyre) throw new \Exception("Ban $sn tidak ditemukan di Master Ban.");
 
-        $unitCode = $data['unit'] ?? null;
+        $unitCode = $data['kode_kendaraan'] ?? $data['unit'] ?? null;
         $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
         if (!$vehicle && $unitCode) throw new \Exception("Unit $unitCode tidak ditemukan.");
 
         // Find Position
-        $positionCode = $data['posisi'] ?? null;
+        $positionCode = $data['position_code'] ?? $data['posisi'] ?? null;
         $positionId = null;
         if ($positionCode && $vehicle) {
-            // Complex lookup: Find position ID based on vehicle config
             $configId = $vehicle->tyre_position_config_id;
             if ($configId) {
-                // Correctly filter by configuration_id and (code OR name)
                 $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
                     ->where(function($q) use ($positionCode) {
-                        $q->where('position_code', $positionCode) // code like 'FL'
-                          ->orWhere('position_name', $positionCode); // name like 'Front Left'
+                        $q->where('position_code', $positionCode)
+                          ->orWhere('position_name', $positionCode);
                     })
                     ->first();
                 $positionId = $posDetail ? $posDetail->id : null;
@@ -300,8 +328,8 @@ class ImportApprovalController extends Controller
             'tyre_id' => $tyre->id,
             'vehicle_id' => $vehicle ? $vehicle->id : null,
             'position_id' => $positionId,
-            'movement_date' => $data['tanggal'] ? \Carbon\Carbon::parse($data['tanggal']) : now(),
-            'movement_type' => $data['tipe_pergerakan'] ?? 'Installation', // Default
+            'movement_date' => ($data['movement_date'] ?? $data['tanggal']) ? \Carbon\Carbon::parse($data['movement_date'] ?? $data['tanggal']) : now(),
+            'movement_type' => $data['movement_type'] ?? $data['tipe_pergerakan'] ?? 'Installation',
             'odometer_reading' => $data['odometer'] ?? 0,
             'hour_meter_reading' => $data['hm'] ?? 0,
             'rtd_reading' => $data['rtd'] ?? null,
@@ -310,9 +338,6 @@ class ImportApprovalController extends Controller
             'remarks' => $data['remark'] ?? null,
             'created_by' => auth()->id()
         ]);
-        
-        // Note: We do NOT update Tyre status/current position here to prevent messing up 
-        // current state with out-of-order historical data import.
     }
 
     private function processTyreExamination($data)
