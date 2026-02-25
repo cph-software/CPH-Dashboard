@@ -17,7 +17,7 @@ class CreateTyreLocationsTable extends Migration
             $table->bigIncrements('id');
             $table->string('location_name');
             $table->string('location_type');
-            $table->integer('capacity');
+            $table->integer('capacity')->default(0);
             $table->timestamps();
         });
     }

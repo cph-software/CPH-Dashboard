@@ -40,6 +40,8 @@ class ImportController extends Controller
             foreach ($data as $row) {
                 if (count($header) !== count($row)) continue;
                 
+                // Trim all values to prevent issues with trailing spaces/newlines
+                $row = array_map('trim', $row);
                 $rowData = array_combine($header, $row);
                 
                 \App\Models\ImportItem::create([
