@@ -1165,8 +1165,8 @@ class DashboardController extends Controller
 
             switch ($module) {
                 case 'Tyre Master':
-                    fputcsv($file, ['serial_number', 'brand_name', 'size_name', 'pattern_name', 'initial_rtd', 'price']);
-                    fputcsv($file, ['SN-TEST-001', 'BRIDGESTONE', '11.00-20', 'G580', '16.5', '5500000']);
+                    fputcsv($file, ['serial_number', 'brand_name', 'size_name', 'pattern_name', 'initial_rtd', 'location_name', 'segment_name', 'price', 'status']);
+                    fputcsv($file, ['SN-TEST-001', 'BRIDGESTONE', '11.00-20', 'G580', '16.5', 'SITE-A-GUDANG', 'Coal Hauling', '5500000', 'New']);
                     break;
                 case 'Vehicle Master':
                     fputcsv($file, ['kode_kendaraan', 'no_polisi', 'model_kendaraan', 'brand_kendaraan', 'site_location']);

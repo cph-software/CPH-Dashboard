@@ -30,8 +30,10 @@
                         </option>
                         <option value="Failure Codes" data-template="template_failure_codes.csv">Failure Codes (Kamus
                            Kerusakan)</option>
-                        <option value="Locations" data-template="template_locations.csv">Tyre Locations (Lokasi Kerja)</option>
-                        <option value="Segments" data-template="template_segments.csv">Tyre Segments (Segmen Operasi)</option>
+                        <option value="Locations" data-template="template_locations.csv">Tyre Locations (Lokasi Kerja)
+                        </option>
+                        <option value="Segments" data-template="template_segments.csv">Tyre Segments (Segmen Operasi)
+                        </option>
                      </select>
                   </div>
                   <div class="mb-3">
@@ -62,7 +64,7 @@
 </div>
 
 <script>
-   document.addEventListener('DOMContentLoaded', function () {
+   document.addEventListener('DOMContentLoaded', function() {
       const moduleSelect = document.getElementById('importModuleSelect');
       const guideContent = document.getElementById('importGuideContent');
       const downloadArea = document.getElementById('templateDownloadArea');
@@ -75,7 +77,10 @@
                - size_name (Contoh: 11.00-20)<br>
                - pattern_name (Nama Pattern)<br>
                - initial_rtd (OTD Awal)<br>
-               - price (Harga Ban)`,
+               - location_name (Nama Lokasi, misal: GUDANG)<br>
+               - segment_name (Nama Segmen, misal: HAULING)<br>
+               - price (Harga Ban)<br>
+               - status (New/Installed/Scrap/Repaired)`,
          'Vehicle Master': `<strong>Kolom Wajib:</strong><br>
                - kode_kendaraan (No. Lambung)<br>
                - no_polisi (No. Plat)<br>
@@ -113,13 +118,14 @@
       };
 
       if (moduleSelect) {
-         moduleSelect.addEventListener('change', function () {
+         moduleSelect.addEventListener('change', function() {
             const selected = this.value;
             guideContent.innerHTML = guides[selected] || '<p>Pilih modul terlebih dahulu.</p>';
 
             if (selected) {
                downloadArea.classList.remove('d-none');
-               downloadBtn.href = `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}&format=csv`;
+               downloadBtn.href =
+                  `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}&format=csv`;
             } else {
                downloadArea.classList.add('d-none');
             }
