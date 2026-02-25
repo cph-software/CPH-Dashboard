@@ -86,7 +86,10 @@
                - no_polisi (No. Plat)<br>
                - model_kendaraan (Contoh: DT, HD)<br>
                - brand_kendaraan (Merek Truk)<br>
-               - site_location (Site Kerja)`,
+               - site_location (Site Kerja)<br>
+               - curb_weight (Berat Kosong, kg)<br>
+               - payload_capacity (Kapasitas Muat, ton)<br>
+               - segment (Nama/ID Segmen)`,
          'Movement History': `<strong>Kolom Wajib:</strong><br>
                - serial_number (SN Ban)<br>
                - kode_kendaraan (Unit Truk)<br>

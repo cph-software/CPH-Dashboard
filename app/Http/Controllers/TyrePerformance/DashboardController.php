@@ -1169,8 +1169,8 @@ class DashboardController extends Controller
                     fputcsv($file, ['SN-TEST-001', 'BRIDGESTONE', '11.00-20', 'G580', '16.5', 'SITE-A-GUDANG', 'Coal Hauling', '5500000', 'New']);
                     break;
                 case 'Vehicle Master':
-                    fputcsv($file, ['kode_kendaraan', 'no_polisi', 'model_kendaraan', 'brand_kendaraan', 'site_location']);
-                    fputcsv($file, ['DT-101', 'B 1234 ABC', 'DUMP TRUCK', 'HINO', 'SITE-A']);
+                    fputcsv($file, ['kode_kendaraan', 'no_polisi', 'model_kendaraan', 'brand_kendaraan', 'site_location', 'curb_weight', 'payload_capacity', 'segment']);
+                    fputcsv($file, ['DT-101', 'B 1234 ABC', 'DUMP TRUCK', 'HINO', 'SITE-A', '5500', '20', 'Coal Hauling']);
                     break;
                 case 'Movement History':
                     fputcsv($file, ['serial_number', 'kode_kendaraan', 'movement_type', 'movement_date', 'position_code', 'odometer']);
