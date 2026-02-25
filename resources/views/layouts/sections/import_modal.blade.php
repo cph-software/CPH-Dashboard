@@ -102,12 +102,19 @@
                - failure_name (Deskripsi)<br>
                - default_category (Category Group)`,
          'Tyre Brand': `<strong>Kolom Wajib:</strong><br>
-               - brand_name (Nama Brand)`,
+                - brand_name (Nama Brand)<br>
+                - brand_type (Premium/Economy)<br>
+                - status (Active/Inactive)`,
          'Tyre Size': `<strong>Kolom Wajib:</strong><br>
-               - size (Ukuran Ban)`,
+                - size (Ukuran Ban, misal: 11.00-20)<br>
+                - brand_name (Nama Brand)<br>
+                - type (Bias/Radial)<br>
+                - std_otd (Standard Original Tread Depth)<br>
+                - ply_rating (Angka)`,
          'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
-               - pattern_name (Nama Pattern)<br>
-               - brand (Nama Brand)`,
+                - pattern_name (Nama Pattern)<br>
+                - brand (Nama Brand)<br>
+                - status (Active/Inactive)`,
          'Locations': `<strong>Kolom Wajib:</strong><br>
                - location_name (Nama Lokasi)<br>
                - location_type (Warehouse/Service/Disposal)<br>
