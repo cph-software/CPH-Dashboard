@@ -1181,16 +1181,16 @@ class DashboardController extends Controller
                     fputcsv($file, ['CUT', 'Cut Separation', 'Major Damage']);
                     break;
                 case 'Tyre Brand':
-                    fputcsv($file, ['brand_name']);
-                    fputcsv($file, ['BRIDGESTONE']);
+                    fputcsv($file, ['brand_name', 'brand_type', 'status']);
+                    fputcsv($file, ['BRIDGESTONE', 'Premium', 'Active']);
                     break;
                 case 'Tyre Size':
                     fputcsv($file, ['size', 'brand_name', 'type', 'std_otd', 'ply_rating']);
                     fputcsv($file, ['11.00-20', 'BRIDGESTONE', 'Radial', '16.5', '16']);
                     break;
                 case 'Tyre Pattern':
-                    fputcsv($file, ['pattern_name', 'brand']);
-                    fputcsv($file, ['G580', 'BRIDGESTONE']);
+                    fputcsv($file, ['pattern_name', 'brand', 'status']);
+                    fputcsv($file, ['G580', 'BRIDGESTONE', 'Active']);
                     break;
                 case 'Locations':
                     fputcsv($file, ['location_name', 'location_type', 'capacity']);
