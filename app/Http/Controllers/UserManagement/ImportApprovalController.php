@@ -264,7 +264,7 @@ class ImportApprovalController extends Controller
 
     private function processVehicleMaster($data)
     {
-        // Headers matching UI Guide: kode_kendaraan, no_polisi, model_kendaraan, brand_kendaraan, site_location
+        // Headers matching UI Guide: kode_kendaraan, no_polisi, model_kendaraan, brand_kendaraan, site_location, curb_weight, payload_capacity, segment
         $code = $data['kode_kendaraan'] ?? $data['unit_code'] ?? null;
         if (!$code) throw new \Exception("Kode Unit (kode_kendaraan) kosong.");
 
@@ -274,13 +274,45 @@ class ImportApprovalController extends Controller
             $layoutId = $layout ? $layout->id : null;
         }
 
+        // 1. Resolve Segment (Auto-create if missing)
+        $segmentId = null;
+        $segmentName = $data['segment'] ?? $data['segment_name'] ?? null;
+        if (!empty($segmentName)) {
+            $segment = \App\Models\TyreSegment::where('segment_name', trim($segmentName))
+                ->orWhere('segment_id', trim($segmentName))
+                ->first();
+                
+            if (!$segment) {
+                $segment = \App\Models\TyreSegment::create([
+                    'segment_id' => strtoupper(str_replace(' ', '_', trim($segmentName))),
+                    'segment_name' => trim($segmentName),
+                    'status' => 'Active'
+                ]);
+            }
+            $segmentId = $segment->id;
+        }
+
+        // 2. Resolve Site Location (Populate 'area' column)
+        $area = $data['site_location'] ?? $data['area'] ?? $data['site'] ?? 'Unknown';
+        if ($area !== 'Unknown') {
+            // Ensure location exists in tyre_locations table too for consistency
+            \App\Models\TyreLocation::firstOrCreate(
+                ['location_name' => trim($area)],
+                ['location_type' => 'Service', 'capacity' => 0]
+            );
+        }
+
         \App\Models\MasterImportKendaraan::updateOrCreate(
             ['kode_kendaraan' => $code],
             [
                 'no_polisi' => $data['no_polisi'] ?? null,
                 'jenis_kendaraan' => $data['model_kendaraan'] ?? $data['type'] ?? 'Unknown',
-                'brand_kendaraan' => $data['brand_kendaraan'] ?? null,
-                'tyre_position_config_id' => $layoutId,
+                'vehicle_brand' => $data['brand_kendaraan'] ?? $data['vehicle_brand'] ?? null,
+                'curb_weight' => $data['curb_weight'] ?? null,
+                'payload_capacity' => $data['payload_capacity'] ?? null,
+                'area' => trim($area),
+                'operational_segment_id' => $segmentId,
+                'tyre_position_configuration_id' => $layoutId,
                 'total_tyre_position' => $data['total_positions'] ?? $data['total_ban'] ?? 0,
                 'tyre_unit_status' => $data['status'] ?? 'Active'
             ]
