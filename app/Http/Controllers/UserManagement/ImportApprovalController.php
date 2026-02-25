@@ -166,40 +166,69 @@ class ImportApprovalController extends Controller
 
     private function processTyreMaster($data)
     {
-        // Headers: sn_ban, brand, size, pattern, status, otd, price
-        // Mapping from CSV headers (lowercase, snake_case)
+        // Headers: serial_number, brand_name, size_name, pattern_name, initial_rtd, location_name, segment_name, price, status
         $sn = $data['sn_ban'] ?? $data['serial_number'] ?? null;
         if (!$sn) throw new \Exception("Serial Number kosong.");
 
         // Find or Create Relations
         $brandId = null;
-        if (!empty($data['brand'])) {
-            $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => $data['brand']]);
+        $brandName = $data['brand_name'] ?? $data['brand'] ?? null;
+        if (!empty($brandName)) {
+            $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => trim($brandName)]);
             $brandId = $brand->id;
         }
 
         $sizeId = null;
-        if (!empty($data['size'])) {
-            $size = \App\Models\TyreSize::firstOrCreate(['size' => $data['size']]);
+        $sizeName = $data['size_name'] ?? $data['size'] ?? null;
+        if (!empty($sizeName)) {
+            $size = \App\Models\TyreSize::firstOrCreate(['size' => trim($sizeName)]);
             $sizeId = $size->id;
         }
 
         $patternId = null;
-        if (!empty($data['pattern'])) {
-            $pattern = \App\Models\TyrePattern::firstOrCreate(['name' => $data['pattern']]);
+        $patternName = $data['pattern_name'] ?? $data['pattern'] ?? null;
+        if (!empty($patternName)) {
+            $pattern = \App\Models\TyrePattern::firstOrCreate(
+                ['name' => trim($patternName)],
+                ['tyre_brand_id' => $brandId] // relate to brand if creating new
+            );
             $patternId = $pattern->id;
         }
+
+        $locationId = null;
+        $locationName = $data['location_name'] ?? $data['location'] ?? null;
+        if (!empty($locationName)) {
+            $location = \App\Models\TyreLocation::firstOrCreate(
+                ['location_name' => trim($locationName)],
+                ['location_type' => 'Warehouse']
+            );
+            $locationId = $location->id;
+        }
+
+        $segmentId = null;
+        $segmentName = $data['segment_name'] ?? $data['segment'] ?? null;
+        if (!empty($segmentName)) {
+            $segment = \App\Models\TyreSegment::firstOrCreate(
+                ['segment_name' => trim($segmentName)],
+                ['status' => 'Active']
+            );
+            $segmentId = $segment->id;
+        }
+
+        $initialRtd = $data['initial_rtd'] ?? $data['otd'] ?? $data['initial_tread_depth'] ?? 0;
 
         \App\Models\Tyre::updateOrCreate(
             ['serial_number' => $sn],
             [
-                'brand_id' => $brandId,
-                'size_id' => $sizeId,
-                'pattern_id' => $patternId,
-                'status' => $data['status'] ?? 'Sparre',
-                'initial_tread_depth' => $data['otd'] ?? $data['initial_tread_depth'] ?? 0,
+                'tyre_brand_id' => $brandId,
+                'tyre_size_id' => $sizeId,
+                'tyre_pattern_id' => $patternId,
+                'work_location_id' => $locationId,
+                'tyre_segment_id' => $segmentId,
+                'status' => $data['status'] ?? 'New', // Default to New for master data setup
+                'initial_tread_depth' => $initialRtd,
                 // If existing, don't overwrite current_tread_depth unless needed
-                'current_tread_depth' => $data['current_tread_depth'] ?? ($data['otd'] ?? 0),
+                'current_tread_depth' => $data['current_tread_depth'] ?? $initialRtd,
                 'price' => $data['price'] ?? 0
             ]
         );
