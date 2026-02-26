@@ -120,11 +120,11 @@
                - location_type (Warehouse/Service/Disposal)<br>
                - capacity (Kapasitas Ban, angka)`,
          'Segments': `<strong>Kolom Wajib:</strong><br>
-               - segment_id (ID Segmen, unik)<br>
-               - segment_name (Nama Segmen)<br>
-               - location_name (Nama Lokasi Kerja, harus sudah ada di Locations)<br>
-               - terrain_type (Muddy/Rocky/Asphalt)<br>
-               - status (Active/Inactive)`
+                - segment_id (ID Segmen, unik/kode pendek)<br>
+                - segment_name (Nama Lengkap Segmen)<br>
+                - location_name (Nama Lokasi/Site Kerja)<br>
+                - terrain_type (Muddy/Rocky/Asphalt)<br>
+                - status (Active/Inactive)`
       };
 
       if (moduleSelect) {

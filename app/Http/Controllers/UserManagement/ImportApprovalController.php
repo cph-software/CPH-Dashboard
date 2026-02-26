@@ -400,16 +400,19 @@ class ImportApprovalController extends Controller
             throw new \Exception("Location name kosong");
         }
 
-        $type = $data['location_type'] ?? 'Warehouse';
+        $rawType = trim($data['location_type'] ?? 'Warehouse');
+        $type = ucfirst(strtolower($rawType));
         if (!in_array($type, ['Warehouse', 'Service', 'Disposal'], true)) {
-            throw new \Exception("location_type invalid untuk lokasi {$name}. Gunakan: Warehouse/Service/Disposal");
+            $type = 'Warehouse'; // Fallback to avoid error
         }
 
+        $capacity = isset($data['capacity']) && $data['capacity'] !== '' ? (int) $data['capacity'] : 0;
+
         \App\Models\TyreLocation::updateOrCreate(
-            ['location_name' => $name],
+            ['location_name' => trim($name)],
             [
                 'location_type' => $type,
-                'capacity' => isset($data['capacity']) && $data['capacity'] !== '' ? (int) $data['capacity'] : null,
+                'capacity' => $capacity,
             ]
         );
     }
@@ -417,30 +420,32 @@ class ImportApprovalController extends Controller
     private function processSegments($data)
     {
         // Headers: segment_id, segment_name, location_name, terrain_type, status
-        $segmentId = $data['segment_id'] ?? null;
-        $segmentName = $data['segment_name'] ?? null;
+        $segmentId = trim($data['segment_id'] ?? null);
+        $segmentName = trim($data['segment_name'] ?? null);
         if (!$segmentId || !$segmentName) {
             throw new \Exception("segment_id atau segment_name kosong");
         }
 
-        $locationName = $data['location_name'] ?? null;
+        $locationName = trim($data['location_name'] ?? null);
         $locationId = null;
         if ($locationName) {
-            $location = \App\Models\TyreLocation::where('location_name', $locationName)->first();
-            if (!$location) {
-                throw new \Exception("Lokasi '{$locationName}' tidak ditemukan untuk segment {$segmentId}");
-            }
+            $location = \App\Models\TyreLocation::firstOrCreate(
+                ['location_name' => $locationName],
+                ['location_type' => 'Service', 'capacity' => 0]
+            );
             $locationId = $location->id;
         }
 
-        $terrain = $data['terrain_type'] ?? 'Muddy';
+        $rawTerrain = trim($data['terrain_type'] ?? 'Muddy');
+        $terrain = ucfirst(strtolower($rawTerrain));
         if (!in_array($terrain, ['Muddy', 'Rocky', 'Asphalt'], true)) {
-            throw new \Exception("terrain_type invalid untuk segment {$segmentId}. Gunakan: Muddy/Rocky/Asphalt");
+            $terrain = 'Muddy';
         }
 
-        $status = $data['status'] ?? 'Active';
+        $rawStatus = trim($data['status'] ?? 'Active');
+        $status = ucfirst(strtolower($rawStatus));
         if (!in_array($status, ['Active', 'Inactive'], true)) {
-            throw new \Exception("status invalid untuk segment {$segmentId}. Gunakan: Active/Inactive");
+            $status = 'Active';
         }
 
         \App\Models\TyreSegment::updateOrCreate(
