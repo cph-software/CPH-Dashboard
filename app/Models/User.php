@@ -17,6 +17,7 @@ class User extends Authenticatable
         'role_id',
         'master_karyawan_id',
         'toko_id',
+        'tyre_company_id',
         'foto'
     ];
 
@@ -33,6 +34,11 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function tyreCompany()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
     }
 
     /**

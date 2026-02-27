@@ -10,8 +10,9 @@ class TyreFailureCodeController extends Controller
 {
     public function index()
     {
-        $failureCodes = TyreFailureCode::latest()->get();
-        return view('tyre-performance.master.failure-codes.index', compact('failureCodes'));
+        $failureCodes = TyreFailureCode::with('aliases.company')->latest()->get();
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        return view('tyre-performance.master.failure-codes.index', compact('failureCodes', 'companies'));
     }
 
     public function create()
@@ -56,8 +57,9 @@ class TyreFailureCodeController extends Controller
 
     public function show($id)
     {
-        $failureCode = TyreFailureCode::findOrFail($id);
-        return view('tyre-performance.master.failure-codes.show', compact('failureCode'));
+        $failureCode = TyreFailureCode::with('aliases.company')->findOrFail($id);
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        return view('tyre-performance.master.failure-codes.show', compact('failureCode', 'companies'));
     }
 
     public function edit($id)

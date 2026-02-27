@@ -14,6 +14,15 @@ class Menu extends Model
         return $this->belongsTo(Aplikasi::class, 'aplikasi_id');
     }
 
+    public function parent()
+    {
+        return $this->belongsTo(Menu::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Menu::class, 'parent_id')->orderBy('order_no');
+    }
 
 
     public function roles()

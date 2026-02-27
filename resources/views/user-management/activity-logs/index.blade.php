@@ -233,7 +233,7 @@
 
             button.prop('disabled', true);
 
-            $.get("{{ url('master_data_tyre/activity-logs') }}/" + id, function(data) {
+            $.get("{{ url('activity-logs') }}/" + id, function(data) {
                $('#detailTime').text(new Date(data.created_at).toLocaleString('id-ID'));
 
                let userName = 'System';

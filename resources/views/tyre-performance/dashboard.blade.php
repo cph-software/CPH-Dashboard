@@ -835,7 +835,7 @@
                         bodyHtml += '<td>' + val + '</td>';
                      });
                      if (row.id) {
-                        bodyHtml += '<td><a href="/master_data_tyre/master_tyre/' + row.id + '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                        bodyHtml += '<td><a href="/master_tyre/' + row.id + '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
                   });

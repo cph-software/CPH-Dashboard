@@ -485,7 +485,7 @@
             }
 
             // Fetch Vehicle Detail for auto-fill
-            fetch(`{{ url('master_data_tyre/vehicle-detail') }}/${vehicleId}`)
+            fetch(`{{ url('vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
@@ -509,7 +509,7 @@
 
             // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
-            fetch(`{{ url('master_data_tyre/layout') }}/${vehicleId}`)
+            fetch(`{{ url('layout') }}/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -518,7 +518,7 @@
 
             // Load Positions
             fetch(
-               `{{ url('master_data_tyre/position-info') }}?vehicle_id=${vehicleId}&type=Installation`
+               `{{ url('position-info') }}?vehicle_id=${vehicleId}&type=Installation`
             )
                .then(response => response.json())
                .then(data => {
@@ -691,7 +691,7 @@
                   btn.innerHTML =
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
-                  fetch(`{{ url('master_data_tyre/store') }}`, {
+                  fetch(`{{ url('tyre-store') }}`, {
                      method: 'POST',
                      body: formData,
                      headers: {

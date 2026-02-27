@@ -125,7 +125,13 @@
                            </span>
                         </td>
                         <td><code class="text-primary fw-bold">{{ $user->master_karyawan_id ?: '-' }}</code></td>
-                        <td><span class="text-muted fw-medium">{{ $user->toko_id ?: 'Main Office' }}</span></td>
+                        <td>
+                           <div class="d-flex flex-column">
+                              <span class="text-heading fw-medium">{{ $user->tyreCompany->company_name ?? '-' }}</span>
+                              <small
+                                 class="text-muted">{{ $user->toko->nama_toko ?? ($user->toko_id ?: 'Main Office') }}</small>
+                           </div>
+                        </td>
                         <td class="text-center pe-4">
                            <div class="d-flex justify-content-center gap-2">
                               <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect edit-user"
@@ -174,6 +180,17 @@
                         <div class="form-text small">Used for internal staff identification.</div>
                      </div>
                      <div class="mb-4">
+                        <label class="form-label fw-bold">Tyre Project Company <span class="text-danger">*</span></label>
+                        <select name="tyre_company_id" class="form-select select2-modal" required
+                           data-placeholder="Select Company">
+                           <option value=""></option>
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                           @endforeach
+                        </select>
+                        <div class="form-text small">Used for failure code aliases and project separation.</div>
+                     </div>
+                     <div class="mb-4">
                         <label class="form-label fw-bold">Access Password <span class="text-danger">*</span></label>
                         <div class="input-group input-group-merge">
                            <input type="password" name="password" class="form-control"
@@ -183,8 +200,15 @@
                         </div>
                      </div>
                      <div class="mb-0">
-                        <label class="form-label fw-bold">Store / Branch ID (Optional)</label>
-                        <input type="text" name="toko_id" class="form-control" placeholder="E.g. STORE-01">
+                        <label class="form-label fw-bold">Branch Access (Original Project)</label>
+                        <select name="toko_id" id="add_toko_id" class="form-select select2-toko"
+                           data-placeholder="Choose Branch">
+                           <option value="">Main Office</option>
+                           @foreach ($tokos as $toko)
+                              <option value="{{ $toko->id_toko }}">{{ $toko->nama_toko }} ({{ $toko->id_toko }})
+                              </option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="modal-footer border-top-0 pt-0 pb-4 justify-content-center">
@@ -231,9 +255,25 @@
                         <input type="password" name="password" class="form-control"
                            placeholder="Leave empty to keep current password">
                      </div>
+                     <div class="mb-4">
+                        <label class="form-label fw-bold">Tyre Project Company</label>
+                        <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2-modal">
+                           <option value="">No Company</option>
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
                      <div class="mb-0">
-                        <label class="form-label fw-bold">Store / Branch Access</label>
-                        <input type="text" name="toko_id" id="edit_toko_id" class="form-control">
+                        <label class="form-label fw-bold">Branch Access (Original)</label>
+                        <select name="toko_id" id="edit_toko_id" class="form-select select2-toko"
+                           data-placeholder="Choose Branch">
+                           <option value="">Main Office</option>
+                           @foreach ($tokos as $toko)
+                              <option value="{{ $toko->id_toko }}">{{ $toko->nama_toko }} ({{ $toko->id_toko }})
+                              </option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
                   <div class="modal-footer border-top-0 pt-0 pb-4 justify-content-center">
@@ -277,25 +317,70 @@
             }
          });
 
-         if ($.fn.select2) {
-            $('.select2-modal').select2({
-               dropdownParent: $('.modal')
+         // Initialize Select2 for modals individually when shown to avoid slowness
+         $('#addUserModal, #editUserModal').on('shown.bs.modal', function() {
+            const modal = $(this);
+            modal.find('.select2-modal').each(function() {
+               $(this).select2({
+                  dropdownParent: modal
+               });
             });
-         }
+
+            // Special handling for Toko dropdown with AJAX search
+            modal.find('.select2-toko').each(function() {
+               $(this).select2({
+                  dropdownParent: modal,
+                  ajax: {
+                     url: '{{ route('users.get-tokos') }}',
+                     dataType: 'json',
+                     delay: 250,
+                     data: function(params) {
+                        return {
+                           search: params.term
+                        };
+                     },
+                     processResults: function(data) {
+                        return {
+                           results: data
+                        };
+                     },
+                     cache: true
+                  },
+                  minimumInputLength: 2
+               });
+            });
+         });
 
          // Edit User
          $(document).on('click', '.edit-user', function() {
             const id = $(this).data('id');
-            const button = $(this);
-            button.prop('disabled', true);
+            const baseUrl = '{{ url('users') }}';
+            const btn = $(this);
+            btn.prop('disabled', true);
 
-            $.get('{{ url('cph_dashboard/users') }}/' + id + '/edit', function(user) {
-               $('#editUserForm').attr('action', '{{ url('cph_dashboard/users') }}/' + id);
+            $.get('{{ url('users') }}/' + id + '/edit', function(user) {
+               $('#editUserForm').attr('action', '{{ url('users') }}/' + id);
                $('#edit_role_id').val(user.role_id).trigger('change');
                $('#edit_master_karyawan_id').val(user.master_karyawan_id);
-               $('#edit_toko_id').val(user.toko_id);
+               $('#edit_tyre_company_id').val(user.tyre_company_id).trigger('change');
+
+               // Handle Toko ID with potentially missing initial option
+               if (user.toko_id) {
+                  let tokoSelect = $('#edit_toko_id');
+                  // Check if option already exists
+                  if (tokoSelect.find("option[value='" + user.toko_id + "']").length) {
+                     tokoSelect.val(user.toko_id).trigger('change');
+                  } else {
+                     // Create a mockup option while it's loading or not in initial 50
+                     var newOption = new Option(user.toko_id, user.toko_id, true, true);
+                     tokoSelect.append(newOption).trigger('change');
+                  }
+               } else {
+                  $('#edit_toko_id').val('').trigger('change');
+               }
+
                $('#editUserModal').modal('show');
-               button.prop('disabled', false);
+               btn.prop('disabled', false);
             });
          });
 
@@ -318,7 +403,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = '{{ url('cph_dashboard/users') }}/' + id;
+                  form.action = '{{ url('users') }}/' + id;
                   form.submit();
                }
             });

@@ -29,10 +29,34 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = \App\Models\User::with(['role', 'karyawan'])->get();
+        $users = \App\Models\User::with(['role', 'karyawan', 'tyreCompany'])->get();
         $roles = $this->roleService->getAll();
+        $companies = \App\Models\TyreCompany::orderBy('company_name')->get();
+        $tokos = \App\Models\Toko::limit(50)->get(); // Initial set
 
-        return view('user-management.users.index', compact('users', 'roles'));
+        return view('user-management.users.index', compact('users', 'roles', 'companies', 'tokos'));
+    }
+
+    /**
+     * AJAX search for tokos/branches
+     */
+    public function getTokos(Request $request)
+    {
+        $search = $request->search;
+        $tokos = \App\Models\Toko::where('nama_toko', 'LIKE', "%$search%")
+            ->orWhere('id_toko', 'LIKE', "%$search%")
+            ->limit(30)
+            ->get();
+
+        $response = [];
+        foreach ($tokos as $toko) {
+            $response[] = [
+                'id' => $toko->id_toko,
+                'text' => $toko->nama_toko . ' (' . $toko->id_toko . ')'
+            ];
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -53,6 +77,7 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'master_karyawan_id' => $request->master_karyawan_id,
             'toko_id' => $request->toko_id,
+            'tyre_company_id' => $request->tyre_company_id,
             'foto' => ''
         ]);
 
@@ -90,6 +115,7 @@ class UserController extends Controller
             'role_id' => $request->role_id,
             'master_karyawan_id' => $request->master_karyawan_id,
             'toko_id' => $request->toko_id,
+            'tyre_company_id' => $request->tyre_company_id,
         ];
 
         if ($request->filled('password')) {

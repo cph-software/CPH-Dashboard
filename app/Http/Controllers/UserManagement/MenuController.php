@@ -28,10 +28,11 @@ class MenuController extends Controller
      */
     public function index()
     {
-        $menus = \App\Models\Menu::with(['aplikasi'])->orderBy('aplikasi_id')->orderBy('name')->get();
+        $menus = \App\Models\Menu::with(['aplikasi', 'parent'])->orderBy('aplikasi_id')->orderBy('order_no')->get();
         $aplikasi = $this->aplikasiService->getAll();
+        $rootMenus = \App\Models\Menu::whereNull('parent_id')->orderBy('name')->get();
 
-        return view('user-management.menus.index', compact('menus', 'aplikasi'));
+        return view('user-management.menus.index', compact('menus', 'aplikasi', 'rootMenus'));
     }
 
     /**
@@ -50,9 +51,11 @@ class MenuController extends Controller
 
         $this->menuService->store([
             'aplikasi_id' => $request->aplikasi_id,
+            'parent_id' => $request->parent_id,
             'name' => $request->name,
             'url' => $request->url,
             'icon' => $request->icon ?: 'ri-circle-line',
+            'order_no' => $request->order_no ?: 0,
         ]);
 
         setLogActivity(auth()->id(), 'Menambah menu baru: ' . $request->name, [
@@ -95,9 +98,11 @@ class MenuController extends Controller
 
         $this->menuService->update($id, [
             'aplikasi_id' => $request->aplikasi_id,
+            'parent_id' => $request->parent_id,
             'name' => $request->name,
             'url' => $request->url,
             'icon' => $request->icon ?: 'ri-circle-line',
+            'order_no' => $request->order_no ?: 0,
         ]);
 
         setLogActivity(auth()->id(), 'Memperbarui menu: ' . $request->name, [
