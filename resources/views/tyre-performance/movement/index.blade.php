@@ -200,7 +200,7 @@
             layoutContainer.innerHTML =
                '<div class="py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Sedang memuat layout...</p></div>';
 
-            fetch(`/master_data_tyre/layout/${vehicleId}`)
+            fetch(`/layout/${vehicleId}`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
@@ -214,7 +214,7 @@
                });
 
             // Fetch Vehicle Detail for info card
-            fetch(`/master_data_tyre/vehicle-detail/${vehicleId}`)
+            fetch(`/vehicle-detail/${vehicleId}`)
                .then(response => response.json())
                .then(data => {
                   document.getElementById('info_tipe').textContent = data.jenis_kendaraan || '-';
@@ -328,7 +328,7 @@
                buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  fetch(`/master_data_tyre/rollback/${id}`, {
+                  fetch(`/rollback/${id}`, {
                      method: 'DELETE',
                      headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content

@@ -175,8 +175,10 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($item) {
                 $fc = $item->failureCode;
+                $companyId = auth()->user()->tyre_company_id ?? null;
+                $displayName = $fc ? $fc->getDisplayNameByCompanyId($companyId) : 'Unknown';
                 return [
-                    'label' => $fc ? ($fc->failure_code . ' - ' . ($fc->display_name ?: $fc->failure_name)) : 'Unknown',
+                    'label' => $fc ? ($fc->failure_code . ' - ' . $displayName) : 'Unknown',
                     'total' => $item->total,
                 ];
             });
@@ -638,7 +640,7 @@ class DashboardController extends Controller
                     });
 
                 return response()->json([
-                    'title' => "Pelepasan: " . ($fc->display_name ?: "{$fc->failure_code} - {$fc->failure_name}"),
+                    'title' => "Pelepasan: " . ($fc->getDisplayNameByCompanyId(auth()->user()->tyre_company_id ?? null)),
                     'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'KM', 'HM', 'RTD', 'Notes'],
                     'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
                     'data' => $movements,

@@ -392,7 +392,7 @@
 
                      // Detail button (always visible)
                      actions += `<a class="btn btn-sm btn-icon btn-text-primary rounded-pill waves-effect waves-light me-1"
-                                        href="{{ url('master_data_tyre/master_kendaraan') }}/${row.id}" title="Lihat Detail">
+                                        href="{{ url('master_kendaraan') }}/${row.id}" title="Lihat Detail">
                                         <i class="icon-base ri ri-eye-line"></i>
                                     </a>`;
 
@@ -449,7 +449,7 @@
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
 
-            editForm.attr('action', `{{ url('master_data_tyre/master_kendaraan') }}/${id}`);
+            editForm.attr('action', `{{ url('master_kendaraan') }}/${id}`);
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_no_polisi').val(nopol);
             $('#edit_area').val(area).trigger('change');
@@ -484,7 +484,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data_tyre/master_kendaraan') }}/${id}`;
+                  form.action = `{{ url('master_kendaraan') }}/${id}`;
                   form.submit();
                }
             });
@@ -501,7 +501,7 @@
                '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
             );
 
-            fetch(`/master_data_tyre/master_position/${configId}/layout`)
+            fetch(`/master_position/${configId}/layout`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.html(html);

@@ -400,11 +400,11 @@ class ImportApprovalController extends Controller
             throw new \Exception("Location name kosong");
         }
 
-        $rawType = trim($data['location_type'] ?? 'Warehouse');
+        $rawType = trim($data['location_type'] ?? 'Unknown');
         $type = ucfirst(strtolower($rawType));
-        if (!in_array($type, ['Warehouse', 'Service', 'Disposal'], true)) {
-            $type = 'Warehouse'; // Fallback to avoid error
-        }
+        // if (!in_array($type, ['Warehouse', 'Service', 'Disposal'], true)) {
+        //     $type = 'Warehouse'; // Fallback to avoid error
+        // }
 
         $capacity = isset($data['capacity']) && $data['capacity'] !== '' ? (int) $data['capacity'] : 0;
 
@@ -436,11 +436,11 @@ class ImportApprovalController extends Controller
             $locationId = $location->id;
         }
 
-        $rawTerrain = trim($data['terrain_type'] ?? 'Muddy');
+        $rawTerrain = trim($data['terrain_type'] ?? 'Unknown');
         $terrain = ucfirst(strtolower($rawTerrain));
-        if (!in_array($terrain, ['Muddy', 'Rocky', 'Asphalt'], true)) {
-            $terrain = 'Muddy';
-        }
+        // if (!in_array($terrain, ['Muddy', 'Rocky', 'Asphalt'], true)) {
+        //     $terrain = 'Muddy';
+        // }
 
         $rawStatus = trim($data['status'] ?? 'Active');
         $status = ucfirst(strtolower($rawStatus));

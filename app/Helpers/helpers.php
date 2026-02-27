@@ -103,6 +103,26 @@ if (!function_exists('getRoleMenu')) {
     }
 }
 
+if (!function_exists('getAllRoleMenusForProject')) {
+    /**
+     * Get all menus for a role that belong to THIS project.
+     * Identifies project menus by icon pattern: ri-* (RemixIcon).
+     * The other project uses FontAwesome (<i class="fas fa-...">).
+     *
+     * @param int $roleId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    function getAllRoleMenusForProject($roleId)
+    {
+        return \App\Models\RoleMenu::where('role_id', $roleId)
+            ->whereHas('menu', function ($query) {
+                $query->where('icon', 'like', 'ri-%');
+            })
+            ->with('menu')
+            ->get();
+    }
+}
+
 if (!function_exists('getGeneralMenu')) {
     /**
      * Get general menus (menus without specific aplikasi or global menus)
@@ -185,7 +205,7 @@ if (!function_exists('getDashboardRedirectUrl')) {
         }
 
         if ($hasTyreAccess) {
-            return '/master_data_tyre/dashboard';
+            return '/tyre-dashboard';
         }
 
         return '/dashboard';

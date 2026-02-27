@@ -20,13 +20,34 @@
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
             @if (hasPermission('Failure Codes', 'create'))
-               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
                <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
                </a>
             @endif
+         </div>
+      </div>
+
+      <div class="card mb-4">
+         <div class="card-body">
+            <div class="row align-items-center">
+               <div class="col-md-4">
+                  <label class="form-label fw-bold">View as Company (Preview Aliases)</label>
+                  <select id="companyFilter" class="form-select select2">
+                     <option value="">Default (Master Names)</option>
+                     @foreach ($companies as $company)
+                        <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                     @endforeach
+                  </select>
+               </div>
+               <div class="col-md-8 text-muted small">
+                  <i class="ri-information-line me-1"></i> Pilih instansi untuk melihat bagaimana nama kode kerusakan
+                  muncul pada dashboard mereka.
+               </div>
+            </div>
          </div>
       </div>
 
@@ -37,9 +58,9 @@
                   <tr>
                      <th>Code</th>
                      <th>Name</th>
+                     <th>Company Aliases</th>
                      <th>Image</th>
                      <th>Category</th>
-                     <th>Status</th>
                      <th>Actions</th>
                   </tr>
                </thead>
@@ -47,25 +68,42 @@
                   @foreach ($failureCodes as $fc)
                      <tr>
                         <td><strong>{{ $fc->failure_code }}</strong></td>
-                        <td>
+                        <td class="failure-name-cell" data-master-name="{{ $fc->failure_name }}"
+                           data-aliases="{{ json_encode($fc->aliases->pluck('alias_name', 'tyre_company_id')) }}">
+                           <span class="main-name">{{ $fc->failure_name }}</span>
                            @if ($fc->display_name)
-                              <span class="fw-bold text-primary">{{ $fc->display_name }}</span><br>
-                              <small class="text-muted">({{ $fc->failure_name }})</small>
+                              <div class="small text-muted">Original: {{ $fc->display_name }}</div>
+                           @endif
+                        </td>
+                        <td>
+                           @if ($fc->aliases->count() > 0)
+                              <div class="d-flex flex-wrap gap-1">
+                                 @foreach ($fc->aliases->take(2) as $alias)
+                                    <span class="badge bg-label-info border" title="{{ $alias->company->company_name }}">
+                                       {{ $alias->alias_name }}
+                                    </span>
+                                 @endforeach
+                                 @if ($fc->aliases->count() > 2)
+                                    <span class="badge bg-label-secondary">+{{ $fc->aliases->count() - 2 }} More</span>
+                                 @endif
+                              </div>
                            @else
-                              {{ $fc->failure_name }}
+                              <small class="text-muted">No Aliases</small>
                            @endif
                         </td>
                         <td>
                            @if ($fc->image_1)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_1) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_1) }}" alt="Img 1" class="rounded"
+                                    width="80" height="80" style="object-fit: cover;">
                               </a>
                            @endif
                            @if ($fc->image_2)
-                              <a href="javascript:void(0);" onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
-                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1" width="100"
-                                    height="100" style="object-fit: cover;">
+                              <a href="javascript:void(0);"
+                                 onclick="showImagePreview('{{ asset('storage/' . $fc->image_2) }}')">
+                                 <img src="{{ asset('storage/' . $fc->image_2) }}" alt="Img 2" class="rounded ms-1"
+                                    width="80" height="80" style="object-fit: cover;">
                               </a>
                            @endif
                            @if (!$fc->image_1 && !$fc->image_2)
@@ -79,11 +117,6 @@
                            </span>
                         </td>
                         <td>
-                           <span class="badge bg-label-{{ $fc->status == 'Active' ? 'success' : 'secondary' }}">
-                              {{ $fc->status }}
-                           </span>
-                        </td>
-                        <td>
                            <div class="d-flex align-items-center">
                               <a href="{{ route('tyre-failure-codes.show', $fc->id) }}"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
@@ -91,6 +124,12 @@
                                  <i class="icon-base ri ri-eye-line"></i>
                               </a>
                               @if (hasPermission('Failure Codes', 'update'))
+                                 <button type="button"
+                                    class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect waves-light me-1 manage-alias"
+                                    data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}"
+                                    data-name="{{ $fc->failure_name }}" title="Manage Company Aliases">
+                                    <i class="icon-base ri ri-price-tag-3-line"></i>
+                                 </button>
                                  <a href="{{ route('tyre-failure-codes.edit', $fc->id) }}"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
                                     title="Edit">
@@ -110,6 +149,48 @@
                   @endforeach
                </tbody>
             </table>
+         </div>
+      </div>
+   </div>
+
+   <!-- Quick Manage Alias Modal -->
+   <div class="modal fade" id="manageAliasModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content">
+            <div class="modal-header border-bottom">
+               <h5 class="modal-title">Set Company Alias</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('tyre-failure-aliases.store') }}" method="POST">
+               @csrf
+               <input type="hidden" name="tyre_failure_code_id" id="alias_fc_id">
+               <div class="modal-body py-4">
+                  <div class="mb-3">
+                     <label class="form-label text-muted small">Failure Code</label>
+                     <div class="fw-bold" id="alias_fc_display"></div>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold">Select Company</label>
+                     <select name="tyre_company_id" class="form-select select2-modal" required
+                        data-placeholder="Choose Company...">
+                        <option value=""></option>
+                        @foreach ($companies as $company)
+                           <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="mb-0">
+                     <label class="form-label fw-bold">Custom Alias Name</label>
+                     <input type="text" name="alias_name" class="form-control" required
+                        placeholder="E.g. Samping Sobek">
+                  </div>
+               </div>
+               <div class="modal-footer bg-light py-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm"
+                     data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Save Alias</button>
+               </div>
+            </form>
          </div>
       </div>
    </div>
@@ -137,12 +218,34 @@
 
 @section('vendor-script')
    <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
    <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
 @endsection
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
+         // Initialize Select2 for filters
+         $('#companyFilter').select2({
+            width: '100%'
+         }).on('change', function() {
+            const companyId = $(this).val();
+
+            $('.failure-name-cell').each(function() {
+               const masterName = $(this).data('master-name');
+               const aliases = $(this).data('aliases') || {};
+               const mainSpan = $(this).find('.main-name');
+
+               if (companyId && aliases[companyId]) {
+                  mainSpan.html(
+                     `<span class="text-primary fw-bold"><i class="ri-price-tag-3-fill me-1 small"></i>${aliases[companyId]}</span>`
+                  );
+               } else {
+                  mainSpan.text(masterName);
+               }
+            });
+         });
+
          $('.datatables-failures').DataTable({
             order: [
                [0, 'desc']
@@ -151,7 +254,23 @@
             lengthMenu: [10, 25, 50, 75, 100],
          });
 
-         $(document).on('click', '.delete-failure', function () {
+         // Initialize Select2 for the modal
+         $('.select2-modal').select2({
+            dropdownParent: $('#manageAliasModal'),
+            width: '100%'
+         });
+
+         $(document).on('click', '.manage-alias', function() {
+            const id = $(this).data('id');
+            const code = $(this).data('code');
+            const name = $(this).data('name');
+
+            $('#alias_fc_id').val(id);
+            $('#alias_fc_display').text(`${code} - ${name}`);
+            $('#manageAliasModal').modal('show');
+         });
+
+         $(document).on('click', '.delete-failure', function() {
             const id = $(this).data('id');
             const code = $(this).data('code');
 
@@ -170,7 +289,7 @@
             }).then((result) => {
                if (result.isConfirmed) {
                   const form = document.getElementById('deleteForm');
-                  form.action = `{{ url('master_data_tyre/master_failure_code') }}/${id}`;
+                  form.action = `{{ url('master_failure_code') }}/${id}`;
                   form.submit();
                }
             });
@@ -193,7 +312,7 @@
                text: '{{ session('error') }}',
             });
          @endif
-         });
+      });
 
       function showImagePreview(src) {
          $('#previewImage').attr('src', src);
