@@ -87,7 +87,7 @@
                                  <a class="dropdown-item" href="{{ route('import-approval.show', $batch->id) }}">
                                     <i class="ri-eye-line me-1"></i> Detail & Review
                                  </a>
-                                 @if ($batch->status === 'Pending')
+                                 @if ($batch->status === 'Pending' && auth()->user()->hasPermission('Import Approval', 'update'))
                                     <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST"
                                        class="d-inline">
                                        @csrf

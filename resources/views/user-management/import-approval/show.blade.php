@@ -14,7 +14,7 @@
             <p class="text-muted mb-0 small">Review data mentah sebelum memproses ke database utama.</p>
          </div>
          <div class="col-md-4 text-md-end">
-            @if ($batch->status === 'Pending')
+            @if ($batch->status === 'Pending' && auth()->user()->hasPermission('Import Approval', 'update'))
                <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST" class="d-inline">
                   @csrf
                   <button type="submit" class="btn btn-success me-2"

@@ -23,11 +23,13 @@
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Patterns', 'create'))
+            @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
+            @endif
+            @if (hasPermission('Patterns', 'create'))
                <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
                   data-bs-target="#addPatternModal">
                   <i class="ri-add-line me-1"></i> Add Pattern
@@ -94,7 +96,8 @@
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary py-3">
                <h5 class="modal-title text-white">Add New Pattern</h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
@@ -102,8 +105,8 @@
 
                   <div class="mb-3">
                      <label for="name" class="form-label fw-bold">Pattern Name</label>
-                     <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rough Terrain (R150)"
-                        required>
+                     <input type="text" id="name" name="name" class="form-control"
+                        placeholder="e.g. Rough Terrain (R150)" required>
                   </div>
                   <div class="mb-3">
                      <label for="status" class="form-label fw-bold">Status</label>
@@ -166,7 +169,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-patterns').DataTable({
             order: [
                [0, 'asc']
@@ -177,7 +180,7 @@
 
          const editForm = $('#editPatternForm');
 
-         $(document).on('click', '.edit-pattern', function () {
+         $(document).on('click', '.edit-pattern', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -188,7 +191,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-pattern', function () {
+         $(document).on('click', '.delete-pattern', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -232,7 +235,7 @@
          @endif
 
          // Initialize Select2 with Modal fix
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

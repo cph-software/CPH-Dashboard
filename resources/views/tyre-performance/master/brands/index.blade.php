@@ -19,10 +19,13 @@
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Brands', 'create'))
-               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+            @if (hasPermission('Import Approval', 'create'))
+               <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                  data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
+            @endif
+            @if (hasPermission('Brands', 'create'))
                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBrandModal">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Brand
                </button>
@@ -164,7 +167,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          $('.datatables-brands').DataTable({
             order: [
                [0, 'desc']
@@ -175,7 +178,7 @@
 
          const editForm = $('#editBrandForm');
 
-         $(document).on('click', '.edit-brand', function () {
+         $(document).on('click', '.edit-brand', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
             const status = $(this).data('status');
@@ -185,7 +188,7 @@
             $('#edit_status').val(status);
          });
 
-         $(document).on('click', '.delete-brand', function () {
+         $(document).on('click', '.delete-brand', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
 
@@ -227,6 +230,6 @@
                text: '{{ session('error') }}',
             });
          @endif
-         });
+      });
    </script>
 @endsection
