@@ -20,11 +20,13 @@
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Locations', 'create'))
+            @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
+            @endif
+            @if (hasPermission('Locations', 'create'))
                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
                   <i class="ri-add-line me-1"></i> Add Location
                </button>

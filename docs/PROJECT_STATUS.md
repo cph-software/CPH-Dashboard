@@ -1,6 +1,6 @@
 # 📋 CPH Tyre Dashboard — Status Pengerjaan Project
 
-> **Terakhir diperbarui:** 23 Februari 2026  
+> **Terakhir diperbarui:** 27 Februari 2026  
 > **Dibuat oleh:** Developer (Ingat GSI Feedback)  
 > **Referensi:** Chat WhatsApp Pak Agus CPH & Notulensi Meeting
 
@@ -22,9 +22,9 @@
 
 | Status     | Jumlah Item | Keterangan                               |
 | ---------- | :---------: | ---------------------------------------- |
-| ✅ Selesai |   **20**    | Sudah diimplementasikan dan berjalan     |
-| ⚠️ Partial |    **3**    | Sebagian dikerjakan, perlu penyempurnaan |
-| ❌ Belum   |   **17**    | Belum dikerjakan sama sekali             |
+| ✅ Selesai |   **25**    | Sudah diimplementasikan dan berjalan     |
+| ⚠️ Partial |    **2**    | Sebagian dikerjakan, perlu penyempurnaan |
+| ❌ Belum   |   **13**    | Belum dikerjakan sama sekali             |
 
 **Estimasi keseluruhan: ~45% selesai**
 
@@ -176,6 +176,29 @@
 | 11  | **Chart human error untuk deteksi data tidak valid**                                                    | Belum ada fitur validasi/deteksi anomali data sama sekali.                                                                                    |       🔴 Major       |
 | 12  | **Form pelepasan: tambahkan upload gambar, hide layout, data matching install & remove tyre**           | Form pelepasan belum ada upload gambar. Belum ada view terpisah untuk lihat konfigurasi ban. Data matching antara install & remove belum ada. |       🔴 Major       |
 | 13  | **Tahapan update RTD (bagaimana pengisian RTD)**                                                        | Perlu klarifikasi dengan GSI bagaimana tahapan update RTD dilakukan (di examination? di movement? manual?).                                   | ❓ Perlu klarifikasi |
+
+---
+
+## 27 Feb 2026 — Role-Based Access Control (RBAC) & UX Refactor
+
+### ✅ Sudah Dikerjakan
+
+|  #  | Modul / Fitur                                | Detail Implementasi                                                                                                                                                                                                                                   | File Terkait                                                                                    |
+| :-: | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+|  1  | **Granular RBAC: Import & Approval Control** | Implementasi level akses 3-tier untuk fitur import. User bisa dipisah antara yang hanya bisa **Upload Request** (Create), **View Logs** (View), dan **Approve/Reject** (Update). Menggunakan middleware `tyre.permission`.                            | `routes/web.php`, `ImportApprovalController.php`, `CheckTyrePermission.php`                     |
+|  2  | **Decoupled Import Permissions**             | Tombol "Import" di seluruh halaman Master Data kini dikontrol lewat permission `Import Approval` (create), bukan lagi menempel pada permission create modul masing-masing. Ini memungkinkan admin input manual tanpa harus punya akses import massal. | `resources/views/tyre-performance/master/*/index.blade.php`                                     |
+|  3  | **Sidebar Menu Refactor (Recursive State)**  | Refactor total logic navigasi. Menggunakan helper `getMenuState` yang rekursif untuk mendeteksi status `active` dan `open` pada menu multi-level (hingga 3 level). Memperbaiki isu menu tidak terbuka otomatis saat di sub-page.                      | `resources/views/layouts/sections/menu.blade.php`                                               |
+|  4  | **Optimasi Form User: AJAX Toko (Select2)**  | Pencarian Toko/Branch di form Add/Edit User kini menggunakan AJAX Select2. Meningkatkan performa load halaman secara signifikan karena tidak lagi me-load ribuan data Toko sekaligus (limit awal 50, sisanya via search).                             | `UserController.php`, `resources/views/user-management/users/index.blade.php`, `routes/web.php` |
+|  5  | **Flattened Route Structure**                | Menghapus global prefix `master_data_tyre` dan merapikan penamaan route. Route dashboard kini `tyre-dashboard`, user management kini flat `/users`, `/roles`, dll. Mempermudah maintenance dan URL lebih clean.                                       | `routes/web.php`                                                                                |
+|  6  | **Branding Update: CPH TYRE**                | Memperbarui teks branding di sidebar menjadi "CPH TYRE" sesuai permintaan identitas aplikasi.                                                                                                                                                         | `resources/views/layouts/sections/menu.blade.php`                                               |
+|  7  | **Fix: Select2 Initialization in Modal**     | Memperbaiki bug inisialisasi Select2 di dalam modal Bootstrap. Menggunakan event `shown.bs.modal` dan target spesifik untuk mencegah inisialisasi ganda atau kegagalan fokus pada elemen input.                                                       | `resources/views/user-management/users/index.blade.php`                                         |
+
+### ⚠️ Sedang Dikerjakan / Perlu Penyesuaian
+
+|  #  | Request                                   | Catatan                                                                                                                                                                  |
+| :-: | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|  1  | **Role 3-tier (Generalization)**          | Baru diimplementasikan penuh di modul Import/Approval. Modul lain (Movement, Registration) masih perlu penyesuaian granularitas serupa di level controller & middleware. |
+|  2  | **Data Access restriction by Toko/Owner** | Logic untuk membatasi user hanya bisa melihat data milik Toko/Company-nya sendiri sudah ada modelnya, tapi belum di-apply ke seluruh Query di Controller.                |
 
 ---
 

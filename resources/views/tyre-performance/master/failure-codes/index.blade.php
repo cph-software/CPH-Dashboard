@@ -19,11 +19,13 @@
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Failure Codes', 'create'))
+            @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
+            @endif
+            @if (hasPermission('Failure Codes', 'create'))
                <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
                </a>

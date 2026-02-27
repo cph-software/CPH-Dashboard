@@ -111,13 +111,26 @@ Route::middleware(['auth'])->group(function () {
     Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
 
     // Import Approval
-    Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])->name('import-approval.index');
-    Route::get('import-approval/{id}', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'show'])->name('import-approval.show');
-    Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])->name('import-approval.approve');
-    Route::post('import-approval/{id}/reject', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'reject'])->name('import-approval.reject');
+    Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])
+        ->name('import-approval.index')
+        ->middleware('tyre.permission:Import Approval,view');
+        
+    Route::get('import-approval/{id}', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'show'])
+        ->name('import-approval.show')
+        ->middleware('tyre.permission:Import Approval,view');
+        
+    Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])
+        ->name('import-approval.approve')
+        ->middleware('tyre.permission:Import Approval,update');
+        
+    Route::post('import-approval/{id}/reject', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'reject'])
+        ->name('import-approval.reject')
+        ->middleware('tyre.permission:Import Approval,update');
 
     // Import Action (Uploader)
-    Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])->name('import.store');
+    Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])
+        ->name('import.store')
+        ->middleware('tyre.permission:Import Approval,create');
 
     // Activity Logs
     Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');

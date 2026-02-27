@@ -194,9 +194,11 @@
                      <li>
                         <hr class="dropdown-divider">
                      </li>
-                     <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
-                           data-bs-target="#importModal"><i class="ri-upload-2-line me-1"></i>
-                           Admin: Import Data</a></li>
+                     @if (hasPermission('Import Approval', 'create'))
+                        <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
+                              data-bs-target="#importModal"><i class="ri-upload-2-line me-1"></i>
+                              Admin: Import Data</a></li>
+                     @endif
                      <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
                            <i class="ri-check-double-line me-1"></i>
                            Approval & Riwayat Import</a></li>
@@ -451,7 +453,14 @@
                   </div>
                   <div class="text-center">
                      @php
-                        $healthColor = $fleetHealthData['avgHealth'] >= 60 ? 'success' : ($fleetHealthData['avgHealth'] >= 40 ? 'info' : ($fleetHealthData['avgHealth'] >= 20 ? 'warning' : 'danger'));
+                        $healthColor =
+                            $fleetHealthData['avgHealth'] >= 60
+                                ? 'success'
+                                : ($fleetHealthData['avgHealth'] >= 40
+                                    ? 'info'
+                                    : ($fleetHealthData['avgHealth'] >= 20
+                                        ? 'warning'
+                                        : 'danger'));
                      @endphp
                      <div class="fleet-gauge-number text-{{ $healthColor }}">
                         {{ $fleetHealthData['avgHealth'] }}%
@@ -495,7 +504,8 @@
             <div class="card chart-card h-100">
                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                   <div>
-                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by Position
+                     <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Scrap by
+                        Position
                      </h6>
                      <p class="kpi-sub mb-0">Frekuensi Scrap Ban per Posisi</p>
                   </div>
@@ -533,7 +543,8 @@
          <div class="col-xl-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab Pelepasan
+                  <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab
+                     Pelepasan
                   </h6>
                   <p class="kpi-sub mb-0">Distribusi Failure Code</p>
                </div>
@@ -582,12 +593,20 @@
                                     $otd = $t->initial_tread_depth ?? 0;
                                     $rtd = $t->current_tread_depth ?? 0;
                                     $pctRemaining = $otd > 0 ? round(($rtd / $otd) * 100, 0) : 0;
-                                    $barColor = $pctRemaining < 20 ? '#ea5455' : ($pctRemaining < 40 ? '#ff9f43' : ($pctRemaining < 60 ? '#00cfe8' : '#28c76f'));
+                                    $barColor =
+                                        $pctRemaining < 20
+                                            ? '#ea5455'
+                                            : ($pctRemaining < 40
+                                                ? '#ff9f43'
+                                                : ($pctRemaining < 60
+                                                    ? '#00cfe8'
+                                                    : '#28c76f'));
                                  @endphp
                                  <tr class="alert-tyre-row">
                                     <td class="ps-3">
                                        <strong class="d-block small">{{ $t->serial_number }}</strong>
-                                       <span class="text-muted" style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
+                                       <span class="text-muted"
+                                          style="font-size:.7rem">{{ $t->brand->brand_name ?? '' }}</span>
                                     </td>
                                     <td>
                                        <span
@@ -653,7 +672,8 @@
          <div class="col-xl-7">
             <div class="card h-100">
                <div class="card-header pb-0">
-                  <h6 class="mb-1"><i class="icon-base ri ri-history-line me-1 text-primary"></i> Aktivitas Terbaru</h6>
+                  <h6 class="mb-1"><i class="icon-base ri ri-history-line me-1 text-primary"></i> Aktivitas Terbaru
+                  </h6>
                   <p class="kpi-sub mb-0">10 pergerakan terakhir</p>
                </div>
                <div class="card-body">
@@ -673,7 +693,8 @@
                            <tbody>
                               @foreach ($recentMovements as $m)
                                  <tr>
-                                    <td class="small">{{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}</td>
+                                    <td class="small">{{ \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') }}
+                                    </td>
                                     <td>
                                        <span
                                           class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : ($m->movement_type === 'Removal' ? 'danger' : 'info') }} rounded-pill"
@@ -683,7 +704,8 @@
                                     </td>
                                     <td class="small fw-medium">{{ $m->tyre->serial_number ?? '-' }}</td>
                                     <td class="small">{{ $m->vehicle->kode_kendaraan ?? '-' }}</td>
-                                    <td class="small">{{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
+                                    <td class="small">
+                                       {{ $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-' }}
                                     </td>
                                     <td class="small">
                                        {{ $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-' }}
@@ -714,7 +736,8 @@
                   <i class="icon-base ri ri-search-eye-line me-2"></i>
                   <span id="drillDownTitleText">Detail Data</span>
                </h5>
-               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
             </div>
             <div class="modal-body">
                <div id="drillDownLoading" class="text-center py-5">
@@ -757,7 +780,7 @@
    <script>
       'use strict';
 
-      document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('DOMContentLoaded', function() {
          var colors = {
             primary: '#7367f0',
             success: '#28c76f',
@@ -768,7 +791,7 @@
          };
 
          if ($.fn.select2) {
-            $('.select2').each(function () {
+            $('.select2').each(function() {
                var $this = $(this);
                $this.select2({
                   placeholder: 'Pilih opsi',
@@ -794,14 +817,19 @@
             }
             modal.show();
 
-            var ajaxData = { type: type, value: value };
-            if (extraParams) { $.extend(ajaxData, extraParams); }
+            var ajaxData = {
+               type: type,
+               value: value
+            };
+            if (extraParams) {
+               $.extend(ajaxData, extraParams);
+            }
 
             $.ajax({
                url: drillDownUrl,
                data: ajaxData,
                dataType: 'json',
-               success: function (res) {
+               success: function(res) {
                   document.getElementById('drillDownLoading').style.display = 'none';
                   if (!res.data || res.data.length === 0) {
                      document.getElementById('drillDownEmpty').style.display = 'block';
@@ -813,15 +841,17 @@
                   document.getElementById('drillDownCount').textContent = res.total + ' data ditemukan';
 
                   var headHtml = '<tr>';
-                  res.columns.forEach(function (col) { headHtml += '<th>' + col + '</th>'; });
+                  res.columns.forEach(function(col) {
+                     headHtml += '<th>' + col + '</th>';
+                  });
                   if (res.data[0] && res.data[0].id) headHtml += '<th>Aksi</th>';
                   headHtml += '</tr>';
                   document.getElementById('drillDownHead').innerHTML = headHtml;
 
                   var bodyHtml = '';
-                  res.data.forEach(function (row) {
+                  res.data.forEach(function(row) {
                      bodyHtml += '<tr>';
-                     res.keys.forEach(function (key) {
+                     res.keys.forEach(function(key) {
                         var val = (row[key] !== null) ? row[key] : '-';
                         if (key === 'status') {
                            var cls = 'secondary';
@@ -830,12 +860,14 @@
                            else if (val === 'Retread') cls = 'info';
                            else if (val === 'Scrap') cls = 'danger';
                            else if (val === 'Repaired') cls = 'warning';
-                           val = '<span class="badge bg-label-' + cls + ' rounded-pill">' + val + '</span>';
+                           val = '<span class="badge bg-label-' + cls + ' rounded-pill">' +
+                              val + '</span>';
                         }
                         bodyHtml += '<td>' + val + '</td>';
                      });
                      if (row.id) {
-                        bodyHtml += '<td><a href="/master_tyre/' + row.id + '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                        bodyHtml += '<td><a href="/master_tyre/' + row.id +
+                           '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
                   });
@@ -843,7 +875,10 @@
                   drillDownDT = $('#drillDownTable').DataTable({
                      paging: true,
                      pageLength: 10,
-                     language: { search: 'Cari:', zeroRecords: 'Tidak ada data ditemukan' }
+                     language: {
+                        search: 'Cari:',
+                        zeroRecords: 'Tidak ada data ditemukan'
+                     }
                   });
                }
             });
@@ -852,26 +887,67 @@
          var statusData = @json($statusDistribution);
          var statusLabels = Object.keys(statusData);
          var statusValues = Object.values(statusData);
-         var statusColorsMap = { 'Installed': colors.success, 'Repaired': colors.warning, 'Scrap': colors.danger };
-         var statusColors = statusLabels.map(function (s) {
+         var statusColorsMap = {
+            'Installed': colors.success,
+            'Repaired': colors.warning,
+            'Scrap': colors.danger
+         };
+         var statusColors = statusLabels.map(function(s) {
             if (s.indexOf('New') === 0) return colors.primary;
             if (s.indexOf('Retread') === 0) return colors.info;
             return statusColorsMap[s] || colors.secondary;
          });
 
          new ApexCharts(document.querySelector('#statusDonutChart'), {
-            chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('status', statusLabels[cfg.dataPointIndex]); } } },
+            chart: {
+               type: 'donut',
+               height: 280,
+               events: {
+                  dataPointSelection: function(e, c, cfg) {
+                     openDrillDown('status', statusLabels[cfg.dataPointIndex]);
+                  }
+               }
+            },
             series: statusValues,
             labels: statusLabels,
             colors: statusColors,
-            plotOptions: { pie: { donut: { size: '65%', labels: { show: true, value: { fontWeight: 700, formatter: function (v) { return v + ' ban'; } }, total: { show: true, label: 'Total', formatter: function (w) { return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' ban'; } } } } } }
+            plotOptions: {
+               pie: {
+                  donut: {
+                     size: '65%',
+                     labels: {
+                        show: true,
+                        value: {
+                           fontWeight: 700,
+                           formatter: function(v) {
+                              return v + ' ban';
+                           }
+                        },
+                        total: {
+                           show: true,
+                           label: 'Total',
+                           formatter: function(w) {
+                              return w.globals.seriesTotals.reduce(function(a, b) {
+                                 return a + b;
+                              }, 0) + ' ban';
+                           }
+                        }
+                     }
+                  }
+               }
+            }
          }).render();
 
          var monthlyData = @json($monthlyMovements);
          new ApexCharts(document.querySelector('#movementTrendChart'), {
             chart: {
-               type: 'bar', height: 300, toolbar: { show: false }, events: {
-                  dataPointSelection: function (e, c, cfg) {
+               type: 'bar',
+               height: 300,
+               toolbar: {
+                  show: false
+               },
+               events: {
+                  dataPointSelection: function(e, c, cfg) {
                      var m = monthlyData[cfg.dataPointIndex].month;
                      var s = 'Installation';
                      if (cfg.seriesIndex === 1) s = 'Removal';
@@ -880,14 +956,40 @@
                   }
                }
             },
-            series: [
-               { name: 'Pemasangan', data: monthlyData.map(function (m) { return m.installations; }) },
-               { name: 'Pelepasan', data: monthlyData.map(function (m) { return m.removals; }) },
-               { name: 'Inspeksi', data: monthlyData.map(function (m) { return m.inspections || 0; }) }
+            series: [{
+                  name: 'Pemasangan',
+                  data: monthlyData.map(function(m) {
+                     return m.installations;
+                  })
+               },
+               {
+                  name: 'Pelepasan',
+                  data: monthlyData.map(function(m) {
+                     return m.removals;
+                  })
+               },
+               {
+                  name: 'Inspeksi',
+                  data: monthlyData.map(function(m) {
+                     return m.inspections || 0;
+                  })
+               }
             ],
-            xaxis: { categories: monthlyData.map(function (m) { return m.month; }) },
+            xaxis: {
+               categories: monthlyData.map(function(m) {
+                  return m.month;
+               })
+            },
             colors: [colors.success, colors.danger, colors.info],
-            plotOptions: { bar: { columnWidth: '40%', borderRadius: 4, dataLabels: { position: 'top' } } }
+            plotOptions: {
+               bar: {
+                  columnWidth: '40%',
+                  borderRadius: 4,
+                  dataLabels: {
+                     position: 'top'
+                  }
+               }
+            }
          }).render();
 
          function renderBrandChart(data) {
@@ -897,21 +999,59 @@
                return;
             }
             new ApexCharts(container, {
-               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('brand_performance', data[cfg.dataPointIndex].brand, { size_id: $('#brandFilterSize').val(), pattern_id: $('#brandFilterPattern').val() }); } } },
-               series: [{ name: 'Avg KM', data: data.map(function (b) { return b.avg_km; }) }],
-               xaxis: { categories: data.map(function (b) { return b.brand; }) },
+               chart: {
+                  type: 'bar',
+                  height: 280,
+                  events: {
+                     dataPointSelection: function(e, c, cfg) {
+                        openDrillDown('brand_performance', data[cfg.dataPointIndex].brand, {
+                           size_id: $('#brandFilterSize').val(),
+                           pattern_id: $('#brandFilterPattern').val()
+                        });
+                     }
+                  }
+               },
+               series: [{
+                  name: 'Avg KM',
+                  data: data.map(function(b) {
+                     return b.avg_km;
+                  })
+               }],
+               xaxis: {
+                  categories: data.map(function(b) {
+                     return b.brand;
+                  })
+               },
                colors: [colors.primary],
-               plotOptions: { bar: { horizontal: true, borderRadius: 6, dataLabels: { position: 'center' } } },
-               dataLabels: { enabled: true, formatter: function (v, o) { return v.toLocaleString() + ' km (' + data[o.dataPointIndex].count + ' ban)'; } }
+               plotOptions: {
+                  bar: {
+                     horizontal: true,
+                     borderRadius: 6,
+                     dataLabels: {
+                        position: 'center'
+                     }
+                  }
+               },
+               dataLabels: {
+                  enabled: true,
+                  formatter: function(v, o) {
+                     return v.toLocaleString() + ' km (' + data[o.dataPointIndex].count + ' ban)';
+                  }
+               }
             }).render();
          }
          renderBrandChart(@json($brandPerformance));
 
-         $('#brandFilterSize, #brandFilterPattern').on('change', function () {
+         $('#brandFilterSize, #brandFilterPattern').on('change', function() {
             $.ajax({
                url: brandPerformanceUrl,
-               data: { size_id: $('#brandFilterSize').val(), pattern_id: $('#brandFilterPattern').val() },
-               success: function (res) { if (res.success) renderBrandChart(res.data); }
+               data: {
+                  size_id: $('#brandFilterSize').val(),
+                  pattern_id: $('#brandFilterPattern').val()
+               },
+               success: function(res) {
+                  if (res.success) renderBrandChart(res.data);
+               }
             });
          });
 
@@ -922,23 +1062,63 @@
                container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
-            data.sort(function (a, b) { return a.cpk - b.cpk; });
+            data.sort(function(a, b) {
+               return a.cpk - b.cpk;
+            });
             new ApexCharts(container, {
-               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('brand_cpk', data[cfg.dataPointIndex].brand, { size_id: $('#cpkFilterSize').val(), pattern_id: $('#cpkFilterPattern').val() }); } } },
-               series: [{ name: 'CPK', data: data.map(function (b) { return b.cpk; }) }],
-               xaxis: { categories: data.map(function (b) { return b.brand; }) },
+               chart: {
+                  type: 'bar',
+                  height: 280,
+                  events: {
+                     dataPointSelection: function(e, c, cfg) {
+                        openDrillDown('brand_cpk', data[cfg.dataPointIndex].brand, {
+                           size_id: $('#cpkFilterSize').val(),
+                           pattern_id: $('#cpkFilterPattern').val()
+                        });
+                     }
+                  }
+               },
+               series: [{
+                  name: 'CPK',
+                  data: data.map(function(b) {
+                     return b.cpk;
+                  })
+               }],
+               xaxis: {
+                  categories: data.map(function(b) {
+                     return b.brand;
+                  })
+               },
                colors: [colors.warning],
-               plotOptions: { bar: { horizontal: true, borderRadius: 6, dataLabels: { position: 'center' } } },
-               dataLabels: { enabled: true, formatter: function (v, o) { return 'Rp ' + v.toLocaleString() + ' (' + data[o.dataPointIndex].count + ' ban)'; } }
+               plotOptions: {
+                  bar: {
+                     horizontal: true,
+                     borderRadius: 6,
+                     dataLabels: {
+                        position: 'center'
+                     }
+                  }
+               },
+               dataLabels: {
+                  enabled: true,
+                  formatter: function(v, o) {
+                     return 'Rp ' + v.toLocaleString() + ' (' + data[o.dataPointIndex].count + ' ban)';
+                  }
+               }
             }).render();
          }
          renderCpkChart(@json($cpkByBrand));
 
-         $('#cpkFilterSize, #cpkFilterPattern').on('change', function () {
+         $('#cpkFilterSize, #cpkFilterPattern').on('change', function() {
             $.ajax({
                url: cpkByBrandUrl,
-               data: { size_id: $('#cpkFilterSize').val(), pattern_id: $('#cpkFilterPattern').val() },
-               success: function (res) { if (res.success) renderCpkChart(res.data); }
+               data: {
+                  size_id: $('#cpkFilterSize').val(),
+                  pattern_id: $('#cpkFilterPattern').val()
+               },
+               success: function(res) {
+                  if (res.success) renderCpkChart(res.data);
+               }
             });
          });
 
@@ -946,58 +1126,169 @@
          var fleetHealthData = @json($fleetHealthData);
          var healthLabels = Object.keys(fleetHealthData.categories);
          new ApexCharts(document.querySelector('#fleetHealthChart'), {
-            chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('rtd', healthLabels[cfg.dataPointIndex]); } } },
+            chart: {
+               type: 'donut',
+               height: 280,
+               events: {
+                  dataPointSelection: function(e, c, cfg) {
+                     openDrillDown('rtd', healthLabels[cfg.dataPointIndex]);
+                  }
+               }
+            },
             series: Object.values(fleetHealthData.categories),
             labels: healthLabels,
             colors: [colors.danger, colors.warning, colors.info, colors.success],
-            plotOptions: { pie: { donut: { size: '65%', labels: { show: true, value: { fontWeight: 700 }, total: { show: true, label: 'Total', formatter: function (w) { return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' ban'; } } } } } }
+            plotOptions: {
+               pie: {
+                  donut: {
+                     size: '65%',
+                     labels: {
+                        show: true,
+                        value: {
+                           fontWeight: 700
+                        },
+                        total: {
+                           show: true,
+                           label: 'Total',
+                           formatter: function(w) {
+                              return w.globals.seriesTotals.reduce(function(a, b) {
+                                 return a + b;
+                              }, 0) + ' ban';
+                           }
+                        }
+                     }
+                  }
+               }
+            }
          }).render();
 
          var locationData = @json($locationStock);
          new ApexCharts(document.querySelector('#locationStockChart'), {
-            chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('location', locationData[cfg.dataPointIndex].location_name); } } },
-            series: [{ name: 'Stock', data: locationData.map(function (l) { return l.current_stock; }) }, { name: 'Capacity', data: locationData.map(function (l) { return l.capacity; }) }],
-            xaxis: { categories: locationData.map(function (l) { return l.location_name; }) },
+            chart: {
+               type: 'bar',
+               height: 280,
+               events: {
+                  dataPointSelection: function(e, c, cfg) {
+                     openDrillDown('location', locationData[cfg.dataPointIndex].location_name);
+                  }
+               }
+            },
+            series: [{
+               name: 'Stock',
+               data: locationData.map(function(l) {
+                  return l.current_stock;
+               })
+            }, {
+               name: 'Capacity',
+               data: locationData.map(function(l) {
+                  return l.capacity;
+               })
+            }],
+            xaxis: {
+               categories: locationData.map(function(l) {
+                  return l.location_name;
+               })
+            },
             colors: [colors.info, '#82868b'],
-            plotOptions: { bar: { columnWidth: '50%', borderRadius: 4 } }
+            plotOptions: {
+               bar: {
+                  columnWidth: '50%',
+                  borderRadius: 4
+               }
+            }
          }).render();
 
          var axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
          var axleChart = null;
+
          function renderAxleChart(data) {
             var container = document.querySelector('#axleAnalysisChart');
-            if (axleChart) { axleChart.destroy(); }
+            if (axleChart) {
+               axleChart.destroy();
+            }
             if (!data || data.length === 0) {
                container.innerHTML = '<div class="text-center py-5">Belum ada data scrap</div>';
                return;
             }
             axleChart = new ApexCharts(container, {
-               chart: { type: 'bar', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('scrap_position', data[cfg.dataPointIndex].position); } } },
-               series: [{ name: 'Scrap', data: data.map(function (a) { return a.total; }) }],
-               xaxis: { categories: data.map(function (a) { return a.position; }) },
+               chart: {
+                  type: 'bar',
+                  height: 280,
+                  events: {
+                     dataPointSelection: function(e, c, cfg) {
+                        openDrillDown('scrap_position', data[cfg.dataPointIndex].position);
+                     }
+                  }
+               },
+               series: [{
+                  name: 'Scrap',
+                  data: data.map(function(a) {
+                     return a.total;
+                  })
+               }],
+               xaxis: {
+                  categories: data.map(function(a) {
+                     return a.position;
+                  })
+               },
                colors: [colors.danger],
-               plotOptions: { bar: { horizontal: true, borderRadius: 6 } }
+               plotOptions: {
+                  bar: {
+                     horizontal: true,
+                     borderRadius: 6
+                  }
+               }
             });
             axleChart.render();
          }
          renderAxleChart(@json($axleAnalysis));
 
-         $('#axleFilterSize, #axleFilterPattern').on('change', function () {
+         $('#axleFilterSize, #axleFilterPattern').on('change', function() {
             $.ajax({
                url: axleAnalysisUrl,
-               data: { size_id: $('#axleFilterSize').val(), pattern_id: $('#axleFilterPattern').val() },
-               success: function (res) { if (res.success) renderAxleChart(res.data); }
+               data: {
+                  size_id: $('#axleFilterSize').val(),
+                  pattern_id: $('#axleFilterPattern').val()
+               },
+               success: function(res) {
+                  if (res.success) renderAxleChart(res.data);
+               }
             });
          });
 
          var failureData = @json($failureDistribution);
          if (failureData.length > 0) {
             new ApexCharts(document.querySelector('#failureDonutChart'), {
-               chart: { type: 'donut', height: 280, events: { dataPointSelection: function (e, c, cfg) { openDrillDown('failure', failureData[cfg.dataPointIndex].label); } } },
-               series: failureData.map(function (f) { return f.total; }),
-               labels: failureData.map(function (f) { return f.label; }),
+               chart: {
+                  type: 'donut',
+                  height: 280,
+                  events: {
+                     dataPointSelection: function(e, c, cfg) {
+                        openDrillDown('failure', failureData[cfg.dataPointIndex].label);
+                     }
+                  }
+               },
+               series: failureData.map(function(f) {
+                  return f.total;
+               }),
+               labels: failureData.map(function(f) {
+                  return f.label;
+               }),
                colors: [colors.danger, colors.warning, colors.info, colors.primary, colors.secondary],
-               plotOptions: { pie: { donut: { size: '60%', labels: { show: true, total: { show: true, label: 'Total' } } } } }
+               plotOptions: {
+                  pie: {
+                     donut: {
+                        size: '60%',
+                        labels: {
+                           show: true,
+                           total: {
+                              show: true,
+                              label: 'Total'
+                           }
+                        }
+                     }
+                  }
+               }
             }).render();
          }
       });

@@ -16,14 +16,17 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Sizes</h4>
          <div class="d-flex gap-2">
-            <a href="{{ route('master_data.export', ['type' => 'sizes', 'format' => 'excel']) }}" class="btn btn-outline-primary">
+            <a href="{{ route('master_data.export', ['type' => 'sizes', 'format' => 'excel']) }}"
+               class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Sizes', 'create'))
+            @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
+            @endif
+            @if (hasPermission('Sizes', 'create'))
                <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSizeModal">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Size
                </a>
