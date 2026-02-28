@@ -365,7 +365,7 @@
 
       {{-- PERFORMANCE ROW --}}
       <div class="row g-4 mb-4">
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-bar-chart-horizontal-line me-1 text-primary"></i> Performa
@@ -402,7 +402,7 @@
                </div>
             </div>
          </div>
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-money-dollar-circle-line me-1 text-warning"></i> Cost Per
@@ -441,9 +441,56 @@
          </div>
       </div>
 
+      {{-- NEW SECTION: BRAND DETAIL COMPARISON --}}
+      <div class="row g-4 mb-4">
+         <div class="col-12">
+            <div class="card">
+               <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3">
+                  <div class="d-flex align-items-center">
+                     <div class="avatar avatar-sm me-2">
+                        <span class="avatar-initial rounded bg-label-primary"><i class="ri-search-eye-line"></i></span>
+                     </div>
+                     <div>
+                        <h6 class="mb-0">Perbandingan Internal Brand</h6>
+                        <p class="kpi-sub mb-0">Analisis performa per Pattern & Size untuk brand pilihan</p>
+                     </div>
+                  </div>
+                  <div style="width: 200px;">
+                     <select id="brandDetailSelector" class="form-select select2">
+                        <option value="">Pilih Brand</option>
+                        @foreach ($filterBrands as $b)
+                           <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+               </div>
+               <div class="card-body pt-4">
+                  <div id="brandDetailPlaceholder" class="text-center py-5">
+                     <i class="ri-information-line ri-3x text-light mb-2 d-block"></i>
+                     <p class="text-muted mb-0">Silakan pilih brand untuk melihat perbandingan pattern dan size.</p>
+                  </div>
+                  <div id="brandDetailContent" style="display: none;">
+                     <div class="row g-4">
+                        <div class="col-xl-6 col-lg-6">
+                           <h6 class="text-center mb-3 fw-bold"><i class="ri-road-map-line me-1 text-primary"></i> Avg
+                              Lifetime per Pattern</h6>
+                           <div id="brandPatternChart" style="min-height: 300px;"></div>
+                        </div>
+                        <div class="col-xl-6 col-lg-6">
+                           <h6 class="text-center mb-3 fw-bold"><i class="ri-ruler-2-line me-1 text-primary"></i> Avg
+                              Lifetime per Size</h6>
+                           <div id="brandSizeChart" style="min-height: 300px;"></div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
       {{-- HEALTH ROW --}}
       <div class="row g-4 mb-4">
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0 d-flex justify-content-between align-items-start">
                   <div>
@@ -484,7 +531,7 @@
                </div>
             </div>
          </div>
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-building-2-line me-1 text-primary"></i> Stok Ban per
@@ -492,7 +539,7 @@
                   <p class="kpi-sub mb-0">Kapasitas vs Stok Terisi</p>
                </div>
                <div class="card-body">
-                  <div id="locationStockChart" style="min-height:280px;"></div>
+                  <div id="locationStockChart" style="min-height:280px; width: 100%;"></div>
                </div>
             </div>
          </div>
@@ -500,7 +547,7 @@
 
       {{-- AXLE & FAILURE ROW --}}
       <div class="row g-4 mb-4">
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                   <div>
@@ -540,7 +587,7 @@
                </div>
             </div>
          </div>
-         <div class="col-xl-6">
+         <div class="col-xl-6 col-lg-6">
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-error-warning-line me-1 text-danger"></i> Penyebab
@@ -802,7 +849,14 @@
          }
 
          var drillDownUrl = '{{ route('master_data.drill-down') }}';
+         var brandPerformanceUrl = '{{ route('master_data.brand-performance') }}';
+         var cpkByBrandUrl = '{{ route('master_data.cpk-by-brand') }}';
+         var axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
          var drillDownDT = null;
+
+         // Global dates from PHP
+         var globalStartDate = '{{ $startDate->format('Y-m-d') }}';
+         var globalEndDate = '{{ $endDate->format('Y-m-d') }}';
 
          function openDrillDown(type, value, extraParams) {
             var modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
@@ -1122,6 +1176,96 @@
             });
          });
 
+         // --- Brand Detail Section Logic ---
+         var brandDetailUrl = '{{ route('master_data.brand-detail-performance') }}';
+         var brandPatternChart = null;
+         var brandSizeChart = null;
+
+         function renderBrandDetailCharts(data) {
+            $('#brandDetailPlaceholder').hide();
+            $('#brandDetailContent').show();
+
+            // 1. Pattern Chart
+            if (brandPatternChart) brandPatternChart.destroy();
+            brandPatternChart = new ApexCharts(document.querySelector('#brandPatternChart'), {
+               chart: {
+                  type: 'bar',
+                  height: 300
+               },
+               series: [{
+                  name: 'Avg KM',
+                  data: data.by_pattern.map(p => p.avg_km)
+               }],
+               xaxis: {
+                  categories: data.by_pattern.map(p => p.label)
+               },
+               colors: [colors.primary],
+               plotOptions: {
+                  bar: {
+                     borderRadius: 4,
+                     dataLabels: {
+                        position: 'top'
+                     }
+                  }
+               },
+               dataLabels: {
+                  enabled: true,
+                  offsetY: -20,
+                  formatter: v => v.toLocaleString()
+               }
+            });
+            brandPatternChart.render();
+
+            // 2. Size Chart
+            if (brandSizeChart) brandSizeChart.destroy();
+            brandSizeChart = new ApexCharts(document.querySelector('#brandSizeChart'), {
+               chart: {
+                  type: 'bar',
+                  height: 300
+               },
+               series: [{
+                  name: 'Avg KM',
+                  data: data.by_size.map(s => s.avg_km)
+               }],
+               xaxis: {
+                  categories: data.by_size.map(s => s.label)
+               },
+               colors: [colors.info],
+               plotOptions: {
+                  bar: {
+                     borderRadius: 4,
+                     dataLabels: {
+                        position: 'top'
+                     }
+                  }
+               },
+               dataLabels: {
+                  enabled: true,
+                  offsetY: -20,
+                  formatter: v => v.toLocaleString()
+               }
+            });
+            brandSizeChart.render();
+         }
+
+         $('#brandDetailSelector').on('change', function() {
+            var brandId = $(this).val();
+            if (!brandId) {
+               $('#brandDetailContent').hide();
+               $('#brandDetailPlaceholder').show();
+               return;
+            }
+            $.ajax({
+               url: brandDetailUrl,
+               data: {
+                  brand_id: brandId
+               },
+               success: function(res) {
+                  if (res.success) renderBrandDetailCharts(res);
+               }
+            });
+         });
+
 
          var fleetHealthData = @json($fleetHealthData);
          var healthLabels = Object.keys(fleetHealthData.categories);
@@ -1166,7 +1310,8 @@
          new ApexCharts(document.querySelector('#locationStockChart'), {
             chart: {
                type: 'bar',
-               height: 280,
+               height: locationData.length > 5 ? (80 + locationData.length * 30) :
+               280, // Dynamic height if many locations
                events: {
                   dataPointSelection: function(e, c, cfg) {
                      openDrillDown('location', locationData[cfg.dataPointIndex].location_name);
@@ -1192,6 +1337,7 @@
             colors: [colors.info, '#82868b'],
             plotOptions: {
                bar: {
+                  horizontal: locationData.length > 5, // Switch to horizontal if many locations
                   columnWidth: '50%',
                   borderRadius: 4
                }
@@ -1247,6 +1393,8 @@
             $.ajax({
                url: axleAnalysisUrl,
                data: {
+                  start_date: globalStartDate,
+                  end_date: globalEndDate,
                   size_id: $('#axleFilterSize').val(),
                   pattern_id: $('#axleFilterPattern').val()
                },

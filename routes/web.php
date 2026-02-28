@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('tyre-dashboard', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'index'])->name('master_data.dashboard')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/drill-down', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'drillDown'])->name('master_data.drill-down')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/brand-performance', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'brandPerformanceAjax'])->name('master_data.brand-performance')->middleware('tyre.permission:Dashboard');
+    Route::get('tyre-dashboard/brand-detail-performance', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'brandDetailPerformanceAjax'])->name('master_data.brand-detail-performance')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/cpk-by-brand', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'cpkByBrandAjax'])->name('master_data.cpk-by-brand')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/scrap-by-position', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'scrapByPositionAjax'])->name('master_data.scrap-by-position')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/export', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'export'])->name('master_data.export')->middleware('tyre.permission:Dashboard');
