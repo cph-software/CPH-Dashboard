@@ -215,6 +215,7 @@ class DashboardController extends Controller
         // ========================================
         $filterSizes = TyreSize::select('id', 'size')->distinct()->orderBy('size')->get();
         $filterPatterns = TyrePattern::select('id', 'name')->where('status', 'Active')->orderBy('name')->get();
+        $filterBrands = TyreBrand::select('id', 'brand_name')->orderBy('brand_name')->get();
 
         return view('tyre-performance.dashboard', compact(
             // Filters
@@ -251,7 +252,8 @@ class DashboardController extends Controller
             'axleAnalysis',
             // Filter Options
             'filterSizes',
-            'filterPatterns'
+            'filterPatterns',
+            'filterBrands'
         ));
     }
 
@@ -421,6 +423,61 @@ class DashboardController extends Controller
         return response()->json([
             'success' => true,
             'data' => $data,
+        ]);
+    }
+
+    /**
+     * AJAX: Detail Performance for a specific Brand (Comparison by Pattern and Size)
+     */
+    public function brandDetailPerformanceAjax(Request $request)
+    {
+        $brandId = $request->input('brand_id');
+        if (!$brandId) {
+            return response()->json(['success' => false, 'message' => 'Brand ID is required']);
+        }
+
+        // 1. Comparison by Pattern
+        $byPattern = Tyre::select(
+            'tyre_pattern_id',
+            DB::raw('AVG(total_lifetime_km) as avg_km'),
+            DB::raw('COUNT(*) as tyre_count')
+        )
+            ->where('tyre_brand_id', $brandId)
+            ->where('total_lifetime_km', '>', 0)
+            ->groupBy('tyre_pattern_id')
+            ->with('pattern:id,name')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->pattern->name ?? 'Unknown',
+                    'avg_km' => round($item->avg_km, 0),
+                    'count' => $item->tyre_count,
+                ];
+            });
+
+        // 2. Comparison by Size
+        $bySize = Tyre::select(
+            'tyre_size_id',
+            DB::raw('AVG(total_lifetime_km) as avg_km'),
+            DB::raw('COUNT(*) as tyre_count')
+        )
+            ->where('tyre_brand_id', $brandId)
+            ->where('total_lifetime_km', '>', 0)
+            ->groupBy('tyre_size_id')
+            ->with('size:id,size')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->size->size ?? 'Unknown',
+                    'avg_km' => round($item->avg_km, 0),
+                    'count' => $item->tyre_count,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'by_pattern' => $byPattern,
+            'by_size' => $bySize,
         ]);
     }
 
