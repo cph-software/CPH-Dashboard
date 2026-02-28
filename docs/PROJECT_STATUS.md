@@ -1,6 +1,6 @@
 # 📋 CPH Tyre Dashboard — Status Pengerjaan Project
 
-> **Terakhir diperbarui:** 27 Februari 2026  
+> **Terakhir diperbarui:** 28 Februari 2026  
 > **Dibuat oleh:** Developer (Ingat GSI Feedback)  
 > **Referensi:** Chat WhatsApp Pak Agus CPH & Notulensi Meeting
 
@@ -14,6 +14,8 @@
 - [19 Feb 2026 (Kamis) — Meeting](#19-feb-2026-kamis--meeting)
 - [20 Feb 2026 (Jumat) — Meeting Online](#20-feb-2026-jumat--meeting-online)
 - [Tambahan dari Diskusi 20 Feb](#tambahan-dari-diskusi-20-feb)
+- [27 Feb 2026 — RBAC & UX Refactor](#27-feb-2026--role-based-access-control-rbac--ux-refactor)
+- [28 Feb 2026 (Sabtu) — Meeting Update](#28-feb-2026-sabtu--meeting-update)
 - [Prioritas Selanjutnya](#prioritas-selanjutnya)
 
 ---
@@ -202,6 +204,31 @@
 
 ---
 
+## 28 Feb 2026 (Sabtu) — Meeting Update
+
+> Sumber: Notulensi meeting Sabtu 28 Feb 2026
+
+### ❌ Belum Dikerjakan
+
+|  #  | Request                                                              | Catatan                                                                                                                                                     | Estimasi Effort |
+| :-: | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------: |
+|  1  | **Log human error input masuk di activity dan terdata**              | Sistem deteksi anomali data (mismatch HM/KM, data tidak valid) harus tercatat di Activity Log. Terkait dengan item "Chart Human Error" dari meeting 20 Feb. |    🔴 Major     |
+|  2  | **Buat pesan/notifikasi ketika terjadi human error / mismatch data** | Saat sistem mendeteksi input yang anomali (misal: HM/KM turun drastis, serial number tidak cocok), tampilkan pesan peringatan ke user dan log ke activity.  |    🟡 Medium    |
+|  3  | **Tambah kolom foto di Examination Form**                            | Form inspeksi ban perlu tambahan field upload gambar/foto kondisi ban. Perlu migration tambah kolom + file upload handler.                                  |    🟡 Medium    |
+|  4  | **Import data pemasangan/pelepasan (Movement)**                      | Extend modul Import yang sudah ada untuk mendukung data Movement (Install & Remove). Template CSV + validasi + approval flow.                               |    🟡 Medium    |
+|  5  | **Simulasi & Guide Book penggunaan sistem**                          | Buat dokumentasi panduan penggunaan sistem. Bisa berbentuk halaman interaktif di dalam sistem atau dokumen PDF terpisah.                                    |    🟡 Medium    |
+|  6  | **Excel Checklist kesiapan penggunaan sistem**                       | Buat file Excel berisi checklist kebutuhan per role (internal & eksternal): data apa saja yang dibutuhkan, akun yang perlu dibuat, dsb.                     |  🟢 Quick fix   |
+
+### ❓ Perlu Diskusi Lebih Lanjut
+
+|  #  | Topik                                                          | Catatan                                                                                                                                                                    |
+| :-: | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  1  | **SOP End User / Kewajiban Customer**                          | Perlu didefinisikan: apa kewajiban customer agar bisa menggunakan sistem. Customer perlu menunjuk siapa saja yang mendapatkan akses. Perlu meeting khusus untuk bahas ini. |
+|  2  | **Seragamkan bahasa dan istilah pada sistem**                  | Sudah di backlog sejak meeting 20 Feb. Dijadwalkan untuk dibahas di meeting berikutnya. Semua label, menu, dan pesan di sistem harus konsisten (Indonesia atau bilingual). |
+|  3  | **Checklist form — siapa yang gunakan sistem ini di customer** | Perlu dibuat daftar: per role customer → apa saja yang bisa diakses, apa data yang harus disiapkan, dan siapa yang bertanggung jawab. Terkait erat dengan SOP end user.    |
+
+---
+
 ## Prioritas Selanjutnya
 
 ### 🟢 Quick Wins (Bisa dikerjakan segera, effort kecil)
@@ -227,6 +254,10 @@
 10. **Failure code per customer** (adjustable)
 11. **Seragamkan bahasa/istilah** di seluruh sistem
 12. **Informasi/Promo** (di akhir pengerjaan)
+13. **Tambah kolom foto di Examination Form** _(Baru - 28 Feb)_
+14. **Import data Movement (Pemasangan/Pelepasan)** _(Baru - 28 Feb)_
+15. **Simulasi & Guide Book penggunaan sistem** _(Baru - 28 Feb)_
+16. **Excel Checklist kesiapan sistem per role** _(Baru - 28 Feb)_
 
 ### 🔴 Major Features (Butuh design & planning matang)
 
@@ -235,10 +266,11 @@
 3. **Role 3-tier** — Manajerial / Supervisor / Admin dengan permission granular
 4. **Status Retreaded/Vulkanisir** (R0, R1, RN) + chart
 5. **Form pelepasan** — upload gambar, data matching, view konfigurasi
-6. **Chart Human Error** — deteksi data tidak valid
+6. **Human Error Detection & Logging** — deteksi data tidak valid, log ke activity, notifikasi ke user _(Updated 28 Feb)_
 7. **Claim/Warranty** — parameter dari pabrik
 8. **Lead Time Tracking** — items delivery, BA, invoicing, document received
-9. **Master Vehicle** — field baru (merk, type, konfig roda/ban, curb weight)
+9. **SOP End User & Customer Onboarding** — kewajiban customer, penunjukan user akses _(Baru - 28 Feb)_
+10. **Master Vehicle** — field baru (merk, type, konfig roda/ban, curb weight)
 
 ### ❓ Perlu Klarifikasi
 
