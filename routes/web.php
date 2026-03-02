@@ -22,6 +22,16 @@ Route::get('login/{type?}', [LoginController::class, 'login'])->name('login')->m
 Route::post('login', [LoginController::class, 'postLogin']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
+// ======================================================================
+// PUBLIC ONBOARDING PORTAL (PROJECT CODE BASED)
+// ======================================================================
+Route::get('/onboarding', [\App\Http\Controllers\Public\OnboardingController::class, 'index'])->name('public.onboarding.index');
+Route::post('/onboarding/verify', [\App\Http\Controllers\Public\OnboardingController::class, 'verify'])->name('public.onboarding.verify');
+Route::get('/onboarding/{code}', [\App\Http\Controllers\Public\OnboardingController::class, 'show'])->name('public.onboarding.show');
+Route::get('/onboarding/{code}/success', [\App\Http\Controllers\Public\OnboardingController::class, 'success'])->name('public.onboarding.success');
+Route::post('/onboarding/{code}/save', [\App\Http\Controllers\Public\OnboardingController::class, 'save'])->name('public.onboarding.save');
+Route::post('/onboarding/{code}/upload', [\App\Http\Controllers\Public\OnboardingController::class, 'upload'])->name('public.onboarding.upload');
+
 // Dashboard & Protected Routes
 Route::middleware(['auth'])->group(function () {
 
@@ -136,4 +146,8 @@ Route::middleware(['auth'])->group(function () {
     // Activity Logs
     Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
     Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('activity-logs.show')->middleware('tyre.permission:All Activity');
+
+    // Onboarding Management (Internal)
+    Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->middleware('tyre.permission:Onboarding Manager');
+    Route::post('onboarding-projects/{id}/generate-accounts', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'generateAccounts'])->name('onboarding-projects.generate-accounts')->middleware('tyre.permission:Onboarding Manager');
 });
