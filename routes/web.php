@@ -25,12 +25,12 @@ Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 // ======================================================================
 // PUBLIC ONBOARDING PORTAL (PROJECT CODE BASED)
 // ======================================================================
-Route::get('/onboarding', [\App\Http\Controllers\Public\OnboardingController::class, 'index'])->name('public.onboarding.index');
-Route::post('/onboarding/verify', [\App\Http\Controllers\Public\OnboardingController::class, 'verify'])->name('public.onboarding.verify');
-Route::get('/onboarding/{code}', [\App\Http\Controllers\Public\OnboardingController::class, 'show'])->name('public.onboarding.show');
-Route::get('/onboarding/{code}/success', [\App\Http\Controllers\Public\OnboardingController::class, 'success'])->name('public.onboarding.success');
-Route::post('/onboarding/{code}/save', [\App\Http\Controllers\Public\OnboardingController::class, 'save'])->name('public.onboarding.save');
-Route::post('/onboarding/{code}/upload', [\App\Http\Controllers\Public\OnboardingController::class, 'upload'])->name('public.onboarding.upload');
+Route::get('/onboarding', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'index'])->name('public.onboarding.index');
+Route::post('/onboarding/verify', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'verify'])->name('public.onboarding.verify');
+Route::get('/onboarding/{code}', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'show'])->name('public.onboarding.show');
+Route::get('/onboarding/{code}/success', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'success'])->name('public.onboarding.success');
+Route::post('/onboarding/{code}/save', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'save'])->name('public.onboarding.save');
+Route::post('/onboarding/{code}/upload', [\App\Http\Controllers\PublicPortal\OnboardingController::class, 'upload'])->name('public.onboarding.upload');
 
 // Dashboard & Protected Routes
 Route::middleware(['auth'])->group(function () {

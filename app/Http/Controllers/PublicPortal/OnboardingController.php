@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Public;
+namespace App\Http\Controllers\PublicPortal;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -64,6 +64,29 @@ class OnboardingController extends Controller
         ]);
 
         return redirect()->route('public.onboarding.success', $code);
+    }
+
+    public function upload(Request $request, $code)
+    {
+        $project = OnboardingProject::where('project_code', $code)->firstOrFail();
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->store('onboarding/' . $code, 'public');
+            
+            $uploadedFiles = $project->uploaded_files ?? [];
+            $uploadedFiles[] = [
+                'name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'uploaded_at' => Carbon::now()->toDateTimeString()
+            ];
+
+            $project->update(['uploaded_files' => $uploadedFiles]);
+
+            return response()->json(['success' => true, 'path' => $path]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'No file uploaded.'], 400);
     }
 
     private function calculateProgress($data)
