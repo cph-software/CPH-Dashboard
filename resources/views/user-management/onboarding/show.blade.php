@@ -41,11 +41,11 @@
                   </div>
                   <div class="col-md-4 p-4 bg-light d-flex flex-column justify-content-center">
                      <small class="text-muted mb-2">Internal Action</small>
-                     <form action="{{ route('onboarding-projects.generate-accounts', $project->id) }}" method="POST"
-                        onsubmit="return confirm('Sistem akan membuatkan Akun User dan Company otomatis. Lanjutkan?')">
+                     <form id="finalize-form" action="{{ route('onboarding-projects.generate-accounts', $project->id) }}"
+                        method="POST">
                         @csrf
-                        <button type="submit" class="btn btn-success w-100 py-2 mb-2"
-                           {{ $project->status === 'Go-Live' ? 'disabled' : '' }}>
+                        <button type="button" class="btn btn-success w-100 py-2 mb-2"
+                           {{ $project->status === 'Go-Live' ? 'disabled' : '' }} onclick="confirmFinalize()">
                            <i class="icon-base ri ri-user-add-line me-1"></i>
                            {{ $project->status === 'Go-Live' ? 'Akun Berhasil Dibuat' : 'Finalize & Generate Accounts' }}
                         </button>
@@ -68,7 +68,8 @@
                @if ($project->questionnaire_answers)
                   <div class="row g-4">
                      @foreach ([
-           'site_name' => 'Site Name',
+            'company_name' => 'Company Full Name',
+            'site_name' => 'Site Name',
            'op_hours' => 'Operational Hours',
            'site_address' => 'Site Address',
            'vehicle_count' => 'Vehicle Population',
@@ -147,4 +148,24 @@
          <i class="icon-base ri ri-arrow-left-line"></i> Kembali ke List
       </a>
    </div>
+   @section('page-script')
+      <script>
+         function confirmFinalize() {
+            Swal.fire({
+               title: 'Generate Akun Sekarang?',
+               text: "Sistem akan otomatis membuat Company dan User Fleet. Lanjutkan?",
+               icon: 'question',
+               showCancelButton: true,
+               confirmButtonColor: '#27ae60',
+               cancelButtonColor: '#30336b',
+               confirmButtonText: 'Ya, Generate!',
+               cancelButtonText: 'Batal'
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  document.getElementById('finalize-form').submit();
+               }
+            });
+         }
+      </script>
+   @endsection
 @endsection

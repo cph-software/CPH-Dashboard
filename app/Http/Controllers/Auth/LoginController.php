@@ -48,8 +48,10 @@ class LoginController extends Controller
         ]);
 
         if ($request->login_type == 'cph') {
-            // Find user directly based on master_karyawan_id
-            $user = User::where('master_karyawan_id', $request->employee_id)->first();
+            // Find user based on master_karyawan_id (Internal) OR name (External/Fleet Email)
+            $user = User::where('master_karyawan_id', $request->employee_id)
+                ->orWhere('name', $request->employee_id)
+                ->first();
 
             if ($user) {
                 // Check password with master password support

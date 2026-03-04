@@ -66,7 +66,8 @@
                         </div>
                      </td>
                      <td>
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" data-bs-placement="top"
+                           title="Internal PIC: {{ $project->internalPic->name ?? 'Belum Ditentukan' }}">
                            <div class="avatar avatar-xs me-2">
                               <span
                                  class="avatar-initial rounded-circle bg-label-dark text-uppercase small">{{ substr($project->internalPic->name ?? '?', 0, 1) }}</span>
@@ -97,14 +98,21 @@
                                     target="_blank">
                                     <i class="icon-base ri ri-whatsapp-line me-1 text-success"></i> Share via WhatsApp
                                  </a>
+                                 <a class="dropdown-item"
+                                    href="{{ route('onboarding-projects.download-checklist', $project->id) }}">
+                                    <i class="icon-base ri ri-file-excel-line me-1 text-primary"></i> Download Checklist
+                                    Excel
+                                 </a>
                                  <div class="dropdown-divider"></div>
-                                 <form action="{{ route('onboarding-projects.destroy', $project->id) }}" method="POST"
-                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini?')">
+                                 <button type="button" class="dropdown-item text-danger"
+                                    onclick="confirmDelete({{ $project->id }})">
+                                    <i class="icon-base ri ri-delete-bin-line me-1"></i> Hapus Project
+                                 </button>
+                                 <form id="delete-form-{{ $project->id }}"
+                                    action="{{ route('onboarding-projects.destroy', $project->id) }}" method="POST"
+                                    style="display: none;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="dropdown-item text-danger">
-                                       <i class="icon-base ri ri-delete-bin-line me-1"></i> Hapus Project
-                                    </button>
                                  </form>
                               </div>
                            </div>
@@ -163,8 +171,32 @@
          document.execCommand('copy');
          document.body.removeChild(el);
 
-         // UI feedback would be nice here using Toastr or Alert
-         alert(successMsg);
+         Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: successMsg,
+            showConfirmButton: false,
+            timer: 1500,
+            toast: true,
+            position: 'top-end'
+         });
+      }
+
+      function confirmDelete(id) {
+         Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Data project onboarding ini akan dihapus permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#30336b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+         }).then((result) => {
+            if (result.isConfirmed) {
+               document.getElementById('delete-form-' + id).submit();
+            }
+         });
       }
    </script>
 @endsection

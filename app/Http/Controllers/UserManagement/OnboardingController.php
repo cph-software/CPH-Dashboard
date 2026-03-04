@@ -70,12 +70,13 @@ class OnboardingController extends Controller
             // 1. Create Tyre Company if not exists
             $company = \App\Models\TyreCompany::firstOrCreate(
                 ['company_name' => $project->customer_name],
-                ['address' => $project->questionnaire_answers['site_name'] ?? '-']
+                ['description' => $project->questionnaire_answers['site_name'] ?? '-']
             );
 
             // 2. Create User Accounts for each PIC
+            $accountCount = 0;
             foreach ($project->pics_data as $pic) {
-                if (empty($pic['email'])) continue;
+                if (empty($pic['email']) || empty($pic['name'])) continue;
 
                 \App\Models\User::updateOrCreate(
                     ['name' => $pic['email']], // Using email as name/username
@@ -83,9 +84,16 @@ class OnboardingController extends Controller
                         'password' => bcrypt('CPH12345'), // Default password
                         'role_id' => 9, // Role Fleet
                         'tyre_company_id' => $company->id,
-                        // 'full_name' => $pic['name'], // If you have this column
+                        'name' => $pic['email'], // Username
+                        'foto' => 'default.png',
+                        // 'full_name' => $pic['name'],
                     ]
                 );
+                $accountCount++;
+            }
+
+            if ($accountCount == 0) {
+                throw new \Exception('Gagal membuat akun: Email PIC tidak valid.');
             }
 
             // 3. Update Status
@@ -95,11 +103,30 @@ class OnboardingController extends Controller
             ]);
 
             \Illuminate\Support\Facades\DB::commit();
-            return redirect()->route('onboarding-projects.index')->with('success', 'Akun user berhasil digenerate! Password default: CPH12345');
+            return redirect()->route('onboarding-projects.index')->with('success', 'Selamat! Akun user (' . $accountCount . ') berhasil digenerate dan status project menjadi Go-Live. Password default: CPH12345');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             return redirect()->back()->with('error', 'Gagal generate akun: ' . $e->getMessage());
         }
+    }
+
+    public function downloadChecklist($id)
+    {
+        $project = OnboardingProject::findOrFail($id);
+        
+        // Execute the python script to generate the Excel file
+        $scriptPath = base_path('docs/generate_checklist.py');
+        $outputPath = base_path('docs/CPH_Checklist_Onboarding_V2.xlsx');
+        
+        // Run script
+        shell_exec("python3 \"$scriptPath\"");
+        
+        if (file_exists($outputPath)) {
+            $fileName = 'CPH_Onboarding_Checklist_' . Str::slug($project->customer_name) . '.xlsx';
+            return response()->download($outputPath, $fileName);
+        }
+        
+        return redirect()->back()->with('error', 'Gagal membuat file excel checklist.');
     }
 }

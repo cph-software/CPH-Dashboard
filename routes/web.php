@@ -147,7 +147,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
     Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('activity-logs.show')->middleware('tyre.permission:All Activity');
 
-    // Onboarding Management (Internal)
-    Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->middleware('tyre.permission:Onboarding Manager');
-    Route::post('onboarding-projects/{id}/generate-accounts', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'generateAccounts'])->name('onboarding-projects.generate-accounts')->middleware('tyre.permission:Onboarding Manager');
+   // Onboarding Management (Internal)
+   Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->middleware('tyre.permission:Onboarding Manager');
+   Route::get('onboarding-projects/{id}/download-checklist', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'downloadChecklist'])->name('onboarding-projects.download-checklist')->middleware('tyre.permission:Onboarding Manager');
+   Route::post('onboarding-projects/{id}/generate-accounts', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'generateAccounts'])->name('onboarding-projects.generate-accounts')->middleware('tyre.permission:Onboarding Manager');
 });

@@ -31,6 +31,7 @@
    <!-- Vendors CSS -->
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
    @yield('vendor-style')
 
    <!-- Page CSS -->
@@ -96,6 +97,35 @@
 
    <!-- Main JS -->
    <script src="{{ asset('template/full-version/assets/js/main.js') }}"></script>
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+
+   <script>
+      @if (session('success'))
+         Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: "{!! session('success') !!}",
+            showConfirmButton: false,
+            timer: 3500
+         });
+      @endif
+
+      @if (session('error'))
+         Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "{!! session('error') !!}",
+         });
+      @endif
+
+      // Initialize Tooltips
+      document.addEventListener('DOMContentLoaded', function() {
+         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+         var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+         })
+      });
+   </script>
 
    @yield('vendor-script')
    @yield('page-script')
