@@ -63,6 +63,7 @@ class TyreMovementController extends Controller
                 'otd' => $tyre->initial_tread_depth,
                 'rtd' => $tyre->current_tread_depth,
                 'location_id' => $tyre->work_location_id,
+                'status' => $tyre->status,
                 'latest_rim_size' => $tyre->latestInstallation->rim_size ?? null,
                 'latest_segment_id' => $tyre->latestInstallation->operational_segment_id ?? null,
             ];
@@ -200,6 +201,7 @@ class TyreMovementController extends Controller
             'new_bolts_quantity' => 'nullable|integer',
             'remarks' => 'nullable|string',
             'notes' => 'nullable|string',
+            'is_meter_reset' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -232,15 +234,17 @@ class TyreMovementController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if ($lastVehicleMov && $request->odometer) {
-                if ($request->odometer < $lastVehicleMov->odometer_reading) {
-                    $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastVehicleMov->odometer_reading}).";
+            if (!$request->is_meter_reset) {
+                if ($lastVehicleMov && $request->odometer) {
+                    if ($request->odometer < $lastVehicleMov->odometer_reading) {
+                        $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastVehicleMov->odometer_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
+                    }
                 }
-            }
 
-            if ($lastVehicleMov && $request->hour_meter) {
-                if ($request->hour_meter < $lastVehicleMov->hour_meter_reading) {
-                    $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastVehicleMov->hour_meter_reading}).";
+                if ($lastVehicleMov && $request->hour_meter) {
+                    if ($request->hour_meter < $lastVehicleMov->hour_meter_reading) {
+                        $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastVehicleMov->hour_meter_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
+                    }
                 }
             }
 
@@ -249,6 +253,10 @@ class TyreMovementController extends Controller
             if ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
                 $oldLocationId = $tyre->work_location_id; // Store old location before update
+
+                // Determine actual condition from master status for new tyre
+                $actualCondition = 'Repair';
+                if ($tyre->status === 'New') $actualCondition = 'New';
 
                 // 4. Physical possibility check (RTD > Initial)
                 if ($request->rtd_reading !== null && $tyre->initial_tread_depth > 0) {
@@ -275,18 +283,17 @@ class TyreMovementController extends Controller
 
                     $oldTyre = Tyre::find($position->tyre_id);
                     if ($oldTyre) {
-                        // 1. Calculate Lifetime for Old Tyre
-                        $lastOldInstall = TyreMovement::where('tyre_id', $oldTyre->id)
-                            ->where('movement_type', 'Installation')
+                        // 1. Calculate Lifetime for Old Tyre since its last recorded event
+                        $lastOldMov = TyreMovement::where('tyre_id', $oldTyre->id)
                             ->orderBy('movement_date', 'desc')
                             ->orderBy('id', 'desc')
                             ->first();
 
                         $kmDiff = 0;
                         $hmDiff = 0;
-                        if ($lastOldInstall) {
-                            $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastOldInstall->odometer_reading);
-                            $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastOldInstall->hour_meter_reading);
+                        if ($lastOldMov) {
+                            $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastOldMov->odometer_reading);
+                            $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastOldMov->hour_meter_reading);
                         }
 
                         // 2. Create Removal Log for Old Tyre (Auto-replace)
@@ -356,7 +363,7 @@ class TyreMovementController extends Controller
                     'position_id' => $request->position_id,
                     'operational_segment_id' => $request->operational_segment_id,
                     'work_location_id' => $request->work_location_id,
-                    'install_condition' => $request->install_condition,
+                    'install_condition' => $actualCondition,
                     'is_replacement' => $isReplacement,
                     'start_time' => $request->start_time,
                     'end_time' => $request->end_time,
@@ -385,15 +392,17 @@ class TyreMovementController extends Controller
                     $posInfo = $position->position_code . " - " . $position->position_name;
                     $warnings[] = "Posisi {$posInfo} sudah kosong atau ban tidak terdeteksi terpasang pada unit {$vehicleCode} di posisi tersebut.";
                     
-                    // Immediately log and return as this is a fundamental mismatch
-                    setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Removal: ' . implode(' | ', $warnings), [
+                    // IMPORTANT: Rollback first so setLogActivity can commit to DB
+                    DB::rollBack();
+
+                    setLogActivity(Auth::id(), 'Deteksi Human Error: Pelepasan Ban pada unit ' . $vehicleCode, [
                         'action_type' => 'error',
                         'module' => 'Human Error',
                         'data_after' => [
-                            'vehicle' => $vehicleCode,
-                            'position' => $posInfo,
-                            'warnings' => $warnings,
-                            'movement_type' => 'Removal'
+                            'Kendaraan' => $vehicleCode,
+                            'Posisi' => $posInfo,
+                            'Pesan Error' => $warnings,
+                            'Tipe Transaksi' => 'Removal'
                         ]
                     ]);
 
@@ -404,8 +413,8 @@ class TyreMovementController extends Controller
                 }
 
                 // --- Calculate Lifetime (KM & HM) ---
-                $lastInstallation = TyreMovement::where('tyre_id', $tyre->id)
-                    ->where('movement_type', 'Installation')
+                // Calculate Lifetime since last recorded event (could be install or inspection)
+                $lastMov = TyreMovement::where('tyre_id', $tyre->id)
                     ->orderBy('movement_date', 'desc')
                     ->orderBy('id', 'desc')
                     ->first();
@@ -413,9 +422,9 @@ class TyreMovementController extends Controller
                 $kmDiff = 0;
                 $hmDiff = 0;
 
-                if ($lastInstallation) {
-                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastInstallation->odometer_reading);
-                    $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastInstallation->hour_meter_reading);
+                if ($lastMov) {
+                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                    $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
                 }
                 // ------------------------------------
 
@@ -448,6 +457,12 @@ class TyreMovementController extends Controller
                     'created_by' => Auth::id()
                 ]);
 
+                // Fetch failure code for descriptive logging
+                $failureCodeModel = null;
+                if ($request->failure_code_id) {
+                    $failureCodeModel = TyreFailureCode::find($request->failure_code_id);
+                }
+
                 // 2. Update Tyre status, location, Total Lifetime AND RTD
                 if ($request->rtd_reading && $tyre->current_tread_depth > 0) {
                     if ($request->rtd_reading > $tyre->current_tread_depth) {
@@ -479,17 +494,21 @@ class TyreMovementController extends Controller
             if (!empty($warnings)) {
                 DB::rollBack();
 
-                setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Movement: ' . implode(' | ', $warnings), [
+                $actionLabel = $request->movement_type === 'Installation' ? 'Pemasangan' : 'Pelepasan';
+                setLogActivity(Auth::id(), 'Deteksi Human Error: ' . $actionLabel . ' Ban pada unit ' . $vehicleCode, [
                     'action_type' => 'error',
                     'module' => 'Human Error',
                     'data_after' => [
-                        'vehicle' => $vehicleCode,
-                        'warnings' => $warnings,
-                        'movement_type' => $request->movement_type,
-                        'attempted_data' => [
-                            'odometer' => $request->odometer,
-                            'hour_meter' => $request->hour_meter,
-                            'rtd' => $request->rtd_reading
+                        'Kendaraan' => $vehicleCode,
+                        'Pesan Error' => $warnings,
+                        'Tipe Transaksi' => $request->movement_type,
+                        'Data Yang Diinput' => [
+                            'Odometer' => $request->odometer,
+                            'Hour Meter' => $request->hour_meter,
+                            'Posisi' => $position->position_code . ' - ' . $position->position_name,
+                            'Serial Number' => $tyre->serial_number ?? ($request->tyre_id ?? '-'),
+                            'Kondisi Pasang' => $actualCondition ?? null,
+                            'Catatan' => $request->notes
                         ]
                     ]
                 ]);
@@ -506,11 +525,16 @@ class TyreMovementController extends Controller
                 'action_type' => 'create',
                 'module' => 'Tyre Movement',
                 'data_after' => [
-                    'movement_type' => $request->movement_type,
-                    'vehicle' => $vehicleCode,
-                    'position_id' => $request->position_id,
-                    'tyre_id' => $request->tyre_id,
-                    'odometer' => $request->odometer
+                    'Tipe Transaksi' => $request->movement_type,
+                    'Kendaraan' => $vehicleCode,
+                    'Posisi' => $position->position_code . ' - ' . $position->position_name,
+                    'Serial Number' => $tyre->serial_number ?? '-',
+                    'Odometer' => $request->odometer,
+                    'Hour Meter' => $request->hour_meter,
+                    'Kondisi Pasang' => $actualCondition ?? '-',
+                    'Status Akhir' => $request->target_status ?? '-',
+                    'Kode Kerusakan' => isset($failureCodeModel) ? ($failureCodeModel->failure_code . ' - ' . $failureCodeModel->failure_name) : '-',
+                    'User Notes' => $request->notes ?? '-'
                 ]
             ]);
 

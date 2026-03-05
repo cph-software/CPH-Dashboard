@@ -124,12 +124,23 @@ class TyreMasterController extends Controller
             'retread_count' => 'nullable|integer|min:0',
         ]);
 
-        Tyre::create($request->all());
+        $tyre = Tyre::create($request->all());
+        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']);
 
         setLogActivity(auth()->id(), 'Menambah ban baru: ' . $request->serial_number, [
             'action_type' => 'create',
             'module' => 'Master Tyre',
-            'data_after' => $request->all()
+            'data_after' => [
+                'Serial Number' => $tyre->serial_number,
+                'Brand' => $tyre->brand->brand_name ?? '-',
+                'Size' => $tyre->size->size ?? '-',
+                'Pattern' => $tyre->pattern->name ?? '-',
+                'Segment' => $tyre->segment->segment_name ?? '-',
+                'Work Location' => $tyre->location->location_name ?? '-',
+                'Status' => $tyre->status,
+                'Price' => $tyre->price,
+                'Initial Tread Depth' => $tyre->initial_tread_depth,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Tyre created successfully');
@@ -152,14 +163,34 @@ class TyreMasterController extends Controller
         ]);
 
         $tyre = Tyre::findOrFail($id);
-        $dataBefore = $tyre->toArray();
+        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']);
+        
+        $dataBefore = [
+            'Serial Number' => $tyre->serial_number,
+            'Brand' => $tyre->brand->brand_name ?? '-',
+            'Size' => $tyre->size->size ?? '-',
+            'Pattern' => $tyre->pattern->name ?? '-',
+            'Segment' => $tyre->segment->segment_name ?? '-',
+            'Work Location' => $tyre->location->location_name ?? '-',
+            'Status' => $tyre->status,
+        ];
+
         $tyre->update($request->all());
+        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']); // Reload to get updated names
 
         setLogActivity(auth()->id(), 'Memperbarui ban: ' . $request->serial_number, [
             'action_type' => 'update',
             'module' => 'Master Tyre',
             'data_before' => $dataBefore,
-            'data_after' => $request->all()
+            'data_after' => [
+                'Serial Number' => $tyre->serial_number,
+                'Brand' => $tyre->brand->brand_name ?? '-',
+                'Size' => $tyre->size->size ?? '-',
+                'Pattern' => $tyre->pattern->name ?? '-',
+                'Segment' => $tyre->segment->segment_name ?? '-',
+                'Work Location' => $tyre->location->location_name ?? '-',
+                'Status' => $tyre->status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Tyre updated successfully');

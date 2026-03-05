@@ -21,12 +21,17 @@ class TyrePatternController extends Controller
             'status' => 'required|in:Active,Inactive',
         ]);
 
-        TyrePattern::create($request->all());
+        $pattern = TyrePattern::create($request->all());
+        $pattern->load('brand');
 
         setLogActivity(auth()->id(), 'Menambah pattern ban: ' . $request->name, [
             'action_type' => 'create',
             'module' => 'Patterns',
-            'data_after' => $request->all()
+            'data_after' => [
+                'Pattern Name' => $pattern->name,
+                'Brand' => $pattern->brand->brand_name ?? '-',
+                'Status' => $pattern->status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Pattern created successfully');
@@ -42,12 +47,17 @@ class TyrePatternController extends Controller
         $pattern = TyrePattern::findOrFail($id);
         $dataBefore = $pattern->toArray();
         $pattern->update($request->all());
+        $pattern->load('brand');
 
         setLogActivity(auth()->id(), 'Memperbarui pattern ban: ' . $request->name, [
             'action_type' => 'update',
             'module' => 'Patterns',
             'data_before' => $dataBefore,
-            'data_after' => $request->all()
+            'data_after' => [
+                'Pattern Name' => $pattern->name,
+                'Brand' => $pattern->brand->brand_name ?? '-',
+                'Status' => $pattern->status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Pattern updated successfully');

@@ -136,12 +136,22 @@ class KendaraanController extends Controller
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
         ]);
 
-        MasterImportKendaraan::create($request->all());
+        $kendaraan = MasterImportKendaraan::create($request->all());
+        $kendaraan->load(['tyrePositionConfiguration', 'segment']);
 
         setLogActivity(auth()->id(), 'Menambah kendaraan: ' . $request->kode_kendaraan . ' (' . $request->no_polisi . ')', [
             'action_type' => 'create',
             'module' => 'Vehicle Master',
-            'data_after' => $request->all()
+            'data_after' => [
+                'Kode Unit' => $kendaraan->kode_kendaraan,
+                'No Polisi' => $kendaraan->no_polisi,
+                'Jenis' => $kendaraan->jenis_kendaraan,
+                'Area' => $kendaraan->area,
+                'Konfigurasi Ban' => $kendaraan->tyrePositionConfiguration->config_name ?? '-',
+                'Total Posisi' => $kendaraan->total_tyre_position,
+                'Status' => $kendaraan->tyre_unit_status,
+                'Operational Segment' => $kendaraan->segment->segment_name ?? '-',
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Vehicle created successfully');
@@ -171,14 +181,30 @@ class KendaraanController extends Controller
         ]);
 
         $kendaraan = MasterImportKendaraan::findOrFail($id);
-        $dataBefore = $kendaraan->toArray();
+        $kendaraan->load(['tyrePositionConfiguration', 'segment']);
+        
+        $dataBefore = [
+            'Kode Unit' => $kendaraan->kode_kendaraan,
+            'No Polisi' => $kendaraan->no_polisi,
+            'Area' => $kendaraan->area,
+            'Konfigurasi Ban' => $kendaraan->tyrePositionConfiguration->config_name ?? '-',
+            'Status' => $kendaraan->tyre_unit_status,
+        ];
+
         $kendaraan->update($request->all());
+        $kendaraan->load(['tyrePositionConfiguration', 'segment']); // Reload for updated data
 
         setLogActivity(auth()->id(), 'Memperbarui kendaraan: ' . $request->kode_kendaraan, [
             'action_type' => 'update',
             'module' => 'Vehicle Master',
             'data_before' => $dataBefore,
-            'data_after' => $request->all()
+            'data_after' => [
+                'Kode Unit' => $kendaraan->kode_kendaraan,
+                'No Polisi' => $kendaraan->no_polisi,
+                'Area' => $kendaraan->area,
+                'Konfigurasi Ban' => $kendaraan->tyrePositionConfiguration->config_name ?? '-',
+                'Status' => $kendaraan->tyre_unit_status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Vehicle updated successfully');

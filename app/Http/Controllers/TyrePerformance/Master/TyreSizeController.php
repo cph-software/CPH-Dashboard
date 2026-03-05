@@ -40,12 +40,20 @@ class TyreSizeController extends Controller
             $data['tyre_pattern_id'] = $pattern->id;
         }
 
-        TyreSize::create($data);
+        $size = TyreSize::create($data);
+        $size->load(['brand', 'pattern']);
 
         setLogActivity(auth()->id(), 'Menambah ukuran ban: ' . $request->size, [
             'action_type' => 'create',
             'module' => 'Sizes',
-            'data_after' => $data
+            'data_after' => [
+                'Ukuran' => $size->size,
+                'Brand' => $size->brand->brand_name ?? '-',
+                'Pattern' => $size->pattern->name ?? '-',
+                'Type' => $size->type,
+                'OTD (mm)' => $size->std_otd,
+                'Ply Rating' => $size->ply_rating,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Size created successfully');
@@ -76,12 +84,20 @@ class TyreSizeController extends Controller
         }
 
         $size->update($data);
+        $size->load(['brand', 'pattern']);
 
         setLogActivity(auth()->id(), 'Memperbarui ukuran ban: ' . $request->size, [
             'action_type' => 'update',
             'module' => 'Sizes',
             'data_before' => $dataBefore,
-            'data_after' => $data
+            'data_after' => [
+                'Ukuran' => $size->size,
+                'Brand' => $size->brand->brand_name ?? '-',
+                'Pattern' => $size->pattern->name ?? '-',
+                'Type' => $size->type,
+                'OTD (mm)' => $size->std_otd,
+                'Ply Rating' => $size->ply_rating,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Size updated successfully');
