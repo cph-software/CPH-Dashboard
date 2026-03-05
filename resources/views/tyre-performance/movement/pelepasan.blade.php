@@ -180,6 +180,21 @@
                            <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
                               placeholder="Auto-filled">
                         </div>
+                        <div class="col-12">
+                           <div
+                              class="bg-light p-3 rounded border border-dashed d-flex align-items-center justify-content-between">
+                              <div>
+                                 <h6 class="mb-0 small fw-bold text-dark"><i class="ri-refresh-line me-1 text-warning"></i>
+                                    Reset Meteran Unit?</h6>
+                                 <small class="text-muted extra-small">Centang jika Odo/HM kembali ke 0 (Ganti
+                                    unit/panel)</small>
+                              </div>
+                              <div class="form-check form-switch mb-0">
+                                 <input class="form-check-input ms-0" type="checkbox" name="is_meter_reset"
+                                    id="is_meter_reset" value="1" style="width: 2.5em; height: 1.25em;">
+                              </div>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>

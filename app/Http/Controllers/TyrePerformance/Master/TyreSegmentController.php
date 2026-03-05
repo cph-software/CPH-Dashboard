@@ -26,12 +26,19 @@ class TyreSegmentController extends Controller
             'status' => 'required|in:Active,Inactive',
         ]);
 
-        TyreSegment::create($request->all());
+        $segment = TyreSegment::create($request->all());
+        $segment->load('location');
 
         setLogActivity(auth()->id(), 'Menambah segment: ' . $request->segment_name, [
             'action_type' => 'create',
             'module' => 'Segments',
-            'data_after' => $request->all()
+            'data_after' => [
+                'Segment ID' => $segment->segment_id,
+                'Nama Segment' => $segment->segment_name,
+                'Lokasi' => $segment->location->location_name ?? '-',
+                'Tipe Medan' => $segment->terrain_type,
+                'Status' => $segment->status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Segment created successfully');
@@ -50,12 +57,19 @@ class TyreSegmentController extends Controller
         $segment = TyreSegment::findOrFail($id);
         $dataBefore = $segment->toArray();
         $segment->update($request->all());
+        $segment->load('location');
 
         setLogActivity(auth()->id(), 'Memperbarui segment: ' . $request->segment_name, [
             'action_type' => 'update',
             'module' => 'Segments',
             'data_before' => $dataBefore,
-            'data_after' => $request->all()
+            'data_after' => [
+                'Segment ID' => $segment->segment_id,
+                'Nama Segment' => $segment->segment_name,
+                'Lokasi' => $segment->location->location_name ?? '-',
+                'Tipe Medan' => $segment->terrain_type,
+                'Status' => $segment->status,
+            ]
         ]);
 
         return redirect()->back()->with('success', 'Segment updated successfully');

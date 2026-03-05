@@ -158,6 +158,20 @@
                      <label class="form-label fw-bold small">HM (Hour Meter)</label>
                      <input type="number" name="hour_meter" class="form-control" placeholder="0">
                   </div>
+                  <div class="col-12 mt-2 mb-3">
+                     <div
+                        class="bg-light p-2 rounded border border-dashed d-flex align-items-center justify-content-between px-3">
+                        <div>
+                           <h6 class="mb-0 small fw-bold text-dark"><i class="ri-refresh-line me-1 text-warning"></i> Reset
+                              Meteran Unit (Odo/HM)?</h6>
+                           <small class="text-muted extra-small">Centang jika angka meteran kembali ke nol</small>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                           <input class="form-check-input ms-0" type="checkbox" name="is_meter_reset" id="is_meter_reset"
+                              value="1" style="width: 2.5em; height: 1.25em;">
+                        </div>
+                     </div>
+                  </div>
                   <div class="col-md-6 mb-3">
                      <div class="row">
                         <div class="col-6">

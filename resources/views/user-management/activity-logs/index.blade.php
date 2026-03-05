@@ -98,7 +98,16 @@
                            </div>
                         </td>
                         <td>
-                           <span class="text-truncate-2" title="{{ $log->activity }}">
+                           @php
+                              $isError =
+                                  str_contains(strtolower($log->activity), 'human error') ||
+                                  strtolower($log->action_type) === 'error';
+                           @endphp
+                           <span class="text-truncate-2 {{ $isError ? 'text-danger fw-bold' : '' }}"
+                              title="{{ $log->activity }}">
+                              @if ($isError)
+                                 <i class="ri-error-warning-fill me-1"></i>
+                              @endif
                               {{ $log->activity }}
                            </span>
                         </td>
@@ -204,10 +213,14 @@
                         </ul>
                         <div class="tab-content border-top-0 px-0 pb-0">
                            <div class="tab-pane fade show active" id="navs-data-after" role="tabpanel">
-                              <pre id="detailDataAfter" class="bg-dark text-light p-3 rounded mb-0" style="max-height: 300px; overflow-y: auto;">{}</pre>
+                              <div id="formattedDataAfter" class="p-0"></div>
+                              <pre id="detailDataAfter" class="bg-dark text-light p-3 rounded mb-0 d-none"
+                                 style="max-height: 300px; overflow-y: auto;">{}</pre>
                            </div>
                            <div class="tab-pane fade" id="navs-data-before" role="tabpanel">
-                              <pre id="detailDataBefore" class="bg-dark text-light p-3 rounded mb-0" style="max-height: 300px; overflow-y: auto;">{}</pre>
+                              <div id="formattedDataBefore" class="p-0"></div>
+                              <pre id="detailDataBefore" class="bg-dark text-light p-3 rounded mb-0 d-none"
+                                 style="max-height: 300px; overflow-y: auto;">{}</pre>
                            </div>
                         </div>
                      </div>
@@ -229,6 +242,95 @@
 @section('page-script')
    <script>
       $(document).ready(function() {
+         function renderFormattedData(data, containerId, rawId) {
+            const container = $(`#${containerId}`);
+            const raw = $(`#${rawId}`);
+            container.empty();
+
+            if (!data || Object.keys(data).length === 0) {
+               container.append('<p class="text-muted italic p-3 text-center">Tidak ada detail data.</p>');
+               raw.addClass('d-none');
+               return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
+            html += '<thead class="bg-light"><tr><th width="30%">Field</th><th>Value</th></tr></thead><tbody>';
+
+            const excludeKeys = ['_token', '_method', 'created_at', 'updated_at', 'deleted_at', 'password'];
+            const keyMapping = {
+               // Common Technical to Human
+               'odometer_reading': 'ODOMETER (KM)',
+               'hour_meter_reading': 'HOUR METER (HM)',
+               'odometer': 'ODOMETER (KM)',
+               'hour_meter': 'HOUR METER (HM)',
+               'psi_reading': 'TEKANAN PSI',
+               'rtd_reading': 'KEDALAMAN RTD (MM)',
+               'rtd_1': 'RTD Posisi #1',
+               'rtd_2': 'RTD Posisi #2',
+               'rtd_3': 'RTD Posisi #3',
+               'rtd_4': 'RTD Posisi #4',
+               'movement_type': 'TIPE TRANSAKSI',
+               'movement_date': 'TANGGAL',
+               'examination_date': 'TANGGAL PEMERIKSAAN',
+               'install_condition': 'KONDISI PASANG',
+               'target_status': 'STATUS AKHIR',
+               'is_meter_reset': 'RESET METERAN?',
+               'is_replacement': 'GANTI BAN?',
+               'remarks': 'CATATAN',
+               'notes': 'CATATAN TAMBAHAN',
+               'tyreman_1': 'TYREMAN 1',
+               'tyreman_2': 'TYREMAN 2',
+               'warnings': 'DAFTAR PERINGATAN',
+               'status': 'STATUS',
+               'price': 'HARGA',
+               'initial_tread_depth': 'OTD AWAL (MM)',
+               'current_tread_depth': 'RTD SEKARANG (MM)',
+
+               // Technical IDs (Mapping for old logs)
+               'tyre_id': 'BAN (ID)',
+               'vehicle_id': 'KENDARAAN (ID)',
+               'position_id': 'POSISI (ID)',
+               'work_location_id': 'LOKASI (ID)',
+               'operational_segment_id': 'SEGMEN (ID)',
+               'failure_code_id': 'KODE KERUSAKAN (ID)',
+               'tyre_brand_id': 'BRAND (ID)',
+               'tyre_size_id': 'UKURAN (ID)',
+               'tyre_pattern_id': 'PATTERN (ID)',
+               'tyre_segment_id': 'SEGMEN (ID)',
+               'tyre_location_id': 'LOKASI (ID)',
+               'tyre_position_configuration_id': 'KONFIGURASI (ID)',
+               'created_by': 'DIBUAT OLEH (ID)',
+               'updated_by': 'DIUBAH OLEH (ID)',
+               'user_id': 'USER (ID)',
+            };
+
+            for (const [key, value] of Object.entries(data)) {
+               if (excludeKeys.includes(key)) continue;
+
+               let displayKey = keyMapping[key] || key.replace(/_/g, ' ').toUpperCase();
+               let displayValue = value;
+
+               if (Array.isArray(value)) {
+                  displayValue = '<ul class="ps-3 mb-0 text-danger">' +
+                     value.map(item => `<li class="mb-1"><i class="ri-error-warning-line me-1"></i>${item}</li>`)
+                     .join('') +
+                     '</ul>';
+               } else if (typeof value === 'object' && value !== null) {
+                  displayValue = '<pre class="small mb-0">' + JSON.stringify(value, null, 2) + '</pre>';
+               } else if (value === null) {
+                  displayValue = '<span class="text-muted">null</span>';
+               }
+
+               html += `<tr>
+                   <td class="fw-bold bg-lighter bg-opacity-10 small">${displayKey}</td>
+                   <td class="small">${displayValue}</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+            container.append(html);
+            raw.addClass('d-none'); // Keep raw hidden by default
+         }
+
          // View Detail
          $(document).on('click', '.view-detail', function() {
             const id = $(this).data('id');
@@ -254,17 +356,22 @@
                $('#detailType').text(data.action_type || '-');
                $('#detailIP').text(data.ip_address || '-');
 
+               let after = {};
+               let before = {};
                try {
-                  const after = typeof data.data_after === 'string' ? JSON.parse(data.data_after) : data
+                  after = typeof data.data_after === 'string' ? JSON.parse(data.data_after) : data
                      .data_after;
-                  const before = typeof data.data_before === 'string' ? JSON.parse(data.data_before) :
-                     data.data_before;
-                  $('#detailDataAfter').text(JSON.stringify(after || {}, null, 2));
-                  $('#detailDataBefore').text(JSON.stringify(before || {}, null, 2));
+                  before = typeof data.data_before === 'string' ? JSON.parse(data.data_before) : data
+                     .data_before;
                } catch (e) {
-                  $('#detailDataAfter').text(data.data_after || '{}');
-                  $('#detailDataBefore').text(data.data_before || '{}');
+                  console.error("JSON Parse error", e);
                }
+
+               renderFormattedData(after, 'formattedDataAfter', 'detailDataAfter');
+               renderFormattedData(before, 'formattedDataBefore', 'detailDataBefore');
+
+               $('#detailDataAfter').text(JSON.stringify(after || {}, null, 2));
+               $('#detailDataBefore').text(JSON.stringify(before || {}, null, 2));
 
                modal.modal('show');
                button.prop('disabled', false);

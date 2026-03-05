@@ -179,6 +179,21 @@
                            <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
                               placeholder="Auto-filled">
                         </div>
+                        <div class="col-12">
+                           <div
+                              class="bg-light p-3 rounded border border-dashed d-flex align-items-center justify-content-between">
+                              <div>
+                                 <h6 class="mb-0 small fw-bold text-dark"><i class="ri-refresh-line me-1 text-warning"></i>
+                                    Reset Meteran Unit?</h6>
+                                 <small class="text-muted extra-small">Centang jika Odo/HM kembali ke 0 (Ganti
+                                    unit/panel)</small>
+                              </div>
+                              <div class="form-check form-switch mb-0">
+                                 <input class="form-check-input ms-0" type="checkbox" name="is_meter_reset"
+                                    id="is_meter_reset" value="1" style="width: 2.5em; height: 1.25em;">
+                              </div>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -192,14 +207,16 @@
                      </div>
 
                      <div class="mb-4">
-                        <label class="form-label fw-bold text-primary" for="position_id">1. Pilih Posisi Pemasangan</label>
+                        <label class="form-label fw-bold text-primary" for="position_id">1. Pilih Posisi
+                           Pemasangan</label>
                         <select name="position_id" id="position_id" class="form-select select2" required disabled>
                            <option value="">-- Pilih melalui visual layout atau list ini --</option>
                         </select>
                      </div>
 
                      <div class="mb-4 p-3 bg-light rounded-3 border">
-                        <label class="form-label fw-bold text-primary" for="tyre_id">2. Pilih Ban (Serial Number)</label>
+                        <label class="form-label fw-bold text-primary" for="tyre_id">2. Pilih Ban (Serial
+                           Number)</label>
                         <select name="tyre_id" id="tyre_id" class="form-select" required>
                            <option value="">-- Cari SN Ban --</option>
                         </select>
@@ -586,6 +603,15 @@
                   applySuggestedSegment();
                }
 
+               if (data.status) {
+                  let condition = 'Spare';
+                  if (data.status === 'New') condition = 'New';
+                  if (data.status === 'Repaired') condition = 'Repair';
+                  $('#install_condition').val(condition).trigger('change');
+                  // Optional: disable it to prevent manual change as per user request
+                  $('#install_condition').prop('disabled', true);
+               }
+
                $('#tyre_info_display').slideDown();
             } else {
                $('#tyre_info_display').slideUp();
@@ -658,7 +684,9 @@
          // Form Submission
          document.getElementById('pemasangan_form').addEventListener('submit', function(e) {
             e.preventDefault();
+            $('#install_condition').prop('disabled', false);
             const formData = new FormData(this);
+            $('#install_condition').prop('disabled', true);
             const posId = positionSelect.val();
             const targetNode = document.querySelector(`.m-tyre-node[data-position-id="${posId}"]`);
             const tyreData = tyreSelect.select2('data')[0];

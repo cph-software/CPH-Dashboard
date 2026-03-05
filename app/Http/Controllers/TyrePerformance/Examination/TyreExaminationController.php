@@ -19,6 +19,24 @@ use Illuminate\Support\Facades\Storage;
 
 class TyreExaminationController extends Controller
 {
+    /**
+     * Helper to calculate lifetime difference handling potential meter resets (minus diff)
+     */
+    private function calculateLifetimeDiff($currentReading, $lastInstallReading)
+    {
+        if (!$currentReading || !$lastInstallReading)
+            return 0;
+
+        $diff = $currentReading - $lastInstallReading;
+
+        if ($diff < 0) {
+            // Odometer reset or replaced. Assume current reading is distance since reset.
+            return (float) $currentReading;
+        }
+
+        return (float) $diff;
+    }
+
     public function index()
     {
         return view('tyre-performance.examination.index');
@@ -78,6 +96,7 @@ class TyreExaminationController extends Controller
             'details.*.rtd_3' => 'nullable|numeric',
             'details.*.rtd_4' => 'nullable|numeric',
             'details.*.remarks' => 'nullable|string|max:255',
+            'is_meter_reset' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -105,15 +124,17 @@ class TyreExaminationController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if ($lastMovement && $request->odometer) {
-                if ($request->odometer < $lastMovement->odometer_reading) {
-                    $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastMovement->odometer_reading}).";
+            if (!$request->is_meter_reset) {
+                if ($lastMovement && $request->odometer) {
+                    if ($request->odometer < $lastMovement->odometer_reading) {
+                        $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastMovement->odometer_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
+                    }
                 }
-            }
 
-            if ($lastMovement && $request->hour_meter) {
-                if ($request->hour_meter < $lastMovement->hour_meter_reading) {
-                    $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastMovement->hour_meter_reading}).";
+                if ($lastMovement && $request->hour_meter) {
+                    if ($request->hour_meter < $lastMovement->hour_meter_reading) {
+                        $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastMovement->hour_meter_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
+                    }
                 }
             }
 
@@ -184,6 +205,19 @@ class TyreExaminationController extends Controller
                 // Update current RTD of the tyre if measured
                 $tyre = Tyre::find($detail['tyre_id']);
                 if ($tyre) {
+                    // --- Calculate Lifetime since last recorded event ---
+                    $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                        ->orderBy('movement_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+
+                    $kmDiff = 0;
+                    $hmDiff = 0;
+                    if ($lastMov) {
+                        $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                        $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
+                    }
+
                     // 3. PSI anomaly
                     if ($detail['psi'] !== null && ($detail['psi'] < 0 || $detail['psi'] > 200)) {
                         $warnings[] = "PSI Ban SN {$tyre->serial_number} ({$detail['psi']}) tidak wajar.";
@@ -199,12 +233,17 @@ class TyreExaminationController extends Controller
                         if ($avgRtd > $tyre->current_tread_depth && $tyre->current_tread_depth > 0) {
                             $warnings[] = "RTD Ban SN " . $tyre->serial_number . " ({$avgRtd}mm) meningkat dari catatan sebelumnya ({$tyre->current_tread_depth}mm).";
                         }
-                        
-                        $tyre->update(['current_tread_depth' => $avgRtd]);
                     }
+
+                    // Update Tyre Master
+                    $tyre->update([
+                        'current_tread_depth' => $avgRtd ?? $tyre->current_tread_depth,
+                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                    ]);
                 }
 
-                // IMPORTANT: Record this inspection in movement history
+                // IMPORTANT: Record this inspection in movement history with calculated diffs
                 TyreMovement::create([
                     'tyre_id' => $detail['tyre_id'],
                     'vehicle_id' => $request->vehicle_id,
@@ -213,6 +252,8 @@ class TyreExaminationController extends Controller
                     'movement_date' => $request->examination_date,
                     'odometer_reading' => $request->odometer,
                     'hour_meter_reading' => $request->hour_meter,
+                    'running_km' => $kmDiff ?? 0,
+                    'running_hm' => $hmDiff ?? 0,
                     'psi_reading' => $detail['psi'] ?? null,
                     'rtd_reading' => $avgRtd,
                     'notes' => 'Pemeriksaan rutin: ' . ($detail['remarks'] ?? '-'),
@@ -224,15 +265,16 @@ class TyreExaminationController extends Controller
             if (!empty($warnings)) {
                 DB::rollBack();
                 
-                setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Examination: ' . implode(' | ', $warnings), [
+                setLogActivity(Auth::id(), 'Deteksi Human Error: Pemeriksaan Ban pada unit ' . $vehicleCode, [
                     'action_type' => 'error',
                     'module' => 'Human Error',
                     'data_after' => [
-                        'vehicle' => $vehicleCode,
-                        'warnings' => $warnings,
-                        'attempted_data' => [
-                            'odometer' => $request->odometer,
-                            'hour_meter' => $request->hour_meter,
+                        'Kendaraan' => $vehicleCode,
+                        'Pesan Error' => $warnings,
+                        'Data Yang Diinput' => [
+                            'Tanggal' => $request->examination_date,
+                            'Odometer' => $request->odometer,
+                            'Hour Meter' => $request->hour_meter,
                         ]
                     ]
                 ]);
@@ -249,11 +291,11 @@ class TyreExaminationController extends Controller
                 'action_type' => 'create',
                 'module' => 'Examination',
                 'data_after' => [
-                    'examination_id' => $exam->id,
-                    'examination_date' => $request->examination_date,
-                    'vehicle' => $vehicleCode,
-                    'odometer' => $request->odometer,
-                    'total_details' => count($request->details)
+                    'Kendaraan' => $vehicleCode,
+                    'Tanggal' => $request->examination_date,
+                    'Odometer' => $request->odometer,
+                    'Hour Meter' => $request->hour_meter,
+                    'Total Ban Diinspeksi' => count($request->details)
                 ]
             ]);
 

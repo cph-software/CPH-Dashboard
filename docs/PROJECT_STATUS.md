@@ -1,6 +1,6 @@
 # 📋 CPH Tyre Dashboard — Status Pengerjaan Project
 
-> **Terakhir diperbarui:** 28 Februari 2026  
+> **Terakhir diperbarui:** 5 Maret 2026  
 > **Dibuat oleh:** Developer (Ingat GSI Feedback)  
 > **Referensi:** Chat WhatsApp Pak Agus CPH & Notulensi Meeting
 
@@ -266,7 +266,7 @@
 3. **Role 3-tier** — Manajerial / Supervisor / Admin dengan permission granular
 4. **Status Retreaded/Vulkanisir** (R0, R1, RN) + chart
 5. **Form pelepasan** — upload gambar, data matching, view konfigurasi
-6. **Human Error Detection & Logging** — deteksi data tidak valid, log ke activity, notifikasi ke user _(Updated 28 Feb)_
+6. **Human Error Detection & Logging** — deteksi data tidak valid, blokir simpan, log ke activity (tipe: error), notifikasi ke user ✅ **(SELESAI 5 Mar 2026)**
 7. **Claim/Warranty** — parameter dari pabrik
 8. **Lead Time Tracking** — items delivery, BA, invoicing, document received
 9. **SOP End User & Customer Onboarding** — kewajiban customer, penunjukan user akses _(Baru - 28 Feb)_
@@ -355,4 +355,28 @@ app/Http/Controllers/
 
 ---
 
-_Dokumen ini diperbarui secara otomatis pada 4 Mar 2026._
+## 5 Mar 2026 — Penguatan Validasi & Rencana Rotasi
+
+10. **Refactor Human Error Detection:**
+    - [x] Perubahan kebijakan: Data anomali (mismatch) kini **diblokir (Rollback)** dan tidak disimpan ke database.
+    - [x] Logging Human Error kini menggunakan `action_type: error` agar muncul sebagai **Badge Merah** di Activity Log.
+    - [x] Perluasan kriteria anomali: Tanggal masa depan, Tekanan (PSI) tidak wajar, Waktu terbalik, dan RTD melebihi batas OTD.
+    - [x] Sinkronisasi logika "Pelepasan Hantu" (mencopot ban di posisi kosong) sebagai Human Error.
+    - [x] Implementasi mekanisme **"Reset Odometer/HM Unit"** dengan checkbox untuk bypass blocking policy pada kondisi pergantian panel/unit gress.
+    - [x] Peningkatan akurasi kalkulasi **Tyre Lifetime**: Kini dihitung secara akumulatif antar setiap transaksi (Pasang -> Inspeksi -> Lepas) untuk menjaga sinkronisasi data master meskipun terjadi reset odo.
+    - [x] Polish UI: Meter reset toggle kini menggunakan design **Premium Mini-Card** agar lebih profesional.
+    - [x] Optimasi **Activity Log Detail**:
+        - Viewer JSON dirubah menjadi **Table-view yang user-friendly**.
+        - Filter otomatis untuk membuang field teknis (`_token`, `_method`).
+        - Pemetaan label teknis ke bahasa manusia (e.g., `odometer_reading` -> `ODOMETER`).
+        - Logging pada Controller diperketat untuk merekam **Nama/Serial Number** ban ketimbang hanya ID.
+
+11. **Rencana Modul Rotasi & Reporting:**
+    - [ ] Pemisahan fitur **Rotasi Ban** menjadi menu mandiri (Internal move dalam 1 unit).
+    - [ ] Integrasi visual layout ban pada form Rotasi.
+    - [ ] Pengembangan **Laporan Performa Ban** (CPH, Performa per Brand/Pattern).
+    - [ ] Dashboard **Tyre Analytics** (Grafik umur ban vs target).
+
+---
+
+_Dokumen ini diperbarui secara otomatis pada 5 Mar 2026._
