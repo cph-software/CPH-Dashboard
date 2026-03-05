@@ -19,30 +19,17 @@ class ActivityLog extends Model
         'ip_address',
     ];
 
+    protected $casts = [
+        'data_before' => 'array',
+        'data_after' => 'array',
+    ];
+
     /**
      * Relasi ke User
      */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    /**
-     * Accessor: decode data_before dari JSON
-     */
-    public function getDataBeforeAttribute($value)
-    {
-        if (is_array($value)) return $value;
-        return $value ? json_decode($value, true) : null;
-    }
-
-    /**
-     * Accessor: decode data_after dari JSON
-     */
-    public function getDataAfterAttribute($value)
-    {
-        if (is_array($value)) return $value;
-        return $value ? json_decode($value, true) : null;
     }
 
     /**

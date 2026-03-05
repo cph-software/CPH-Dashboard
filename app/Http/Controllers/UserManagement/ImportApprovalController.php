@@ -321,7 +321,7 @@ class ImportApprovalController extends Controller
 
     private function processMovementHistory($data)
     {
-        // Headers matching UI Guide: serial_number, kode_kendaraan, movement_type, movement_date, position_code, odometer, hm, rtd, psi, failure_code, remark
+        // Headers matching UI Guide: serial_number, kode_kendaraan, movement_type, movement_date, position_code, odometer, hm, rtd, psi, failure_code, target_status, remark
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
         if (!$sn) throw new \Exception("Serial Number (serial_number) kosong");
         
@@ -335,8 +335,9 @@ class ImportApprovalController extends Controller
         // Find Position
         $positionCode = $data['position_code'] ?? $data['posisi'] ?? null;
         $positionId = null;
+        $posDetail = null;
         if ($positionCode && $vehicle) {
-            $configId = $vehicle->tyre_position_config_id;
+            $configId = $vehicle->tyre_position_configuration_id;
             if ($configId) {
                 $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
                     ->where(function($q) use ($positionCode) {
@@ -345,6 +346,55 @@ class ImportApprovalController extends Controller
                     })
                     ->first();
                 $positionId = $posDetail ? $posDetail->id : null;
+            }
+        }
+
+        $type = $data['movement_type'] ?? $data['tipe_pergerakan'] ?? 'Installation';
+        $moveDate = ($data['movement_date'] ?? $data['tanggal']) ? \Carbon\Carbon::parse($data['movement_date'] ?? $data['tanggal']) : now();
+        $odo = $data['odometer'] ?? $data['km'] ?? 0;
+        $hm = $data['hm'] ?? 0;
+
+        $kmDiff = 0;
+        $hmDiff = 0;
+
+        // Perform Installation/Removal Logic
+        if ($type === 'Installation') {
+            if (!$vehicle) throw new \Exception("Pemasangan memerlukan Unit Code.");
+            if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit $unitCode.");
+
+            $tyre->update([
+                'current_vehicle_id' => $vehicle->id,
+                'current_position_id' => $posDetail->id,
+                'status' => 'Installed',
+                'current_tread_depth' => $data['rtd'] ?? $tyre->current_tread_depth
+            ]);
+            $posDetail->update(['tyre_id' => $tyre->id]);
+        } else if ($type === 'Removal') {
+            // Calculate Lifetime if there was a previous installation
+            $lastInstallation = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
+                ->where('movement_type', 'Installation')
+                ->orderBy('movement_date', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($lastInstallation) {
+                $kmDiff = (float)$odo - (float)$lastInstallation->odometer_reading;
+                $hmDiff = (float)$hm - (float)$lastInstallation->hour_meter_reading;
+                if ($kmDiff < 0) $kmDiff = 0;
+                if ($hmDiff < 0) $hmDiff = 0;
+            }
+
+            $tyre->update([
+                'current_vehicle_id' => null,
+                'current_position_id' => null,
+                'status' => $data['target_status'] ?? 'Repaired',
+                'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                'current_tread_depth' => $data['rtd'] ?? $tyre->current_tread_depth
+            ]);
+
+            if ($posDetail && $posDetail->tyre_id == $tyre->id) {
+                $posDetail->update(['tyre_id' => null]);
             }
         }
 
@@ -360,14 +410,17 @@ class ImportApprovalController extends Controller
             'tyre_id' => $tyre->id,
             'vehicle_id' => $vehicle ? $vehicle->id : null,
             'position_id' => $positionId,
-            'movement_date' => ($data['movement_date'] ?? $data['tanggal']) ? \Carbon\Carbon::parse($data['movement_date'] ?? $data['tanggal']) : now(),
-            'movement_type' => $data['movement_type'] ?? $data['tipe_pergerakan'] ?? 'Installation',
-            'odometer_reading' => $data['odometer'] ?? 0,
-            'hour_meter_reading' => $data['hm'] ?? 0,
+            'movement_date' => $moveDate,
+            'movement_type' => $type,
+            'odometer_reading' => $odo,
+            'hour_meter_reading' => $hm,
             'rtd_reading' => $data['rtd'] ?? null,
             'psi_reading' => $data['psi'] ?? null,
+            'running_km' => $kmDiff,
+            'running_hm' => $hmDiff,
             'failure_code_id' => $failCodeId,
-            'remarks' => $data['remark'] ?? null,
+            'target_status' => $data['target_status'] ?? null,
+            'remarks' => $data['remark'] ?? $data['notes'] ?? null,
             'created_by' => auth()->id()
         ]);
     }

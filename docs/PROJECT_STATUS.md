@@ -336,4 +336,23 @@ app/Http/Controllers/
 
 ---
 
-_Dokumen ini di-generate secara otomatis dari review codebase pada 23 Feb 2026._
+## 4 Mar 2026 — Fitur Foto & Anomaly Detection
+
+6. **Pemeriksaan Ban (Examination):**
+    - [x] Menambahkan kolom **Foto** pada form pemeriksaan (Frontend & Backend).
+    - [x] Implementasi upload foto ke storage public (`storage/app/public/examinations`).
+    - [x] Menampilkan thumbnail foto pada halaman **Detail Pemeriksaan (Show)**.
+7. **Deteksi Human Error (Anomaly Detection):**
+    - [x] Implementasi peringatan (Warning) jika Odometer/HM input lebih rendah dari catatan terakhir.
+    - [x] Implementasi peringatan jika RTD input meningkat secara tidak wajar (Human Error).
+    - [x] Logging otomatis anomali ke **Activity Log** dengan modul `Human Error`.
+    - [x] Menampilkan pesan feedback SweetAlert saat anomali terdeteksi di Form Pemeriksaan, Pemasangan, dan Pelepasan.
+8. **Import Data:**
+    - [x] Perbaikan fitur **Import Pemasangan/Pelepasan** (Movement History) agar sinkron dengan status Ban & Kendaraan.
+9. **Dokumentasi:**
+    - [x] Membuat **Guide Book, Simulasi Workflow, dan Checklist Kesiapan** di `docs/GUIDE_BOOK.md`.
+    - [x] Membuat file checklist CSV untuk user di `docs/CHECKLIST_READY.csv`.
+
+---
+
+_Dokumen ini diperbarui secara otomatis pada 4 Mar 2026._

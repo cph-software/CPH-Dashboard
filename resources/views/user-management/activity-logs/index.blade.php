@@ -110,7 +110,11 @@
                                   $badge = 'bg-label-success';
                               } elseif (str_contains($type, 'update')) {
                                   $badge = 'bg-label-warning';
-                              } elseif (str_contains($type, 'delete')) {
+                              } elseif (
+                                  str_contains($type, 'delete') ||
+                                  str_contains($type, 'error') ||
+                                  strtolower($log->module ?? '') == 'human error'
+                              ) {
                                   $badge = 'bg-label-danger';
                               } elseif (str_contains($type, 'login')) {
                                   $badge = 'bg-label-info';

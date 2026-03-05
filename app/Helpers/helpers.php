@@ -40,8 +40,8 @@ if (!function_exists('setLogActivity')) {
                 'activity'    => $message,
                 'action_type' => $options['action_type'] ?? null,
                 'module'      => $options['module'] ?? null,
-                'data_before' => isset($options['data_before']) ? json_encode($options['data_before']) : null,
-                'data_after'  => isset($options['data_after']) ? json_encode($options['data_after']) : null,
+                'data_before' => $options['data_before'] ?? null,
+                'data_after'  => $options['data_after'] ?? null,
                 'ip_address'  => $options['ip_address'] ?? (request() ? request()->ip() : null),
             ]);
         } catch (\Exception $e) {
