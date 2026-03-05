@@ -191,6 +191,7 @@
                      <th class="text-center" width="100">RTD #3</th>
                      <th class="text-center" width="100">RTD #4</th>
                      <th>REMARKS</th>
+                     <th class="text-center" width="80">FOTO</th>
                   </tr>
                </thead>
                <tbody>
@@ -210,6 +211,16 @@
                         <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
                         <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                         <td>{{ $detail->remarks ?: '-' }}</td>
+                        <td class="text-center">
+                           @if ($detail->photo)
+                              <a href="{{ asset('storage/' . $detail->photo) }}" target="_blank">
+                                 <img src="{{ asset('storage/' . $detail->photo) }}" class="rounded shadow-sm"
+                                    style="width: 40px; height: 40px; object-fit: cover;">
+                              </a>
+                           @else
+                              -
+                           @endif
+                        </td>
                      </tr>
                   @endforeach
                </tbody>

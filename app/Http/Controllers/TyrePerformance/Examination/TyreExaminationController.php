@@ -15,6 +15,7 @@ use App\Models\TyreMovement;
 use App\Models\TyreLocation;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class TyreExaminationController extends Controller
 {
@@ -81,6 +82,41 @@ class TyreExaminationController extends Controller
 
         DB::beginTransaction();
         try {
+            $warnings = [];
+            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
+            $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown (' . $request->vehicle_id . ')';
+
+            // 1. Future date detection
+            if (\Carbon\Carbon::parse($request->examination_date)->isFuture()) {
+                $warnings[] = "Tanggal Pemeriksaan ({$request->examination_date}) tidak boleh di masa mendatang.";
+            }
+
+            // 2. Time anomaly
+            if ($request->start_time && $request->end_time) {
+                if (strtotime($request->start_time) > strtotime($request->end_time)) {
+                    $warnings[] = "Waktu Mulai ({$request->start_time}) tidak boleh lebih besar dari Waktu Selesai ({$request->end_time}).";
+                }
+            }
+
+            // --- DETEKSI ANOMALI ODO/HM (Human Error Check) ---
+            $lastMovement = TyreMovement::where('vehicle_id', $request->vehicle_id)
+                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection'])
+                ->orderBy('movement_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastMovement && $request->odometer) {
+                if ($request->odometer < $lastMovement->odometer_reading) {
+                    $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastMovement->odometer_reading}).";
+                }
+            }
+
+            if ($lastMovement && $request->hour_meter) {
+                if ($request->hour_meter < $lastMovement->hour_meter_reading) {
+                    $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastMovement->hour_meter_reading}).";
+                }
+            }
+
             // 1. Create Header
             $exam = TyreExamination::create([
                 'examination_date' => $request->examination_date,
@@ -99,7 +135,7 @@ class TyreExaminationController extends Controller
             ]);
 
             // 2. Create Details, Update Tyre RTD & Create Movement History
-            foreach ($request->details as $detail) {
+            foreach ($request->details as $key => $detail) {
                 // Skip if position doesn't have a tyre
                 if (empty($detail['tyre_id']))
                     continue;
@@ -117,10 +153,17 @@ class TyreExaminationController extends Controller
                 $hasPsi = !empty($detail['psi']);
                 $hasRtd = count($rtds) > 0;
                 $hasRemarks = !empty($detail['remarks']);
+                $hasPhoto = $request->hasFile("details.{$key}.photo");
 
                 // ONLY save if at least one field is filled
-                if (!$hasPsi && !$hasRtd && !$hasRemarks) {
+                if (!$hasPsi && !$hasRtd && !$hasRemarks && !$hasPhoto) {
                     continue;
+                }
+
+                // Handle Photo Upload
+                $photoPath = null;
+                if ($hasPhoto) {
+                    $photoPath = $request->file("details.{$key}.photo")->store('examinations/' . date('Y-m'), 'public');
                 }
 
                 TyreExaminationDetail::create([
@@ -133,14 +176,32 @@ class TyreExaminationController extends Controller
                     'rtd_3' => $detail['rtd_3'] ?? null,
                     'rtd_4' => $detail['rtd_4'] ?? null,
                     'remarks' => $detail['remarks'] ?? null,
+                    'photo' => $photoPath,
                 ]);
 
                 $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : null;
 
                 // Update current RTD of the tyre if measured
                 $tyre = Tyre::find($detail['tyre_id']);
-                if ($tyre && $avgRtd !== null) {
-                    $tyre->update(['current_tread_depth' => $avgRtd]);
+                if ($tyre) {
+                    // 3. PSI anomaly
+                    if ($detail['psi'] !== null && ($detail['psi'] < 0 || $detail['psi'] > 200)) {
+                        $warnings[] = "PSI Ban SN {$tyre->serial_number} ({$detail['psi']}) tidak wajar.";
+                    }
+
+                    if ($avgRtd !== null) {
+                        // 4. Physical possibility check (RTD > Initial)
+                        if ($tyre->initial_tread_depth > 0 && $avgRtd > $tyre->initial_tread_depth) {
+                            $warnings[] = "RTD Ban SN {$tyre->serial_number} ({$avgRtd}mm) melebihi batas RTD awal/baru ({$tyre->initial_tread_depth}mm).";
+                        }
+
+                        // 5. Logical check (RTD increase)
+                        if ($avgRtd > $tyre->current_tread_depth && $tyre->current_tread_depth > 0) {
+                            $warnings[] = "RTD Ban SN " . $tyre->serial_number . " ({$avgRtd}mm) meningkat dari catatan sebelumnya ({$tyre->current_tread_depth}mm).";
+                        }
+                        
+                        $tyre->update(['current_tread_depth' => $avgRtd]);
+                    }
                 }
 
                 // IMPORTANT: Record this inspection in movement history
@@ -159,18 +220,40 @@ class TyreExaminationController extends Controller
                 ]);
             }
 
+            // 3. Final Check for Anomalies (Human Error)
+            if (!empty($warnings)) {
+                DB::rollBack();
+                
+                setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Examination: ' . implode(' | ', $warnings), [
+                    'action_type' => 'error',
+                    'module' => 'Human Error',
+                    'data_after' => [
+                        'vehicle' => $vehicleCode,
+                        'warnings' => $warnings,
+                        'attempted_data' => [
+                            'odometer' => $request->odometer,
+                            'hour_meter' => $request->hour_meter,
+                        ]
+                    ]
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "Pemeriksaan GAGAL DISIMPAN (Deteksi Human Error):\n\n" . implode("\n", $warnings)
+                ], 422);
+            }
+
             DB::commit();
 
-            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
-            setLogActivity(Auth::id(), 'Membuat pemeriksaan ban untuk kendaraan: ' . ($vehicle->kode_kendaraan ?? $request->vehicle_id), [
+            setLogActivity(Auth::id(), 'Membuat pemeriksaan ban untuk kendaraan: ' . $vehicleCode, [
                 'action_type' => 'create',
                 'module' => 'Examination',
                 'data_after' => [
                     'examination_id' => $exam->id,
                     'examination_date' => $request->examination_date,
-                    'vehicle' => $vehicle->kode_kendaraan ?? $request->vehicle_id,
+                    'vehicle' => $vehicleCode,
                     'odometer' => $request->odometer,
-                    'total_details' => count($request->details),
+                    'total_details' => count($request->details)
                 ]
             ]);
 

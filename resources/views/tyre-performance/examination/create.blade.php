@@ -102,7 +102,7 @@
             Kembali</a>
       </div>
 
-      <form id="examination_form">
+      <form id="examination_form" enctype="multipart/form-data">
          @csrf
          <!-- HEADER SECTION -->
          <div class="card mb-4 shadow-sm form-header-card">
@@ -110,7 +110,8 @@
                <div class="row">
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">DATE</label>
-                     <input type="date" name="examination_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                     <input type="date" name="examination_date" class="form-control" value="{{ date('Y-m-d') }}"
+                        required>
                   </div>
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">No. Pol & Unit</label>
@@ -231,10 +232,10 @@
 
 @section('page-script')
    <script>
-      $(function () {
+      $(function() {
          $('.select2').select2();
 
-         $('#location_id').on('change', function () {
+         $('#location_id').on('change', function() {
             var locationId = $(this).val();
             var $segmentSelect = $('#operational_segment_id');
 
@@ -243,17 +244,18 @@
             if (locationId) {
                $.ajax({
                   url: "{{ route('tyre-movement.get-segments', '') }}/" + locationId,
-                  success: function (res) {
-                     res.forEach(function (segment) {
+                  success: function(res) {
+                     res.forEach(function(segment) {
                         $segmentSelect.append(
-                           '<option value="' + segment.id + '">' + segment.segment_name + '</option>');
+                           '<option value="' + segment.id + '">' + segment.segment_name +
+                           '</option>');
                      });
                   }
                });
             }
          });
 
-         $('#vehicle_id').on('change', function () {
+         $('#vehicle_id').on('change', function() {
             var vehicleId = $(this).val();
             if (!vehicleId) {
                $('#tyre_list_body').html(
@@ -264,27 +266,45 @@
 
             Swal.fire({
                title: 'Memuat data ban...',
-               didOpen: function () { Swal.showLoading(); },
+               didOpen: function() {
+                  Swal.showLoading();
+               },
                allowOutsideClick: false
             });
 
             $.ajax({
                url: "{{ route('examination.get-vehicle-tyres', '') }}/" + vehicleId,
-               success: function (res) {
+               success: function(res) {
                   Swal.close();
                   if (res.success) {
                      $('#tyre_list_body').html(res.html);
+
+                     // Add photo name display handler
+                     $('.photo-input').on('change', function() {
+                        const fileName = $(this).val().split('\\').pop();
+                        const index = $(this).attr('id').split('_')[1];
+                        if (fileName) {
+                           $('#label_' + index).text('📷 ' + fileName).removeClass('d-none');
+                           $(this).closest('.input-group').find('label').addClass(
+                              'text-success');
+                        } else {
+                           $('#label_' + index).addClass('d-none');
+                           $(this).closest('.input-group').find('label').removeClass(
+                              'text-success');
+                        }
+                     });
                   }
                },
-               error: function () {
+               error: function() {
                   Swal.fire('Error', 'Gagal memuat layout ban unit', 'error');
                }
             });
          });
 
-         $('#examination_form').on('submit', function (e) {
+         $('#examination_form').on('submit', function(e) {
             e.preventDefault();
             var form = this;
+            var formData = new FormData(form);
 
             Swal.fire({
                title: 'Simpan Data?',
@@ -297,32 +317,37 @@
                   cancelButton: 'btn btn-label-secondary'
                },
                buttonsStyling: false
-            }).then(function (result) {
+            }).then(function(result) {
                if (result.isConfirmed) {
                   Swal.fire({
                      title: 'Menyimpan...',
-                     didOpen: function () { Swal.showLoading(); },
+                     didOpen: function() {
+                        Swal.showLoading();
+                     },
                      allowOutsideClick: false
                   });
 
                   $.ajax({
                      url: "{{ route('examination.store') }}",
                      method: 'POST',
-                     data: $(form).serialize(),
-                     success: function (res) {
+                     data: formData,
+                     processData: false,
+                     contentType: false,
+                     success: function(res) {
                         if (res.success) {
                            Swal.fire({
                               icon: 'success',
                               title: 'Berhasil!',
                               text: res.message,
-                              type: 'success'
-                           }).then(function () {
+                              timer: 2000
+                           }).then(function() {
                               window.location.href = res.redirect;
                            });
                         }
                      },
-                     error: function (res) {
-                        var msg = (res.responseJSON && res.responseJSON.message) ? res.responseJSON.message : 'Terjadi kesalahan sistem';
+                     error: function(res) {
+                        var msg = (res.responseJSON && res.responseJSON.message) ? res
+                           .responseJSON.message : 'Terjadi kesalahan sistem';
                         Swal.fire('Oops!', msg, 'error');
                      }
                   });

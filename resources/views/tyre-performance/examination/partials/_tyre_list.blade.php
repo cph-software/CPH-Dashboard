@@ -41,7 +41,8 @@
                <div class="input-group input-group-sm">
                   <span class="input-group-text d-md-none"><i class="ri-dashboard-3-line"></i></span>
                   <input type="number" step="0.1" name="details[{{ $index }}][psi]"
-                     class="form-control text-center fw-bold" placeholder="PSI" @if (!$tyre) disabled @endif>
+                     class="form-control text-center fw-bold" placeholder="PSI"
+                     @if (!$tyre) disabled @endif>
                </div>
             </div>
 
@@ -74,9 +75,19 @@
 
             <!-- Remarks Section -->
             <div class="col-12 col-md-3 p-2 bg-light-remarks">
-               <label class="d-md-none small fw-bold text-muted d-block mb-1">Remarks</label>
-               <input type="text" name="details[{{ $index }}][remarks]" class="form-control form-control-sm"
-                  placeholder="Catatan..." @if (!$tyre) disabled @endif>
+               <label class="d-md-none small fw-bold text-muted d-block mb-1">Remarks & Photo</label>
+               <div class="input-group input-group-sm">
+                  <input type="text" name="details[{{ $index }}][remarks]"
+                     class="form-control form-control-sm" placeholder="Catatan..."
+                     @if (!$tyre) disabled @endif>
+                  <label class="input-group-text cursor-pointer" for="photo_{{ $index }}" title="Upload Foto"
+                     @if (!$tyre) disabled @endif>
+                     <i class="ri-camera-line"></i>
+                  </label>
+                  <input type="file" name="details[{{ $index }}][photo]" id="photo_{{ $index }}"
+                     class="d-none photo-input" accept="image/*" @if (!$tyre) disabled @endif>
+               </div>
+               <div class="small text-muted mt-1 d-none file-name-label" id="label_{{ $index }}"></div>
             </div>
          </div>
       </td>

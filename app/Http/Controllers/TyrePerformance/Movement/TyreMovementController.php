@@ -204,11 +204,69 @@ class TyreMovementController extends Controller
 
         DB::beginTransaction();
         try {
+            $warnings = [];
+            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
+            $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown (' . $request->vehicle_id . ')';
+
+            // 1. Future date detection
+            if (\Carbon\Carbon::parse($request->movement_date)->isFuture()) {
+                $warnings[] = "Tanggal Transaksi ({$request->movement_date}) tidak boleh di masa mendatang.";
+            }
+
+            // 2. Pressure anomaly
+            if ($request->psi_reading !== null && ($request->psi_reading < 0 || $request->psi_reading > 200)) {
+                $warnings[] = "Tekanan PSI ({$request->psi_reading}) tidak wajar (Standard: 0 - 200 PSI).";
+            }
+
+            // 3. Time anomaly
+            if ($request->start_time && $request->end_time) {
+                if (strtotime($request->start_time) > strtotime($request->end_time)) {
+                    $warnings[] = "Waktu Mulai ({$request->start_time}) tidak boleh lebih besar dari Waktu Selesai ({$request->end_time}).";
+                }
+            }
+
+            // --- DETEKSI ANOMALI ODO/HM (Human Error Check) ---
+            $lastVehicleMov = TyreMovement::where('vehicle_id', $request->vehicle_id)
+                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection'])
+                ->orderBy('movement_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastVehicleMov && $request->odometer) {
+                if ($request->odometer < $lastVehicleMov->odometer_reading) {
+                    $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastVehicleMov->odometer_reading}).";
+                }
+            }
+
+            if ($lastVehicleMov && $request->hour_meter) {
+                if ($request->hour_meter < $lastVehicleMov->hour_meter_reading) {
+                    $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastVehicleMov->hour_meter_reading}).";
+                }
+            }
+
             $position = TyrePositionDetail::findOrFail($request->position_id);
 
             if ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
                 $oldLocationId = $tyre->work_location_id; // Store old location before update
+
+                // 4. Physical possibility check (RTD > Initial)
+                if ($request->rtd_reading !== null && $tyre->initial_tread_depth > 0) {
+                    if ($request->rtd_reading > $tyre->initial_tread_depth) {
+                        $warnings[] = "RTD Ban ({$request->rtd_reading}mm) tidak mungkin lebih besar dari RTD Awal/Baru ({$tyre->initial_tread_depth}mm).";
+                    }
+                }
+
+                // 5. Status mismatch (Installing a tyre that is already installed elsewhere or scrap)
+                if ($tyre->status === 'Installed' && $tyre->current_vehicle_id != $request->vehicle_id) {
+                    $otherVehicle = MasterImportKendaraan::find($tyre->current_vehicle_id);
+                    $vName = $otherVehicle->kode_kendaraan ?? 'Unit lain';
+                    $warnings[] = "Ban SN {$tyre->serial_number} terdeteksi masih terpasang di unit {$vName}. Silakan lakukan pelepasan terlebih dahulu.";
+                }
+
+                if ($tyre->status === 'Scrap') {
+                    $warnings[] = "Ban SN {$tyre->serial_number} sudah berstatus SCRAP dan tidak boleh dipasang kembali.";
+                }
 
                 // --- HANDLE REPLACEMENT (If position is already occupied) ---
                 $isReplacement = false;
@@ -267,6 +325,12 @@ class TyreMovementController extends Controller
                 // -------------------------------------------------------------
 
                 // 1. Update New Tyre status & location
+                if ($request->rtd_reading && $tyre->current_tread_depth > 0) {
+                    if ($request->rtd_reading > $tyre->current_tread_depth) {
+                        $warnings[] = "RTD Ban Pasang SN " . $tyre->serial_number . " ({$request->rtd_reading}mm) lebih tinggi dari catatan stok ({$tyre->current_tread_depth}mm).";
+                    }
+                }
+
                 $tyre->update([
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
@@ -315,7 +379,29 @@ class TyreMovementController extends Controller
                 // Removal
                 $tyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
                     ->where('current_position_id', $request->position_id)
-                    ->firstOrFail();
+                    ->first();
+
+                if (!$tyre) {
+                    $posInfo = $position->position_code . " - " . $position->position_name;
+                    $warnings[] = "Posisi {$posInfo} sudah kosong atau ban tidak terdeteksi terpasang pada unit {$vehicleCode} di posisi tersebut.";
+                    
+                    // Immediately log and return as this is a fundamental mismatch
+                    setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Removal: ' . implode(' | ', $warnings), [
+                        'action_type' => 'error',
+                        'module' => 'Human Error',
+                        'data_after' => [
+                            'vehicle' => $vehicleCode,
+                            'position' => $posInfo,
+                            'warnings' => $warnings,
+                            'movement_type' => 'Removal'
+                        ]
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Transaksi GAGAL DISIMPAN (Data Mismatch):\n\n" . implode("\n", $warnings)
+                    ], 422);
+                }
 
                 // --- Calculate Lifetime (KM & HM) ---
                 $lastInstallation = TyreMovement::where('tyre_id', $tyre->id)
@@ -363,6 +449,12 @@ class TyreMovementController extends Controller
                 ]);
 
                 // 2. Update Tyre status, location, Total Lifetime AND RTD
+                if ($request->rtd_reading && $tyre->current_tread_depth > 0) {
+                    if ($request->rtd_reading > $tyre->current_tread_depth) {
+                        $warnings[] = "RTD Ban Lepas SN " . $tyre->serial_number . " ({$request->rtd_reading}mm) meningkat dari catatan sebelumnya ({$tyre->current_tread_depth}mm).";
+                    }
+                }
+
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
@@ -384,10 +476,32 @@ class TyreMovementController extends Controller
                 $position->update(['tyre_id' => null]);
             }
 
+            if (!empty($warnings)) {
+                DB::rollBack();
+
+                setLogActivity(Auth::id(), 'HUMAN ERROR (Data Mismatch) attempt detected during Movement: ' . implode(' | ', $warnings), [
+                    'action_type' => 'error',
+                    'module' => 'Human Error',
+                    'data_after' => [
+                        'vehicle' => $vehicleCode,
+                        'warnings' => $warnings,
+                        'movement_type' => $request->movement_type,
+                        'attempted_data' => [
+                            'odometer' => $request->odometer,
+                            'hour_meter' => $request->hour_meter,
+                            'rtd' => $request->rtd_reading
+                        ]
+                    ]
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "Transaksi GAGAL DISIMPAN (Deteksi Human Error):\n\n" . implode("\n", $warnings)
+                ], 422);
+            }
+
             DB::commit();
 
-            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
-            $vehicleCode = $vehicle->kode_kendaraan ?? $request->vehicle_id;
             setLogActivity(Auth::id(), ($request->movement_type === 'Installation' ? 'Pemasangan' : 'Pelepasan') . ' ban pada kendaraan ' . $vehicleCode, [
                 'action_type' => 'create',
                 'module' => 'Tyre Movement',
@@ -396,11 +510,14 @@ class TyreMovementController extends Controller
                     'vehicle' => $vehicleCode,
                     'position_id' => $request->position_id,
                     'tyre_id' => $request->tyre_id,
-                    'odometer' => $request->odometer,
+                    'odometer' => $request->odometer
                 ]
             ]);
 
-            return response()->json(['success' => true, 'message' => 'Transaksi berhasil disimpan']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil disimpan'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

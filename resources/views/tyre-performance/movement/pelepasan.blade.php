@@ -225,7 +225,8 @@
                            <select name="failure_code_id" id="failure_code_id" class="form-select select2">
                               <option value="">-- Pilih Alasan --</option>
                               @foreach ($failureCodes as $fc)
-                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}</option>
+                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}
+                                 </option>
                               @endforeach
                            </select>
                         </div>
@@ -252,8 +253,8 @@
                         <div class="col-md-4">
                            <label class="form-label fw-bold">Sisa RTD (mm)</label>
                            <div class="input-group">
-                              <input type="number" name="rtd_reading" id="rtd_reading" class="form-control border-danger"
-                                 step="0.01" required>
+                              <input type="number" name="rtd_reading" id="rtd_reading"
+                                 class="form-control border-danger" step="0.01" required>
                               <span class="input-group-text bg-danger text-white border-danger">mm</span>
                            </div>
                         </div>
@@ -291,7 +292,8 @@
                         </div>
                         <div class="col-md-6">
                            <label class="form-label fw-bold">Operational Segment</label>
-                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2">
+                           <select name="operational_segment_id" id="operational_segment_id"
+                              class="form-select select2">
                               <option value=""></option>
                               @foreach ($segments as $seg)
                                  <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
@@ -329,7 +331,8 @@
                            <div id="bolt_qty_container" style="display: none;">
                               <div class="input-group input-group-sm">
                                  <span class="input-group-text badge bg-danger">Qty</span>
-                                 <input type="number" name="new_bolts_quantity" class="form-control" style="width: 80px;">
+                                 <input type="number" name="new_bolts_quantity" class="form-control"
+                                    style="width: 80px;">
                               </div>
                            </div>
                         </div>
@@ -347,8 +350,7 @@
 
                      <div class="mb-4">
                         <label class="form-label fw-bold">Catatan (Notes)</label>
-                        <textarea name="notes" class="form-control" rows="3"
-                           placeholder="Masukkan alasan detail pelepasan..."></textarea>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Masukkan alasan detail pelepasan..."></textarea>
                      </div>
 
                      <div class="d-grid gap-2">
@@ -371,7 +373,7 @@
 
 @section('page-script')
    <script>
-      $(document).ready(function () {
+      $(document).ready(function() {
          const vehicleSelect = $('#vehicle_id');
          const positionSelect = $('#position_id');
          const infoArea = document.getElementById('current_tyre_info');
@@ -381,7 +383,7 @@
          let suggestedSegmentId = null; // Store suggested segment from installation history
 
          // Initialize Select2
-         $('.select2').each(function () {
+         $('.select2').each(function() {
             var $this = $(this);
             $this.select2({
                placeholder: $this.data('placeholder') || $this.attr('placeholder'),
@@ -390,7 +392,7 @@
          });
 
          // Handle Baut Baru Toggle
-         $('#new_bolts').on('change', function () {
+         $('#new_bolts').on('change', function() {
             if (this.checked) {
                $('#bolt_qty_container').fadeIn();
             } else {
@@ -406,7 +408,7 @@
             }
          }
 
-         vehicleSelect.on('change', function () {
+         vehicleSelect.on('change', function() {
             const vehicleId = $(this).val();
             const text = $(this).find('option:selected').text();
             document.getElementById('unit_code_display').textContent = vehicleId ? text : '-';
@@ -434,7 +436,7 @@
 
                      // If vehicle has area(location), auto-select it
                      if (data.area && !$('#work_location_id').val()) {
-                        const locOption = $('#work_location_id option').filter(function () {
+                        const locOption = $('#work_location_id option').filter(function() {
                            return $(this).text().trim() === data.area;
                         });
                         if (locOption.length) {
@@ -493,7 +495,7 @@
          function attachLayoutEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function () {
+               node.addEventListener('click', function() {
                   const posId = this.getAttribute('data-position-id');
                   if (!this.classList.contains('filled')) {
                      Swal.fire('Informasi',
@@ -508,7 +510,7 @@
          }
 
          // Sync dropdown to visual
-         positionSelect.on('change', function () {
+         positionSelect.on('change', function() {
             const posId = $(this).val();
             const nodes = document.querySelectorAll('.m-tyre-node');
 
@@ -569,7 +571,7 @@
             }
          });
 
-         document.getElementById('pelepasan_form').addEventListener('submit', function (e) {
+         document.getElementById('pelepasan_form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const posId = positionSelect.val();
@@ -599,15 +601,19 @@
                      '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
                   fetch(`{{ url('tyre-store') }}`, {
-                     method: 'POST',
-                     body: formData,
-                     headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                     }
-                  })
-                     .then(response => response.json())
-                     .then(data => {
-                        if (data.success) {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                     })
+                     .then(response => response.json().then(data => ({
+                        status: response.status,
+                        body: data
+                     })))
+                     .then(res => {
+                        const data = res.body;
+                        if (res.status === 200 && data.success) {
                            Swal.fire({
                               icon: 'success',
                               title: 'Berhasil!',
@@ -617,10 +623,15 @@
                               window.location.href = "{{ route('tyre-movement.index') }}";
                            });
                         } else {
-                           Swal.fire('Gagal', data.message, 'error');
+                           Swal.fire('Gagal', data.message || 'Terjadi kesalahan sistem', 'error');
                            btn.disabled = false;
                            btn.innerHTML = '<i class="ri-delete-bin-line me-1"></i> Proses Pelepasan';
                         }
+                     })
+                     .catch(err => {
+                        Swal.fire('Error', 'Terjadi kesalahan koneksi', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="ri-delete-bin-line me-1"></i> Proses Pelepasan';
                      });
                }
             });
