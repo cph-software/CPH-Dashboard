@@ -55,6 +55,41 @@ class TyreExaminationController extends Controller
     {
         $vehicle = MasterImportKendaraan::with(['tyrePositionConfiguration.details'])->findOrFail($vehicleId);
 
+        // Fetch latest readings from Movement and Examination
+        $lastMovement = TyreMovement::where('vehicle_id', $vehicleId)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastExamination = TyreExamination::where('vehicle_id', $vehicleId)
+            ->orderBy('examination_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastOdo = 0;
+        $lastHm = 0;
+
+        // Logic to determine absolute latest (comparing dates if necessary)
+        // For simplicity, we can just compare the two latest found
+        if ($lastMovement && $lastExamination) {
+            $movDate = Carbon::parse($lastMovement->movement_date);
+            $examDate = Carbon::parse($lastExamination->examination_date);
+
+            if ($movDate->gt($examDate)) {
+                $lastOdo = $lastMovement->odometer_reading;
+                $lastHm = $lastMovement->hour_meter_reading;
+            } else {
+                $lastOdo = $lastExamination->odometer;
+                $lastHm = $lastExamination->hour_meter;
+            }
+        } elseif ($lastMovement) {
+            $lastOdo = $lastMovement->odometer_reading;
+            $lastHm = $lastMovement->hour_meter_reading;
+        } elseif ($lastExamination) {
+            $lastOdo = $lastExamination->odometer;
+            $lastHm = $lastExamination->hour_meter;
+        }
+
         // Fetch tyres currently installed on this vehicle
         $tyres = Tyre::where('current_vehicle_id', $vehicleId)
             ->with(['brand', 'pattern', 'size'])
@@ -68,7 +103,9 @@ class TyreExaminationController extends Controller
 
         return response()->json([
             'success' => true,
-            'html' => $html
+            'html' => $html,
+            'last_odometer' => $lastOdo,
+            'last_hour_meter' => $lastHm
         ]);
     }
 
@@ -101,45 +138,82 @@ class TyreExaminationController extends Controller
 
         DB::beginTransaction();
         try {
-            $warnings = [];
             $vehicle = MasterImportKendaraan::find($request->vehicle_id);
-            $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown (' . $request->vehicle_id . ')';
+            $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown';
+            $warnings = [];
 
-            // 1. Future date detection
-            if (\Carbon\Carbon::parse($request->examination_date)->isFuture()) {
-                $warnings[] = "Tanggal Pemeriksaan ({$request->examination_date}) tidak boleh di masa mendatang.";
-            }
-
-            // 2. Time anomaly
-            if ($request->start_time && $request->end_time) {
-                if (strtotime($request->start_time) > strtotime($request->end_time)) {
-                    $warnings[] = "Waktu Mulai ({$request->start_time}) tidak boleh lebih besar dari Waktu Selesai ({$request->end_time}).";
-                }
-            }
-
-            // --- DETEKSI ANOMALI ODO/HM (Human Error Check) ---
-            $lastMovement = TyreMovement::where('vehicle_id', $request->vehicle_id)
-                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection'])
+            // --- 1. PRE-VALIDATION: DETEKSI ANOMALI ODO/HM (Human Error Check) ---
+            // Cari data terakhir dari kedua tabel (Movement & Examination)
+            $lastM = TyreMovement::where('vehicle_id', $request->vehicle_id)
                 ->orderBy('movement_date', 'desc')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
                 ->first();
 
-            if (!$request->is_meter_reset) {
-                if ($lastMovement && $request->odometer) {
-                    if ($request->odometer < $lastMovement->odometer_reading) {
-                        $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastMovement->odometer_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
-                    }
-                }
+            $lastE = TyreExamination::where('vehicle_id', $request->vehicle_id)
+                ->orderBy('examination_date', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
 
-                if ($lastMovement && $request->hour_meter) {
-                    if ($request->hour_meter < $lastMovement->hour_meter_reading) {
-                        $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastMovement->hour_meter_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
-                    }
+            $prevOdo = 0;
+            $prevHm = 0;
+
+            if ($lastM && $lastE) {
+                $mDate = Carbon::parse($lastM->movement_date);
+                $eDate = Carbon::parse($lastE->examination_date);
+                
+                if ($mDate->gt($eDate)) {
+                    $prevOdo = $lastM->odometer_reading;
+                    $prevHm = $lastM->hour_meter_reading;
+                } elseif ($eDate->gt($mDate)) {
+                    $prevOdo = $lastE->odometer;
+                    $prevHm = $lastE->hour_meter;
+                } else {
+                    // Jika tanggal sama, bandingkan created_at atau id
+                    $prevOdo = ($lastM->id > $lastE->id) ? $lastM->odometer_reading : $lastE->odometer;
+                    $prevHm = ($lastM->id > $lastE->id) ? $lastM->hour_meter_reading : $lastE->hour_meter;
+                }
+            } elseif ($lastM) {
+                $prevOdo = $lastM->odometer_reading;
+                $prevHm = $lastM->hour_meter_reading;
+            } elseif ($lastE) {
+                $prevOdo = $lastE->odometer;
+                $prevHm = $lastE->hour_meter;
+            }
+
+            // Validasi ODO/HM menurun jika TIDAK reset
+            if (!$request->is_meter_reset) {
+                if ($request->odometer !== null && $request->odometer < $prevOdo) {
+                    $warnings[] = "KM/Odometer ({$request->odometer}) menurun dari data terakhir ({$prevOdo}). Centang 'Reset Meter' jika ini benar, atau perbaiki angka KM.";
+                }
+                if ($request->hour_meter !== null && $request->hour_meter < $prevHm) {
+                    $warnings[] = "HM/Hour Meter ({$request->hour_meter}) menurun dari data terakhir ({$prevHm}). Centang 'Reset Meter' jika ini benar, atau perbaiki angka HM.";
                 }
             }
 
+            // 2. Future date detection
+            if (Carbon::parse($request->examination_date)->isFuture()) {
+                $warnings[] = "Tanggal Pemeriksaan tidak boleh di masa mendatang.";
+            }
+
+            // 3. Time anomaly
+            if ($request->start_time && $request->end_time) {
+                if (strtotime($request->start_time) > strtotime($request->end_time)) {
+                    $warnings[] = "Waktu Mulai tidak boleh lebih besar dari Waktu Selesai.";
+                }
+            }
+
+            // ABORT jika ada human error
+            if (!empty($warnings)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Deteksi Human Error:\n" . implode("\n", $warnings)
+                ], 422);
+            }
+
+            // --- 2. LANJUT KE PROSES PENYIMPANAN ---
             // 1. Create Header
-            $exam = TyreExamination::create([
+            $exam = new TyreExamination([
                 'examination_date' => $request->examination_date,
                 'location_id' => $request->location_id,
                 'operational_segment_id' => $request->operational_segment_id,
@@ -154,6 +228,14 @@ class TyreExaminationController extends Controller
                 'status' => 'Draft',
                 'notes' => $request->notes,
             ]);
+
+            // Handle General Unit Photo
+            $subFolder = 'examinations/' . date('Y-m');
+            if ($request->hasFile('photo_unit_front')) {
+                $exam->photo_unit_front = $request->file('photo_unit_front')->store($subFolder, 'public');
+            }
+
+            $exam->save();
 
             // 2. Create Details, Update Tyre RTD & Create Movement History
             foreach ($request->details as $key => $detail) {

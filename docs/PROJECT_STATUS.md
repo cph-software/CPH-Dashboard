@@ -1,6 +1,6 @@
 # 📋 CPH Tyre Dashboard — Status Pengerjaan Project
 
-> **Terakhir diperbarui:** 5 Maret 2026  
+> **Terakhir diperbarui:** 6 Maret 2026  
 > **Dibuat oleh:** Developer (Ingat GSI Feedback)  
 > **Referensi:** Chat WhatsApp Pak Agus CPH & Notulensi Meeting
 
@@ -16,6 +16,8 @@
 - [Tambahan dari Diskusi 20 Feb](#tambahan-dari-diskusi-20-feb)
 - [27 Feb 2026 — RBAC & UX Refactor](#27-feb-2026--role-based-access-control-rbac--ux-refactor)
 - [28 Feb 2026 (Sabtu) — Meeting Update](#28-feb-2026-sabtu--meeting-update)
+- [4-5 Mar 2026 — Fitur Foto & Anomaly Detection](#4-mar-2026--fitur-foto--anomaly-detection)
+- [6 Mar 2026 — General Photos & Advanced Validation](#6-mar-2026--general-photos--advanced-validation)
 - [Prioritas Selanjutnya](#prioritas-selanjutnya)
 
 ---
@@ -24,9 +26,9 @@
 
 | Status     | Jumlah Item | Keterangan                               |
 | ---------- | :---------: | ---------------------------------------- |
-| ✅ Selesai |   **25**    | Sudah diimplementasikan dan berjalan     |
+| ✅ Selesai |   **28**    | Sudah diimplementasikan dan berjalan     |
 | ⚠️ Partial |    **2**    | Sebagian dikerjakan, perlu penyempurnaan |
-| ❌ Belum   |   **13**    | Belum dikerjakan sama sekali             |
+| ❌ Belum   |   **10**    | Belum dikerjakan sama sekali             |
 
 **Estimasi keseluruhan: ~45% selesai**
 
@@ -42,6 +44,7 @@
 | :-: | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
 |  1  | **Potensi perubahan HM/KM baru (bisa menimbulkan hasil minus)** — dari penggantian unit odometer/panel/electricity | Sudah ada fungsi `calculateLifetimeDiff()` yang menangani kalkulasi lifetime dengan kemungkinan odometer/HM ter-reset (nilai minus). Fungsi ini membandingkan reading saat ini vs saat install, dan jika hasilnya minus, tetap memprosesnya.                             | `app/Http/Controllers/TyrePerformance/Movement/TyreMovementController.php` (line 158-175) |
 |  3  | **Kondisi pemasangan tyre dibuat lebih simple: New, Spare, Repair** — status dibedakan antara install dan replace  | Form pemasangan sudah memiliki dropdown `install_condition` dengan pilihan: **New (Baru)**, **Spare (Bekas/Cadangan)**, **Repair (Hasil Perbaikan/Vulkanisir)**. Sistem juga membedakan antara install baru dan replace (penggantian ban pada posisi yang sudah terisi). | `resources/views/tyre-performance/movement/pemasangan.blade.php` (line 131-140)           |
+| 26  | **Tampilkan Data Terakhir KM/HM (Real-time)**                                                                      | Ditambahkan pada form Pemeriksaan, Pelepasan, & Pemasangan saat unit kendaraan dipilih. (SELESAI 6 Mar 2026).                                                                                                                                                            | `TyreExaminationController.php`, `TyreMovementController.php`                             |
 
 ### ❌ Belum Dikerjakan
 
@@ -208,16 +211,21 @@
 
 > Sumber: Notulensi meeting Sabtu 28 Feb 2026
 
+### ✅ Sudah Dikerjakan
+
+|  #  | Request                                                              | Catatan                                                                     | Estimasi Effort |
+| :-: | -------------------------------------------------------------------- | --------------------------------------------------------------------------- | :-------------: |
+|  1  | **Log human error input masuk di activity dan terdata**              | ✅ Selesai (5-6 Mar 2026) - Blokir data anomali + Log (Badge Merah).        |    🔴 Major     |
+|  2  | **Buat pesan/notifikasi ketika terjadi human error / mismatch data** | ✅ Selesai (5-6 Mar 2026) - Pesan Feedback SweetAlert untuk anomali.        |    🟡 Medium    |
+|  3  | **Tambah kolom foto di Examination Form**                            | ✅ Selesai (6 Mar 2026) - Upload 1 foto utama unit + display di Show & PDF. |    🟡 Medium    |
+
 ### ❌ Belum Dikerjakan
 
-|  #  | Request                                                              | Catatan                                                                                                                                                     | Estimasi Effort |
-| :-: | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------: |
-|  1  | **Log human error input masuk di activity dan terdata**              | Sistem deteksi anomali data (mismatch HM/KM, data tidak valid) harus tercatat di Activity Log. Terkait dengan item "Chart Human Error" dari meeting 20 Feb. |    🔴 Major     |
-|  2  | **Buat pesan/notifikasi ketika terjadi human error / mismatch data** | Saat sistem mendeteksi input yang anomali (misal: HM/KM turun drastis, serial number tidak cocok), tampilkan pesan peringatan ke user dan log ke activity.  |    🟡 Medium    |
-|  3  | **Tambah kolom foto di Examination Form**                            | Form inspeksi ban perlu tambahan field upload gambar/foto kondisi ban. Perlu migration tambah kolom + file upload handler.                                  |    🟡 Medium    |
-|  4  | **Import data pemasangan/pelepasan (Movement)**                      | Extend modul Import yang sudah ada untuk mendukung data Movement (Install & Remove). Template CSV + validasi + approval flow.                               |    🟡 Medium    |
-|  5  | **Simulasi & Guide Book penggunaan sistem**                          | Buat dokumentasi panduan penggunaan sistem. Bisa berbentuk halaman interaktif di dalam sistem atau dokumen PDF terpisah.                                    |    🟡 Medium    |
-|  6  | **Excel Checklist kesiapan penggunaan sistem**                       | Buat file Excel berisi checklist kebutuhan per role (internal & eksternal): data apa saja yang dibutuhkan, akun yang perlu dibuat, dsb.                     |  🟢 Quick fix   |
+|  #  | Request                                         | Catatan                                                                                                                                 | Estimasi Effort |
+| :-: | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | :-------------: |
+|  1  | **Import data pemasangan/pelepasan (Movement)** | Extend modul Import yang sudah ada untuk mendukung data Movement (Install & Remove). Template CSV + validasi + approval flow.           |    🟡 Medium    |
+|  2  | **Simulasi & Guide Book penggunaan sistem**     | Buat dokumentasi panduan penggunaan sistem. Bisa berbentuk halaman interaktif di dalam sistem atau dokumen PDF terpisah.                |    🟡 Medium    |
+|  3  | **Excel Checklist kesiapan penggunaan sistem**  | Buat file Excel berisi checklist kebutuhan per role (internal & eksternal): data apa saja yang dibutuhkan, akun yang perlu dibuat, dsb. |  🟢 Quick fix   |
 
 ### ❓ Perlu Diskusi Lebih Lanjut
 
@@ -226,6 +234,32 @@
 |  1  | **SOP End User / Kewajiban Customer**                          | Perlu didefinisikan: apa kewajiban customer agar bisa menggunakan sistem. Customer perlu menunjuk siapa saja yang mendapatkan akses. Perlu meeting khusus untuk bahas ini. |
 |  2  | **Seragamkan bahasa dan istilah pada sistem**                  | Sudah di backlog sejak meeting 20 Feb. Dijadwalkan untuk dibahas di meeting berikutnya. Semua label, menu, dan pesan di sistem harus konsisten (Indonesia atau bilingual). |
 |  3  | **Checklist form — siapa yang gunakan sistem ini di customer** | Perlu dibuat daftar: per role customer → apa saja yang bisa diakses, apa data yang harus disiapkan, dan siapa yang bertanggung jawab. Terkait erat dengan SOP end user.    |
+
+---
+
+## 4-5 Mar 2026 — Fitur Foto & Anomaly Detection
+
+|  #  | Modul / Fitur / Request                               | Detail Implementasi                                                                                                             | Status     |
+| :-: | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+|  1  | **Pemeriksaan Ban (Examination): Fitur Foto**         | Penambahan upload foto pada form pemeriksaan (per ban).                                                                         | ✅ Selesai |
+|  2  | **Deteksi Human Error (Anomaly Detection) - Tahap 1** | Implementasi sistem warning jika Odo/HM input lebih rendah dari catatan terakhir atau RTD meningkat tidak wajar.                | ✅ Selesai |
+|  3  | **Logging Otomatis Anomali**                          | Pencatatan anomali ke Activity Log dengan modul dan tipe khusus (Human Error).                                                  | ✅ Selesai |
+|  4  | **Mekanisme Reset Odometer/HM Unit**                  | Checkbox khusus di form untuk mengizinkan input angka nol/menurun jika memang terjadi pergantian unit atau panel instrumen.     | ✅ Selesai |
+|  5  | **Peningkatan Akurasi Tyre Lifetime**                 | Kalkulasi lifetime (KM/HM) kini dihitung per transaksi untuk menjaga sinkronisasi data master meskipun terjadi reset pada unit. | ✅ Selesai |
+|  6  | **Optimasi Activity Log Detail**                      | JSON viewer diganti menjadi Tabel/Label yang rapih (human-readable) untuk audit trail.                                          | ✅ Selesai |
+|  7  | **Import Data Pemasangan/Pelepasan**                  | Perbaikan fitur import movement history agar sinkron dengan status Ban & Kendaraan.                                             | ✅ Selesai |
+|  8  | **Dokumentasi & Guide Book**                          | Pembuatan `docs/GUIDE_BOOK.md` dan `docs/CHECKLIST_READY.csv`.                                                                  | ✅ Selesai |
+
+---
+
+## 6 Mar 2026 — General Photos & Advanced Validation
+
+|  #  | Fitur / Request                              | Detail Implementasi                                                                                                                                                                  | Status     |
+| :-: | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+|  1  | **Penyederhanaan Foto Unit (General Photo)** | Berdasarkan request user, upload foto unit disatukan menjadi 1 foto utama (Depan/Overall) agar lebih praktis bagi admin di lapangan.                                                 | ✅ Selesai |
+|  2  | **Visualisasi Foto Unit di PDF & Show**      | Foto unit kini ditampilkan lebih besar dan jelas pada halaman detail pemeriksaan serta masuk ke dalam dokumen laporan PDF.                                                           | ✅ Selesai |
+|  3  | **Display Data KM/HM Terakhir (Real-time)**  | Pada form Pemeriksaan, Pelepasan, & Pemasangan, sistem menampilkan data KM/HM terakhir secara otomatis saat unit dipilih. Berguna sebagai panduan user agar tidak salah input angka. | ✅ Selesai |
+|  4  | **Advanced Human Error Crosscheck**          | Validasi Odo/HM kini mengecek gabungan antara data dari tabel **Movement** dan **Examination**. Memastikan data terbaru tetap terjaga meskipun baru saja diinput via inspeksi rutin. | ✅ Selesai |
 
 ---
 
@@ -254,10 +288,10 @@
 10. **Failure code per customer** (adjustable)
 11. **Seragamkan bahasa/istilah** di seluruh sistem
 12. **Informasi/Promo** (di akhir pengerjaan)
-13. **Tambah kolom foto di Examination Form** _(Baru - 28 Feb)_
-14. **Import data Movement (Pemasangan/Pelepasan)** _(Baru - 28 Feb)_
-15. **Simulasi & Guide Book penggunaan sistem** _(Baru - 28 Feb)_
-16. **Excel Checklist kesiapan sistem per role** _(Baru - 28 Feb)_
+13. **Tambah kolom foto di Examination Form** ✅ **(SELESAI 6 Mar 2026)**
+14. **Import data Movement (Pemasangan/Pelepasan)**
+15. **Simulasi & Guide Book penggunaan sistem**
+16. **Excel Checklist kesiapan sistem per role**
 
 ### 🔴 Major Features (Butuh design & planning matang)
 
@@ -266,7 +300,7 @@
 3. **Role 3-tier** — Manajerial / Supervisor / Admin dengan permission granular
 4. **Status Retreaded/Vulkanisir** (R0, R1, RN) + chart
 5. **Form pelepasan** — upload gambar, data matching, view konfigurasi
-6. **Human Error Detection & Logging** — deteksi data tidak valid, blokir simpan, log ke activity (tipe: error), notifikasi ke user ✅ **(SELESAI 5 Mar 2026)**
+6. **Human Error Detection & Logging** — deteksi data tidak valid, blokir simpan, log ke activity (tipe: error), notifikasi ke user ✅ **(SELESAI 5-6 Mar 2026)**
 7. **Claim/Warranty** — parameter dari pabrik
 8. **Lead Time Tracking** — items delivery, BA, invoicing, document received
 9. **SOP End User & Customer Onboarding** — kewajiban customer, penunjukan user akses _(Baru - 28 Feb)_
@@ -336,19 +370,6 @@ app/Http/Controllers/
 
 ---
 
-## 4 Mar 2026 — Fitur Foto & Anomaly Detection
-
-6. **Pemeriksaan Ban (Examination):**
-    - [x] Menambahkan kolom **Foto** pada form pemeriksaan (Frontend & Backend).
-    - [x] Implementasi upload foto ke storage public (`storage/app/public/examinations`).
-    - [x] Menampilkan thumbnail foto pada halaman **Detail Pemeriksaan (Show)**.
-7. **Deteksi Human Error (Anomaly Detection):**
-    - [x] Implementasi peringatan (Warning) jika Odometer/HM input lebih rendah dari catatan terakhir.
-    - [x] Implementasi peringatan jika RTD input meningkat secara tidak wajar (Human Error).
-    - [x] Logging otomatis anomali ke **Activity Log** dengan modul `Human Error`.
-    - [x] Menampilkan pesan feedback SweetAlert saat anomali terdeteksi di Form Pemeriksaan, Pemasangan, dan Pelepasan.
-8. **Import Data:**
-    - [x] Perbaikan fitur **Import Pemasangan/Pelepasan** (Movement History) agar sinkron dengan status Ban & Kendaraan.
 9. **Dokumentasi:**
     - [x] Membuat **Guide Book, Simulasi Workflow, dan Checklist Kesiapan** di `docs/GUIDE_BOOK.md`.
     - [x] Membuat file checklist CSV untuk user di `docs/CHECKLIST_READY.csv`.

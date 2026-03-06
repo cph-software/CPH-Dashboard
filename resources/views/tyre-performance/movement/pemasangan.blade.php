@@ -168,11 +168,17 @@
                         </div>
                         <div class="col-md-4 mb-3">
                            <label class="form-label fw-bold">KM Saat Pasang</label>
-                           <input type="number" name="odometer" class="form-control" placeholder="Odometer" required>
+                           <input type="number" name="odometer" id="odometer" class="form-control"
+                              placeholder="KM Odometer" required>
+                           <small class="text-muted extra-small d-block mt-1">Last KM: <span id="last_odo_display"
+                                 class="fw-bold">-</span></small>
                         </div>
                         <div class="col-md-4 mb-3">
                            <label class="form-label fw-bold">HM Saat Pasang</label>
-                           <input type="number" name="hour_meter" class="form-control" placeholder="Hour Meter" required>
+                           <input type="number" name="hour_meter" id="hour_meter" class="form-control"
+                              placeholder="Hour Meter" required>
+                           <small class="text-muted extra-small d-block mt-1">Last HM: <span id="last_hm_display"
+                                 class="fw-bold">-</span></small>
                         </div>
                         <div class="col-md-4 mb-3">
                            <label class="form-label fw-bold">Tipe Unit</label>
@@ -505,8 +511,15 @@
             // Fetch Vehicle Detail for auto-fill
             fetch(`{{ url('vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
-               .then(data => {
+               .then(res => {
+                  const data = res.vehicle;
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
+
+                  // Update Last Odo & HM display
+                  $('#last_odo_display').text(res.last_odometer.toLocaleString());
+                  $('#last_hm_display').text(res.last_hour_meter.toLocaleString());
+                  $('#odometer').attr('placeholder', 'Previous: ' + res.last_odometer);
+                  $('#hour_meter').attr('placeholder', 'Previous: ' + res.last_hour_meter);
 
                   if (data.operational_segment_id) {
                      suggestedSegmentId = data.operational_segment_id;

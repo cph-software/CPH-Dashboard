@@ -112,7 +112,45 @@ class TyreMovementController extends Controller
     public function getVehicleDetail($id)
     {
         $vehicle = MasterImportKendaraan::with('segment')->findOrFail($id);
-        return response()->json($vehicle);
+
+        // Fetch latest readings from Movement and Examination
+        $lastMovement = TyreMovement::where('vehicle_id', $id)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastExamination = TyreExamination::where('vehicle_id', $id)
+            ->orderBy('examination_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastOdo = 0;
+        $lastHm = 0;
+
+        if ($lastMovement && $lastExamination) {
+            $movDate = Carbon::parse($lastMovement->movement_date);
+            $examDate = Carbon::parse($lastExamination->examination_date);
+
+            if ($movDate->gt($examDate)) {
+                $lastOdo = $lastMovement->odometer_reading;
+                $lastHm = $lastMovement->hour_meter_reading;
+            } else {
+                $lastOdo = $lastExamination->odometer;
+                $lastHm = $lastExamination->hour_meter;
+            }
+        } elseif ($lastMovement) {
+            $lastOdo = $lastMovement->odometer_reading;
+            $lastHm = $lastMovement->hour_meter_reading;
+        } elseif ($lastExamination) {
+            $lastOdo = $lastExamination->odometer;
+            $lastHm = $lastExamination->hour_meter;
+        }
+
+        return response()->json([
+            'vehicle' => $vehicle,
+            'last_odometer' => $lastOdo,
+            'last_hour_meter' => $lastHm
+        ]);
     }
 
     public function getPositionInfo(Request $request)

@@ -191,7 +191,7 @@
                      <th class="text-center" width="100">RTD #3</th>
                      <th class="text-center" width="100">RTD #4</th>
                      <th>REMARKS</th>
-                     <th class="text-center" width="80">FOTO</th>
+                     {{-- <th class="text-center" width="80">FOTO</th> --}}
                   </tr>
                </thead>
                <tbody>
@@ -211,7 +211,7 @@
                         <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
                         <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                         <td>{{ $detail->remarks ?: '-' }}</td>
-                        <td class="text-center">
+                        {{-- <td class="text-center">
                            @if ($detail->photo)
                               <a href="{{ asset('storage/' . $detail->photo) }}" target="_blank">
                                  <img src="{{ asset('storage/' . $detail->photo) }}" class="rounded shadow-sm"
@@ -220,7 +220,7 @@
                            @else
                               -
                            @endif
-                        </td>
+                        </td> --}}
                      </tr>
                   @endforeach
                </tbody>
@@ -228,12 +228,35 @@
          </div>
       </div>
 
-      @if ($exam->notes)
-         <div class="card">
+      @if ($exam->notes || $exam->photo_unit_front)
+         <div class="card shadow-sm border-0">
             <div class="card-body">
-               <div class="p-3 bg-light rounded shadow-sm border-start border-primary border-3">
-                  <small class="text-muted d-block fw-bold mb-1">NOTES:</small>
-                  <p class="mb-0 small italic">{{ $exam->notes }}</p>
+               <div class="row g-4">
+                  @if ($exam->notes)
+                     <div class="{{ $exam->photo_unit_front ? 'col-md-6' : 'col-12' }}">
+                        <div class="p-3 bg-light rounded h-100 border-start border-primary border-3">
+                           <label class="form-label fw-bold text-primary small d-block mb-1 text-uppercase">Catatan
+                              Tambahan (Notes)</label>
+                           <p class="mb-0 small italic text-dark">{{ $exam->notes }}</p>
+                        </div>
+                     </div>
+                  @endif
+
+                  @if ($exam->photo_unit_front)
+                     <div class="{{ $exam->notes ? 'col-md-6' : 'col-12' }}">
+                        <div class="p-3 bg-light rounded h-100 border-start border-success border-3">
+                           <label class="form-label fw-bold text-success small d-block mb-2 text-uppercase">Lampiran Foto
+                              Unit</label>
+                           <a href="{{ asset('storage/' . $exam->photo_unit_front) }}" target="_blank" class="d-block">
+                              <img src="{{ asset('storage/' . $exam->photo_unit_front) }}"
+                                 class="img-fluid rounded shadow-sm border"
+                                 style="max-height: 250px; width: 100%; object-fit: cover;">
+                           </a>
+                           <small class="text-muted mt-2 d-block extra-small text-center italic">Klik foto untuk
+                              memperbesar</small>
+                        </div>
+                     </div>
+                  @endif
                </div>
             </div>
          </div>

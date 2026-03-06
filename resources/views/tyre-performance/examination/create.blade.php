@@ -124,7 +124,10 @@
                   </div>
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">KM (ODO/RETASE)</label>
-                     <input type="number" name="odometer" class="form-control" placeholder="22076" required>
+                     <input type="number" name="odometer" id="odometer" class="form-control" placeholder="Pilih unit..."
+                        required>
+                     <small class="text-muted extra-small d-block mt-1">Last KM: <span id="last_odo_display"
+                           class="fw-bold">-</span></small>
                   </div>
                   <div class="col-md-3 mb-3">
                      <div class="row">
@@ -156,7 +159,9 @@
                   </div>
                   <div class="col-md-3 mb-3">
                      <label class="form-label fw-bold small">HM (Hour Meter)</label>
-                     <input type="number" name="hour_meter" class="form-control" placeholder="0">
+                     <input type="number" name="hour_meter" id="hour_meter" class="form-control" placeholder="0">
+                     <small class="text-muted extra-small d-block mt-1">Last HM: <span id="last_hm_display"
+                           class="fw-bold">-</span></small>
                   </div>
                   <div class="col-12 mt-2 mb-3">
                      <div
@@ -211,6 +216,23 @@
                      </tr>
                   </tbody>
                </table>
+            </div>
+         </div>
+
+         <!-- UNIT PHOTOS SECTION -->
+         <div class="card shadow-sm mb-4">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+               <h5 class="mb-0"><i class="ri-camera-lens-line me-2"></i>Unit Photos (Lampiran Foto Unit)</h5>
+            </div>
+            <div class="card-body">
+               <div class="row">
+                  <div class="col-md-12 mb-3">
+                     <label class="form-label fw-bold small">LAMPIRAN FOTO UNIT (DEPAN/KESELURUHAN)</label>
+                     <input type="file" name="photo_unit_front" class="form-control" accept="image/*">
+                     <small class="text-muted small mt-1 italic d-block">Dokumentasi kondisi fisik unit saat pemeriksaan
+                        dilakukan.</small>
+                  </div>
+               </div>
             </div>
          </div>
 
@@ -292,6 +314,12 @@
                   Swal.close();
                   if (res.success) {
                      $('#tyre_list_body').html(res.html);
+
+                     // Update Last Odo & HM display
+                     $('#last_odo_display').text(res.last_odometer.toLocaleString());
+                     $('#last_hm_display').text(res.last_hour_meter.toLocaleString());
+                     $('#odometer').attr('placeholder', 'Previous: ' + res.last_odometer);
+                     $('#hour_meter').attr('placeholder', 'Previous: ' + res.last_hour_meter);
 
                      // Add photo name display handler
                      $('.photo-input').on('change', function() {
