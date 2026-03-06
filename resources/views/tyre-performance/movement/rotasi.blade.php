@@ -181,6 +181,36 @@
                            <input type="text" id="vehicle_type_display" class="form-control bg-light" readonly
                               placeholder="Auto-filled">
                         </div>
+                        <div class="col-md-12 mb-3">
+                           <div class="d-flex align-items-center p-2 rounded bg-label-warning border border-warning">
+                              <div class="form-check form-switch m-0">
+                                 <input class="form-check-input" type="checkbox" name="is_meter_reset" id="is_meter_reset"
+                                    value="1" style="width: 2.5em; height: 1.25em;">
+                                 <label class="form-check-label fw-bold mb-0 ms-2" for="is_meter_reset">
+                                    Unit Habis Reset Meter (Odo/HM Kembali ke 0)
+                                 </label>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                           <label class="form-label fw-bold">Workshop / Lokasi Kerja</label>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2" required>
+                              <option value="">-- Pilih Lokasi --</option>
+                              @foreach ($locations as $loc)
+                                 <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                           <label class="form-label fw-bold">Operational Segment</label>
+                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
+                              required>
+                              <option value="">-- Pilih Segment --</option>
+                              @foreach ($segments as $seg)
+                                 <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -200,7 +230,8 @@
                            <select name="position_id" id="position_id" class="form-select select2" required disabled>
                               <option value="">-- Pilih Posisi A --</option>
                            </select>
-                           <div id="source_tyre_info" class="mt-2 p-2 rounded bg-light border small" style="display:none;">
+                           <div id="source_tyre_info" class="mt-2 p-2 rounded bg-light border small"
+                              style="display:none;">
                               SN: <strong id="src_sn">-</strong> | <span id="src_brand">-</span>
                            </div>
                         </div>
@@ -312,6 +343,14 @@
                            <label class="form-label fw-bold">Tyreman 2</label>
                            <input type="text" name="tyreman_2" class="form-control" placeholder="Helper">
                         </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Waktu Mulai</label>
+                           <input type="time" name="start_time" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold">Waktu Selesai</label>
+                           <input type="time" name="end_time" class="form-control">
+                        </div>
                         <div class="col-md-12">
                            <label class="form-label fw-bold">Catatan (Notes)</label>
                            <textarea name="notes" class="form-control" rows="2" placeholder="Masukkan alasan rotasi..."></textarea>
@@ -377,11 +416,38 @@
             fetch(`{{ url('vehicle-detail') }}/${vehicleId}`)
                .then(response => response.json())
                .then(res => {
-                  $('#vehicle_type_display').val(res.vehicle.jenis_kendaraan || '-');
-                  $('#last_odo_display').text(res.last_odometer.toLocaleString());
-                  $('#last_hm_display').text(res.last_hour_meter.toLocaleString());
-                  $('#odometer').attr('placeholder', 'Previous: ' + res.last_odometer);
-                  $('#hour_meter').attr('placeholder', 'Previous: ' + res.last_hour_meter);
+                  const data = res.vehicle;
+                  $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
+
+                  const odo = res.last_odometer || 0;
+                  const hm = res.last_hour_meter || 0;
+
+                  $('#last_odo_display').text(odo.toLocaleString());
+                  $('#last_hm_display').text(hm.toLocaleString());
+
+                  // Auto-fill values
+                  $('#odometer').val(odo);
+                  $('#hour_meter').val(hm);
+
+                  $('#odometer').attr('placeholder', 'Previous: ' + odo);
+                  $('#hour_meter').attr('placeholder', 'Previous: ' + hm);
+
+                  // Auto-fill Location and Segment
+                  if (data.operational_segment_id) {
+                     $('#operational_segment_id').val(data.operational_segment_id).trigger('change');
+                  }
+
+                  if (data.area) {
+                     const locOption = $('#work_location_id option').filter(function() {
+                        return $(this).text().trim().toLowerCase() === data.area.toLowerCase();
+                     });
+                     if (locOption.length) {
+                        $('#work_location_id').val(locOption.val()).trigger('change');
+                     }
+                  }
+               })
+               .catch(err => {
+                  console.error('Error fetching vehicle detail:', err);
                });
 
             // Load Layout
@@ -407,12 +473,12 @@
                      if (tyre) {
                         sourceSelect.append(
                            `<option value="${pos.id}">${pos.position_code} - ${pos.position_name} (${tyre.serial_number})</option>`
-                           );
+                        );
                      }
                      // Target shows all positions
                      targetSelect.append(
                         `<option value="${pos.id}">${pos.position_code} - ${pos.position_name} ${tyre ? '('+tyre.serial_number+')' : '[KOSONG]'}</option>`
-                        );
+                     );
                   });
 
                   sourceSelect.prop('disabled', false);
