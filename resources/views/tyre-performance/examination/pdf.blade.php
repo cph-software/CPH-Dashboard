@@ -172,6 +172,7 @@
             <th width="35" class="text-center">RTD 3</th>
             <th width="35" class="text-center">RTD 4</th>
             <th>REMARKS</th>
+            <th width="40" class="text-center">FOTO</th>
          </tr>
       </thead>
       <tbody>
@@ -191,6 +192,14 @@
                <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
                <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                <td>{{ $detail->remarks ?: '-' }}</td>
+               <td class="text-center">
+                  @if ($detail->photo)
+                     <img src="{{ public_path('storage/' . $detail->photo) }}"
+                        style="width: 30px; height: 30px; object-fit: cover;">
+                  @else
+                     -
+                  @endif
+               </td>
             </tr>
          @endforeach
       </tbody>
@@ -200,6 +209,16 @@
       <div class="notes-box">
          <span class="label">ADDITIONAL NOTES:</span>
          <div>{{ $exam->notes }}</div>
+      </div>
+   @endif
+
+   @if ($exam->photo_unit_front)
+      <div style="margin-top: 20px;">
+         <span class="label">UNIT PHOTO:</span>
+         <div style="text-align: center; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+            <img src="{{ public_path('storage/' . $exam->photo_unit_front) }}"
+               style="width: 100%; max-height: 300px; object-fit: contain;">
+         </div>
       </div>
    @endif
 
