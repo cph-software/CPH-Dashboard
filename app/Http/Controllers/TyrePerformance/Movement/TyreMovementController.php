@@ -279,7 +279,7 @@ class TyreMovementController extends Controller
 
             // --- DETEKSI ANOMALI ODO/HM (Human Error Check) ---
             $lastVehicleMov = TyreMovement::where('vehicle_id', $request->vehicle_id)
-                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection'])
+                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection', 'Rotation'])
                 ->orderBy('movement_date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -358,7 +358,7 @@ class TyreMovementController extends Controller
                         $hmDiffTgt = $this->calculateLifetimeDiff($request->hour_meter, $lastMovTgt->hour_meter_reading);
                     }
 
-                    // 1. Log Rotation for Source -> Target
+                    // 1. Log Rotation for Source Tyre (moving to Target Position)
                     TyreMovement::create([
                         'tyre_id' => $sourceTyre->id,
                         'vehicle_id' => $request->vehicle_id,
@@ -371,11 +371,17 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
                         'rtd_reading' => $request->rtd_reading,
-                        'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . '. ' . ($request->notes ?? ''),
+                        'work_location_id' => $request->work_location_id,
+                        'operational_segment_id' => $request->operational_segment_id,
+                        'tyreman_1' => $request->tyreman_1,
+                        'tyreman_2' => $request->tyreman_2,
+                        'start_time' => $request->start_time,
+                        'end_time' => $request->end_time,
+                        'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . ' (Asal dari ' . $position->position_code . '). ' . ($request->notes ?? ''),
                         'created_by' => Auth::id()
                     ]);
 
-                    // 2. Log Rotation for Target -> Source
+                    // 2. Log Rotation for Target Tyre (moving to Source Position)
                     TyreMovement::create([
                         'tyre_id' => $targetTyre->id,
                         'vehicle_id' => $request->vehicle_id,
@@ -388,6 +394,12 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffTgt,
                         'psi_reading' => $request->target_psi_reading,
                         'rtd_reading' => $request->target_rtd_reading,
+                        'work_location_id' => $request->work_location_id,
+                        'operational_segment_id' => $request->operational_segment_id,
+                        'tyreman_1' => $request->tyreman_1,
+                        'tyreman_2' => $request->tyreman_2,
+                        'start_time' => $request->start_time,
+                        'end_time' => $request->end_time,
                         'notes' => 'Rotation Swap ke ' . $position->position_code . ' (Asal dari ' . $targetPosition->position_code . ').',
                         'created_by' => Auth::id()
                     ]);
@@ -426,6 +438,12 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
                         'rtd_reading' => $request->rtd_reading,
+                        'work_location_id' => $request->work_location_id,
+                        'operational_segment_id' => $request->operational_segment_id,
+                        'tyreman_1' => $request->tyreman_1,
+                        'tyreman_2' => $request->tyreman_2,
+                        'start_time' => $request->start_time,
+                        'end_time' => $request->end_time,
                         'notes' => 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($request->notes ?? ''),
                         'created_by' => Auth::id()
                     ]);
