@@ -323,6 +323,7 @@ class TyreMovementController extends Controller
                     if ($oldTyre) {
                         // 1. Calculate Lifetime for Old Tyre since its last recorded event
                         $lastOldMov = TyreMovement::where('tyre_id', $oldTyre->id)
+                            ->where('movement_date', '<=', $request->movement_date)
                             ->orderBy('movement_date', 'desc')
                             ->orderBy('id', 'desc')
                             ->first();
@@ -453,6 +454,7 @@ class TyreMovementController extends Controller
                 // --- Calculate Lifetime (KM & HM) ---
                 // Calculate Lifetime since last recorded event (could be install or inspection)
                 $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                    ->where('movement_date', '<=', $request->movement_date)
                     ->orderBy('movement_date', 'desc')
                     ->orderBy('id', 'desc')
                     ->first();

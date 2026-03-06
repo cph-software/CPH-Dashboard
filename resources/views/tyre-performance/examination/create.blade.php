@@ -281,11 +281,16 @@
                $.ajax({
                   url: "{{ route('tyre-movement.get-segments', '') }}/" + locationId,
                   success: function(res) {
-                     res.forEach(function(segment) {
-                        $segmentSelect.append(
-                           '<option value="' + segment.id + '">' + segment.segment_name +
-                           '</option>');
-                     });
+                     if (res && res.length > 0) {
+                        $segmentSelect.attr('required', true);
+                        res.forEach(function(segment) {
+                           $segmentSelect.append(
+                              '<option value="' + segment.id + '">' + segment.segment_name +
+                              '</option>');
+                        });
+                     } else {
+                        $segmentSelect.removeAttr('required');
+                     }
                   }
                });
             }
