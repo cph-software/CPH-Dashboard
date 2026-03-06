@@ -287,8 +287,9 @@ class TyreExaminationController extends Controller
                 // Update current RTD of the tyre if measured
                 $tyre = Tyre::find($detail['tyre_id']);
                 if ($tyre) {
-                    // --- Calculate Lifetime since last recorded event ---
+                    // --- Calculate Lifetime since last recorded event (Date-Aware) ---
                     $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                        ->where('movement_date', '<=', $request->examination_date)
                         ->orderBy('movement_date', 'desc')
                         ->orderBy('id', 'desc')
                         ->first();

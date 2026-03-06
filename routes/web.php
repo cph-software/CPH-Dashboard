@@ -91,6 +91,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('movement', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'index'])->name('tyre-movement.index')->middleware('tyre.permission:Movement History');
     Route::get('pemasangan', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'pemasangan'])->name('tyre-movement.pemasangan')->middleware('tyre.permission:Pemasangan (Install)');
     Route::get('pelepasan', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'pelepasan'])->name('tyre-movement.pelepasan')->middleware('tyre.permission:Pelepasan (Remove)');
+    Route::get('rotasi', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'rotasi'])->name('tyre-movement.rotasi')->middleware('tyre.permission:Rotasi (Rotate)');
     Route::get('layout/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleLayout'])->middleware('tyre.permission:Tyre Operations');
     Route::get('position-info', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getPositionInfo'])->middleware('tyre.permission:Tyre Operations');
     Route::get('vehicle-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleDetail'])->middleware('tyre.permission:Tyre Operations');

@@ -237,6 +237,18 @@
                               <small class="text-muted d-block">Pattern/Size</small>
                               <span id="info_pattern_size" class="fw-bold">-</span>
                            </div>
+                           <div class="col-12 mt-2 pt-2 border-top">
+                              <div class="d-flex gap-4">
+                                 <div>
+                                    <small class="text-muted d-block">Tanggal Pasang</small>
+                                    <span id="info_install_date" class="fw-bold text-primary">-</span>
+                                 </div>
+                                 <div>
+                                    <small class="text-muted d-block">KM Pasang</small>
+                                    <span id="info_install_odo" class="fw-bold text-primary">-</span>
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                      </div>
 
@@ -586,11 +598,18 @@
                      suggestedSegmentId = tyre.latest_installation.operational_segment_id;
                      applySuggestedSegment();
                   }
+
+                  // 4. Update Info Display
+                  $('#info_install_date').text(tyre.latest_installation.movement_date);
+                  $('#info_install_odo').text(Number(tyre.latest_installation.odometer_reading)
+                  .toLocaleString());
                } else {
                   // Clear if no history
                   $('input[name="rim_size"]').val('');
                   $('#work_location_id').val('').trigger('change');
                   suggestedSegmentId = null;
+                  $('#info_install_date').text('-');
+                  $('#info_install_odo').text('-');
                }
                // ------------------------------------------------
             } else {

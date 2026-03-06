@@ -393,10 +393,24 @@ app/Http/Controllers/
         - Logging pada Controller diperketat untuk merekam **Nama/Serial Number** ban ketimbang hanya ID.
 
 11. **Rencana Modul Rotasi & Reporting:**
-    - [ ] Pemisahan fitur **Rotasi Ban** menjadi menu mandiri (Internal move dalam 1 unit).
-    - [ ] Integrasi visual layout ban pada form Rotasi.
-    - [ ] Pengembangan **Laporan Performa Ban** (CPH, Performa per Brand/Pattern).
-    - [ ] Dashboard **Tyre Analytics** (Grafik umur ban vs target).
+    - [x] **Fitur Rotasi Ban (Move/Swap):**
+    - [x] Form Rotasi dengan Visual Layout.
+    - [x] Logika Swap (Tukar Posisi) otomatis.
+    - [x] Kalkulasi running KM saat rotasi.
+    - [x] Rollback transaksi rotasi.
+
+- [x] **Data Matching (Install vs Remove):**
+    - [x] Menampilkan riwayat pasang (Tanggal & KM) pada form pelepasan.
+    - [x] Penanganan input data historis (Date-Aware lifetime calculation).
+- [ ] **Data Matching (History Reconciliation):**
+    - [ ] Script pengecekan selisih data kronologis.
+    - [ ] Auto-repair lifetime ban yang tidak sinkron.
+
+---
+
+### **📊 Estimasi Progres Keseluruhan: ~65%**
+
+_(Peningkatan dari 55% setelah penambahan modul Rotasi dan perbaikan sinkronisasi data)_
 
 ---
 
