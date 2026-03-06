@@ -84,6 +84,17 @@ class TyreMovementController extends Controller
         return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments', 'locations'));
     }
 
+    public function rotasi()
+    {
+        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->whereHas('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->get();
+        $locations = \App\Models\TyreLocation::all();
+        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
+        return view('tyre-performance.movement.rotasi', compact('kendaraans', 'segments', 'locations'));
+    }
+
     public function getSegmentsByLocation($locationId)
     {
         $segments = TyreSegment::where('tyre_location_id', $locationId)
@@ -221,9 +232,10 @@ class TyreMovementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'movement_type' => 'required|in:Installation,Removal',
+            'movement_type' => 'required|in:Installation,Removal,Rotation',
             'vehicle_id' => 'required|exists:master_import_kendaraan,id',
             'position_id' => 'required|exists:tyre_position_details,id',
+            'target_position_id' => 'required_if:movement_type,Rotation|exists:tyre_position_details,id',
             'tyre_id' => 'required_if:movement_type,Installation|exists:tyres,id',
             'movement_date' => 'required|date',
             'odometer' => 'nullable|numeric',
@@ -288,7 +300,152 @@ class TyreMovementController extends Controller
 
             $position = TyrePositionDetail::findOrFail($request->position_id);
 
-            if ($request->movement_type === 'Installation') {
+            if ($request->movement_type === 'Rotation') {
+                $targetPosition = TyrePositionDetail::findOrFail($request->target_position_id);
+                
+                // Get Source Tyre
+                $sourceTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
+                    ->where('current_position_id', $request->position_id)
+                    ->first();
+                
+                if (!$sourceTyre) {
+                    throw new \Exception("Ban pada posisi sumber tidak ditemukan.");
+                }
+
+                // RTD Anomaly Detection (Source Tyre)
+                if ($request->rtd_reading !== null && $sourceTyre->current_tread_depth > 0) {
+                    if ($request->rtd_reading > $sourceTyre->current_tread_depth) {
+                        $warnings[] = "RTD Ban A ({$sourceTyre->serial_number}) meningkat dari ({$sourceTyre->current_tread_depth}mm) ke ({$request->rtd_reading}mm).";
+                    }
+                }
+                
+                // Calculate lifetime for Source Tyre
+                $lastMovSrc = TyreMovement::where('tyre_id', $sourceTyre->id)
+                    ->where('movement_date', '<=', $request->movement_date)
+                    ->orderBy('movement_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                
+                $kmDiffSrc = 0; $hmDiffSrc = 0;
+                if ($lastMovSrc) {
+                    $kmDiffSrc = $this->calculateLifetimeDiff($request->odometer, $lastMovSrc->odometer_reading);
+                    $hmDiffSrc = $this->calculateLifetimeDiff($request->hour_meter, $lastMovSrc->hour_meter_reading);
+                }
+
+                // Check if Target Position is occupied
+                $targetTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
+                    ->where('current_position_id', $request->target_position_id)
+                    ->first();
+                
+                if ($targetTyre) {
+                    // RTD Anomaly Detection (Target Tyre)
+                    if ($request->target_rtd_reading !== null && $targetTyre->current_tread_depth > 0) {
+                        if ($request->target_rtd_reading > $targetTyre->current_tread_depth) {
+                            $warnings[] = "RTD Ban B ({$targetTyre->serial_number}) meningkat dari ({$targetTyre->current_tread_depth}mm) ke ({$request->target_rtd_reading}mm).";
+                        }
+                    }
+
+                    // SWAP LOGIC
+                    $lastMovTgt = TyreMovement::where('tyre_id', $targetTyre->id)
+                        ->where('movement_date', '<=', $request->movement_date)
+                        ->orderBy('movement_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+                    
+                    $kmDiffTgt = 0; $hmDiffTgt = 0;
+                    if ($lastMovTgt) {
+                        $kmDiffTgt = $this->calculateLifetimeDiff($request->odometer, $lastMovTgt->odometer_reading);
+                        $hmDiffTgt = $this->calculateLifetimeDiff($request->hour_meter, $lastMovTgt->hour_meter_reading);
+                    }
+
+                    // 1. Log Rotation for Source -> Target
+                    TyreMovement::create([
+                        'tyre_id' => $sourceTyre->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'position_id' => $request->target_position_id,
+                        'movement_type' => 'Rotation',
+                        'movement_date' => $request->movement_date,
+                        'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
+                        'running_km' => $kmDiffSrc,
+                        'running_hm' => $hmDiffSrc,
+                        'psi_reading' => $request->psi_reading,
+                        'rtd_reading' => $request->rtd_reading,
+                        'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . '. ' . ($request->notes ?? ''),
+                        'created_by' => Auth::id()
+                    ]);
+
+                    // 2. Log Rotation for Target -> Source
+                    TyreMovement::create([
+                        'tyre_id' => $targetTyre->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'position_id' => $request->position_id,
+                        'movement_type' => 'Rotation',
+                        'movement_date' => $request->movement_date,
+                        'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
+                        'running_km' => $kmDiffTgt,
+                        'running_hm' => $hmDiffTgt,
+                        'psi_reading' => $request->target_psi_reading,
+                        'rtd_reading' => $request->target_rtd_reading,
+                        'notes' => 'Rotation Swap ke ' . $position->position_code . ' (Asal dari ' . $targetPosition->position_code . ').',
+                        'created_by' => Auth::id()
+                    ]);
+
+                    // 3. Update Master Tyres
+                    $sourceTyre->update([
+                        'current_position_id' => $request->target_position_id,
+                        'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
+                        'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
+                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth
+                    ]);
+
+                    $targetTyre->update([
+                        'current_position_id' => $request->position_id,
+                        'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
+                        'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
+                        'current_tread_depth' => $request->target_rtd_reading ?? $targetTyre->current_tread_depth
+                    ]);
+
+                    // 4. Update Position Details
+                    $position->update(['tyre_id' => $targetTyre->id]);
+                    $targetPosition->update(['tyre_id' => $sourceTyre->id]);
+
+                } else {
+                    // MOVE LOGIC (Target is empty)
+                    // 1. Log Rotation
+                    TyreMovement::create([
+                        'tyre_id' => $sourceTyre->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'position_id' => $request->target_position_id,
+                        'movement_type' => 'Rotation',
+                        'movement_date' => $request->movement_date,
+                        'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
+                        'running_km' => $kmDiffSrc,
+                        'running_hm' => $hmDiffSrc,
+                        'psi_reading' => $request->psi_reading,
+                        'rtd_reading' => $request->rtd_reading,
+                        'notes' => 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($request->notes ?? ''),
+                        'created_by' => Auth::id()
+                    ]);
+
+                    // 2. Update Master Tyre
+                    $sourceTyre->update([
+                        'current_position_id' => $request->target_position_id,
+                        'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
+                        'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
+                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth
+                    ]);
+
+                    // 3. Update Position Details
+                    $position->update(['tyre_id' => null]);
+                    $targetPosition->update(['tyre_id' => $sourceTyre->id]);
+                }
+                
+                $tyre = $sourceTyre; // For potential use in logging below
+
+            } elseif ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
                 $oldLocationId = $tyre->work_location_id; // Store old location before update
 
@@ -628,7 +785,7 @@ class TyreMovementController extends Controller
                 'id' => $row->id,
                 'movement_date' => \Carbon\Carbon::parse($row->movement_date)->format('d/m/Y'),
                 'movement_type' => $row->movement_type,
-                'movement_type_display' => $row->movement_type === 'Installation' ? 'Pasang' : ($row->movement_type === 'Removal' ? 'Lepas' : 'Inspeksi'),
+                'movement_type_display' => $row->movement_type === 'Installation' ? 'Pasang' : ($row->movement_type === 'Removal' ? 'Lepas' : ($row->movement_type === 'Rotation' ? 'Rotasi' : 'Inspeksi')),
                 'install_condition' => $row->install_condition,
                 'is_replacement' => $row->is_replacement,
                 'tyre_sn' => $row->tyre->serial_number ?? '-',
@@ -681,9 +838,64 @@ class TyreMovementController extends Controller
                 if ($position) {
                     $position->update(['tyre_id' => null]);
                 }
-            } else {
-                // LOGIC: Undo Removal (Return to vehicle)
+            } elseif ($movement->movement_type === 'Rotation') {
+                // LOGIC: Undo Rotation
+                
+                // Find previous movement for this tyre to know former position
+                $prevMov = TyreMovement::where('tyre_id', $movement->tyre_id)
+                    ->where('id', '<', $movement->id)
+                    ->orderBy('id', 'desc')
+                    ->first();
+                
+                if (!$prevMov || $prevMov->vehicle_id != $movement->vehicle_id) {
+                    throw new \Exception("Gagal mendeteksi posisi asal ban. Riwayat sebelumnya mencatat ban tidak berada pada unit ini.");
+                }
 
+                $oldPosId = $prevMov->position_id;
+                $oldPos = TyrePositionDetail::find($oldPosId);
+
+                if (!$oldPos) {
+                    throw new \Exception("Posisi asal ban sudah tidak valid atau dihapus.");
+                }
+
+                // Check for occupation at old position
+                if ($oldPos->tyre_id && $oldPos->tyre_id != $tyre->id) {
+                    // Check if the occupier is a sibling rotation (Swap case)
+                    $sibling = TyreMovement::where('vehicle_id', $movement->vehicle_id)
+                        ->where('movement_date', $movement->movement_date)
+                        ->where('odometer_reading', $movement->odometer_reading)
+                        ->where('movement_type', 'Rotation')
+                        ->where('tyre_id', $oldPos->tyre_id)
+                        ->where('id', '!=', $movement->id)
+                        ->first();
+                    
+                    if (!$sibling) {
+                        $occupier = Tyre::find($oldPos->tyre_id);
+                        throw new \Exception("Posisi asal ban ({$oldPos->position_code}) sekarang sedang diisi oleh ban lain (SN: " . ($occupier->serial_number ?? '?') . "). Rollback dibatalkan.");
+                    }
+                    
+                    // It's a SWAP. We should probably rollback the sibling too.
+                    // But to avoid recursion/complexity, let's just swap them back in one go if this is the source log.
+                }
+
+                // 1. Return tyre to old position
+                $tyre->update([
+                    'current_position_id' => $oldPosId,
+                    'total_lifetime_km' => max(0, ($tyre->total_lifetime_km ?? 0) - ($movement->running_km ?? 0)),
+                    'total_lifetime_hm' => max(0, ($tyre->total_lifetime_hm ?? 0) - ($movement->running_hm ?? 0)),
+                ]);
+
+                // 2. Clear current position
+                if ($position) {
+                    $position->update(['tyre_id' => null]);
+                }
+
+                // 3. Occupy old position
+                $oldPos->update(['tyre_id' => $tyre->id]);
+
+            } else {
+                // Removal
+                // ... (existing Removal logic)
                 if (!$position) {
                     throw new \Exception("Posisi ban (ID: {$movement->position_id}) tidak ditemukan dalam database. Tidak dapat mengembalikan ban ke posisi yang sudah dihapus.");
                 }
