@@ -13,6 +13,8 @@ use App\Models\TyreMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Models\TyreExamination;
 
 class TyreMovementController extends Controller
 {
@@ -207,6 +209,107 @@ class TyreMovementController extends Controller
 
         return response()->json([
             'positions' => $positions
+        ]);
+    }
+
+    /**
+     * API: Get Tyre Detail for preview modal on Movement History page
+     */
+    public function tyreDetail(Request $request)
+    {
+        $tyreId = $request->tyre_id;
+        $positionId = $request->position_id;
+        $vehicleId = $request->vehicle_id;
+
+        // Find tyre either by ID or by position+vehicle
+        if ($tyreId) {
+            $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location'])->find($tyreId);
+        } elseif ($positionId && $vehicleId) {
+            $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location'])
+                ->where('current_vehicle_id', $vehicleId)
+                ->where('current_position_id', $positionId)
+                ->first();
+        }
+
+        if (!$tyre) {
+            return response()->json(['success' => false, 'message' => 'Ban tidak ditemukan di posisi ini.'], 404);
+        }
+
+        // Get movement history (last 10)
+        $movements = TyreMovement::where('tyre_id', $tyre->id)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($m) {
+                $typeLabels = [
+                    'Installation' => 'Pasang',
+                    'Removal' => 'Lepas',
+                    'Rotation' => 'Rotasi',
+                ];
+                return [
+                    'id' => $m->id,
+                    'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                    'type' => $typeLabels[$m->movement_type] ?? $m->movement_type,
+                    'type_raw' => $m->movement_type,
+                    'odo' => $m->odometer_reading,
+                    'hm' => $m->hour_meter_reading,
+                    'running_km' => $m->running_km ?? 0,
+                    'running_hm' => $m->running_hm ?? 0,
+                    'rtd' => $m->rtd_reading,
+                    'psi' => $m->psi_reading,
+                    'notes' => $m->notes,
+                ];
+            });
+
+        // Get installation info
+        $installMov = TyreMovement::where('tyre_id', $tyre->id)
+            ->where('movement_type', 'Installation')
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $installDate = $installMov ? Carbon::parse($installMov->movement_date)->format('d/m/Y') : null;
+        $installOdo = $installMov ? $installMov->odometer_reading : null;
+
+        // Days since installation
+        $daysSinceInstall = $installMov
+            ? Carbon::parse($installMov->movement_date)->diffInDays(Carbon::now())
+            : null;
+
+        // Total movements count
+        $totalMovements = TyreMovement::where('tyre_id', $tyre->id)->count();
+
+        // RTD wear percentage
+        $rtdWearPct = null;
+        if ($tyre->initial_tread_depth && $tyre->initial_tread_depth > 0 && $tyre->current_tread_depth !== null) {
+            $rtdWearPct = round((1 - ($tyre->current_tread_depth / $tyre->initial_tread_depth)) * 100, 1);
+        }
+
+        return response()->json([
+            'success' => true,
+            'tyre' => [
+                'id' => $tyre->id,
+                'serial_number' => $tyre->serial_number,
+                'status' => $tyre->status,
+                'brand' => $tyre->brand->brand_name ?? '-',
+                'size' => $tyre->size->size ?? '-',
+                'pattern' => $tyre->pattern->name ?? '-',
+                'segment' => $tyre->segment->segment_name ?? '-',
+                'location' => $tyre->location->location_name ?? '-',
+                'price' => $tyre->price,
+                'initial_rtd' => $tyre->initial_tread_depth,
+                'current_rtd' => $tyre->current_tread_depth,
+                'rtd_wear_pct' => $rtdWearPct,
+                'retread_count' => $tyre->retread_count ?? 0,
+                'total_lifetime_km' => $tyre->total_lifetime_km ?? 0,
+                'total_lifetime_hm' => $tyre->total_lifetime_hm ?? 0,
+                'install_date' => $installDate,
+                'install_odo' => $installOdo,
+                'days_since_install' => $daysSinceInstall,
+                'total_movements' => $totalMovements,
+            ],
+            'movements' => $movements,
         ]);
     }
 
@@ -709,7 +812,8 @@ class TyreMovementController extends Controller
             if (!empty($warnings)) {
                 DB::rollBack();
 
-                $actionLabel = $request->movement_type === 'Installation' ? 'Pemasangan' : 'Pelepasan';
+                $actionLabels = ['Installation' => 'Pemasangan', 'Rotation' => 'Rotasi', 'Removal' => 'Pelepasan'];
+                $actionLabel = $actionLabels[$request->movement_type] ?? $request->movement_type;
                 setLogActivity(Auth::id(), 'Deteksi Human Error: ' . $actionLabel . ' Ban pada unit ' . $vehicleCode, [
                     'action_type' => 'error',
                     'module' => 'Human Error',
@@ -736,7 +840,9 @@ class TyreMovementController extends Controller
 
             DB::commit();
 
-            setLogActivity(Auth::id(), ($request->movement_type === 'Installation' ? 'Pemasangan' : 'Pelepasan') . ' ban pada kendaraan ' . $vehicleCode, [
+            $successLabels = ['Installation' => 'Pemasangan', 'Rotation' => 'Rotasi', 'Removal' => 'Pelepasan'];
+            $successLabel = $successLabels[$request->movement_type] ?? $request->movement_type;
+            setLogActivity(Auth::id(), $successLabel . ' ban pada kendaraan ' . $vehicleCode, [
                 'action_type' => 'create',
                 'module' => 'Tyre Movement',
                 'data_after' => [

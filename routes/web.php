@@ -97,6 +97,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('vehicle-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getVehicleDetail'])->middleware('tyre.permission:Tyre Operations');
     Route::get('search-tyres', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'searchTyres'])->name('tyre-movement.search-tyres')->middleware('tyre.permission:Tyre Operations');
     Route::get('segments/{locationId}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'getSegmentsByLocation'])->name('tyre-movement.get-segments')->middleware('tyre.permission:Tyre Operations');
+    Route::get('tyre-detail', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'tyreDetail'])->name('tyre-movement.tyre-detail')->middleware('tyre.permission:Tyre Operations');
     Route::get('history', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'apiHistory'])->name('tyre-movement.history')->middleware('tyre.permission:Movement History');
     Route::delete('rollback/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'rollback'])->name('tyre-movement.rollback')->middleware('tyre.permission:Movement History,delete');
     Route::post('tyre-store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store'])->name('tyre-movement.store')->middleware('tyre.permission:Tyre Operations,create');
