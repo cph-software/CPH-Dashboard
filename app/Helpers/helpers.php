@@ -35,14 +35,15 @@ if (!function_exists('setLogActivity')) {
     {
         try {
             \App\Models\ActivityLog::create([
-                'user_id'     => $userId,
-                'project'     => $options['project'] ?? 'CPH Dashboard',
-                'activity'    => $message,
-                'action_type' => $options['action_type'] ?? null,
-                'module'      => $options['module'] ?? null,
-                'data_before' => $options['data_before'] ?? null,
-                'data_after'  => $options['data_after'] ?? null,
-                'ip_address'  => $options['ip_address'] ?? (request() ? request()->ip() : null),
+                'user_id'         => $userId,
+                'tyre_company_id' => $options['tyre_company_id'] ?? (auth()->user()->tyre_company_id ?? null),
+                'project'         => $options['project'] ?? 'CPH Dashboard',
+                'activity'        => $message,
+                'action_type'     => $options['action_type'] ?? null,
+                'module'          => $options['module'] ?? null,
+                'data_before'     => $options['data_before'] ?? null,
+                'data_after'      => $options['data_after'] ?? null,
+                'ip_address'      => $options['ip_address'] ?? (request() ? request()->ip() : null),
             ]);
         } catch (\Exception $e) {
             // Fallback ke file log jika DB gagal (backward compat)

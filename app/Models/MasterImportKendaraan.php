@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class MasterImportKendaraan extends Model
 {
+    use BelongsToCompany;
+
     protected $table = 'master_import_kendaraan';
     protected $guarded = [];
 
