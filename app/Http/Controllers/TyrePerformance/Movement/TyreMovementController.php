@@ -15,9 +15,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\TyreExamination;
+use App\Models\TyreCompany;
 
 class TyreMovementController extends Controller
 {
+    public function setActiveCompany(Request $request)
+    {
+        $companyId = $request->input('tyre_company_id');
+        
+        if ($companyId == 0) {
+            session()->forget('active_company_id');
+            return response()->json(['success' => true, 'message' => 'Filter perusahaan dibersihkan (Global View)']);
+        }
+        
+        $company = TyreCompany::findOrFail($companyId);
+        session(['active_company_id' => $company->id]);
+        
+        return response()->json(['success' => true, 'message' => 'Filter aktif: ' . $company->company_name]);
+    }
+
     public function index()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')

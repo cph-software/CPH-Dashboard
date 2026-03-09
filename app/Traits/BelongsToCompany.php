@@ -17,11 +17,18 @@ trait BelongsToCompany
                 // Pengecualian untuk Superadmin (Role ID 1 atau sesuai logika Anda)
                 // Jika ingin filter semua, hapus kondisi bypass ini
                 $isInternal = in_array($user->role_id, [1]); // Misal 1 adalah Super Admin
+                $table = $builder->getModel()->getTable();
 
-                if (!$isInternal && $user->tyre_company_id) {
-                    $builder->where(function ($query) use ($user) {
-                        $query->where('tyre_company_id', $user->tyre_company_id)
-                              ->orWhereNull('tyre_company_id');
+                if ($isInternal) {
+                    // Admin can see everything, unless a specific company filter is set in session
+                    if (session()->has('active_company_id')) {
+                        $builder->where($table . '.tyre_company_id', session('active_company_id'));
+                    }
+                } else if ($user->tyre_company_id) {
+                    // Regular user: Sees their company data + shared/global data (where ID is NULL)
+                    $builder->where(function ($query) use ($user, $table) {
+                        $query->where($table . '.tyre_company_id', $user->tyre_company_id)
+                              ->orWhereNull($table . '.tyre_company_id');
                     });
                 }
             }
