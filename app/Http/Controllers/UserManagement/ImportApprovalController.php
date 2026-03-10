@@ -58,46 +58,49 @@ class ImportApprovalController extends Controller
     {
         $items = $batch->items()->where('status', 'Pending')->get();
         $successCount = 0;
+        
+        // Ambil ID Perusahaan dari user yang mengupload file
+        $uploaderCompanyId = $batch->user->tyre_company_id;
 
         foreach ($items as $item) {
             try {
-                $data = $item->data; // This is already an array due to Attribute casting in Model
+                $data = $item->data;
                 
                 switch ($batch->module) {
                     case 'Master Tyre':
                     case 'Tyre Master':
-                        $this->processTyreMaster($data);
+                        $this->processTyreMaster($data, $uploaderCompanyId);
                         break;
                     case 'Vehicle Master':
                     case 'Master Vehicle':
-                        $this->processVehicleMaster($data);
+                        $this->processVehicleMaster($data, $uploaderCompanyId);
                         break;
                     case 'Movement History':
-                        $this->processMovementHistory($data);
+                        $this->processMovementHistory($data, $uploaderCompanyId);
                         break;
                     case 'Tyre Examination':
-                        $this->processTyreExamination($data);
+                        $this->processTyreExamination($data, $uploaderCompanyId);
                         break;
                     case 'Tyre Brand':
                     case 'Brands':
-                        $this->processTyreBrand($data);
+                        $this->processTyreBrand($data, $uploaderCompanyId);
                         break;
                     case 'Tyre Size':
                     case 'Sizes':
-                        $this->processTyreSize($data);
+                        $this->processTyreSize($data, $uploaderCompanyId);
                         break;
                     case 'Tyre Pattern':
                     case 'Patterns':
-                        $this->processTyrePattern($data);
+                        $this->processTyrePattern($data, $uploaderCompanyId);
                         break;
                     case 'Failure Codes':
-                        $this->processFailureCodes($data);
+                        $this->processFailureCodes($data, $uploaderCompanyId);
                         break;
                     case 'Locations':
-                        $this->processLocations($data);
+                        $this->processLocations($data, $uploaderCompanyId);
                         break;
                     case 'Segments':
-                        $this->processSegments($data);
+                        $this->processSegments($data, $uploaderCompanyId);
                         break;
                     default:
                         throw new \Exception("Modul import tidak dikenali: " . $batch->module);
@@ -178,7 +181,7 @@ class ImportApprovalController extends Controller
         );
     }
 
-    private function processTyreMaster($data)
+    private function processTyreMaster($data, $uploaderCompanyId)
     {
         // Headers: serial_number, brand_name, size_name, pattern_name, initial_rtd, location_name, segment_name, price, status
         $sn = $data['sn_ban'] ?? $data['serial_number'] ?? null;
@@ -257,12 +260,13 @@ class ImportApprovalController extends Controller
                 'status' => $data['status'] ?? 'New',
                 'initial_tread_depth' => $initialRtd,
                 'current_tread_depth' => $data['current_tread_depth'] ?? $initialRtd,
-                'price' => $data['price'] ?? 0
+                'price' => $data['price'] ?? 0,
+                'tyre_company_id' => $uploaderCompanyId
             ]
         );
     }
 
-    private function processVehicleMaster($data)
+    private function processVehicleMaster($data, $uploaderCompanyId)
     {
         // Headers matching UI Guide: kode_kendaraan, no_polisi, model_kendaraan, brand_kendaraan, site_location, curb_weight, payload_capacity, segment
         $code = $data['kode_kendaraan'] ?? $data['unit_code'] ?? null;
@@ -314,12 +318,13 @@ class ImportApprovalController extends Controller
                 'operational_segment_id' => $segmentId,
                 'tyre_position_configuration_id' => $layoutId,
                 'total_tyre_position' => $data['total_positions'] ?? $data['total_ban'] ?? 0,
-                'tyre_unit_status' => $data['status'] ?? 'Active'
+                'tyre_unit_status' => $data['status'] ?? 'Active',
+                'tyre_company_id' => $uploaderCompanyId
             ]
         );
     }
 
-    private function processMovementHistory($data)
+    private function processMovementHistory($data, $uploaderCompanyId)
     {
         // Headers matching UI Guide: serial_number, kode_kendaraan, movement_type, movement_date, position_code, odometer, hm, rtd, psi, failure_code, target_status, remark
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
