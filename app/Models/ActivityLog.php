@@ -4,12 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class ActivityLog extends Model
 {
+    use BelongsToCompany;
+
     protected $table = 'activity_logs';
 
     protected $fillable = [
         'user_id',
+        'tyre_company_id',
         'project',
         'activity',
         'action_type',
@@ -30,6 +35,11 @@ class ActivityLog extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function tyreCompany()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
     }
 
     /**

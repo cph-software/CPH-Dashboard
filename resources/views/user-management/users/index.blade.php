@@ -175,6 +175,11 @@
                         </select>
                      </div>
                      <div class="mb-4">
+                        <label class="form-label fw-bold">Username / Login Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" placeholder="E.g. johndoe" required>
+                        <div class="form-text small">Internal system identifier (Used for Login).</div>
+                     </div>
+                     <div class="mb-4">
                         <label class="form-label fw-bold">Employee ID / Code</label>
                         <input type="text" name="master_karyawan_id" class="form-control" placeholder="E.g. EMP001">
                         <div class="form-text small">Used for internal staff identification.</div>
@@ -241,6 +246,12 @@
                               <option value="{{ $role->id }}">{{ $role->name }}</option>
                            @endforeach
                         </select>
+                     </div>
+                     <div class="mb-4">
+                        <label class="form-label fw-bold">Username / Login Name <span
+                              class="text-danger">*</span></label>
+                        <input type="text" name="name" id="edit_name" class="form-control"
+                           placeholder="E.g. johndoe" required>
                      </div>
                      <div class="mb-4">
                         <label class="form-label fw-bold">Employee ID</label>
@@ -361,6 +372,7 @@
             $.get('{{ url('users') }}/' + id + '/edit', function(user) {
                $('#editUserForm').attr('action', '{{ url('users') }}/' + id);
                $('#edit_role_id').val(user.role_id).trigger('change');
+               $('#edit_name').val(user.name);
                $('#edit_master_karyawan_id').val(user.master_karyawan_id);
                $('#edit_tyre_company_id').val(user.tyre_company_id).trigger('change');
 

@@ -42,6 +42,8 @@
                      <div class="col-md-3 border-end">
                         <label class="small text-muted text-uppercase d-block mb-1">Diupload Oleh</label>
                         <span class="fw-medium">{{ $batch->user->name ?? 'System' }}</span>
+                        <div class="small text-primary fw-bold">
+                           {{ $batch->user->tyreCompany->company_name ?? 'Global View' }}</div>
                      </div>
                      <div class="col-md-3 border-end">
                         <label class="small text-muted text-uppercase d-block mb-1">Total Baris</label>

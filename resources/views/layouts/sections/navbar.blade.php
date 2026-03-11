@@ -17,6 +17,55 @@
       </div>
       <!-- /Search -->
 
+      @if (Auth::user() && Auth::user()->role_id == 1)
+         @php
+            $activeCompanies = \App\Models\TyreCompany::orderBy('company_name', 'asc')->get();
+            $currentActiveCompany = session('active_company_id');
+         @endphp
+         <div class="navbar-nav align-items-center ms-4">
+            <div class="nav-item">
+               <select class="form-select border-0 shadow-none bg-transparent fw-bold text-primary"
+                  id="admin_company_filter" style="cursor: pointer;">
+                  <option value="0" {{ !$currentActiveCompany ? 'selected' : '' }}>🏢 All Companies (Global View)
+                  </option>
+                  @foreach ($activeCompanies as $comp)
+                     <option value="{{ $comp->id }}" {{ $currentActiveCompany == $comp->id ? 'selected' : '' }}>
+                        🏢 {{ $comp->company_name }}
+                     </option>
+                  @endforeach
+               </select>
+            </div>
+         </div>
+
+         <script>
+            document.addEventListener('DOMContentLoaded', function() {
+               const filter = document.getElementById('admin_company_filter');
+               if (filter) {
+                  filter.addEventListener('change', function() {
+                     const companyId = this.value;
+                     fetch("{{ route('tyre-movement.set-active-company') }}", {
+                           method: 'POST',
+                           headers: {
+                              'Content-Type': 'application/json',
+                              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                           },
+                           body: JSON.stringify({
+                              tyre_company_id: companyId
+                           })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                           if (data.success) {
+                              window.location.reload();
+                           }
+                        })
+                        .catch(error => console.error('Error:', error));
+                  });
+               }
+            });
+         </script>
+      @endif
+
       <ul class="navbar-nav flex-row align-items-center ms-auto">
          <!-- User -->
          <li class="nav-item navbar-dropdown dropdown-user dropdown">
@@ -40,8 +89,9 @@
                            <h6 class="mb-0">
                               {{ Auth::user() ? Auth::user()->karyawan->full_name ?? Auth::user()->name : 'Guest' }}
                            </h6>
-                           <small
-                              class="text-muted">{{ Auth::user() ? Auth::user()->role->name ?? 'Admin' : 'Visitor' }}</small>
+                           <small class="text-muted">
+                              {{ Auth::user() && Auth::user()->tyreCompany ? Auth::user()->tyreCompany->company_name : (Auth::user() && Auth::user()->role ? Auth::user()->role->name : 'Visitor') }}
+                           </small>
                         </div>
                      </div>
                   </a>

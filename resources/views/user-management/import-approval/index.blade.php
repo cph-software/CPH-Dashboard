@@ -36,6 +36,7 @@
                      <th>User</th>
                      <th>Modul</th>
                      <th>File</th>
+                     <th>Company</th>
                      <th>Total Baris</th>
                      <th>Status</th>
                      <th width="100">Aksi</th>
@@ -62,6 +63,10 @@
                         </td>
                         <td>
                            <span class="small">{{ $batch->filename }}</span>
+                        </td>
+                        <td>
+                           <span
+                              class="badge bg-label-primary">{{ $batch->user->tyreCompany->company_name ?? 'Global/Internal' }}</span>
                         </td>
                         <td>
                            <span class="fw-bold">{{ number_format($batch->total_rows) }}</span>
@@ -137,7 +142,7 @@
                      </tr>
                   @empty
                      <tr>
-                        <td colspan="8" class="text-center py-5 text-muted"> Belum ada data permintaan import. </td>
+                        <td colspan="9" class="text-center py-5 text-muted"> Belum ada data permintaan import. </td>
                      </tr>
                   @endforelse
                </tbody>
