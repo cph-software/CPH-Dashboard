@@ -17,7 +17,6 @@ class CreateTyreSizesTable extends Migration
             $table->bigIncrements('id');
             $table->string('size');
             $table->unsignedBigInteger('tyre_brand_id')->index('tyre_sizes_tyre_brand_id_foreign');
-            $table->enum('type', ['Bias', 'Radial']);
             $table->decimal('std_otd');
             $table->integer('ply_rating');
             $table->timestamps();

@@ -19,7 +19,7 @@ class TyreMasterController extends Controller
         // Data will be loaded via AJAX for the DataTable
         $brands = TyreBrand::where('status', 'Active')->get();
         $sizes = TyreSize::with('pattern')->get();
-        $segments = TyreSegment::where('status', 'Active')->get();
+        $segments = TyreSegment::with('location')->where('status', 'Active')->get();
         $patterns = TyrePattern::all();
         $locations = TyreLocation::all();
 
@@ -31,7 +31,7 @@ class TyreMasterController extends Controller
      */
     public function data(Request $request)
     {
-        $query = Tyre::with(['brand', 'size', 'segment', 'pattern', 'location']);
+        $query = Tyre::with(['brand', 'size', 'segment.location', 'pattern', 'location']);
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
@@ -61,11 +61,9 @@ class TyreMasterController extends Controller
                 1 => 'serial_number',
                 2 => 'tyre_brand_id',
                 3 => 'tyre_size_id',
-                4 => 'tyre_pattern_id',
-                5 => 'tyre_segment_id',
-                6 => 'tyre_size_id', // Size type/id relationship
-                7 => 'work_location_id',
-                8 => 'status'
+                4 => 'tyre_segment_id',
+                5 => 'work_location_id',
+                6 => 'status'
             ];
 
             if (isset($cols[$columnIndex])) {
@@ -115,7 +113,6 @@ class TyreMasterController extends Controller
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'price' => 'nullable|numeric|min:0',
@@ -134,7 +131,6 @@ class TyreMasterController extends Controller
                 'Serial Number' => $tyre->serial_number,
                 'Brand' => $tyre->brand->brand_name ?? '-',
                 'Size' => $tyre->size->size ?? '-',
-                'Pattern' => $tyre->pattern->name ?? '-',
                 'Segment' => $tyre->segment->segment_name ?? '-',
                 'Work Location' => $tyre->location->location_name ?? '-',
                 'Status' => $tyre->status,
@@ -153,7 +149,6 @@ class TyreMasterController extends Controller
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'tyre_pattern_id' => 'nullable|exists:tyre_patterns,id',
             'work_location_id' => 'required|exists:tyre_locations,id',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'price' => 'nullable|numeric|min:0',
@@ -169,7 +164,6 @@ class TyreMasterController extends Controller
             'Serial Number' => $tyre->serial_number,
             'Brand' => $tyre->brand->brand_name ?? '-',
             'Size' => $tyre->size->size ?? '-',
-            'Pattern' => $tyre->pattern->name ?? '-',
             'Segment' => $tyre->segment->segment_name ?? '-',
             'Work Location' => $tyre->location->location_name ?? '-',
             'Status' => $tyre->status,
@@ -186,7 +180,6 @@ class TyreMasterController extends Controller
                 'Serial Number' => $tyre->serial_number,
                 'Brand' => $tyre->brand->brand_name ?? '-',
                 'Size' => $tyre->size->size ?? '-',
-                'Pattern' => $tyre->pattern->name ?? '-',
                 'Segment' => $tyre->segment->segment_name ?? '-',
                 'Work Location' => $tyre->location->location_name ?? '-',
                 'Status' => $tyre->status,

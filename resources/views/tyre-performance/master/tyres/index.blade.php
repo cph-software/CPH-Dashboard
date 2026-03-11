@@ -54,9 +54,7 @@
                      <th>Serial Number</th>
                      <th>Brand</th>
                      <th>Size</th>
-                     <th>Pattern</th>
                      <th>Segment</th>
-                     <th>Type</th>
                      <th>Location</th>
                      <th>Status</th>
                      <th>Actions</th>
@@ -117,21 +115,13 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="tyre_pattern_id" class="form-label">Pattern</label>
-                        <select id="tyre_pattern_id" name="tyre_pattern_id" class="form-select select2"
-                           data-placeholder="Select Pattern">
-                           <option value="">Select Pattern</option>
-                           @foreach ($patterns as $pattern)
-                              <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col mb-3">
                         <label for="tyre_segment_id" class="form-label">Segment</label>
                         <select name="tyre_segment_id" class="form-select select2" data-placeholder="Select Segment">
                            <option value="">Select Segment</option>
                            @foreach ($segments as $segment)
-                              <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
+                              <option value="{{ $segment->id }}">
+                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
+                              </option>
                            @endforeach
                         </select>
                      </div>
@@ -244,20 +234,13 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
-                        <label for="edit_pattern_id" class="form-label">Pattern</label>
-                        <select id="edit_pattern_id" name="tyre_pattern_id" class="form-select select2">
-                           <option value="">Select Pattern</option>
-                           @foreach ($patterns as $pattern)
-                              <option value="{{ $pattern->id }}">{{ $pattern->name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col mb-3">
                         <label for="edit_segment_id" class="form-label">Segment</label>
                         <select id="edit_segment_id" name="tyre_segment_id" class="form-select select2">
                            <option value="">Select Segment</option>
                            @foreach ($segments as $segment)
-                              <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
+                              <option value="{{ $segment->id }}">
+                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
+                              </option>
                            @endforeach
                         </select>
                      </div>
@@ -368,7 +351,9 @@
                      <select name="tyre_segment_id" class="form-select select2-bulk" data-placeholder="Select Segment">
                         <option value=""></option>
                         @foreach ($segments as $segment)
-                           <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
+                           <option value="{{ $segment->id }}">
+                              {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
+                           </option>
                         @endforeach
                      </select>
                   </div>
@@ -438,16 +423,12 @@
                   defaultContent: '-'
                },
                {
-                  data: 'pattern.name',
-                  defaultContent: '-'
-               },
-               {
-                  data: 'size.type',
-                  defaultContent: '-'
-               },
-               {
                   data: 'segment.segment_name',
-                  defaultContent: '-'
+                  render: function(data, type, row) {
+                     if (!data) return '-';
+                     const loc = row.segment && row.segment.location ? row.segment.location.location_name : 'Global';
+                     return `${data} (${loc})`;
+                  }
                },
                {
                   data: 'location.location_name',
@@ -616,7 +597,6 @@
             $('#edit_serial_number').val(serial);
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
-            $('#edit_pattern_id').val(patternId === 'null' ? '' : patternId).trigger('change');
             $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
             $('#edit_work_location_id').val(locationId).trigger('change');
             $('#edit_status').val(status);
@@ -650,10 +630,6 @@
 
             if (brandId) {
                $(brandSelector).val(brandId).trigger('change');
-            }
-
-            if (patternId) {
-               $(patternSelector).val(patternId).trigger('change');
             }
 
             if (stdOtd) {
