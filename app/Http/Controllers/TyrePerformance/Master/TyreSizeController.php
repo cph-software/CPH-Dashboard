@@ -14,8 +14,7 @@ class TyreSizeController extends Controller
     {
         $sizes = TyreSize::with(['brand', 'pattern'])->latest()->get();
         $brands = TyreBrand::where('status', 'Active')->get();
-        $patterns = TyrePattern::where('status', 'Active')->get();
-        return view('tyre-performance.master.sizes.index', compact('sizes', 'brands', 'patterns'));
+        return view('tyre-performance.master.sizes.index', compact('sizes', 'brands'));
     }
 
     public function store(Request $request)
@@ -23,22 +22,11 @@ class TyreSizeController extends Controller
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
-            'tyre_pattern_id' => 'nullable',
-            'type' => 'required|in:Bias,Radial',
             'std_otd' => 'nullable|numeric',
             'ply_rating' => 'nullable|integer',
         ]);
 
         $data = $request->all();
-
-        // Handle Custom Pattern (Tagging)
-        if ($request->tyre_pattern_id && !is_numeric($request->tyre_pattern_id)) {
-            $pattern = TyrePattern::firstOrCreate(
-                ['name' => $request->tyre_pattern_id],
-                ['tyre_brand_id' => $request->tyre_brand_id, 'status' => 'Active']
-            );
-            $data['tyre_pattern_id'] = $pattern->id;
-        }
 
         $size = TyreSize::create($data);
         $size->load(['brand', 'pattern']);
@@ -49,8 +37,6 @@ class TyreSizeController extends Controller
             'data_after' => [
                 'Ukuran' => $size->size,
                 'Brand' => $size->brand->brand_name ?? '-',
-                'Pattern' => $size->pattern->name ?? '-',
-                'Type' => $size->type,
                 'OTD (mm)' => $size->std_otd,
                 'Ply Rating' => $size->ply_rating,
             ]
@@ -64,8 +50,6 @@ class TyreSizeController extends Controller
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
-            'tyre_pattern_id' => 'nullable',
-            'type' => 'required|in:Bias,Radial',
             'std_otd' => 'nullable|numeric',
             'ply_rating' => 'nullable|integer',
         ]);
@@ -73,15 +57,6 @@ class TyreSizeController extends Controller
         $size = TyreSize::findOrFail($id);
         $dataBefore = $size->toArray();
         $data = $request->all();
-
-        // Handle Custom Pattern (Tagging)
-        if ($request->tyre_pattern_id && !is_numeric($request->tyre_pattern_id)) {
-            $pattern = TyrePattern::firstOrCreate(
-                ['name' => $request->tyre_pattern_id],
-                ['tyre_brand_id' => $request->tyre_brand_id, 'status' => 'Active']
-            );
-            $data['tyre_pattern_id'] = $pattern->id;
-        }
 
         $size->update($data);
         $size->load(['brand', 'pattern']);
@@ -93,8 +68,6 @@ class TyreSizeController extends Controller
             'data_after' => [
                 'Ukuran' => $size->size,
                 'Brand' => $size->brand->brand_name ?? '-',
-                'Pattern' => $size->pattern->name ?? '-',
-                'Type' => $size->type,
                 'OTD (mm)' => $size->std_otd,
                 'Ply Rating' => $size->ply_rating,
             ]

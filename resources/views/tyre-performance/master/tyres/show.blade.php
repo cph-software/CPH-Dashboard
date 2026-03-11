@@ -45,14 +45,6 @@
                            <span class="float-end">{{ $tyre->size->size ?? '-' }}</span>
                         </li>
                         <li class="mb-2">
-                           <span class="fw-medium text-muted">Pattern:</span>
-                           <span class="float-end">{{ $tyre->pattern->name ?? '-' }}</span>
-                        </li>
-                        <li class="mb-2">
-                           <span class="fw-medium text-muted">Type:</span>
-                           <span class="float-end">{{ $tyre->size->type ?? '-' }}</span>
-                        </li>
-                        <li class="mb-2">
                            <span class="fw-medium text-muted">Segment:</span>
                            <span class="float-end">{{ $tyre->segment->segment_name ?? '-' }}</span>
                         </li>
