@@ -81,8 +81,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions')->middleware('tyre.permission:Position Layouts');
     Route::get('master_position/{id}/layout', [\App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class, 'getLayout'])->name('tyre-positions.layout')->middleware('tyre.permission:Position Layouts');
     Route::get('master_tyre/data', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'data'])->name('tyre-master.data')->middleware('tyre.permission:Master Tyre');
+    Route::post('master_tyre/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'bulkAction'])->name('tyre-master.bulk-action')->middleware('tyre.permission:Master Tyre');
     Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master')->middleware('tyre.permission:Master Tyre');
     Route::get('master_kendaraan/data', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'data'])->name('tyre-kendaraan.data')->middleware('tyre.permission:Vehicle Master');
+    Route::post('master_kendaraan/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'bulkAction'])->name('tyre-kendaraan.bulk-action')->middleware('tyre.permission:Vehicle Master');
     Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan')->middleware('tyre.permission:Vehicle Master');
 
     // ======================================================================
