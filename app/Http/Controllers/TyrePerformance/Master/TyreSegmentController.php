@@ -11,7 +11,7 @@ class TyreSegmentController extends Controller
 {
     public function index()
     {
-        $segments = TyreSegment::with('location')->get();
+        $segments = TyreSegment::with('location')->latest()->get();
         $locations = TyreLocation::all();
         return view('tyre-performance.master.segments.index', compact('segments', 'locations'));
     }

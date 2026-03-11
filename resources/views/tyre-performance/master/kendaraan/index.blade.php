@@ -16,6 +16,17 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Vehicles</h4>
          <div class="d-flex gap-2">
+            <div id="bulk-actions-container" style="display: none;">
+               <div class="btn-group me-2">
+                  <button type="button" class="btn btn-outline-danger" id="btn-bulk-delete">
+                     <i class="ri-delete-bin-line me-1"></i> Hapus
+                  </button>
+                  <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                     data-bs-target="#bulkUpdateModal">
+                     <i class="ri-edit-line me-1"></i> Update
+                  </button>
+               </div>
+            </div>
             <a href="{{ route('master_data.export', ['type' => 'vehicles', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
@@ -40,6 +51,7 @@
             <table class="datatables-vehicles table border-top table-hover">
                <thead>
                   <tr>
+                     <th width="10"><input type="checkbox" class="form-check-input" id="check-all"></th>
                      <th>Unit Code</th>
                      <th>No. Polisi</th>
                      <th>Type</th>
@@ -310,6 +322,65 @@
       @csrf
       @method('DELETE')
    </form>
+
+   <!-- Bulk Update Modal -->
+   <div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title">Batch Update Kendaraan</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('tyre-kendaraan.bulk-action') }}" method="POST" id="bulkActionForm">
+               @csrf
+               <input type="hidden" name="action" value="update">
+               <div id="bulk-ids-container"></div>
+               <div class="modal-body">
+                  <div class="alert alert-info">
+                     <i class="ri-information-line me-1"></i> Field yang dikosongkan tidak akan diperbarui.
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label">Update Status</label>
+                     <select name="tyre_unit_status" class="form-select">
+                        <option value="">-- No Change --</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Maintenance">Maintenance</option>
+                     </select>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label">Update Area</label>
+                     <select name="area" class="form-select select2-bulk" data-placeholder="Select Area">
+                        <option value=""></option>
+                        @foreach ($locations as $loc)
+                           <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label">Update Segment</label>
+                     <select name="operational_segment_id" class="form-select select2-bulk" data-placeholder="Select Segment">
+                        <option value=""></option>
+                        @foreach ($segments as $segment)
+                           <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+               </div>
+               <div class="modal-footer">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                  <button type="submit" class="btn btn-primary">Update Semua Terpilih</button>
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+
+   <form id="bulkDeleteForm" action="{{ route('tyre-kendaraan.bulk-action') }}" method="POST" style="display: none;">
+      @csrf
+      <input type="hidden" name="action" value="delete">
+      <div id="bulk-delete-ids-container"></div>
+   </form>
 @endsection
 
 @section('vendor-script')
@@ -329,6 +400,14 @@
             serverSide: true,
             ajax: "{{ route('tyre-kendaraan.data') }}",
             columns: [{
+                  data: 'id',
+                  orderable: false,
+                  searchable: false,
+                  render: function(data) {
+                     return `<input type="checkbox" class="form-check-input vehicle-checkbox" value="${data}">`;
+                  }
+               },
+               {
                   data: 'kode_kendaraan',
                   render: function(data) {
                      return `<strong>${data}</strong>`;
@@ -431,9 +510,83 @@
                   }
                }
             ],
+            order: [],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
          });
+
+         // --- BULK ACTION LOGIC ---
+         function updateBulkActions() {
+            const selectedCount = $('.vehicle-checkbox:checked').length;
+            if (selectedCount > 0) {
+               $('#bulk-actions-container').fadeIn();
+            } else {
+               $('#bulk-actions-container').fadeOut();
+               $('#check-all').prop('checked', false);
+            }
+         }
+
+         $(document).on('change', '#check-all', function() {
+            $('.vehicle-checkbox').prop('checked', this.checked);
+            updateBulkActions();
+         });
+
+         $(document).on('change', '.vehicle-checkbox', function() {
+            updateBulkActions();
+         });
+
+         $('#btn-bulk-delete').on('click', function() {
+            const selectedIds = $('.vehicle-checkbox:checked').map(function() {
+               return $(this).val();
+            }).get();
+
+            Swal.fire({
+               title: 'Hapus Massal?',
+               text: `Yakin ingin menghapus ${selectedIds.length} data kendaraan terpilih? Kendaraan yang masih memiliki ban terpasang tidak akan terhapus.`,
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Hapus!',
+               cancelButtonText: 'Batal',
+               customClass: {
+                  confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+                  cancelButton: 'btn btn-outline-secondary waves-effect'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  const $form = $('#bulkDeleteForm');
+                  const $container = $('#bulk-delete-ids-container');
+                  $container.empty();
+                  selectedIds.forEach(id => {
+                     $container.append(`<input type="hidden" name="ids[]" value="${id}">`);
+                  });
+                  $form.submit();
+               }
+            });
+         });
+
+         $('#bulkUpdateModal').on('show.bs.modal', function() {
+            const selectedIds = $('.vehicle-checkbox:checked').map(function() {
+               return $(this).val();
+            }).get();
+
+            const $container = $('#bulk-ids-container');
+            $container.empty();
+            selectedIds.forEach(id => {
+               $container.append(`<input type="hidden" name="ids[]" value="${id}">`);
+            });
+         });
+
+         // Initialize bulk select2
+         $('.select2-bulk').each(function() {
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $('#bulkUpdateModal'),
+               allowClear: true,
+               width: '100%'
+            });
+         });
+         // --- END BULK ACTION LOGIC ---
 
          const editForm = $('#editVehicleForm');
 

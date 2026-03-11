@@ -242,9 +242,7 @@
    <script>
       $(document).ready(function() {
          $('.datatables-sizes').DataTable({
-            order: [
-               [0, 'desc']
-            ],
+            order: [],
             displayLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
          });

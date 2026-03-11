@@ -152,7 +152,9 @@
 @section('page-script')
    <script>
       $(document).ready(function() {
-         $('.datatables-companies').DataTable();
+         $('.datatables-companies').DataTable({
+            order: [],
+         });
 
          $(document).on('click', '.edit-company', function() {
             const id = $(this).data('id');

@@ -58,14 +58,14 @@ class TyreMasterController extends Controller
 
             // Map column index to DB field
             $cols = [
-                0 => 'serial_number',
-                1 => 'tyre_brand_id',
-                2 => 'tyre_size_id',
-                3 => 'tyre_pattern_id',
-                4 => 'tyre_segment_id',
-                5 => 'tyre_size_id', // Changed from tyre_type to size_id (sorting will use size relationship)
-                6 => 'work_location_id',
-                7 => 'status'
+                1 => 'serial_number',
+                2 => 'tyre_brand_id',
+                3 => 'tyre_size_id',
+                4 => 'tyre_pattern_id',
+                5 => 'tyre_segment_id',
+                6 => 'tyre_size_id', // Size type/id relationship
+                7 => 'work_location_id',
+                8 => 'status'
             ];
 
             if (isset($cols[$columnIndex])) {
@@ -213,5 +213,70 @@ class TyreMasterController extends Controller
         $tyre->delete();
 
         return redirect()->back()->with('success', 'Tyre deleted successfully');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $ids = $request->input('ids');
+        $action = $request->input('action');
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()->back()->with('error', 'Tidak ada data yang dipilih.');
+        }
+
+        if ($action === 'delete') {
+            $deletedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($ids as $id) {
+                $tyre = Tyre::find($id);
+                if ($tyre) {
+                    if ($tyre->movements()->exists()) {
+                        $skippedCount++;
+                    } else {
+                        $tyre->delete();
+                        $deletedCount++;
+                    }
+                }
+            }
+
+            setLogActivity(auth()->id(), "Bulk delete ban: $deletedCount berhasil, $skippedCount dilewati (ada riwayat)", [
+                'action_type' => 'delete',
+                'module' => 'Master Tyre',
+                'ids' => $ids
+            ]);
+
+            $msg = "$deletedCount data ban berhasil dihapus.";
+            if ($skippedCount > 0) {
+                $msg .= " $skippedCount data dilewati karena memiliki riwayat pergerakan.";
+            }
+
+            return redirect()->back()->with($skippedCount > 0 ? 'warning' : 'success', $msg);
+        }
+
+        if ($action === 'update') {
+            $data = [];
+            if ($request->filled('status')) $data['status'] = $request->status;
+            if ($request->filled('work_location_id')) $data['work_location_id'] = $request->work_location_id;
+            if ($request->filled('tyre_segment_id')) $data['tyre_segment_id'] = $request->tyre_segment_id;
+            if ($request->filled('retread_count')) $data['retread_count'] = $request->retread_count;
+
+            if (empty($data)) {
+                return redirect()->back()->with('error', 'Tidak ada field yang dipilih untuk diperbarui.');
+            }
+
+            Tyre::whereIn('id', $ids)->update($data);
+
+            setLogActivity(auth()->id(), "Bulk update ban untuk " . count($ids) . " data", [
+                'action_type' => 'update',
+                'module' => 'Master Tyre',
+                'ids' => $ids,
+                'updated_fields' => $data
+            ]);
+
+            return redirect()->back()->with('success', count($ids) . ' data ban berhasil diperbarui.');
+        }
+
+        return redirect()->back()->with('error', 'Aksi tidak dikenal.');
     }
 }

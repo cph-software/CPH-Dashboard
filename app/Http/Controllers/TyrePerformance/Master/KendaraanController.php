@@ -84,13 +84,13 @@ class KendaraanController extends Controller
             $columnDir = $request->input('order.0.dir');
 
             $cols = [
-                0 => 'kode_kendaraan',
-                1 => 'no_polisi',
-                2 => 'jenis_kendaraan',
-                3 => 'area',
-                4 => 'tyre_position_configuration_id',
-                5 => 'total_tyre_position',
-                6 => 'tyre_unit_status'
+                1 => 'kode_kendaraan',
+                2 => 'no_polisi',
+                3 => 'jenis_kendaraan',
+                4 => 'area',
+                5 => 'tyre_position_configuration_id',
+                6 => 'total_tyre_position',
+                7 => 'tyre_unit_status'
             ];
 
             if (isset($cols[$columnIndex])) {
@@ -227,5 +227,69 @@ class KendaraanController extends Controller
         $kendaraan->delete();
 
         return redirect()->back()->with('success', 'Vehicle deleted successfully');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $ids = $request->input('ids');
+        $action = $request->input('action');
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()->back()->with('error', 'Tidak ada data yang dipilih.');
+        }
+
+        if ($action === 'delete') {
+            $deletedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($ids as $id) {
+                $vehicle = MasterImportKendaraan::find($id);
+                if ($vehicle) {
+                    if ($vehicle->tyres()->exists()) {
+                        $skippedCount++;
+                    } else {
+                        $vehicle->delete();
+                        $deletedCount++;
+                    }
+                }
+            }
+
+            setLogActivity(auth()->id(), "Bulk delete unit: $deletedCount berhasil, $skippedCount dilewati (ada ban terpasang)", [
+                'action_type' => 'delete',
+                'module' => 'Vehicle Master',
+                'ids' => $ids
+            ]);
+
+            $msg = "$deletedCount data unit berhasil dihapus.";
+            if ($skippedCount > 0) {
+                $msg .= " $skippedCount data dilewati karena masih memiliki ban terpasang.";
+            }
+
+            return redirect()->back()->with($skippedCount > 0 ? 'warning' : 'success', $msg);
+        }
+
+        if ($action === 'update') {
+            $data = [];
+            if ($request->filled('tyre_unit_status')) $data['tyre_unit_status'] = $request->tyre_unit_status;
+            if ($request->filled('area')) $data['area'] = $request->area;
+            if ($request->filled('operational_segment_id')) $data['operational_segment_id'] = $request->operational_segment_id;
+
+            if (empty($data)) {
+                return redirect()->back()->with('error', 'Tidak ada field yang dipilih untuk diperbarui.');
+            }
+
+            MasterImportKendaraan::whereIn('id', $ids)->update($data);
+
+            setLogActivity(auth()->id(), "Bulk update unit untuk " . count($ids) . " data", [
+                'action_type' => 'update',
+                'module' => 'Vehicle Master',
+                'ids' => $ids,
+                'updated_fields' => $data
+            ]);
+
+            return redirect()->back()->with('success', count($ids) . ' data unit berhasil diperbarui.');
+        }
+
+        return redirect()->back()->with('error', 'Aksi tidak dikenal.');
     }
 }
