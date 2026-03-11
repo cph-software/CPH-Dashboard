@@ -238,7 +238,9 @@
 @section('page-script')
    <script>
       $(document).ready(function() {
-         $('.datatables-segments').DataTable();
+         $('.datatables-segments').DataTable({
+            order: [],
+         });
 
          const editForm = $('#editSegmentForm');
 

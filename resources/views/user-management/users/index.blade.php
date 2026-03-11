@@ -314,9 +314,7 @@
    <script>
       $(document).ready(function() {
          $('.datatables-users').DataTable({
-            order: [
-               [0, 'asc']
-            ],
+            order: [],
             dom: '<"card-header d-flex flex-wrap pb-0 pt-0"<"col-md-6"f><"col-md-6 text-end"l>>t<"card-footer d-flex flex-wrap"<"col-md-6"i><"col-md-6 text-end"p>>',
             language: {
                search: '',

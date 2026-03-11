@@ -29,7 +29,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = \App\Models\User::with(['role', 'karyawan', 'tyreCompany'])->get();
+        $users = \App\Models\User::with(['role', 'karyawan', 'tyreCompany'])->latest()->get();
         $roles = $this->roleService->getAll();
         $companies = \App\Models\TyreCompany::orderBy('company_name')->get();
         $tokos = \App\Models\Toko::limit(50)->get(); // Initial set
