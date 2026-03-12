@@ -473,7 +473,7 @@
         {{-- ═══════════════════ TYRE MONITORING ═══════════════════ --}}
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
-                <p class="section-title mb-0"><i class="ri-dashboard-line me-1"></i>Tyre Performance Monitoring</p>
+                <p class="section-title mb-0"><i class="ri ri-dashboard-line me-1"></i>Tyre Performance Monitoring</p>
                 @if($monitoringVehicle)
                     <span class="badge bg-label-success">Enrolled</span>
                 @else
@@ -502,13 +502,13 @@
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
                             <a href="{{ route('monitoring.vehicle.show', $monitoringVehicle->vehicle_id) }}" class="btn btn-primary btn-sm">
-                                <i class="ri-external-link-line me-1"></i> Lihat Semua Sesi Monitoring
+                                <i class="ri ri-external-link-line me-1"></i> Lihat Semua Sesi Monitoring
                             </a>
                         </div>
                     </div>
                 @else
                     <div class="text-center py-4 bg-light rounded-3">
-                        <i class="ri-line-chart-line ri-2x mb-2 d-block opacity-25"></i>
+                        <i class="ri ri-line-chart-line ri-2x mb-2 d-block opacity-25"></i>
                         <p class="mb-3">Unit ini belum terdaftar dalam program monitoring performa ban.</p>
                         <form action="{{ route('monitoring.vehicle.store') }}" method="POST" class="d-inline">
                             @csrf
@@ -517,7 +517,7 @@
                             <input type="hidden" name="driver_name" value="—">
                             <input type="hidden" name="tire_positions" value="{{ $kendaraan->total_tyre_position ?? 6 }}">
                             <button type="submit" class="btn btn-outline-primary btn-sm">
-                                <i class="ri-add-line me-1"></i> Daftarkan ke Program Monitoring
+                                <i class="ri ri-add-line me-1"></i> Daftarkan ke Program Monitoring
                             </button>
                         </form>
                     </div>
@@ -528,7 +528,7 @@
         {{-- ═══════════════════ RIWAYAT PERGERAKAN ═══════════════════ --}}
         <div class="card shadow-sm border-0">
             <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
-                <p class="section-title mb-0"><i class="ri-history-line me-1"></i>Riwayat Pergerakan Ban</p>
+                <p class="section-title mb-0"><i class="ri ri-history-line me-1"></i>Riwayat Pergerakan Ban</p>
                 <span class="badge bg-label-secondary">{{ $movements->count() }} entri terbaru</span>
             </div>
             <div class="card-body">

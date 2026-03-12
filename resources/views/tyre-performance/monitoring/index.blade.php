@@ -13,7 +13,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Operations /</span> Tyre Monitoring</h4>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
-            <i class="ri-add-line me-1"></i> Add Vehicle for Monitoring
+            <i class="ri ri-add-line me-1"></i> Add Vehicle for Monitoring
         </button>
     </div>
 
@@ -53,7 +53,7 @@
                         <td>
                             <div class="d-flex gap-2">
                                 <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View Sessions">
-                                    <i class="ri-eye-line"></i>
+                                    <i class="ri ri-eye-line"></i>
                                 </a>
                             </div>
                         </td>

@@ -20,11 +20,11 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
-                <i class="ri-file-excel-2-line me-1"></i> Export Excel
+                <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
             @if($session->status == 'active')
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCheckModal">
-                    <i class="ri-add-line me-1"></i> Add Periodic Check
+                    <i class="ri ri-add-line me-1"></i> Add Periodic Check
                 </button>
             @endif
         </div>
@@ -123,7 +123,7 @@
             <h5 class="card-title mb-0">Installation Records</h5>
             @if($session->status == 'active')
                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addInstallationModal">
-                    <i class="ri-add-line me-1"></i> Add Installation
+                    <i class="ri ri-add-line me-1"></i> Add Installation
                 </button>
             @endif
         </div>
@@ -230,7 +230,7 @@
     @elseif($session->status == 'active' && $session->installations->count() > 0)
         <div class="d-grid mb-4">
             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addRemovalModal">
-                <i class="ri-close-circle-line me-1"></i> Close Session / Record Removal
+                <i class="ri ri-close-circle-line me-1"></i> Close Session / Record Removal
             </button>
         </div>
     @endif
@@ -404,7 +404,7 @@
                         </div>
                     </div>
                     <div class="alert alert-warning mt-3 mb-0">
-                        <i class="ri-error-warning-line me-1"></i> Removing the last tyre will not automatically close the session. Update session status manually if needed.
+                        <i class="ri ri-error-warning-line me-1"></i> Removing the last tyre will not automatically close the session. Update session status manually if needed.
                     </div>
                 </div>
                 <div class="modal-footer">
