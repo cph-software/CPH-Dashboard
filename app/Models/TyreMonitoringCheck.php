@@ -19,6 +19,7 @@ class TyreMonitoringCheck extends Model
         'odometer',
         'operation_mileage',
         'position',
+        'position_id',
         'serial_number',
         'inf_press_recommended',
         'inf_press_actual',
@@ -33,6 +34,11 @@ class TyreMonitoringCheck extends Model
     public function session()
     {
         return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id');
+    }
+
+    public function positionDetail()
+    {
+        return $this->belongsTo(TyrePositionDetail::class, 'position_id');
     }
 
     public function tyre()

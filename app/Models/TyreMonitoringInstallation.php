@@ -15,7 +15,9 @@ class TyreMonitoringInstallation extends Model
     protected $fillable = [
         'session_id',
         'position',
+        'position_id',
         'serial_number',
+        'tyre_id',
         'brand',
         'pattern',
         'size',
@@ -38,5 +40,15 @@ class TyreMonitoringInstallation extends Model
     public function tyre()
     {
         return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number');
+    }
+
+    public function masterTyre()
+    {
+        return $this->belongsTo(Tyre::class, 'tyre_id');
+    }
+
+    public function positionDetail()
+    {
+        return $this->belongsTo(TyrePositionDetail::class, 'position_id');
     }
 }

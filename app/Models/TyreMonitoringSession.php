@@ -14,6 +14,7 @@ class TyreMonitoringSession extends Model
 
     protected $fillable = [
         'vehicle_id',
+        'master_vehicle_id',
         'install_date',
         'tyre_size',
         'original_rtd',
@@ -26,6 +27,11 @@ class TyreMonitoringSession extends Model
     public function vehicle()
     {
         return $this->belongsTo(TyreMonitoringVehicle::class, 'vehicle_id', 'vehicle_id');
+    }
+
+    public function masterVehicle()
+    {
+        return $this->belongsTo(MasterImportKendaraan::class, 'master_vehicle_id');
     }
 
     public function installations()

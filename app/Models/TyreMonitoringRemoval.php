@@ -15,6 +15,7 @@ class TyreMonitoringRemoval extends Model
     protected $fillable = [
         'session_id',
         'position',
+        'position_id',
         'serial_number',
         'removal_date',
         'odometer',
@@ -28,6 +29,11 @@ class TyreMonitoringRemoval extends Model
     public function session()
     {
         return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id');
+    }
+
+    public function positionDetail()
+    {
+        return $this->belongsTo(TyrePositionDetail::class, 'position_id');
     }
 
     public function tyre()
