@@ -86,13 +86,7 @@
                   <div data-i18n="Tyre Dashboard">Tyre Dashboard</div>
                </a>
             </li>
-            <li class="menu-item {{ request()->is('monitoring*') ? 'active' : '' }}">
-               <a href="{{ route('monitoring.index') }}" class="menu-link">
-                  <i class="menu-icon icon-base ri ri-line-chart-line"></i>
-                  <div data-i18n="Tyre Monitoring">Tyre Monitoring</div>
-               </a>
-            </li>
-         @endif
+@endif
 
          {{-- DYNAMIC MENU TREE --}}
          <li class="menu-header small text-uppercase">
