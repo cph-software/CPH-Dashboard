@@ -86,7 +86,7 @@
                   <div data-i18n="Tyre Dashboard">Tyre Dashboard</div>
                </a>
             </li>
-         @endif
+@endif
 
          {{-- DYNAMIC MENU TREE --}}
          <li class="menu-header small text-uppercase">

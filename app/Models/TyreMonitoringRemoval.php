@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TyreMonitoringRemoval extends Model
+{
+    use HasFactory;
+
+    protected $table = 'tyre_monitoring_removal';
+    protected $primaryKey = 'removal_id';
+
+    protected $fillable = [
+        'session_id',
+        'position',
+        'position_id',
+        'serial_number',
+        'removal_date',
+        'odometer',
+        'total_mileage',
+        'final_rtd',
+        'removal_reason',
+        'tyre_condition_after',
+        'notes',
+    ];
+
+    public function session()
+    {
+        return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id');
+    }
+
+    public function positionDetail()
+    {
+        return $this->belongsTo(TyrePositionDetail::class, 'position_id');
+    }
+
+    public function tyre()
+    {
+        return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number');
+    }
+}
