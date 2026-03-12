@@ -27,4 +27,9 @@ class MasterImportKendaraan extends Model
     {
         return $this->belongsTo(TyrePositionConfiguration::class, 'tyre_position_configuration_id');
     }
+
+    public function monitoringSessions()
+    {
+        return $this->hasMany(TyreMonitoringSession::class, 'master_vehicle_id');
+    }
 }

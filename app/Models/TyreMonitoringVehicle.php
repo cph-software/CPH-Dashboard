@@ -21,7 +21,13 @@ class TyreMonitoringVehicle extends Model
         'load_capacity',
         'tire_positions',
         'status',
+        'master_vehicle_id',
     ];
+
+    public function masterVehicle()
+    {
+        return $this->belongsTo(MasterImportKendaraan::class, 'master_vehicle_id');
+    }
 
     public function sessions()
     {

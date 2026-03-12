@@ -60,4 +60,19 @@ class Tyre extends Model
     {
         return $this->hasMany(TyreMovement::class, 'tyre_id');
     }
+
+    public function monitoringInstallations()
+    {
+        return $this->hasMany(TyreMonitoringInstallation::class, 'tyre_id');
+    }
+
+    public function monitoringChecks()
+    {
+        return $this->hasMany(TyreMonitoringCheck::class, 'serial_number', 'serial_number');
+    }
+
+    public function monitoringRemovals()
+    {
+        return $this->hasMany(TyreMonitoringRemoval::class, 'serial_number', 'serial_number');
+    }
 }
