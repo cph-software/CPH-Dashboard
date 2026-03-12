@@ -25,8 +25,8 @@ class SessionExport implements WithMultipleSheets
         // Sheet 1: Installation
         $sheets[] = new InstallationSheet($this->session);
 
-        // Sheet 2+: Checks grouped by check_number
-        $checksByNumber = $this->session->checks->groupBy('check_number');
+        // Sheet 2+: Checks grouped by check_number (Sorted ASC)
+        $checksByNumber = $this->session->checks->sortBy('check_number')->groupBy('check_number');
         foreach ($checksByNumber as $checkNumber => $checks) {
             $sheets[] = new CheckSheet($this->session, $checkNumber, $checks);
         }

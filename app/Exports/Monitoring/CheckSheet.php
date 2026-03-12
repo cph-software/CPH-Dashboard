@@ -42,6 +42,6 @@ class CheckSheet implements FromView, WithTitle
 
     public function title(): string
     {
-        return 'Check ' . $this->checkNumber;
+        return 'Cek ' . $this->checkNumber;
     }
 }
