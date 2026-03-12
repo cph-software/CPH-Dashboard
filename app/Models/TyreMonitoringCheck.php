@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TyreMonitoringCheck extends Model
+{
+    use HasFactory;
+
+    protected $table = 'tyre_monitoring_check';
+    protected $primaryKey = 'check_id';
+
+    protected $fillable = [
+        'session_id',
+        'check_number',
+        'check_date',
+        'odometer',
+        'operation_mileage',
+        'position',
+        'serial_number',
+        'inf_press_recommended',
+        'inf_press_actual',
+        'rtd_1',
+        'rtd_2',
+        'rtd_3',
+        'condition',
+        'recommendation',
+        'notes',
+    ];
+
+    public function session()
+    {
+        return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id');
+    }
+
+    public function tyre()
+    {
+        return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number');
+    }
+}

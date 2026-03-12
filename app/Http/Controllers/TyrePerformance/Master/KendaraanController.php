@@ -46,13 +46,21 @@ class KendaraanController extends Controller
         $removalCount = $movements->where('movement_type', 'Removal')->count();
         $installCount = $movements->where('movement_type', 'Installation')->count();
 
+        // Integrated Monitoring Data — Match by no_polisi to TyreMonitoringVehicle
+        $monitoringVehicle = \App\Models\TyreMonitoringVehicle::where('vehicle_number', $kendaraan->no_polisi)
+            ->with(['sessions' => function($q) {
+                $q->orderBy('install_date', 'desc');
+            }])
+            ->first();
+
         return view('tyre-performance.master.kendaraan.show', compact(
             'kendaraan',
             'movements',
             'installedCount',
             'totalPositions',
             'removalCount',
-            'installCount'
+            'installCount',
+            'monitoringVehicle'
         ));
     }
 

@@ -470,6 +470,61 @@
             </div>
         </div>
 
+        {{-- ═══════════════════ TYRE MONITORING ═══════════════════ --}}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                <p class="section-title mb-0"><i class="ri-dashboard-line me-1"></i>Tyre Performance Monitoring</p>
+                @if($monitoringVehicle)
+                    <span class="badge bg-label-success">Enrolled</span>
+                @else
+                    <span class="badge bg-label-secondary">Not Enrolled</span>
+                @endif
+            </div>
+            <div class="card-body">
+                @if($monitoringVehicle)
+                    @php 
+                        $activeSession = $monitoringVehicle->sessions->where('status', 'active')->first();
+                    @endphp
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-1">Monitoring Status: <span class="text-primary">{{ $activeSession ? 'Sesi Sedang Berjalan' : 'Belum Ada Sesi Aktif' }}</span></h5>
+                            <p class="text-muted mb-0 small">
+                                <b>Fleet:</b> {{ $monitoringVehicle->fleet_name }} | 
+                                <b>Driver:</b> {{ $monitoringVehicle->driver_name }} | 
+                                <b>Positions:</b> {{ $monitoringVehicle->tire_positions }} Posisi
+                            </p>
+                            @if($activeSession)
+                                <div class="mt-2">
+                                    <span class="badge bg-label-info me-2">Session #{{ $activeSession->session_id }}</span>
+                                    <span class="text-muted small">Mulai: {{ \Carbon\Carbon::parse($activeSession->install_date)->format('d/m/Y') }} — {{ $activeSession->tyre_size }}</span>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="{{ route('monitoring.vehicle.show', $monitoringVehicle->vehicle_id) }}" class="btn btn-primary btn-sm">
+                                <i class="ri-external-link-line me-1"></i> Lihat Semua Sesi Monitoring
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="text-center py-4 bg-light rounded-3">
+                        <i class="ri-line-chart-line ri-2x mb-2 d-block opacity-25"></i>
+                        <p class="mb-3">Unit ini belum terdaftar dalam program monitoring performa ban.</p>
+                        <form action="{{ route('monitoring.vehicle.store') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="fleet_name" value="{{ $kendaraan->kode_kendaraan }}">
+                            <input type="hidden" name="vehicle_number" value="{{ $kendaraan->no_polisi }}">
+                            <input type="hidden" name="driver_name" value="—">
+                            <input type="hidden" name="tire_positions" value="{{ $kendaraan->total_tyre_position ?? 6 }}">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="ri-add-line me-1"></i> Daftarkan ke Program Monitoring
+                            </button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        </div>
+
         {{-- ═══════════════════ RIWAYAT PERGERAKAN ═══════════════════ --}}
         <div class="card shadow-sm border-0">
             <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
