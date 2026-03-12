@@ -14,9 +14,14 @@
 @endphp
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> Session #{{ $session->session_id }}</h4>
-            <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} - {{ $session->tyre_size }} ({{ $session->install_date }})</p>
+        <div class="d-flex align-items-center">
+            <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}" class="btn btn-icon btn-outline-secondary me-3">
+                <i class="ri ri-arrow-left-line"></i>
+            </a>
+            <div>
+                <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> Session #{{ $session->session_id }}</h4>
+                <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} - {{ $session->tyre_size }} ({{ $session->install_date }})</p>
+            </div>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
@@ -255,31 +260,31 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label">Position</label>
-                            <input type="number" name="position" class="form-control" required min="1" max="{{ $session->vehicle->tire_positions }}">
+                            <input type="number" name="position" class="form-control" required min="1" max="{{ $session->vehicle->tire_positions }}" placeholder="E.g. 1">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Odometer</label>
-                            <input type="number" name="odometer" class="form-control" required value="{{ $session->odometer_start }}">
+                            <input type="number" name="odometer" class="form-control" required value="{{ $session->odometer_start }}" placeholder="Odo at install">
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 1</label>
-                            <input type="number" name="rtd_1" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_1" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 2</label>
-                            <input type="number" name="rtd_2" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_2" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 3</label>
-                            <input type="number" name="rtd_3" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_3" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Psi Rcmd</label>
-                            <input type="number" name="inf_press_recommended" class="form-control" value="{{ $session->retase }}">
+                            <input type="number" name="inf_press_recommended" class="form-control" value="{{ $session->retase }}" placeholder="E.g. 110">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Psi Actual</label>
-                            <input type="number" name="inf_press_actual" class="form-control">
+                            <input type="number" name="inf_press_actual" class="form-control" placeholder="E.g. 105">
                         </div>
                     </div>
                 </div>
@@ -319,7 +324,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Current Odometer</label>
-                            <input type="number" name="odometer" class="form-control" required>
+                            <input type="number" name="odometer" class="form-control" required placeholder="KM at check">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Condition</label>
@@ -331,19 +336,19 @@
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 1</label>
-                            <input type="number" name="rtd_1" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_1" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 2</label>
-                            <input type="number" name="rtd_2" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_2" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-4">
                             <label class="form-label">RTD 3</label>
-                            <input type="number" name="rtd_3" class="form-control" step="0.1" required>
+                            <input type="number" name="rtd_3" class="form-control" step="0.1" required placeholder="mm">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Recommendation</label>
-                            <textarea name="recommendation" class="form-control" rows="2"></textarea>
+                            <textarea name="recommendation" class="form-control" rows="2" placeholder="E.g. Rotate, Repair, Continue, etc"></textarea>
                         </div>
                     </div>
                 </div>
@@ -383,11 +388,11 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label">Odometer</label>
-                            <input type="number" name="odometer" class="form-control" required>
+                            <input type="number" name="odometer" class="form-control" required placeholder="Final KM">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Final RTD (mm)</label>
-                            <input type="number" name="final_rtd" class="form-control" step="0.1" required>
+                            <input type="number" name="final_rtd" class="form-control" step="0.1" required placeholder="E.g. 3.0">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Removal Reason</label>

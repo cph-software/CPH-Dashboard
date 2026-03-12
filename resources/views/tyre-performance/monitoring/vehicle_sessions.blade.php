@@ -10,12 +10,17 @@
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> {{ $vehicle->fleet_name }}</h4>
-            <p class="text-muted mb-0">{{ $vehicle->vehicle_number }} - {{ $vehicle->driver_name }}</p>
+        <div class="d-flex align-items-center">
+            <a href="{{ route('monitoring.index') }}" class="btn btn-icon btn-outline-secondary me-3">
+                <i class="ri ri-arrow-left-line"></i>
+            </a>
+            <div>
+                <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> {{ $vehicle->fleet_name }}</h4>
+                <p class="text-muted mb-0">{{ $vehicle->vehicle_number }} - {{ $vehicle->driver_name }}</p>
+            </div>
         </div>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSessionModal">
-            <i class="ri-add-line me-1"></i> Start New Session
+            <i class="ri ri-add-line me-1"></i> Start New Session
         </button>
     </div>
 
@@ -52,10 +57,10 @@
                         <td>
                             <div class="d-flex gap-2">
                                 <a href="{{ route('monitoring.sessions.show', $session->session_id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View Detail">
-                                    <i class="ri-eye-line"></i>
+                                    <i class="ri ri-eye-line"></i>
                                 </a>
                                 <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-sm btn-icon btn-outline-success" title="Export Excel">
-                                    <i class="ri-file-excel-2-line"></i>
+                                    <i class="ri ri-file-excel-2-line"></i>
                                 </a>
                             </div>
                         </td>
@@ -86,23 +91,23 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tyre Size</label>
-                            <input type="text" name="tyre_size" class="form-control" required placeholder="example: 11 R22.5">
+                            <input type="text" name="tyre_size" class="form-control" required placeholder="E.g. 11.00 R20 or 11 R22.5">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Original RTD (mm)</label>
-                            <input type="number" name="original_rtd" class="form-control" step="0.1" required>
+                            <input type="number" name="original_rtd" class="form-control" step="0.1" required placeholder="E.g. 14.5">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Odometer Start</label>
-                            <input type="number" name="odometer_start" class="form-control" required>
+                            <input type="number" name="odometer_start" class="form-control" required placeholder="Current KM at install">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Pattern (Optional)</label>
-                            <input type="text" name="pattern" class="form-control">
+                            <input type="text" name="pattern" class="form-control" placeholder="E.g. G600U, EMS2, etc">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Retase/Psi (Rcmd)</label>
-                            <input type="number" name="retase" class="form-control">
+                            <input type="number" name="retase" class="form-control" placeholder="E.g. 110">
                         </div>
                     </div>
                 </div>
