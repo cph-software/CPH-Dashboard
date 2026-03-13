@@ -16,10 +16,30 @@ use App\Exports\Monitoring\SessionExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\TyreLocation;
 use DB;
 
 class MonitoringController extends Controller
 {
+    /**
+     * Helper to calculate lifetime difference handling potential meter resets (minus diff)
+     */
+    private function calculateLifetimeDiff($currentReading, $lastInstallReading)
+    {
+        if (!$currentReading || !$lastInstallReading)
+            return 0;
+
+        $diff = $currentReading - $lastInstallReading;
+
+        if ($diff < 0) {
+            // Odometer reset or replaced. 
+            // Logic: Assume the current reading is the distance covered since reset.
+            return (float) $currentReading;
+        }
+
+        return (float) $diff;
+    }
+
     public function index()
     {
         $vehicles = TyreMonitoringVehicle::withCount(['sessions' => function($q) {
@@ -52,8 +72,9 @@ class MonitoringController extends Controller
                     ->get();
             }
         }
+        $locations = TyreLocation::all();
         
-        return view('tyre-performance.monitoring.session_detail', compact('session', 'masterPositions'));
+        return view('tyre-performance.monitoring.session_detail', compact('session', 'masterPositions', 'locations'));
     }
 
     public function storeVehicle(Request $request)
@@ -135,9 +156,23 @@ class MonitoringController extends Controller
                 'movement_date' => $session->install_date,
                 'odometer_reading' => $session->odometer_start,
                 'rtd_reading' => $data['avg_rtd'],
+                'work_location_id' => $tyre->work_location_id,
                 'notes' => 'Monitoring Installation Session #' . $session->session_id,
-                'tyre_company_id' => $tyre->tyre_company_id
+                'tyre_company_id' => $tyre->tyre_company_id,
+                'created_by' => \Auth::id()
             ]);
+
+            // Sync with Position Detail (Secondary sync for vehicle layout)
+            if ($request->position_id) {
+                TyrePositionDetail::where('id', $request->position_id)->update(['tyre_id' => $tyre->id]);
+            }
+
+            // Sync stock (Decrement from current tyre location)
+            if ($tyre->work_location_id) {
+                DB::table('tyre_locations')
+                    ->where('id', $tyre->work_location_id)
+                    ->decrement('current_stock');
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'Tyre installation recorded and synced with master data');
@@ -182,20 +217,43 @@ class MonitoringController extends Controller
 
             TyreMonitoringCheck::create($data);
 
-            // Update Master Tyre RTD
+            // Calculate Lifetime Delta for Synchronization
+            $kmDiff = 0;
             if ($tyre) {
-                $tyre->update(['current_tread_depth' => $avg_rtd]);
-            }
+                $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                    ->where('movement_date', '<=', $request->check_date)
+                    ->orderBy('movement_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->first();
 
-            // Update Vehicle Odometer if it's connected
-            if ($session->master_vehicle_id && $request->odometer > 0) {
-                // If we want to store last odometer in vehicle table, we can do it here
-                // However, usually it's derived from movements. 
-                // Let's assume for now we just keep it in movements or if there's a specific field.
+                if ($lastMov) {
+                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                }
+
+                // Record Inspection Movement (for main system history)
+                TyreMovement::create([
+                    'tyre_id' => $tyre->id,
+                    'vehicle_id' => $session->master_vehicle_id,
+                    'position_id' => $data['position_id'],
+                    'movement_type' => 'Inspection',
+                    'movement_date' => $request->check_date,
+                    'odometer_reading' => $request->odometer,
+                    'running_km' => $kmDiff,
+                    'rtd_reading' => $avg_rtd,
+                    'notes' => 'Monitoring Check Session #' . $session->session_id . '. Cond: ' . $request->condition,
+                    'tyre_company_id' => $tyre->tyre_company_id,
+                    'created_by' => \Auth::id()
+                ]);
+
+                // Update Master Tyre RTD and Cumulative Lifetime
+                $tyre->update([
+                    'current_tread_depth' => $avg_rtd,
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
+                ]);
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Monitoring check recorded and Master Tyre RTD updated');
+            return redirect()->back()->with('success', 'Monitoring check recorded and Master Tyre synced');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
@@ -210,6 +268,8 @@ class MonitoringController extends Controller
             'removal_date' => 'required|date',
             'odometer' => 'required|integer',
             'final_rtd' => 'required|numeric',
+            'work_location_id' => 'nullable|exists:tyre_locations,id',
+            'target_status' => 'nullable|in:New,Repaired,Scrap'
         ]);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
@@ -232,23 +292,45 @@ class MonitoringController extends Controller
             $tyre = Tyre::where('serial_number', $request->serial_number)->first();
             if ($tyre) {
                 // Determine new status
-                $status = 'New';
-                if (stripos($request->tyre_condition_after, 'scrap') !== false || stripos($request->removal_reason, 'worn') !== false) {
-                    $status = 'Scrap';
-                } else {
-                    $status = 'Repaired';
+                $status = $request->target_status;
+                if (!$status) {
+                    if (stripos($request->tyre_condition_after, 'scrap') !== false || stripos($request->removal_reason, 'worn') !== false) {
+                        $status = 'Scrap';
+                    } else {
+                        $status = 'Repaired';
+                    }
                 }
 
-                // Update Lifetime KM
-                $newLifetimeKm = ($tyre->total_lifetime_km ?? 0) + $data['total_mileage'];
+                // Calculate Lifetime Delta (Sync with main system logic)
+                $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                    ->where('movement_date', '<=', $request->removal_date)
+                    ->orderBy('movement_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $kmDiff = 0;
+                if ($lastMov) {
+                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                }
 
                 $tyre->update([
                     'status' => $status,
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
+                    'work_location_id' => $request->work_location_id,
                     'current_tread_depth' => $request->final_rtd,
-                    'total_lifetime_km' => $newLifetimeKm
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
                 ]);
+
+                // Sync with Position Detail (Clear the position)
+                if ($data['position_id']) {
+                    TyrePositionDetail::where('id', $data['position_id'])->update(['tyre_id' => null]);
+                }
+
+                // Sync stock (Increment at destination location)
+                if ($request->work_location_id) {
+                    DB::table('tyre_locations')->where('id', $request->work_location_id)->increment('current_stock');
+                }
 
                 // Record Movement
                 TyreMovement::create([
@@ -258,14 +340,18 @@ class MonitoringController extends Controller
                     'movement_type' => 'Removal',
                     'movement_date' => $request->removal_date,
                     'odometer_reading' => $request->odometer,
+                    'running_km' => $kmDiff,
                     'rtd_reading' => $request->final_rtd,
+                    'target_status' => $status,
+                    'work_location_id' => $request->work_location_id,
                     'notes' => 'Monitoring Removal Session #' . $session->session_id . '. Reason: ' . $request->removal_reason,
-                    'tyre_company_id' => $tyre->tyre_company_id
+                    'tyre_company_id' => $tyre->tyre_company_id,
+                    'created_by' => \Auth::id()
                 ]);
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Tyre removal recorded and Master Data updated');
+            return redirect()->back()->with('success', 'Tyre removal recorded and Master Data synced');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
