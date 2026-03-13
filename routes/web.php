@@ -116,6 +116,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('monitoring/master-vehicle/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'getMasterVehicleDetails'])->name('monitoring.master-vehicle.details')->middleware('tyre.permission:Tyre Monitoring');
 
     Route::post('monitoring/vehicle', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeVehicle'])->name('monitoring.vehicle.store')->middleware('tyre.permission:Tyre Monitoring');
+    Route::put('monitoring/vehicle/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'updateVehicle'])->name('monitoring.vehicle.update')->middleware('tyre.permission:Tyre Monitoring');
     Route::post('monitoring/session', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeSession'])->name('monitoring.sessions.store')->middleware('tyre.permission:Tyre Monitoring');
     Route::put('monitoring/session/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'updateSession'])->name('monitoring.sessions.update')->middleware('tyre.permission:Tyre Monitoring');
     Route::delete('monitoring/session/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'destroySession'])->name('monitoring.sessions.destroy')->middleware('tyre.permission:Tyre Monitoring');

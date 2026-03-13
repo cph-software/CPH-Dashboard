@@ -95,7 +95,39 @@ class MonitoringController extends Controller
         $vehicle = TyreMonitoringVehicle::findOrFail($id);
         $sessions = TyreMonitoringSession::where('vehicle_id', $id)->withCount('checks')->latest()->get();
         
-        return view('tyre-performance.monitoring.vehicle_sessions', compact('vehicle', 'sessions'));
+        $masterPositions = [];
+        $assignedTyres = collect();
+        $configuration = null;
+
+        if ($vehicle->master_vehicle_id) {
+            $master = MasterImportKendaraan::find($vehicle->master_vehicle_id);
+            if ($master && $master->tyre_position_configuration_id) {
+                $configuration = TyrePositionConfiguration::with('details')->find($master->tyre_position_configuration_id);
+                $masterPositions = TyrePositionDetail::where('configuration_id', $master->tyre_position_configuration_id)
+                    ->orderBy('display_order')
+                    ->get();
+                
+                $assignedTyres = Tyre::where('current_vehicle_id', $vehicle->master_vehicle_id)
+                    ->with(['brand', 'pattern', 'size'])
+                    ->get()
+                    ->keyBy('current_position_id');
+            }
+        }
+
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
+
+        return view('tyre-performance.monitoring.vehicle_sessions', compact(
+            'vehicle', 
+            'sessions', 
+            'masterPositions', 
+            'assignedTyres', 
+            'configuration',
+            'brands',
+            'patterns',
+            'sizes'
+        ));
     }
 
     public function showSession($id)
@@ -155,6 +187,23 @@ class MonitoringController extends Controller
 
         TyreMonitoringVehicle::create($request->all());
         return redirect()->back()->with('success', 'Monitoring Vehicle created and linked to Master Data');
+    }
+
+    public function updateVehicle(Request $request, $id)
+    {
+        $request->validate([
+            'fleet_name' => 'required|string',
+            'vehicle_number' => 'required|string',
+            'driver_name' => 'required|string',
+            'tire_positions' => 'required|integer|min:1',
+            'master_vehicle_id' => 'nullable|exists:master_import_kendaraan,id',
+        ]);
+
+        $vehicle = TyreMonitoringVehicle::findOrFail($id);
+        $vehicle->fill($request->all());
+        $vehicle->save();
+        
+        return redirect()->back()->with('success', 'Monitoring Vehicle updated');
     }
 
     public function storeSession(Request $request)
