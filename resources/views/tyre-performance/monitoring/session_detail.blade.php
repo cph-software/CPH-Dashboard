@@ -7,6 +7,144 @@
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+   <style>
+      .v-chassis {
+         position: relative;
+         width: 100%;
+         max-width: 350px;
+         margin: 0 auto;
+         background: #fafafa;
+         border-radius: 20px;
+         padding: 40px 20px;
+         border: 2px solid #eee;
+         box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .v-cabin {
+         width: 100px;
+         height: 45px;
+         background: #333;
+         margin: 0 auto 30px auto;
+         border-radius: 8px 8px 4px 4px;
+         border-bottom: 5px solid #111;
+         text-align: center;
+         line-height: 40px;
+         font-size: 11px;
+         color: #fff;
+         font-weight: bold;
+         letter-spacing: 2px;
+      }
+
+      .v-axle {
+         display: flex;
+         justify-content: space-between;
+         margin-bottom: 30px;
+         position: relative;
+      }
+
+      .v-axle::after {
+         content: '';
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         width: 65%;
+         height: 4px;
+         background: #e0e0e0;
+         z-index: 1;
+         border-radius: 2px;
+      }
+
+      .v-tyre {
+         width: 35px;
+         height: 60px;
+         background: #fff;
+         border: 2px solid #ddd;
+         border-radius: 6px;
+         z-index: 2;
+         position: relative;
+         display: flex;
+         flex-direction: column;
+         justify-content: center;
+         align-items: center;
+         cursor: pointer;
+         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .v-tyre-code {
+         font-size: 9px;
+         font-weight: 800;
+         color: #666;
+      }
+
+      .v-tyre-sn-hint {
+         position: absolute;
+         top: -20px;
+         font-size: 8px;
+         color: #7367f0;
+         white-space: nowrap;
+         font-weight: bold;
+         opacity: 0;
+         transition: opacity 0.3s;
+      }
+
+      .v-tyre:hover .v-tyre-sn-hint {
+         opacity: 1;
+      }
+
+      .v-tyre.filled {
+         background: #2d2d2d !important;
+         border-color: #1a1a1a;
+      }
+
+      .v-tyre.filled .v-tyre-code {
+         color: #fff;
+      }
+
+      .v-tyre.front {
+         border-top: 4px solid #ff9f43;
+      }
+
+      .v-tyre.rear {
+         border-top: 4px solid #28c76f;
+      }
+
+      .v-tyre.middle {
+         border-top: 4px solid #7367f0;
+      }
+
+      .v-tyre:hover {
+         transform: scale(1.15) translateY(-2px);
+         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+         z-index: 10;
+      }
+
+      .v-group {
+         display: flex;
+         gap: 5px;
+      }
+
+      .v-spare-list {
+         display: flex;
+         justify-content: center;
+         gap: 15px;
+         margin-top: 20px;
+         padding-top: 20px;
+         border-top: 2px dashed #eee;
+      }
+
+      .v-tyre.spare {
+         width: 60px;
+         height: 35px;
+         border-top: none;
+         border-right: 4px solid #00cfe8;
+      }
+
+      .pos-empty-card {
+         background-color: #f8f9fa;
+         border: 2px dashed #dee2e6;
+      }
+   </style>
 @endsection
 
 @section('content')
@@ -129,42 +267,245 @@
          </div>
       @endif
 
-      <!-- Installation Records -->
-      <div class="card mb-4">
-         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Installation Records</h5>
-            @if ($session->status == 'active')
-               <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                  data-bs-target="#addInstallationModal">
-                  <i class="ri ri-add-line me-1"></i> Add Installation
-               </button>
-            @endif
-         </div>
-         <div class="table-responsive">
-            <table class="table table-hover">
-               <thead>
-                  <tr>
-                     <th>Pos</th>
-                     <th>Serial Number</th>
-                     <th>Brand/Pattern</th>
-                     <th>Size</th>
-                     <th>Baseline Avg RTD</th>
-                     <th>Odometer</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  @foreach ($session->installations as $inst)
-                     <tr>
-                        <td>{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}</td>
-                        <td>{{ $inst->serial_number }}</td>
-                        <td>{{ $inst->brand }} / {{ $inst->pattern }}</td>
-                        <td>{{ $inst->size }}</td>
-                        <td>{{ $inst->avg_rtd }} mm</td>
-                        <td>{{ number_format($inst->odometer) }}</td>
-                     </tr>
-                  @endforeach
-               </tbody>
-            </table>
+      <!-- Vehicle Layout & Installation Records -->
+      <div class="row mb-4">
+         @if (count($masterPositions) > 0)
+            <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
+               <div class="card h-100">
+                  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+                     <h5 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Visual Layout</h5>
+                     <small class="text-muted">Master Config</small>
+                  </div>
+                  <div class="card-body pt-4">
+                     <div class="v-chassis">
+                        <div class="v-cabin">FRONT</div>
+
+                        @php
+                           $frontAxles = $masterPositions->where('axle_type', 'Front')->groupBy('axle_number');
+                           $middleAxles = $masterPositions->where('axle_type', 'Middle')->groupBy('axle_number');
+                           $rearAxles = $masterPositions->where('axle_type', 'Rear')->groupBy('axle_number');
+                           $spares = $masterPositions->where('is_spare', true);
+                        @endphp
+
+                        {{-- Front Axles --}}
+                        @foreach ($frontAxles as $positions)
+                           <div class="v-axle">
+                              @php
+                                 $left = $positions->where('side', 'Left')->first();
+                                 $right = $positions->where('side', 'Right')->first();
+                                 $leftTyre = $left ? $assignedTyres->get($left->id) : null;
+                                 $rightTyre = $right ? $assignedTyres->get($right->id) : null;
+                              @endphp
+                              @if ($left)
+                                 <div class="v-tyre front {{ $leftTyre ? 'filled' : '' }}"
+                                    data-position-id="{{ $left->id }}"
+                                    title="{{ $left->position_name }} {{ $leftTyre ? '[' . $leftTyre->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $left->position_code }}</span>
+                                    @if ($leftTyre)
+                                       <span class="v-tyre-sn-hint">{{ substr($leftTyre->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endif
+                              @if ($right)
+                                 <div class="v-tyre front {{ $rightTyre ? 'filled' : '' }}"
+                                    data-position-id="{{ $right->id }}"
+                                    title="{{ $right->position_name }} {{ $rightTyre ? '[' . $rightTyre->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $right->position_code }}</span>
+                                    @if ($rightTyre)
+                                       <span class="v-tyre-sn-hint">{{ substr($rightTyre->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endif
+                           </div>
+                        @endforeach
+
+                        {{-- Middle Axles --}}
+                        @foreach ($middleAxles as $positions)
+                           <div class="v-axle">
+                              <div class="v-group">
+                                 @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                    @php $t = $assignedTyres->get($p->id); @endphp
+                                    <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
+                                       data-position-id="{{ $p->id }}"
+                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                       @if ($t)
+                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                       @endif
+                                    </div>
+                                 @endforeach
+                              </div>
+                              <div class="v-group">
+                                 @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                    @php $t = $assignedTyres->get($p->id); @endphp
+                                    <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
+                                       data-position-id="{{ $p->id }}"
+                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                       @if ($t)
+                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                       @endif
+                                    </div>
+                                 @endforeach
+                              </div>
+                           </div>
+                        @endforeach
+
+                        {{-- Rear Axles --}}
+                        @foreach ($rearAxles as $positions)
+                           <div class="v-axle">
+                              <div class="v-group">
+                                 @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                    @php $t = $assignedTyres->get($p->id); @endphp
+                                    <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
+                                       data-position-id="{{ $p->id }}"
+                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                       @if ($t)
+                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                       @endif
+                                    </div>
+                                 @endforeach
+                              </div>
+                              <div class="v-group">
+                                 @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                    @php $t = $assignedTyres->get($p->id); @endphp
+                                    <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
+                                       data-position-id="{{ $p->id }}"
+                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                       @if ($t)
+                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                       @endif
+                                    </div>
+                                 @endforeach
+                              </div>
+                           </div>
+                        @endforeach
+
+                        {{-- Spares --}}
+                        @if ($spares->count() > 0)
+                           <div class="v-spare-list">
+                              @foreach ($spares as $s)
+                                 @php $t = $assignedTyres->get($s->id); @endphp
+                                 <div class="v-tyre spare {{ $t ? 'filled' : '' }}"
+                                    data-position-id="{{ $s->id }}"
+                                    title="{{ $s->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $s->position_code }}</span>
+                                    @if ($t)
+                                       <span class="v-tyre-sn-hint"
+                                          style="bottom: -15px; top: auto; left: 0; width: 100%;">{{ substr($t->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endforeach
+                           </div>
+                        @endif
+                     </div>
+                  </div>
+               </div>
+            </div>
+         @endif
+
+         <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
+            <div class="card h-100">
+               <div class="card-header d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Current Tyre Status (By Position)
+                  </h5>
+                  @if ($session->status == 'active')
+                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#addInstallationModal">
+                        <i class="ri ri-add-line me-1"></i> Add Installation
+                     </button>
+                  @endif
+               </div>
+               <div class="table-responsive">
+                  <table class="table table-hover mb-0">
+                     <thead class="table-light">
+                        <tr>
+                           <th class="text-center" width="80">Pos</th>
+                           <th>Tyre Details</th>
+                           <th>Status</th>
+                           <th>Current RTD</th>
+                           <th>Last Inspection</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        @forelse($masterPositions as $pos)
+                           @php
+                              $tyre = $assignedTyres->get($pos->id);
+                              // Get latest installation record for this pos from session
+                              $inst = $session->installations->where('position_id', $pos->id)->first();
+                           @endphp
+                           <tr>
+                              <td class="text-center fw-bold align-middle bg-light">
+                                 <span class="badge bg-label-primary rounded-circle"
+                                    style="width: 35px; height: 35px; line-height: 25px;">{{ $pos->position_code }}</span>
+                              </td>
+                              <td class="align-middle">
+                                 @if ($tyre)
+                                    <div class="d-flex flex-column">
+                                       <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
+                                       <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
+                                          {{ $tyre->pattern->name ?? '-' }} / {{ $tyre->size->size ?? '-' }}</small>
+                                    </div>
+                                 @else
+                                    <span class="text-muted italic">Posisi Kosong</span>
+                                 @endif
+                              </td>
+                              <td class="align-middle">
+                                 @if ($tyre)
+                                    <span class="badge bg-label-success">Installed</span>
+                                 @else
+                                    <span class="badge bg-label-secondary">Available</span>
+                                 @endif
+                              </td>
+                              <td class="align-middle">
+                                 @if ($tyre)
+                                    <span class="fw-bold">{{ $tyre->current_tread_depth }} mm</span>
+                                 @else
+                                    -
+                                 @endif
+                              </td>
+                              <td class="align-middle">
+                                 @if ($tyre)
+                                    @php
+                                       $latestCheck = $session->checks
+                                           ->where('serial_number', $tyre->serial_number)
+                                           ->sortByDesc('check_date')
+                                           ->first();
+                                    @endphp
+                                    @if ($latestCheck)
+                                       <div class="d-flex flex-column">
+                                          <small class="fw-bold">{{ $latestCheck->check_date }}</small>
+                                          <small class="text-info">{{ number_format($latestCheck->operation_mileage) }}
+                                             KM</small>
+                                       </div>
+                                    @else
+                                       <small class="text-muted">No check yet</small>
+                                    @endif
+                                 @else
+                                    -
+                                 @endif
+                              </td>
+                           </tr>
+                        @empty
+                           {{-- Fallback jika master layout tidak ada, pakai data instalasi saja --}}
+                           @foreach ($session->installations as $inst)
+                              <tr>
+                                 <td class="text-center fw-bold align-middle">{{ $inst->position }}</td>
+                                 <td>{{ $inst->serial_number }} ({{ $inst->brand }} / {{ $inst->pattern }})</td>
+                                 <td><span class="badge bg-label-success">Installed</span></td>
+                                 <td>
+                                    {{ $inst->position_id ? $assignedTyres->get($inst->position_id)->current_tread_depth ?? '-' : '-' }}
+                                 </td>
+                                 <td>-</td>
+                              </tr>
+                           @endforeach
+                        @endforelse
+                     </tbody>
+                  </table>
+               </div>
+            </div>
          </div>
       </div>
 
@@ -278,27 +619,75 @@
                   <div class="row g-3">
                      <div class="col-12">
                         <label class="form-label">Tyre Serial Number</label>
-                        <div class="input-group">
-                           <input type="text" name="serial_number" id="install_serial" class="form-control"
-                              placeholder="Enter Serial Number" required>
-                           <button class="btn btn-outline-primary" type="button" id="btnCheckTyre">Check</button>
+                        <select name="serial_number" id="install_serial" class="form-select select2-setup" required
+                           data-tags="true" data-placeholder="Pilih atau Ketik SN Baru">
+                           <option value=""></option>
+                           @foreach ($availableTyres as $t)
+                              <option value="{{ $t->serial_number }}">{{ $t->serial_number }}</option>
+                           @endforeach
+                        </select>
+
+                        <div id="new_tyre_data" class="mt-3 p-3 bg-light border rounded" style="display:none;">
+                           <h6 class="mb-2 small fw-bold text-primary"><i class="ri-information-line me-1"></i> New Tyre
+                              Specifications</h6>
+                           <div class="row g-2">
+                              <div class="col-md-4">
+                                 <label class="form-label small mb-1">Brand</label>
+                                 <select name="tyre_brand_id" class="form-select form-select-sm select2-setup"
+                                    data-placeholder="Brand">
+                                    <option value=""></option>
+                                    @foreach ($brands as $b)
+                                       <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
+                                    @endforeach
+                                 </select>
+                              </div>
+                              <div class="col-md-4">
+                                 <label class="form-label small mb-1">Pattern</label>
+                                 <select name="tyre_pattern_id" class="form-select form-select-sm select2-setup"
+                                    data-placeholder="Pattern">
+                                    <option value=""></option>
+                                    @foreach ($patterns as $p)
+                                       <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                 </select>
+                              </div>
+                              <div class="col-md-4">
+                                 <label class="form-label small mb-1">Size</label>
+                                 <select name="tyre_size_id" class="form-select form-select-sm select2-setup"
+                                    data-placeholder="Size">
+                                    <option value=""></option>
+                                    @foreach ($sizes as $s)
+                                       <option value="{{ $s->id }}">{{ $s->size }}</option>
+                                    @endforeach
+                                 </select>
+                              </div>
+                           </div>
                         </div>
-                        <div id="tyre_info_box" class="mt-2 small text-muted" style="display:none;">
-                           Brand: <span id="info_brand"></span> | Size: <span id="info_size"></span> | Pattern: <span
-                              id="info_pattern"></span>
+
+                        <div id="tyre_info_box" class="mt-2 p-2 bg-label-info rounded small border"
+                           style="display:none;">
+                           <div class="row">
+                              <div class="col-6">Brand: <span id="info_brand" class="fw-bold">-</span></div>
+                              <div class="col-6">Size: <span id="info_size" class="fw-bold">-</span></div>
+                              <div class="col-12 mt-1">Pattern: <span id="info_pattern" class="fw-bold">-</span></div>
+                           </div>
                         </div>
                      </div>
-                     <div class="col-6">
+                     <div class="col-12">
                         @if (count($masterPositions) > 0)
                            <label class="form-label">Position Code</label>
-                           <select name="position_id" class="form-select" required>
+                           <select name="position_id" id="position_id_select" class="form-select" required>
                               <option value="">-- Select Position --</option>
                               @foreach ($masterPositions as $pos)
-                                 <option value="{{ $pos->id }}">{{ $pos->position_code }}</option>
+                                 @php $isFilled = $assignedTyres->has($pos->id); @endphp
+                                 <option value="{{ $pos->id }}" {{ $isFilled ? 'disabled' : '' }}>
+                                    {{ $pos->position_code }} - {{ $pos->position_name }}
+                                    {{ $isFilled ? '(Sudah Terisi)' : '' }}
+                                 </option>
                               @endforeach
                            </select>
                         @else
-                           <label class="form-label">Position</label>
+                           <label class="form-label">Position Number</label>
                            <input type="number" name="position" class="form-control" required min="1"
                               max="{{ $session->vehicle->tire_positions }}" placeholder="E.g. 1">
                         @endif
@@ -306,7 +695,13 @@
                      <div class="col-6">
                         <label class="form-label">Odometer</label>
                         <input type="number" name="odometer" class="form-control" required
-                           value="{{ $session->odometer_start }}" placeholder="Odo at install">
+                           value="{{ $lastCheck ? $lastCheck->operation_mileage + $session->odometer_start : $session->odometer_start }}"
+                           placeholder="Odo at install">
+                     </div>
+                     <div class="col-6">
+                        <label class="form-label">Rcmd. PSI</label>
+                        <input type="number" name="inf_press_recommended" class="form-control"
+                           value="{{ $session->retase }}" placeholder="E.g. 110">
                      </div>
                      <div class="col-4">
                         <label class="form-label">RTD 1</label>
@@ -323,13 +718,8 @@
                         <input type="number" name="rtd_3" class="form-control" step="0.1" required
                            placeholder="mm">
                      </div>
-                     <div class="col-6">
-                        <label class="form-label">Psi Rcmd</label>
-                        <input type="number" name="inf_press_recommended" class="form-control"
-                           value="{{ $session->retase }}" placeholder="E.g. 110">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Psi Actual</label>
+                     <div class="col-12">
+                        <label class="form-label">Actual PSI</label>
                         <input type="number" name="inf_press_actual" class="form-control" placeholder="E.g. 105">
                      </div>
                   </div>
@@ -358,11 +748,16 @@
                   <div class="row g-3">
                      <div class="col-12">
                         <label class="form-label">Tire In Test</label>
-                        <select name="serial_number" class="form-select" required>
+                        <select name="serial_number" class="form-select select2-setup" required>
+                           <option value="">-- Pilih Ban --</option>
                            @foreach ($session->installations as $inst)
+                              @php
+                                 $currentTyre = $inst->tyre_id ? \App\Models\Tyre::find($inst->tyre_id) : null;
+                                 $rtd1 = $currentTyre ? $currentTyre->current_tread_depth : $inst->rtd_1;
+                              @endphp
                               <option value="{{ $inst->serial_number }}"
                                  data-pos="{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}"
-                                 data-rtd1="{{ $inst->rtd_1 }}" data-rtd2="{{ $inst->rtd_2 }}"
+                                 data-rtd1="{{ $rtd1 }}" data-rtd2="{{ $inst->rtd_2 }}"
                                  data-rtd3="{{ $inst->rtd_3 }}">
                                  {{ $inst->serial_number }} (Pos
                                  {{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }})
@@ -377,7 +772,8 @@
                      </div>
                      <div class="col-md-6">
                         <label class="form-label">Current Odometer</label>
-                        <input type="number" name="odometer" class="form-control" required placeholder="KM at check">
+                        <input type="number" name="odometer" class="form-control" required placeholder="KM at check"
+                           value="{{ $lastCheck ? $lastCheck->operation_mileage + $session->odometer_start : '' }}">
                      </div>
                      <div class="col-md-6">
                         <label class="form-label">Condition</label>
@@ -404,8 +800,13 @@
                      </div>
                      <div class="col-12">
                         <label class="form-label">Recommendation</label>
-                        <textarea name="recommendation" class="form-control" rows="2"
-                           placeholder="E.g. Rotate, Repair, Continue, etc"></textarea>
+                        <select name="recommendation" class="form-select select2-setup" data-tags="true">
+                           <option value="Continue">Continue / Running</option>
+                           <option value="Rotation">Rotation / Move Position</option>
+                           <option value="Repair">Repair / Patch</option>
+                           <option value="Retread">To Retread</option>
+                           <option value="Scrap">Scrap / Final Removal</option>
+                        </select>
                      </div>
                   </div>
                </div>
@@ -433,11 +834,16 @@
                   <div class="row g-3">
                      <div class="col-12">
                         <label class="form-label">Tire to Remove</label>
-                        <select name="serial_number" class="form-select" required>
+                        <select name="serial_number" class="form-select select2-setup" required>
+                           <option value="">-- Pilih Ban Dicabut --</option>
                            @foreach ($session->installations as $inst)
+                              @php
+                                 $currentTyre = $inst->tyre_id ? \App\Models\Tyre::find($inst->tyre_id) : null;
+                                 $rtd1 = $currentTyre ? $currentTyre->current_tread_depth : $inst->rtd_1;
+                              @endphp
                               <option value="{{ $inst->serial_number }}"
                                  data-pos="{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}"
-                                 data-rtd1="{{ $inst->rtd_1 }}" data-rtd2="{{ $inst->rtd_2 }}"
+                                 data-rtd1="{{ $rtd1 }}" data-rtd2="{{ $inst->rtd_2 }}"
                                  data-rtd3="{{ $inst->rtd_3 }}">
                                  {{ $inst->serial_number }} (Pos
                                  {{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }})
@@ -451,8 +857,9 @@
                            value="{{ date('Y-m-d') }}">
                      </div>
                      <div class="col-6">
-                        <label class="form-label">Odometer</label>
-                        <input type="number" name="odometer" class="form-control" required placeholder="Final KM">
+                        <label class="form-label">Final Odometer</label>
+                        <input type="number" name="odometer" class="form-control" required placeholder="Final KM"
+                           value="{{ $lastCheck ? $lastCheck->operation_mileage + $session->odometer_start : '' }}">
                      </div>
                      <div class="col-6">
                         <label class="form-label">Final RTD (mm)</label>
@@ -471,14 +878,14 @@
                      <div class="col-6">
                         <label class="form-label">Target Status</label>
                         <select name="target_status" class="form-select" required>
-                           <option value="Repaired">Repaired</option>
+                           <option value="Repaired">Repaired / Stock</option>
                            <option value="Scrap">Scrap</option>
-                           <option value="New">New</option>
+                           <option value="New">Wait for Retread</option>
                         </select>
                      </div>
                      <div class="col-6">
                         <label class="form-label">Destination Location</label>
-                        <select name="work_location_id" class="form-select" required>
+                        <select name="work_location_id" class="form-select select2-setup" required>
                            <option value="">-- Select Location --</option>
                            @foreach ($locations as $loc)
                               <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
@@ -491,10 +898,6 @@
                            placeholder="example: Buffable, Sidewall Cut, etc">
                      </div>
                   </div>
-                  <div class="alert alert-warning mt-3 mb-0">
-                     <i class="ri ri-error-warning-line me-1"></i> Removing the last tyre will not automatically close the
-                     session. Update session status manually if needed.
-                  </div>
                </div>
                <div class="modal-footer">
                   <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
@@ -504,52 +907,87 @@
          </div>
       </div>
    </div>
-@section('page-script')
-   <script>
-      $(function() {
-         // --- 1. Installation Auto-fill ---
-         $('#btnCheckTyre').on('click', function() {
-            const serial = $('#install_serial').val();
-            if (!serial) {
-               Swal.fire('Error', 'Please enter serial number', 'error');
-               return;
+   @section('page-script')
+      <script>
+         $(function() {
+            // --- 1. Initialize Select2 on Modals ---
+            function initSelect2() {
+               $('.select2-setup').each(function() {
+                  $(this).select2({
+                     dropdownParent: $(this).closest('.modal'),
+                     tags: $(this).data('tags') || false,
+                     placeholder: $(this).data('placeholder') || 'Silakan Pilih',
+                     allowClear: true
+                  });
+               });
             }
 
-            $.get("{{ route('monitoring.tyre-by-serial') }}", {
-               serial_number: serial
-            }, function(res) {
-               if (res.success) {
-                  $('#tyre_info_box').show();
-                  $('#info_brand').text(res.data.brand);
-                  $('#info_size').text(res.data.size);
-                  $('#info_pattern').text(res.data.pattern);
+            // Re-init on modal show
+            $('.modal').on('shown.bs.modal', function() {
+               initSelect2();
+            });
 
-                  // Optional: fill RTD fields with current OTD if it's the first time
-                  // or just leave it for user to fill based on physical check
-                  if (!$('input[name="rtd_1"]').val()) {
-                     $('input[name="rtd_1"]').val(res.data.rtd);
-                     $('input[name="rtd_2"]').val(res.data.rtd);
-                     $('input[name="rtd_3"]').val(res.data.rtd);
+            // --- 2. Installation Auto-fill ---
+            $('#install_serial').on('change', function() {
+               const serial = $(this).val();
+               if (!serial) {
+                  $('#tyre_info_box').fadeOut();
+                  return;
+               }
+
+               $.get("{{ route('monitoring.tyre-by-serial') }}", {
+                  serial_number: serial
+               }, function(res) {
+                  if (res.success) {
+                     $('#tyre_info_box').fadeIn();
+                     $('#new_tyre_data').hide();
+                     $('#info_brand').text(res.data.brand);
+                     $('#info_size').text(res.data.size);
+                     $('#info_pattern').text(res.data.pattern);
+
+                     // Fill RTD fields if empty
+                     if (!$('input[name="rtd_1"]').val()) {
+                        $('input[name="rtd_1"]').val(res.data.rtd);
+                        $('input[name="rtd_2"]').val(res.data.rtd);
+                        $('input[name="rtd_3"]').val(res.data.rtd);
+                     }
+                  } else {
+                     $('#tyre_info_box').hide();
+                     $('#new_tyre_data').fadeIn();
+                     // Reset if it was filled
+                     if ($('input[name="rtd_1"]').val() == res.data?.rtd) {
+                        $('input[name="rtd_1"]').val('');
+                        $('input[name="rtd_2"]').val('');
+                        $('input[name="rtd_3"]').val('');
+                     }
                   }
-               } else {
-                  $('#tyre_info_box').hide();
-                  Swal.fire('Warning', res.message, 'warning');
+               });
+            });
+
+            // --- 3. Check/Removal Auto-fill RTD & Pos ---
+            $(document).on('change', 'select[name="serial_number"]', function() {
+               if ($(this).attr('id') === 'install_serial') return; // Skip for installation
+
+               const selected = $(this).find(':selected');
+               const modal = $(this).closest('.modal');
+
+               if (selected.val() && selected.data('rtd1')) {
+                  modal.find('input[name="rtd_1"]').val(selected.data('rtd1'));
+                  modal.find('input[name="rtd_2"]').val(selected.data('rtd2'));
+                  modal.find('input[name="rtd_3"]').val(selected.data('rtd3'));
+                  modal.find('input[name="final_rtd"]').val(selected.data('rtd1')); // for removal
+               }
+            });
+
+            // --- 4. Interactive Visual Layout ---
+            $('.v-tyre').on('click', function() {
+               const posId = $(this).data('position-id');
+               if (posId) {
+                  $('#position_id_select').val(posId).trigger('change');
+                  // Trigger modal show
+                  $('#addInstallationModal').modal('show');
                }
             });
          });
-
-         // --- 2. Check/Removal Auto-fill RTD ---
-         $('select[name="serial_number"]').on('change', function() {
-            const selected = $(this).find(':selected');
-            const modal = $(this).closest('.modal');
-
-            if (selected.val() && selected.data('rtd1')) {
-               modal.find('input[name="rtd_1"]').val(selected.data('rtd1'));
-               modal.find('input[name="rtd_2"]').val(selected.data('rtd2'));
-               modal.find('input[name="rtd_3"]').val(selected.data('rtd3'));
-               modal.find('input[name="final_rtd"]').val(selected.data('rtd1')); // for removal
-            }
-         });
-      });
-   </script>
-@endsection
+      </script>
+   @endsection

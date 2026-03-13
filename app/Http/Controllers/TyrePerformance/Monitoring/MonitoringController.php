@@ -12,11 +12,14 @@ use App\Models\TyreMonitoringRemoval;
 use App\Models\TyreMovement;
 use App\Models\MasterImportKendaraan;
 use App\Models\TyrePositionDetail;
+use App\Models\TyreBrand;
+use App\Models\TyrePattern;
+use App\Models\TyreSize;
+use App\Models\TyreLocation;
 use App\Exports\Monitoring\SessionExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Models\TyreLocation;
 use DB;
 
 class MonitoringController extends Controller
@@ -46,9 +49,45 @@ class MonitoringController extends Controller
             $q->where('status', 'active');
         }])->latest()->get();
 
-        $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan')->get();
+        $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')->get();
         
         return view('tyre-performance.monitoring.index', compact('vehicles', 'masterVehicles'));
+    }
+
+    public function getMasterVehicleDetails($id)
+    {
+        $vehicle = MasterImportKendaraan::with(['tyrePositionConfiguration.details'])->findOrFail($id);
+        
+        // Fetch tyres currently installed on this vehicle
+        $tyres = Tyre::where('current_vehicle_id', $id)
+            ->with(['brand', 'pattern', 'size'])
+            ->get()
+            ->keyBy('current_position_id');
+
+        $masterPositions = [];
+        if ($vehicle->tyre_position_configuration_id) {
+            $masterPositions = TyrePositionDetail::where('configuration_id', $vehicle->tyre_position_configuration_id)
+                ->orderBy('display_order')
+                ->get();
+        }
+
+        // Render the visual layout partial
+        $html = view('tyre-performance.movement._vehicle_layout', [
+            'configuration' => $vehicle->tyrePositionConfiguration,
+            'assignedTyres' => $tyres
+        ])->render();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'payload_capacity' => $vehicle->payload_capacity,
+                'total_tyre_position' => $vehicle->total_tyre_position,
+                'configuration' => $vehicle->tyrePositionConfiguration,
+                'positions' => $masterPositions,
+                'tyres' => $tyres,
+                'layout_html' => $html
+            ]
+        ]);
     }
 
     public function showVehicle($id)
@@ -62,19 +101,46 @@ class MonitoringController extends Controller
     public function showSession($id)
     {
         $session = TyreMonitoringSession::with(['vehicle.sessions', 'installations.positionDetail', 'checks', 'removal'])->findOrFail($id);
-        
+
         $masterPositions = [];
+        $assignedTyres = collect();
+
         if ($session->master_vehicle_id) {
             $vehicle = MasterImportKendaraan::find($session->master_vehicle_id);
             if ($vehicle && $vehicle->tyre_position_configuration_id) {
                 $masterPositions = TyrePositionDetail::where('configuration_id', $vehicle->tyre_position_configuration_id)
                     ->orderBy('display_order')
                     ->get();
+
+                // Fetch tyres currently installed on this master vehicle
+                $assignedTyres = Tyre::where('current_vehicle_id', $session->master_vehicle_id)
+                    ->with(['brand', 'pattern', 'size'])
+                    ->get()
+                    ->keyBy('current_position_id');
             }
         }
+
         $locations = TyreLocation::all();
-        
-        return view('tyre-performance.monitoring.session_detail', compact('session', 'masterPositions', 'locations'));
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
+
+        // Get available tyres for installation dropdown
+        $availableTyres = Tyre::whereNull('current_vehicle_id')
+            ->select('id', 'serial_number')
+            ->orderBy('serial_number')
+            ->get();
+
+        return view('tyre-performance.monitoring.session_detail', compact(
+            'session',
+            'masterPositions',
+            'locations',
+            'brands',
+            'patterns',
+            'sizes',
+            'assignedTyres',
+            'availableTyres'
+        ));
     }
 
     public function storeVehicle(Request $request)
@@ -116,17 +182,35 @@ class MonitoringController extends Controller
     {
         $request->validate([
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
-            'position' => 'required|integer',
-            'position_id' => 'nullable|exists:tyre_position_details,id',
-            'serial_number' => 'required|exists:tyres,serial_number',
+            'position' => 'nullable|integer',
+            'position_id' => 'required_without:position|exists:tyre_position_details,id',
+            'serial_number' => 'required|string',
             'rtd_1' => 'required|numeric',
             'rtd_2' => 'required|numeric',
             'rtd_3' => 'required|numeric',
         ]);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
-        $tyre = Tyre::where('serial_number', $request->serial_number)->with(['brand', 'size', 'pattern'])->first();
         
+        // Find or Create Tyre
+        $tyre = Tyre::where('serial_number', $request->serial_number)->first();
+        
+        if (!$tyre) {
+            // Create new tyre record if it doesn't exist
+            $tyre = Tyre::create([
+                'serial_number' => $request->serial_number,
+                'tyre_brand_id' => $request->tyre_brand_id,
+                'tyre_pattern_id' => $request->tyre_pattern_id,
+                'tyre_size_id' => $request->tyre_size_id,
+                'status' => 'Installed',
+                'original_tread_depth' => ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3,
+                'current_tread_depth' => ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3,
+                'tyre_company_id' => auth()->user()->tyre_company_id ?? 1, // Default or session company
+            ]);
+        }
+        
+        $tyre->load(['brand', 'size', 'pattern']);
+
         DB::beginTransaction();
         try {
             $data = $request->all();
@@ -136,6 +220,12 @@ class MonitoringController extends Controller
             $data['pattern'] = $tyre->pattern->name ?? '-';
             $data['avg_rtd'] = ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3;
             $data['install_date'] = $session->install_date;
+
+            // If master position is used, map the numeric position for legacy support
+            if ($request->position_id) {
+                $posDetail = TyrePositionDetail::find($request->position_id);
+                $data['position'] = $posDetail->display_order;
+            }
 
             TyreMonitoringInstallation::create($data);
 
@@ -154,7 +244,7 @@ class MonitoringController extends Controller
                 'position_id' => $request->position_id,
                 'movement_type' => 'Installation',
                 'movement_date' => $session->install_date,
-                'odometer_reading' => $session->odometer_start,
+                'odometer_reading' => $request->odometer ?? $session->odometer_start,
                 'rtd_reading' => $data['avg_rtd'],
                 'work_location_id' => $tyre->work_location_id,
                 'notes' => 'Monitoring Installation Session #' . $session->session_id,
@@ -162,13 +252,13 @@ class MonitoringController extends Controller
                 'created_by' => \Auth::id()
             ]);
 
-            // Sync with Position Detail (Secondary sync for vehicle layout)
+            // Sync with Position Detail (Secondary sync)
             if ($request->position_id) {
                 TyrePositionDetail::where('id', $request->position_id)->update(['tyre_id' => $tyre->id]);
             }
 
-            // Sync stock (Decrement from current tyre location)
-            if ($tyre->work_location_id) {
+            // Sync stock if applicable
+            if ($tyre->wasRecentlyCreated == false && $tyre->work_location_id) {
                 DB::table('tyre_locations')
                     ->where('id', $tyre->work_location_id)
                     ->decrement('current_stock');

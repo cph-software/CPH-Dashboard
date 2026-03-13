@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('monitoring/sessions/{id}/export', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'export'])->name('monitoring.sessions.export')->middleware('tyre.permission:Tyre Monitoring');
     Route::get('monitoring/vehicle/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'showVehicle'])->name('monitoring.vehicle.show')->middleware('tyre.permission:Tyre Monitoring');
     Route::get('monitoring/session/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'showSession'])->name('monitoring.sessions.show')->middleware('tyre.permission:Tyre Monitoring');
+    Route::get('monitoring/master-vehicle/{id}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'getMasterVehicleDetails'])->name('monitoring.master-vehicle.details')->middleware('tyre.permission:Tyre Monitoring');
 
     Route::post('monitoring/vehicle', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeVehicle'])->name('monitoring.vehicle.store')->middleware('tyre.permission:Tyre Monitoring');
     Route::post('monitoring/session', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeSession'])->name('monitoring.sessions.store')->middleware('tyre.permission:Tyre Monitoring');
