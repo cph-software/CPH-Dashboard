@@ -468,10 +468,27 @@
                            <option value="End of Test">End of Test</option>
                         </select>
                      </div>
+                     <div class="col-6">
+                        <label class="form-label">Target Status</label>
+                        <select name="target_status" class="form-select" required>
+                           <option value="Repaired">Repaired</option>
+                           <option value="Scrap">Scrap</option>
+                           <option value="New">New</option>
+                        </select>
+                     </div>
+                     <div class="col-6">
+                        <label class="form-label">Destination Location</label>
+                        <select name="work_location_id" class="form-select" required>
+                           <option value="">-- Select Location --</option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
                      <div class="col-12">
-                        <label class="form-label">Tyre Condition After</label>
+                        <label class="form-label">Notes / Detailed Condition</label>
                         <input type="text" name="tyre_condition_after" class="form-control"
-                           placeholder="example: Buffable, Scrapped">
+                           placeholder="example: Buffable, Sidewall Cut, etc">
                      </div>
                   </div>
                   <div class="alert alert-warning mt-3 mb-0">
