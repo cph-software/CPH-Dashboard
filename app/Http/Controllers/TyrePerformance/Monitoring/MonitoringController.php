@@ -16,6 +16,7 @@ use App\Models\TyreBrand;
 use App\Models\TyrePattern;
 use App\Models\TyreSize;
 use App\Models\TyreLocation;
+use App\Models\TyrePositionConfiguration;
 use App\Exports\Monitoring\SessionExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
