@@ -220,12 +220,44 @@ class MonitoringController extends Controller
 
         $vehicle = TyreMonitoringVehicle::findOrFail($request->vehicle_id);
         $data = $request->all();
-        if ($vehicle->master_vehicle_id) {
-            $data['master_vehicle_id'] = $vehicle->master_vehicle_id;
+        $master_id = $request->master_vehicle_id ?? $vehicle->master_vehicle_id;
+        
+        if ($master_id) {
+            $data['master_vehicle_id'] = $master_id;
         }
 
         $session = TyreMonitoringSession::create($data);
-        return redirect()->route('monitoring.sessions.show', $session->session_id)->with('success', 'Monitoring Session started');
+
+        // Auto-link current tyres if master vehicle is specified
+        if ($master_id) {
+            $assignedTyres = Tyre::where('current_vehicle_id', $master_id)
+                ->with(['brand', 'pattern', 'size', 'location'])
+                ->get();
+
+            foreach ($assignedTyres as $tyre) {
+                $posDetail = TyrePositionDetail::find($tyre->current_position_id);
+                $posName = $posDetail ? $posDetail->position_code : $tyre->current_position_id;
+
+                TyreMonitoringInstallation::create([
+                    'session_id' => $session->session_id,
+                    'tyre_id' => $tyre->id,
+                    'serial_number' => $tyre->serial_number,
+                    'install_date' => $request->install_date,
+                    'odometer' => $request->odometer_start,
+                    'position' => $posName,
+                    'position_id' => $tyre->current_position_id,
+                    'brand' => $tyre->brand->brand_name ?? 'Unknown',
+                    'pattern' => $tyre->pattern->name ?? 'Unknown',
+                    'size' => $tyre->size->size ?? 'Unknown',
+                    'original_rtd' => $request->original_rtd,
+                    'rtd_1' => $tyre->current_tread_depth ?? $request->original_rtd,
+                    'rtd_2' => $tyre->current_tread_depth ?? $request->original_rtd,
+                    'rtd_3' => $tyre->current_tread_depth ?? $request->original_rtd,
+                ]);
+            }
+        }
+
+        return redirect()->route('monitoring.sessions.show', $session->session_id)->with('success', 'Monitoring Session started and ' . ($master_id ? 'Initial Tyres automatically linked.' : 'ready for manual installation.'));
     }
 
     public function storeInstallation(Request $request)
@@ -322,78 +354,89 @@ class MonitoringController extends Controller
         }
     }
 
-    public function storeCheck(Request $request)
+    public function storeBatchCheck(Request $request)
     {
         $request->validate([
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
-            'serial_number' => 'required|exists:tyres,serial_number',
             'check_date' => 'required|date',
             'odometer' => 'required|integer',
-            'rtd_1' => 'required|numeric',
-            'rtd_2' => 'required|numeric',
-            'rtd_3' => 'required|numeric',
+            'checks' => 'required|array',
         ]);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
-        $tyre = Tyre::where('serial_number', $request->serial_number)->first();
         
         DB::beginTransaction();
         try {
-            $data = $request->all();
-            $data['operation_mileage'] = $request->odometer - $session->odometer_start;
-            
-            // Get position from installation
-            $inst = TyreMonitoringInstallation::where('session_id', $session->session_id)
-                ->where('serial_number', $request->serial_number)
-                ->first();
-            $data['position'] = $inst ? $inst->position : 0;
-            $data['position_id'] = $inst ? $inst->position_id : null;
+            $lastCheck = TyreMonitoringCheck::where('session_id', $session->session_id)->max('check_number');
+            $newCheckNumber = ($lastCheck ?? 0) + 1;
 
-            // check_number auto increment per session
-            $lastCheck = TyreMonitoringCheck::where('session_id', $session->session_id)->latest('check_number')->first();
-            $data['check_number'] = $lastCheck ? $lastCheck->check_number + 1 : 1;
+            foreach ($request->checks as $serial => $c) {
+                // If all measurements are null/zero, skip this tyre
+                if (empty($c['rtd_1']) && empty($c['rtd_2']) && empty($c['rtd_3']) && empty($c['psi'])) continue;
 
-            $avg_rtd = ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3;
-
-            TyreMonitoringCheck::create($data);
-
-            // Calculate Lifetime Delta for Synchronization
-            $kmDiff = 0;
-            if ($tyre) {
-                $lastMov = TyreMovement::where('tyre_id', $tyre->id)
-                    ->where('movement_date', '<=', $request->check_date)
-                    ->orderBy('movement_date', 'desc')
-                    ->orderBy('id', 'desc')
+                $inst = TyreMonitoringInstallation::where('session_id', $session->session_id)
+                    ->where('serial_number', $serial)
                     ->first();
+                
+                $avg_rtd = ((float)($c['rtd_1'] ?? 0) + (float)($c['rtd_2'] ?? 0) + (float)($c['rtd_3'] ?? 0)) / 3;
 
-                if ($lastMov) {
-                    $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                $checkData = [
+                    'session_id' => $session->session_id,
+                    'check_number' => $newCheckNumber,
+                    'check_date' => $request->check_date,
+                    'odometer' => $request->odometer,
+                    'operation_mileage' => $request->odometer - $session->odometer_start,
+                    'position' => $inst ? $inst->position : '?',
+                    'position_id' => $inst ? $inst->position_id : null,
+                    'serial_number' => $serial,
+                    'inf_press_actual' => $c['psi'] ?? null,
+                    'rtd_1' => $c['rtd_1'] ?? 0,
+                    'rtd_2' => $c['rtd_2'] ?? 0,
+                    'rtd_3' => $c['rtd_3'] ?? 0,
+                    'condition' => $c['condition'] ?? 'ok',
+                    'recommendation' => $c['recommendation'] ?? null,
+                    'notes' => $c['notes'] ?? null,
+                ];
+
+                TyreMonitoringCheck::create($checkData);
+
+                // Sync with Master Tyre and Movement
+                $tyre = Tyre::where('serial_number', $serial)->first();
+                if ($tyre) {
+                    $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                        ->where('movement_date', '<=', $request->check_date)
+                        ->orderBy('movement_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+
+                    $kmDiff = 0;
+                    if ($lastMov) {
+                        $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                    }
+
+                    TyreMovement::create([
+                        'tyre_id' => $tyre->id,
+                        'vehicle_id' => $session->master_vehicle_id,
+                        'position_id' => $inst ? $inst->position_id : null,
+                        'movement_type' => 'Inspection',
+                        'movement_date' => $request->check_date,
+                        'odometer_reading' => $request->odometer,
+                        'running_km' => $kmDiff,
+                        'rtd_reading' => $avg_rtd,
+                        'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id})",
+                        'tyre_company_id' => $tyre->tyre_company_id,
+                        'created_by' => \Auth::id()
+                    ]);
+
+                    $tyre->update([
+                        'current_tread_depth' => $avg_rtd,
+                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
+                    ]);
                 }
-
-                // Record Inspection Movement (for main system history)
-                TyreMovement::create([
-                    'tyre_id' => $tyre->id,
-                    'vehicle_id' => $session->master_vehicle_id,
-                    'position_id' => $data['position_id'],
-                    'movement_type' => 'Inspection',
-                    'movement_date' => $request->check_date,
-                    'odometer_reading' => $request->odometer,
-                    'running_km' => $kmDiff,
-                    'rtd_reading' => $avg_rtd,
-                    'notes' => 'Monitoring Check Session #' . $session->session_id . '. Cond: ' . $request->condition,
-                    'tyre_company_id' => $tyre->tyre_company_id,
-                    'created_by' => \Auth::id()
-                ]);
-
-                // Update Master Tyre RTD and Cumulative Lifetime
-                $tyre->update([
-                    'current_tread_depth' => $avg_rtd,
-                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
-                ]);
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Monitoring check recorded and Master Tyre synced');
+            return redirect()->back()->with('success', "Periodic Check #{$newCheckNumber} recorded successfully for all tyres.");
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
