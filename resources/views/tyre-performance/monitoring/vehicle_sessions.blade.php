@@ -50,9 +50,9 @@
                data-bs-target="#editVehicleModal">
                <i class="ri ri-settings-3-line me-1"></i> Config
             </button>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSessionModal">
+            <a href="{{ route('monitoring.sessions.create', $vehicle->vehicle_id) }}" class="btn btn-primary">
                <i class="ri ri-add-line me-1"></i> Start New Session
-            </button>
+            </a>
          </div>
       </div>
 
@@ -211,133 +211,7 @@
       </div>
    </div>
 
-   <!-- Add Session Modal (Integrated with Cek 1) -->
-   <div class="modal fade" id="addSessionModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
-         <div class="modal-content border-top border-primary border-3">
-            <div class="modal-header">
-               <h5 class="modal-title">Start New Session & Record First Check (Cek 1)</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('monitoring.sessions.store') }}" method="POST">
-               @csrf
-               <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicle_id }}">
-               <input type="hidden" name="master_vehicle_id" value="{{ $vehicle->master_vehicle_id }}">
-               <div class="modal-body">
-                  <div class="row g-4 mb-4">
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold text-primary">Start Date</label>
-                        <input type="date" name="install_date" class="form-control" required
-                           value="{{ date('Y-m-d') }}">
-                     </div>
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold text-primary">Current Odometer</label>
-                        <input type="number" name="odometer_start" class="form-control" required
-                           placeholder="KM at start">
-                     </div>
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold text-primary">Original RTD (Ref)</label>
-                        <input type="number" name="original_rtd" class="form-control" step="0.1" required
-                           placeholder="E.g. 14.5">
-                     </div>
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold text-primary">Tyre Size Label</label>
-                        <select name="tyre_size" class="form-select select2-setup" required>
-                           <option value="">-- Select Size --</option>
-                           @foreach ($sizes as $s)
-                              <option value="{{ $s->size }}">{{ $s->size }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                  </div>
 
-                  @if (!$vehicle->master_vehicle_id)
-                     <div class="alert alert-warning">
-                        <i class="ri-error-warning-line me-1"></i>
-                        This vehicle is not linked to Master Data. Please link it first to automatically record
-                        measurements for all tyres.
-                     </div>
-                  @else
-                     <h6 class="fw-bold mb-3 mt-4"><i class="ri-list-check me-1"></i> Initial Tire Measurements (Cek 1)
-                     </h6>
-                     <div class="table-responsive border rounded">
-                        <table class="table table-sm table-striped align-middle mb-0">
-                           <thead class="table-light">
-                              <tr>
-                                 <th width="40">Pos</th>
-                                 <th>Serial Number</th>
-                                 <th width="80">PSI</th>
-                                 <th width="80">RTD 1</th>
-                                 <th width="80">RTD 2</th>
-                                 <th width="80">RTD 3</th>
-                                 <th>Condition</th>
-                                 <th>Notes</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                              @foreach ($assignedTyres as $posId => $tyre)
-                                 @php $pos = $masterPositions->where('id', $posId)->first(); @endphp
-                                 <tr>
-                                    <td class="fw-bold text-center">{{ $pos->position_code ?? $posId }}</td>
-                                    <td>
-                                       <div class="d-flex flex-column">
-                                          <span class="fw-bold">{{ $tyre->serial_number }}</span>
-                                          <small class="text-muted">{{ $tyre->brand->brand_name }} /
-                                             {{ $tyre->pattern->name }}</small>
-                                       </div>
-                                    </td>
-                                    <td>
-                                       <input type="number" name="checks[{{ $tyre->serial_number }}][psi]"
-                                          class="form-control form-control-sm" placeholder="Psi">
-                                    </td>
-                                    <td>
-                                       <input type="number" name="checks[{{ $tyre->serial_number }}][rtd_1]"
-                                          class="form-control form-control-sm" step="0.1"
-                                          value="{{ $tyre->current_tread_depth }}">
-                                    </td>
-                                    <td>
-                                       <input type="number" name="checks[{{ $tyre->serial_number }}][rtd_2]"
-                                          class="form-control form-control-sm" step="0.1"
-                                          value="{{ $tyre->current_tread_depth }}">
-                                    </td>
-                                    <td>
-                                       <input type="number" name="checks[{{ $tyre->serial_number }}][rtd_3]"
-                                          class="form-control form-control-sm" step="0.1"
-                                          value="{{ $tyre->current_tread_depth }}">
-                                    </td>
-                                    <td>
-                                       <select name="checks[{{ $tyre->serial_number }}][condition]"
-                                          class="form-select form-select-sm">
-                                          <option value="ok">OK</option>
-                                          <option value="warning">Warning</option>
-                                          <option value="critical">Critical</option>
-                                       </select>
-                                    </td>
-                                    <td>
-                                       <input type="text" name="checks[{{ $tyre->serial_number }}][notes]"
-                                          class="form-control form-control-sm" placeholder="Catatan">
-                                    </td>
-                                 </tr>
-                              @endforeach
-                           </tbody>
-                        </table>
-                        <div class="bg-light p-2 small text-muted">
-                           <i class="ri-information-line me-1"></i> Data di atas akan otomatis tercatat sebagai <b>Cek
-                              #1</b> dalam sesi monitoring yang baru.
-                        </div>
-                     </div>
-                  @endif
-               </div>
-               <div class="modal-footer bg-light p-3">
-                  <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" class="btn btn-primary btn-lg">
-                     <i class="ri-checkbox-circle-line me-1"></i> Start Session & Save Cek 1
-                  </button>
-               </div>
-            </form>
-         </div>
-      </div>
-   </div>
 
    <!-- Re-use Edit Vehicle Modal for Config -->
    <div class="modal fade" id="editVehicleModal" tabindex="-1" aria-hidden="true">
@@ -366,8 +240,8 @@
                      </div>
                      <div class="col-md-6">
                         <label class="form-label">Fleet Name</label>
-                        <input type="text" name="fleet_name" class="form-control"
-                           value="{{ $vehicle->fleet_name }}" required>
+                        <input type="text" name="fleet_name" class="form-control" value="{{ $vehicle->fleet_name }}"
+                           required>
                      </div>
                      <div class="col-md-6">
                         <label class="form-label">Plate Number</label>

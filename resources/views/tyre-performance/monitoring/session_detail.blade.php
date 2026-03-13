@@ -513,19 +513,21 @@
       @if ($session->checks->count() > 0)
          <div class="card mb-4">
             <div class="card-header border-bottom">
-               <h5 class="card-title mb-0"><i class="ri-history-line me-1"></i> Examination Events (Periodic Checks)</h5>
+               <h5 class="card-title mb-0"><i class="ri-history-line me-1"></i> Examination Events & Analysis</h5>
             </div>
             <div class="table-responsive">
                <table class="table table-hover align-middle">
                   <thead class="table-light">
-                     <tr>
+                     <tr class="text-nowrap">
                         <th>Event</th>
                         <th>Check Date</th>
                         <th>Odometer</th>
+                        <th>Op. Mileage</th>
                         <th>Avg. RTD</th>
-                        <th>Wear %</th>
-                        <th>Tyres Checked</th>
-                        <th width="100">Actions</th>
+                        <th>Worn (%)</th>
+                        <th>Km/mm</th>
+                        <th>Proj. Life (3mm)</th>
+                        <th>Actions</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -535,26 +537,40 @@
                         @php
                            $first = $group->first();
                            $avgRtd = $group->avg(function ($c) {
-                               return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3) / 3;
+                               return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4;
                            });
-                           $wornPct = $session->original_rtd > 0 ? (1 - $avgRtd / $session->original_rtd) * 100 : 0;
+                           $avgWorn = $group->avg('worn_percentage');
+                           $avgKmPerMm = $group->avg('km_per_mm');
+                           $avgProjLife = $group->avg('projected_life_km');
+
+                           $startDate = \Carbon\Carbon::parse($session->install_date);
+                           $checkDate = \Carbon\Carbon::parse($first->check_date);
+                           $days = $startDate->diffInDays($checkDate);
+                           $months = number_format($days / 30, 1);
                         @endphp
                         <tr>
                            <td><span class="badge bg-primary">CHECK #{{ $checkNumber }}</span></td>
-                           <td>{{ $first->check_date }}</td>
+                           <td>
+                              <div class="d-flex flex-column">
+                                 <span>{{ $first->check_date }}</span>
+                                 <small class="text-muted">{{ $days }} Days / {{ $months }} Mo</small>
+                              </div>
+                           </td>
                            <td>{{ number_format($first->odometer) }} KM</td>
+                           <td class="fw-bold">{{ number_format($first->operation_mileage) }} KM</td>
                            <td class="fw-bold">{{ number_format($avgRtd, 2) }} mm</td>
                            <td>
                               <div class="d-flex align-items-center">
                                  <div class="progress w-100 me-2" style="height: 6px;">
                                     <div
-                                       class="progress-bar bg-{{ $wornPct > 80 ? 'danger' : ($wornPct > 50 ? 'warning' : 'success') }}"
-                                       style="width: {{ min(100, $wornPct) }}%"></div>
+                                       class="progress-bar bg-{{ $avgWorn > 80 ? 'danger' : ($avgWorn > 50 ? 'warning' : 'success') }}"
+                                       style="width: {{ min(100, $avgWorn) }}%"></div>
                                  </div>
-                                 <small>{{ round($wornPct) }}%</small>
+                                 <small>{{ round($avgWorn) }}%</small>
                               </div>
                            </td>
-                           <td><span class="badge bg-label-info">{{ $group->count() }} Tyres</span></td>
+                           <td>{{ number_format($avgKmPerMm, 0) }}</td>
+                           <td class="text-primary fw-bold">{{ number_format($avgProjLife, 0) }} KM</td>
                            <td>
                               <button class="btn btn-sm btn-icon btn-outline-primary" type="button"
                                  data-bs-toggle="collapse" data-bs-target="#checkDetails{{ $checkNumber }}">
@@ -563,35 +579,45 @@
                            </td>
                         </tr>
                         <tr class="collapse" id="checkDetails{{ $checkNumber }}">
-                           <td colspan="7" class="p-0">
+                           <td colspan="9" class="p-0">
                               <div class="bg-light p-3">
                                  <table class="table table-sm table-bordered bg-white mb-0">
-                                    <thead>
-                                       <tr class="small text-muted text-uppercase">
+                                    <thead class="table-dark">
+                                       <tr class="small text-uppercase">
                                           <th>Pos</th>
                                           <th>Serial Number</th>
-                                          <th>PSI</th>
-                                          <th>RTD(1/2/3)</th>
+                                          <th>Psi (R/A)</th>
+                                          <th>Assembly</th>
+                                          <th>RTD(1-4)</th>
                                           <th>Avg</th>
+                                          <th>Worn%</th>
+                                          <th>Km/mm</th>
+                                          <th>Proj. Life</th>
                                           <th>Condition</th>
-                                          <th>Notes</th>
                                        </tr>
                                     </thead>
                                     <tbody>
                                        @foreach ($group as $c)
-                                          @php $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3) / 3; @endphp
+                                          @php $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4; @endphp
                                           <tr class="small">
-                                             <td class="fw-bold">{{ $c->position }}</td>
+                                             <td class="fw-bold text-center">{{ $c->position }}</td>
                                              <td>{{ $c->serial_number }}</td>
-                                             <td>{{ $c->inf_press_actual ?? '-' }}</td>
-                                             <td>{{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}</td>
+                                             <td>{{ $c->inf_press_recommended ?? '-' }}/{{ $c->inf_press_actual ?? '-' }}
+                                             </td>
+                                             <td>{{ $c->date_assembly ?? '-' }}</td>
+                                             <td>
+                                                {{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}/{{ $c->rtd_4 }}
+                                             </td>
                                              <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
+                                             <td>{{ number_format($c->worn_percentage, 0) }}%</td>
+                                             <td>{{ number_format($c->km_per_mm, 0) }}</td>
+                                             <td class="fw-bold text-primary">
+                                                {{ number_format($c->projected_life_km, 0) }}</td>
                                              <td>
                                                 <span
                                                    class="badge badge-dot bg-{{ $c->condition == 'ok' ? 'success' : ($c->condition == 'warning' ? 'warning' : 'danger') }}"></span>
                                                 {{ strtoupper($c->condition) }}
                                              </td>
-                                             <td>{{ $c->notes ?? '-' }}</td>
                                           </tr>
                                        @endforeach
                                     </tbody>
@@ -775,81 +801,100 @@
       <div class="modal-dialog modal-xl">
          <div class="modal-content">
             <div class="modal-header">
-               <h5 class="modal-title">Record Vehicle Check (Snapshot)</h5>
+               <h5 class="modal-title shadow-sm">Record Vehicle Check (Snapshot)</h5>
                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('monitoring.check.store') }}" method="POST">
                @csrf
                <input type="hidden" name="session_id" value="{{ $session->session_id }}">
                <div class="modal-body">
-                  <div class="row g-3 mb-4 bg-light p-3 rounded">
+                  <div class="row g-3 mb-4 bg-light p-3 rounded border">
                      <div class="col-md-6">
-                        <label class="form-label fw-bold">Check Date</label>
+                        <label class="form-label fw-bold">Check Date (Tgl Pemeriksaan)</label>
                         <input type="date" name="check_date" class="form-control" required
                            value="{{ date('Y-m-d') }}">
                      </div>
                      <div class="col-md-6">
-                        <label class="form-label fw-bold">Current Odometer</label>
+                        <label class="form-label fw-bold">Current Odometer (KM)</label>
                         <input type="number" name="odometer" class="form-control" required placeholder="KM at check"
-                           value="{{ $lastCheck ? $lastCheck->operation_mileage + $session->odometer_start : '' }}">
+                           value="{{ $lastCheck ? $lastCheck->odometer : '' }}">
                      </div>
                   </div>
 
                   <div class="table-responsive">
                      <table class="table table-bordered table-sm align-middle">
                         <thead class="table-dark">
-                           <tr>
-                              <th width="50">Pos</th>
-                              <th>Serial Number</th>
-                              <th width="80">PSI</th>
-                              <th width="80">RTD 1</th>
-                              <th width="80">RTD 2</th>
-                              <th width="80">RTD 3</th>
-                              <th>Cond.</th>
-                              <th>Notes / Action</th>
+                           <tr class="text-center">
+                              <th width="40">Pos</th>
+                              <th>Tyre Info</th>
+                              <th>Psi (Rec/Act)</th>
+                              <th>Assembly Date</th>
+                              <th>RTD 1</th>
+                              <th>RTD 2</th>
+                              <th>RTD 3</th>
+                              <th>RTD 4</th>
+                              <th width="100">Cond.</th>
+                              <th>Notes</th>
                            </tr>
                         </thead>
                         <tbody>
                            @foreach ($session->installations as $inst)
                               @php
                                  $currentTyre = $inst->tyre_id ? \App\Models\Tyre::find($inst->tyre_id) : null;
-                                 $lastRtd = $currentTyre ? $currentTyre->current_tread_depth : $inst->rtd_1;
+                                 $lastRtd = $currentTyre ? $currentTyre->current_tread_depth : $inst->avg_rtd;
                               @endphp
                               <tr>
-                                 <td class="text-center fw-bold">
+                                 <td class="text-center fw-bold bg-light">
                                     {{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}
                                  </td>
                                  <td>
-                                    <span class="fw-bold">{{ $inst->serial_number }}</span>
-                                    <small class="text-muted d-block">Last: {{ $lastRtd }} mm</small>
+                                    <div class="fw-bold">{{ $inst->serial_number }}</div>
+                                    <small class="text-muted text-nowrap">Last: {{ number_format($lastRtd, 1) }}
+                                       mm</small>
                                  </td>
                                  <td>
-                                    <input type="number" name="checks[{{ $inst->serial_number }}][psi]"
-                                       class="form-control form-control-sm" placeholder="Psi">
+                                    <div class="input-group input-group-sm">
+                                       <input type="number" name="checks[{{ $inst->serial_number }}][psi_recommended]"
+                                          class="form-control" placeholder="Rec">
+                                       <input type="number" name="checks[{{ $inst->serial_number }}][psi_actual]"
+                                          class="form-control" placeholder="Act">
+                                    </div>
+                                 </td>
+                                 <td>
+                                    <input type="date" name="checks[{{ $inst->serial_number }}][date_assembly]"
+                                       class="form-control form-control-sm">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $inst->serial_number }}][rtd_1]"
-                                       class="form-control form-control-sm" step="0.1" placeholder="mm">
+                                       class="form-control form-control-sm" step="0.1"
+                                       value="{{ $lastRtd }}">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $inst->serial_number }}][rtd_2]"
-                                       class="form-control form-control-sm" step="0.1" placeholder="mm">
+                                       class="form-control form-control-sm" step="0.1"
+                                       value="{{ $lastRtd }}">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $inst->serial_number }}][rtd_3]"
-                                       class="form-control form-control-sm" step="0.1" placeholder="mm">
+                                       class="form-control form-control-sm" step="0.1"
+                                       value="{{ $lastRtd }}">
+                                 </td>
+                                 <td>
+                                    <input type="number" name="checks[{{ $inst->serial_number }}][rtd_4]"
+                                       class="form-control form-control-sm" step="0.1"
+                                       value="{{ $lastRtd }}">
                                  </td>
                                  <td>
                                     <select name="checks[{{ $inst->serial_number }}][condition]"
                                        class="form-select form-select-sm">
-                                       <option value="ok">OK</option>
+                                       <option value="ok" selected>OK</option>
                                        <option value="warning">Warning</option>
                                        <option value="critical">Critical</option>
                                     </select>
                                  </td>
                                  <td>
                                     <input type="text" name="checks[{{ $inst->serial_number }}][notes]"
-                                       class="form-control form-control-sm" placeholder="Catatan">
+                                       class="form-control form-control-sm" placeholder="...">
                                  </td>
                               </tr>
                            @endforeach
@@ -857,9 +902,11 @@
                      </table>
                   </div>
                </div>
-               <div class="modal-footer">
+               <div class="modal-footer bg-light border-top">
                   <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save Multi-Tyre Check</button>
+                  <button type="submit" class="btn btn-primary btn-lg">
+                     <i class="ri-save-line me-1"></i> Save Examination Snapshot
+                  </button>
                </div>
             </form>
          </div>
