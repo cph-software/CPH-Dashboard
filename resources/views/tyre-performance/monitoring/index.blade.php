@@ -169,6 +169,7 @@
                                  data-master="{{ $vehicle->master_vehicle_id }}">
                                  <i class="ri ri-edit-line"></i>
                               </button>
+                               <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf @method('DELETE')<button type="submit" class="btn btn-sm btn-icon btn-outline-danger"><i class="ri ri-delete-bin-line"></i></button></form>
                            </div>
                         </td>
                      </tr>

@@ -91,6 +91,25 @@ class MonitoringController extends Controller
         ]);
     }
 
+    public function destroyVehicle($id)
+    {
+        $vehicle = TyreMonitoringVehicle::findOrFail($id);
+        
+        DB::beginTransaction();
+        try {
+            // Delete related sessions, installations, and checks if necessary
+            // Or just rely on database level cascade if set up.
+            // For safety, let's just delete the vehicle.
+            $vehicle->delete();
+            
+            DB::commit();
+            return redirect()->back()->with('success', 'Monitoring Vehicle and its history deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error deleting vehicle: ' . $e->getMessage());
+        }
+    }
+
     public function showVehicle($id)
     {
         $vehicle = TyreMonitoringVehicle::findOrFail($id);
@@ -221,43 +240,100 @@ class MonitoringController extends Controller
         $vehicle = TyreMonitoringVehicle::findOrFail($request->vehicle_id);
         $data = $request->all();
         $master_id = $request->master_vehicle_id ?? $vehicle->master_vehicle_id;
-        
-        if ($master_id) {
-            $data['master_vehicle_id'] = $master_id;
-        }
 
-        $session = TyreMonitoringSession::create($data);
-
-        // Auto-link current tyres if master vehicle is specified
-        if ($master_id) {
-            $assignedTyres = Tyre::where('current_vehicle_id', $master_id)
-                ->with(['brand', 'pattern', 'size', 'location'])
-                ->get();
-
-            foreach ($assignedTyres as $tyre) {
-                $posDetail = TyrePositionDetail::find($tyre->current_position_id);
-                $posName = $posDetail ? $posDetail->position_code : $tyre->current_position_id;
-
-                TyreMonitoringInstallation::create([
-                    'session_id' => $session->session_id,
-                    'tyre_id' => $tyre->id,
-                    'serial_number' => $tyre->serial_number,
-                    'install_date' => $request->install_date,
-                    'odometer' => $request->odometer_start,
-                    'position' => $posName,
-                    'position_id' => $tyre->current_position_id,
-                    'brand' => $tyre->brand->brand_name ?? 'Unknown',
-                    'pattern' => $tyre->pattern->name ?? 'Unknown',
-                    'size' => $tyre->size->size ?? 'Unknown',
-                    'original_rtd' => $request->original_rtd,
-                    'rtd_1' => $tyre->current_tread_depth ?? $request->original_rtd,
-                    'rtd_2' => $tyre->current_tread_depth ?? $request->original_rtd,
-                    'rtd_3' => $tyre->current_tread_depth ?? $request->original_rtd,
-                ]);
+        DB::beginTransaction();
+        try {
+            if ($master_id) {
+                $data['master_vehicle_id'] = $master_id;
             }
-        }
 
-        return redirect()->route('monitoring.sessions.show', $session->session_id)->with('success', 'Monitoring Session started and ' . ($master_id ? 'Initial Tyres automatically linked.' : 'ready for manual installation.'));
+            $session = TyreMonitoringSession::create($data);
+
+            // Auto-link current tyres & Record Cek 1 if master vehicle is specified
+            if ($master_id) {
+                $assignedTyres = Tyre::where('current_vehicle_id', $master_id)
+                    ->with(['brand', 'pattern', 'size', 'location'])
+                    ->get();
+
+                foreach ($assignedTyres as $tyre) {
+                    $posDetail = TyrePositionDetail::find($tyre->current_position_id);
+                    $posName = $posDetail ? $posDetail->position_code : $tyre->current_position_id;
+
+                    // 1. Create Installation Record
+                    $inst = TyreMonitoringInstallation::create([
+                        'session_id' => $session->session_id,
+                        'tyre_id' => $tyre->id,
+                        'serial_number' => $tyre->serial_number,
+                        'install_date' => $request->install_date,
+                        'odometer' => $request->odometer_start,
+                        'position' => $posName,
+                        'position_id' => $tyre->current_position_id,
+                        'brand' => $tyre->brand->brand_name ?? 'Unknown',
+                        'pattern' => $tyre->pattern->name ?? 'Unknown',
+                        'size' => $tyre->size->size ?? 'Unknown',
+                        'original_rtd' => $request->original_rtd,
+                        'rtd_1' => $tyre->current_tread_depth ?? $request->original_rtd,
+                        'rtd_2' => $tyre->current_tread_depth ?? $request->original_rtd,
+                        'rtd_3' => $tyre->current_tread_depth ?? $request->original_rtd,
+                    ]);
+
+                    // 2. Create Cek 1 Record if data exists
+                    if ($request->has("checks.{$tyre->serial_number}")) {
+                        $c = $request->checks[$tyre->serial_number];
+                        
+                        // Parse values
+                        $r1 = $c['rtd_1'] ?? $tyre->current_tread_depth ?? $request->original_rtd;
+                        $r2 = $c['rtd_2'] ?? $tyre->current_tread_depth ?? $request->original_rtd;
+                        $r3 = $c['rtd_3'] ?? $tyre->current_tread_depth ?? $request->original_rtd;
+                        $avgRtd = ($r1 + $r2 + $r3) / 3;
+
+                        $checkData = [
+                            'session_id' => $session->session_id,
+                            'check_number' => 1,
+                            'serial_number' => $tyre->serial_number,
+                            'tyre_id' => $tyre->id,
+                            'position' => $posName,
+                            'position_id' => $tyre->current_position_id,
+                            'check_date' => $request->install_date,
+                            'odometer' => $request->odometer_start,
+                            'operation_mileage' => 0, // Since it's the start
+                            'rtd_1' => $r1,
+                            'rtd_2' => $r2,
+                            'rtd_3' => $r3,
+                            'inf_press_actual' => $c['psi'] ?? null,
+                            'condition' => $c['condition'] ?? 'ok',
+                            'notes' => $c['notes'] ?? 'Initial check (Cek 1)',
+                        ];
+
+                        TyreMonitoringCheck::create($checkData);
+
+                        // Sync with Master Tyre
+                        $tyre->current_tread_depth = $avgRtd;
+                        $tyre->last_inspection_date = $request->install_date;
+                        $tyre->save();
+
+                        // Sync with Movement Log
+                        TyreMovement::create([
+                            'tyre_id' => $tyre->id,
+                            'vehicle_id' => $master_id,
+                            'movement_date' => $request->install_date,
+                            'movement_type' => 'Inspection',
+                            'odometer' => $request->odometer_start,
+                            'position_id' => $tyre->current_position_id,
+                            'tread_depth' => $avgRtd,
+                            'remark' => "Monitoring Session Start - Cek #1",
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('monitoring.sessions.show', $session->session_id)
+                ->with('success', 'Monitoring Session started and Initial Check (Cek 1) recorded for all tyres.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error starting session: ' . $e->getMessage());
+        }
     }
 
     public function storeInstallation(Request $request)
