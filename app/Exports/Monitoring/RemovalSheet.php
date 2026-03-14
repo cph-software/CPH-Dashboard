@@ -9,17 +9,27 @@ use Illuminate\Contracts\View\View;
 class RemovalSheet implements FromView, WithTitle
 {
     protected $session;
+    protected $statusParts;
+    protected $currentStatus;
+    protected $rtdCount;
 
-    public function __construct($session)
+    public function __construct($session, $statusParts, $currentStatus, $rtdCount)
     {
         $this->session = $session;
+        $this->statusParts = $statusParts;
+        $this->currentStatus = $currentStatus;
+        $this->rtdCount = $rtdCount;
     }
 
     public function view(): View
     {
         return view('exports.monitoring.removal', [
             'session' => $this->session,
-            'removal' => $this->session->removal
+            'removal' => $this->session->removal,
+            'installations' => $this->session->installations,
+            'statusParts' => $this->statusParts,
+            'currentStatus' => $this->currentStatus,
+            'rtdCount' => $this->rtdCount,
         ]);
     }
 
