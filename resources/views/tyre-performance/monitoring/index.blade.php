@@ -113,7 +113,6 @@
 @endsection
 
 @section('content')
-   <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Operations /</span> Tyre Monitoring</h4>
          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
@@ -345,7 +344,6 @@
             </form>
          </div>
       </div>
-   </div>
 @endsection
 
 @section('vendor-script')

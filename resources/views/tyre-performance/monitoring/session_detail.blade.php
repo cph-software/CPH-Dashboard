@@ -151,520 +151,518 @@
    @php
       use App\Services\TyreMonitoringCalculator;
    @endphp
-   <div class="container-xxl flex-grow-1 container-p-y">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-         <div class="d-flex align-items-center">
-            <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
-               class="btn btn-icon btn-outline-secondary me-3">
-               <i class="ri ri-arrow-left-line"></i>
-            </a>
-            <div>
-               <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> Session
-                  #{{ $session->session_id }}</h4>
-               <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} - {{ $session->tyre_size }}
-                  ({{ $session->install_date }})</p>
-            </div>
-         </div>
-         <div class="d-flex gap-2">
-            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
-               <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
-            </a>
-            @if ($session->status == 'active')
-               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCheckModal">
-                  <i class="ri ri-add-line me-1"></i> Add Periodic Check
-               </button>
-            @endif
+   <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center">
+         <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
+            class="btn btn-icon btn-outline-secondary me-3">
+            <i class="ri ri-arrow-left-line"></i>
+         </a>
+         <div>
+            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> Session
+               #{{ $session->session_id }}</h4>
+            <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} - {{ $session->tyre_size }}
+               ({{ $session->install_date }})</p>
          </div>
       </div>
-
-      <!-- Session Overview -->
-      <div class="row mb-4">
-         <div class="col-md-3">
-            <div class="card h-100 border-start border-primary border-3">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Baseline RTD</h6>
-                  <h4 class="mb-0 text-primary">{{ $session->original_rtd }} mm</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Checks Count</h6>
-                  <h4 class="mb-0">{{ $session->checks->count() }} Kali</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Running Mileage</h6>
-                  @php
-                     $lastCheck = $session->checks->sortByDesc('check_number')->first();
-                     $runningKm = $lastCheck ? $lastCheck->operation_mileage : 0;
-                  @endphp
-                  <h4 class="mb-0">{{ number_format($runningKm) }} KM</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body d-flex justify-content-between align-items-center">
-                  <div>
-                     <h6 class="text-muted fw-normal mb-1">Status</h6>
-                     <h4 class="mb-0 {{ $session->status == 'active' ? 'text-success' : 'text-secondary' }}">
-                        {{ ucfirst($session->status) }}</h4>
-                  </div>
-                  @if ($session->status == 'active')
-                     <form action="{{ route('monitoring.sessions.update', $session->session_id) }}" method="POST"
-                        class="d-inline ms-2">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary"
-                           onclick="return confirm('Selesaikan sesi monitoring ini?')">Finish</button>
-                     </form>
-                  @endif
-               </div>
-            </div>
-         </div>
+      <div class="d-flex gap-2">
+         <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
+            <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
+         </a>
+         @if ($session->status == 'active')
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCheckModal">
+               <i class="ri ri-add-line me-1"></i> Add Periodic Check
+            </button>
+         @endif
       </div>
+   </div>
 
-      @if ($lastCheck)
-         @php
-            $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck);
-         @endphp
-         <!-- Wear Calculation Summary -->
-         <div class="card mb-4 bg-primary text-white">
+   <!-- Session Overview -->
+   <div class="row mb-4">
+      <div class="col-md-3">
+         <div class="card h-100 border-start border-primary border-3">
             <div class="card-body">
-               <div class="row text-center g-3">
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Current Avg RTD</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} mm</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Worn Percetage</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['worn_pct'] }}%</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">KM / mm</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">KM / Day</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Proj. Life (KM)</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h3>
-                  </div>
-                  <div class="col-md-2 col-6">
-                     <p class="mb-0 opacity-75 small">Proj. Remain (Months)</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} Mo</h3>
-                  </div>
+               <h6 class="text-muted fw-normal mb-1">Baseline RTD</h6>
+               <h4 class="mb-0 text-primary">{{ $session->original_rtd }} mm</h4>
+            </div>
+         </div>
+      </div>
+      <div class="col-md-3">
+         <div class="card h-100">
+            <div class="card-body">
+               <h6 class="text-muted fw-normal mb-1">Checks Count</h6>
+               <h4 class="mb-0">{{ $session->checks->count() }} Kali</h4>
+            </div>
+         </div>
+      </div>
+      <div class="col-md-3">
+         <div class="card h-100">
+            <div class="card-body">
+               <h6 class="text-muted fw-normal mb-1">Running Mileage</h6>
+               @php
+                  $lastCheck = $session->checks->sortByDesc('check_number')->first();
+                  $runningKm = $lastCheck ? $lastCheck->operation_mileage : 0;
+               @endphp
+               <h4 class="mb-0">{{ number_format($runningKm) }} KM</h4>
+            </div>
+         </div>
+      </div>
+      <div class="col-md-3">
+         <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+               <div>
+                  <h6 class="text-muted fw-normal mb-1">Status</h6>
+                  <h4 class="mb-0 {{ $session->status == 'active' ? 'text-success' : 'text-secondary' }}">
+                     {{ ucfirst($session->status) }}</h4>
+               </div>
+               @if ($session->status == 'active')
+                  <form action="{{ route('monitoring.sessions.update', $session->session_id) }}" method="POST"
+                     class="d-inline ms-2">
+                     @csrf
+                     @method('PUT')
+                     <input type="hidden" name="status" value="completed">
+                     <button type="submit" class="btn btn-sm btn-outline-secondary"
+                        onclick="return confirm('Selesaikan sesi monitoring ini?')">Finish</button>
+                  </form>
+               @endif
+            </div>
+         </div>
+      </div>
+   </div>
+
+   @if ($lastCheck)
+      @php
+         $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck);
+      @endphp
+      <!-- Wear Calculation Summary -->
+      <div class="card mb-4 bg-primary text-white">
+         <div class="card-body">
+            <div class="row text-center g-3">
+               <div class="col-md-2 border-end border-white border-opacity-25 col-6">
+                  <p class="mb-0 opacity-75 small">Current Avg RTD</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} mm</h3>
+               </div>
+               <div class="col-md-2 border-end border-white border-opacity-25 col-6">
+                  <p class="mb-0 opacity-75 small">Worn Percetage</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ $summary['worn_pct'] }}%</h3>
+               </div>
+               <div class="col-md-2 border-end border-white border-opacity-25 col-6">
+                  <p class="mb-0 opacity-75 small">KM / mm</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h3>
+               </div>
+               <div class="col-md-2 border-end border-white border-opacity-25 col-6">
+                  <p class="mb-0 opacity-75 small">KM / Day</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h3>
+               </div>
+               <div class="col-md-2 border-end border-white border-opacity-25 col-6">
+                  <p class="mb-0 opacity-75 small">Proj. Life (KM)</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h3>
+               </div>
+               <div class="col-md-2 col-6">
+                  <p class="mb-0 opacity-75 small">Proj. Remain (Months)</p>
+                  <h3 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} Mo</h3>
                </div>
             </div>
          </div>
-      @endif
+      </div>
+   @endif
 
-      <!-- Vehicle Layout & Installation Records -->
-      <div class="row mb-4">
-         @if (count($masterPositions) > 0)
-            <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
-               <div class="card h-100">
-                  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-                     <h5 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Visual Layout</h5>
-                     <small class="text-muted">Master Config</small>
-                  </div>
-                  <div class="card-body pt-4">
-                     <div class="v-chassis">
-                        <div class="v-cabin">FRONT</div>
+   <!-- Vehicle Layout & Installation Records -->
+   <div class="row mb-4">
+      @if (count($masterPositions) > 0)
+         <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
+            <div class="card h-100">
+               <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Visual Layout</h5>
+                  <small class="text-muted">Master Config</small>
+               </div>
+               <div class="card-body pt-4">
+                  <div class="v-chassis">
+                     <div class="v-cabin">FRONT</div>
 
-                        @php
-                           $frontAxles = $masterPositions->where('axle_type', 'Front')->groupBy('axle_number');
-                           $middleAxles = $masterPositions->where('axle_type', 'Middle')->groupBy('axle_number');
-                           $rearAxles = $masterPositions->where('axle_type', 'Rear')->groupBy('axle_number');
-                           $spares = $masterPositions->where('is_spare', true);
-                        @endphp
+                     @php
+                        $frontAxles = $masterPositions->where('axle_type', 'Front')->groupBy('axle_number');
+                        $middleAxles = $masterPositions->where('axle_type', 'Middle')->groupBy('axle_number');
+                        $rearAxles = $masterPositions->where('axle_type', 'Rear')->groupBy('axle_number');
+                        $spares = $masterPositions->where('is_spare', true);
+                     @endphp
 
-                        {{-- Front Axles --}}
-                        @foreach ($frontAxles as $positions)
-                           <div class="v-axle">
-                              @php
-                                 $left = $positions->where('side', 'Left')->first();
-                                 $right = $positions->where('side', 'Right')->first();
-                                 $leftTyre = $left ? $assignedTyres->get($left->id) : null;
-                                 $rightTyre = $right ? $assignedTyres->get($right->id) : null;
-                              @endphp
-                              @if ($left)
-                                 <div class="v-tyre front {{ $leftTyre ? 'filled' : '' }}"
-                                    data-position-id="{{ $left->id }}"
-                                    title="{{ $left->position_name }} {{ $leftTyre ? '[' . $leftTyre->serial_number . ']' : '(Kosong)' }}">
-                                    <span class="v-tyre-code">{{ $left->position_code }}</span>
-                                    @if ($leftTyre)
-                                       <span class="v-tyre-sn-hint">{{ substr($leftTyre->serial_number, -4) }}</span>
-                                    @endif
-                                 </div>
-                              @endif
-                              @if ($right)
-                                 <div class="v-tyre front {{ $rightTyre ? 'filled' : '' }}"
-                                    data-position-id="{{ $right->id }}"
-                                    title="{{ $right->position_name }} {{ $rightTyre ? '[' . $rightTyre->serial_number . ']' : '(Kosong)' }}">
-                                    <span class="v-tyre-code">{{ $right->position_code }}</span>
-                                    @if ($rightTyre)
-                                       <span class="v-tyre-sn-hint">{{ substr($rightTyre->serial_number, -4) }}</span>
-                                    @endif
-                                 </div>
-                              @endif
-                           </div>
-                        @endforeach
-
-                        {{-- Middle Axles --}}
-                        @foreach ($middleAxles as $positions)
-                           <div class="v-axle">
-                              <div class="v-group">
-                                 @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
-                                    @php $t = $assignedTyres->get($p->id); @endphp
-                                    <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
-                                       data-position-id="{{ $p->id }}"
-                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
-                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
-                                       @if ($t)
-                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
-                                       @endif
-                                    </div>
-                                 @endforeach
+                     {{-- Front Axles --}}
+                     @foreach ($frontAxles as $positions)
+                        <div class="v-axle">
+                           @php
+                              $left = $positions->where('side', 'Left')->first();
+                              $right = $positions->where('side', 'Right')->first();
+                              $leftTyre = $left ? $assignedTyres->get($left->id) : null;
+                              $rightTyre = $right ? $assignedTyres->get($right->id) : null;
+                           @endphp
+                           @if ($left)
+                              <div class="v-tyre front {{ $leftTyre ? 'filled' : '' }}"
+                                 data-position-id="{{ $left->id }}"
+                                 title="{{ $left->position_name }} {{ $leftTyre ? '[' . $leftTyre->serial_number . ']' : '(Kosong)' }}">
+                                 <span class="v-tyre-code">{{ $left->position_code }}</span>
+                                 @if ($leftTyre)
+                                    <span class="v-tyre-sn-hint">{{ substr($leftTyre->serial_number, -4) }}</span>
+                                 @endif
                               </div>
-                              <div class="v-group">
-                                 @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
-                                    @php $t = $assignedTyres->get($p->id); @endphp
-                                    <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
-                                       data-position-id="{{ $p->id }}"
-                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
-                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
-                                       @if ($t)
-                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
-                                       @endif
-                                    </div>
-                                 @endforeach
+                           @endif
+                           @if ($right)
+                              <div class="v-tyre front {{ $rightTyre ? 'filled' : '' }}"
+                                 data-position-id="{{ $right->id }}"
+                                 title="{{ $right->position_name }} {{ $rightTyre ? '[' . $rightTyre->serial_number . ']' : '(Kosong)' }}">
+                                 <span class="v-tyre-code">{{ $right->position_code }}</span>
+                                 @if ($rightTyre)
+                                    <span class="v-tyre-sn-hint">{{ substr($rightTyre->serial_number, -4) }}</span>
+                                 @endif
                               </div>
-                           </div>
-                        @endforeach
+                           @endif
+                        </div>
+                     @endforeach
 
-                        {{-- Rear Axles --}}
-                        @foreach ($rearAxles as $positions)
-                           <div class="v-axle">
-                              <div class="v-group">
-                                 @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
-                                    @php $t = $assignedTyres->get($p->id); @endphp
-                                    <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
-                                       data-position-id="{{ $p->id }}"
-                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
-                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
-                                       @if ($t)
-                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
-                                       @endif
-                                    </div>
-                                 @endforeach
-                              </div>
-                              <div class="v-group">
-                                 @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
-                                    @php $t = $assignedTyres->get($p->id); @endphp
-                                    <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
-                                       data-position-id="{{ $p->id }}"
-                                       title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
-                                       <span class="v-tyre-code">{{ $p->position_code }}</span>
-                                       @if ($t)
-                                          <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
-                                       @endif
-                                    </div>
-                                 @endforeach
-                              </div>
-                           </div>
-                        @endforeach
-
-                        {{-- Spares --}}
-                        @if ($spares->count() > 0)
-                           <div class="v-spare-list">
-                              @foreach ($spares as $s)
-                                 @php $t = $assignedTyres->get($s->id); @endphp
-                                 <div class="v-tyre spare {{ $t ? 'filled' : '' }}"
-                                    data-position-id="{{ $s->id }}"
-                                    title="{{ $s->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
-                                    <span class="v-tyre-code">{{ $s->position_code }}</span>
+                     {{-- Middle Axles --}}
+                     @foreach ($middleAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
+                                    data-position-id="{{ $p->id }}"
+                                    title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
                                     @if ($t)
-                                       <span class="v-tyre-sn-hint"
-                                          style="bottom: -15px; top: auto; left: 0; width: 100%;">{{ substr($t->serial_number, -4) }}</span>
+                                       <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
                                     @endif
                                  </div>
                               @endforeach
                            </div>
-                        @endif
-                     </div>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}"
+                                    data-position-id="{{ $p->id }}"
+                                    title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                    @if ($t)
+                                       <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endforeach
+                           </div>
+                        </div>
+                     @endforeach
+
+                     {{-- Rear Axles --}}
+                     @foreach ($rearAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
+                                    data-position-id="{{ $p->id }}"
+                                    title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                    @if ($t)
+                                       <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endforeach
+                           </div>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}"
+                                    data-position-id="{{ $p->id }}"
+                                    title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                    @if ($t)
+                                       <span class="v-tyre-sn-hint">{{ substr($t->serial_number, -4) }}</span>
+                                    @endif
+                                 </div>
+                              @endforeach
+                           </div>
+                        </div>
+                     @endforeach
+
+                     {{-- Spares --}}
+                     @if ($spares->count() > 0)
+                        <div class="v-spare-list">
+                           @foreach ($spares as $s)
+                              @php $t = $assignedTyres->get($s->id); @endphp
+                              <div class="v-tyre spare {{ $t ? 'filled' : '' }}" data-position-id="{{ $s->id }}"
+                                 title="{{ $s->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
+                                 <span class="v-tyre-code">{{ $s->position_code }}</span>
+                                 @if ($t)
+                                    <span class="v-tyre-sn-hint"
+                                       style="bottom: -15px; top: auto; left: 0; width: 100%;">{{ substr($t->serial_number, -4) }}</span>
+                                 @endif
+                              </div>
+                           @endforeach
+                        </div>
+                     @endif
                   </div>
                </div>
             </div>
-         @endif
-
-         <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
-            <div class="card h-100">
-               <div class="card-header d-flex justify-content-between align-items-center">
-                  <h5 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Current Tyre Status (By Position)
-                  </h5>
-                  @if ($session->status == 'active')
-                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                        data-bs-target="#addInstallationModal">
-                        <i class="ri ri-add-line me-1"></i> Add Installation
-                     </button>
-                  @endif
-               </div>
-               <div class="table-responsive">
-                  <table class="table table-hover mb-0">
-                     <thead class="table-light">
-                        <tr>
-                           <th class="text-center" width="80">Pos</th>
-                           <th>Tyre Details</th>
-                           <th>Status</th>
-                           <th>Current RTD</th>
-                           <th>Last Inspection</th>
-                        </tr>
-                     </thead>
-                     <tbody>
-                        @forelse($masterPositions as $pos)
-                           @php
-                              $tyre = $assignedTyres->get($pos->id);
-                              // Get latest installation record for this pos from session
-                              $inst = $session->installations->where('position_id', $pos->id)->first();
-                           @endphp
-                           <tr>
-                              <td class="text-center fw-bold align-middle bg-light">
-                                 <span class="badge bg-label-primary rounded-circle"
-                                    style="width: 35px; height: 35px; line-height: 25px;">{{ $pos->position_code }}</span>
-                              </td>
-                              <td class="align-middle">
-                                 @if ($tyre)
-                                    <div class="d-flex flex-column">
-                                       <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
-                                       <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
-                                          {{ $tyre->pattern->name ?? '-' }} / {{ $tyre->size->size ?? '-' }}</small>
-                                    </div>
-                                 @else
-                                    <span class="text-muted italic">Posisi Kosong</span>
-                                 @endif
-                              </td>
-                              <td class="align-middle">
-                                 @if ($tyre)
-                                    <span class="badge bg-label-success">Installed</span>
-                                 @else
-                                    <span class="badge bg-label-secondary">Available</span>
-                                 @endif
-                              </td>
-                              <td class="align-middle">
-                                 @if ($tyre)
-                                    <span class="fw-bold">{{ $tyre->current_tread_depth }} mm</span>
-                                 @else
-                                    -
-                                 @endif
-                              </td>
-                              <td class="align-middle">
-                                 @if ($tyre)
-                                    @php
-                                       $latestCheck = $session->checks
-                                           ->where('serial_number', $tyre->serial_number)
-                                           ->sortByDesc('check_date')
-                                           ->first();
-                                    @endphp
-                                    @if ($latestCheck)
-                                       <div class="d-flex flex-column">
-                                          <small class="fw-bold">{{ $latestCheck->check_date }}</small>
-                                          <small class="text-info">{{ number_format($latestCheck->operation_mileage) }}
-                                             KM</small>
-                                       </div>
-                                    @else
-                                       <small class="text-muted">No check yet</small>
-                                    @endif
-                                 @else
-                                    -
-                                 @endif
-                              </td>
-                           </tr>
-                        @empty
-                           {{-- Fallback jika master layout tidak ada, pakai data instalasi saja --}}
-                           @foreach ($session->installations as $inst)
-                              <tr>
-                                 <td class="text-center fw-bold align-middle">{{ $inst->position }}</td>
-                                 <td>{{ $inst->serial_number }} ({{ $inst->brand }} / {{ $inst->pattern }})</td>
-                                 <td><span class="badge bg-label-success">Installed</span></td>
-                                 <td>
-                                    {{ $inst->position_id ? $assignedTyres->get($inst->position_id)->current_tread_depth ?? '-' : '-' }}
-                                 </td>
-                                 <td>-</td>
-                              </tr>
-                           @endforeach
-                        @endforelse
-                     </tbody>
-                  </table>
-               </div>
-            </div>
          </div>
-      </div>
+      @endif
 
-      <!-- Check History (Grouped) -->
-      @if ($session->checks->count() > 0)
-         <div class="card mb-4">
-            <div class="card-header border-bottom">
-               <h5 class="card-title mb-0"><i class="ri-history-line me-1"></i> Examination Events & Analysis</h5>
+      <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
+         <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+               <h5 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Current Tyre Status (By Position)
+               </h5>
+               @if ($session->status == 'active')
+                  <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                     data-bs-target="#addInstallationModal">
+                     <i class="ri ri-add-line me-1"></i> Add Installation
+                  </button>
+               @endif
             </div>
             <div class="table-responsive">
-               <table class="table table-hover align-middle">
+               <table class="table table-hover mb-0">
                   <thead class="table-light">
-                     <tr class="text-nowrap">
-                        <th>Event</th>
-                        <th>Check Date</th>
-                        <th>Odometer</th>
-                        <th>Op. Mileage</th>
-                        <th>Avg. RTD</th>
-                        <th>Worn (%)</th>
-                        <th>Km/mm</th>
-                        <th>Proj. Life (3mm)</th>
-                        <th>Actions</th>
+                     <tr>
+                        <th class="text-center" width="80">Pos</th>
+                        <th>Tyre Details</th>
+                        <th>Status</th>
+                        <th>Current RTD</th>
+                        <th>Last Inspection</th>
                      </tr>
                   </thead>
                   <tbody>
-                     @foreach ($session->checks->groupBy('check_number')->sortByDesc(function ($item, $key) {
-           return $key;
-       }) as $checkNumber => $group)
+                     @forelse($masterPositions as $pos)
                         @php
-                           $first = $group->first();
-                           $avgRtd = $group->avg(function ($c) {
-                               return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4;
-                           });
-                           $avgWorn = $group->avg('worn_percentage');
-                           $avgKmPerMm = $group->avg('km_per_mm');
-                           $avgProjLife = $group->avg('projected_life_km');
-
-                           $startDate = \Carbon\Carbon::parse($session->install_date);
-                           $checkDate = \Carbon\Carbon::parse($first->check_date);
-                           $days = $startDate->diffInDays($checkDate);
-                           $months = number_format($days / 30, 1);
+                           $tyre = $assignedTyres->get($pos->id);
+                           // Get latest installation record for this pos from session
+                           $inst = $session->installations->where('position_id', $pos->id)->first();
                         @endphp
                         <tr>
-                           <td><span class="badge bg-primary">CHECK #{{ $checkNumber }}</span></td>
-                           <td>
-                              <div class="d-flex flex-column">
-                                 <span>{{ $first->check_date }}</span>
-                                 <small class="text-muted">{{ $days }} Days / {{ $months }} Mo</small>
-                              </div>
+                           <td class="text-center fw-bold align-middle bg-light">
+                              <span class="badge bg-label-primary rounded-circle"
+                                 style="width: 35px; height: 35px; line-height: 25px;">{{ $pos->position_code }}</span>
                            </td>
-                           <td>{{ number_format($first->odometer) }} KM</td>
-                           <td class="fw-bold">{{ number_format($first->operation_mileage) }} KM</td>
-                           <td class="fw-bold">{{ number_format($avgRtd, 2) }} mm</td>
-                           <td>
-                              <div class="d-flex align-items-center">
-                                 <div class="progress w-100 me-2" style="height: 6px;">
-                                    <div
-                                       class="progress-bar bg-{{ $avgWorn > 80 ? 'danger' : ($avgWorn > 50 ? 'warning' : 'success') }}"
-                                       style="width: {{ min(100, $avgWorn) }}%"></div>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <div class="d-flex flex-column">
+                                    <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
+                                    <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
+                                       {{ $tyre->pattern->name ?? '-' }} / {{ $tyre->size->size ?? '-' }}</small>
                                  </div>
-                                 <small>{{ round($avgWorn) }}%</small>
-                              </div>
+                              @else
+                                 <span class="text-muted italic">Posisi Kosong</span>
+                              @endif
                            </td>
-                           <td>{{ number_format($avgKmPerMm, 0) }}</td>
-                           <td class="text-primary fw-bold">{{ number_format($avgProjLife, 0) }} KM</td>
-                           <td>
-                              <button class="btn btn-sm btn-icon btn-outline-primary" type="button"
-                                 data-bs-toggle="collapse" data-bs-target="#checkDetails{{ $checkNumber }}">
-                                 <i class="ri-arrow-down-s-line"></i>
-                              </button>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <span class="badge bg-label-success">Installed</span>
+                              @else
+                                 <span class="badge bg-label-secondary">Available</span>
+                              @endif
                            </td>
-                        </tr>
-                        <tr class="collapse" id="checkDetails{{ $checkNumber }}">
-                           <td colspan="9" class="p-0">
-                              <div class="bg-light p-3">
-                                 <table class="table table-sm table-bordered bg-white mb-0">
-                                    <thead class="table-dark">
-                                       <tr class="small text-uppercase">
-                                          <th>Pos</th>
-                                          <th>Serial Number</th>
-                                          <th>Psi (R/A)</th>
-                                          <th>Assembly</th>
-                                          <th>RTD(1-4)</th>
-                                          <th>Avg</th>
-                                          <th>Worn%</th>
-                                          <th>Km/mm</th>
-                                          <th>Proj. Life</th>
-                                          <th>Condition</th>
-                                       </tr>
-                                    </thead>
-                                    <tbody>
-                                       @foreach ($group as $c)
-                                          @php $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4; @endphp
-                                          <tr class="small">
-                                             <td class="fw-bold text-center">{{ $c->position }}</td>
-                                             <td>{{ $c->serial_number }}</td>
-                                             <td>{{ $c->inf_press_recommended ?? '-' }}/{{ $c->inf_press_actual ?? '-' }}
-                                             </td>
-                                             <td>{{ $c->date_assembly ?? '-' }}</td>
-                                             <td>
-                                                {{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}/{{ $c->rtd_4 }}
-                                             </td>
-                                             <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
-                                             <td>{{ number_format($c->worn_percentage, 0) }}%</td>
-                                             <td>{{ number_format($c->km_per_mm, 0) }}</td>
-                                             <td class="fw-bold text-primary">
-                                                {{ number_format($c->projected_life_km, 0) }}</td>
-                                             <td>
-                                                <span
-                                                   class="badge badge-dot bg-{{ $c->condition == 'ok' ? 'success' : ($c->condition == 'warning' ? 'warning' : 'danger') }}"></span>
-                                                {{ strtoupper($c->condition) }}
-                                             </td>
-                                          </tr>
-                                       @endforeach
-                                    </tbody>
-                                 </table>
-                              </div>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <span class="fw-bold">{{ $tyre->current_tread_depth }} mm</span>
+                              @else
+                                 -
+                              @endif
+                           </td>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 @php
+                                    $latestCheck = $session->checks
+                                        ->where('serial_number', $tyre->serial_number)
+                                        ->sortByDesc('check_date')
+                                        ->first();
+                                 @endphp
+                                 @if ($latestCheck)
+                                    <div class="d-flex flex-column">
+                                       <small class="fw-bold">{{ $latestCheck->check_date }}</small>
+                                       <small class="text-info">{{ number_format($latestCheck->operation_mileage) }}
+                                          KM</small>
+                                    </div>
+                                 @else
+                                    <small class="text-muted">No check yet</small>
+                                 @endif
+                              @else
+                                 -
+                              @endif
                            </td>
                         </tr>
-                     @endforeach
+                     @empty
+                        {{-- Fallback jika master layout tidak ada, pakai data instalasi saja --}}
+                        @foreach ($session->installations as $inst)
+                           <tr>
+                              <td class="text-center fw-bold align-middle">{{ $inst->position }}</td>
+                              <td>{{ $inst->serial_number }} ({{ $inst->brand }} / {{ $inst->pattern }})</td>
+                              <td><span class="badge bg-label-success">Installed</span></td>
+                              <td>
+                                 {{ $inst->position_id ? $assignedTyres->get($inst->position_id)->current_tread_depth ?? '-' : '-' }}
+                              </td>
+                              <td>-</td>
+                           </tr>
+                        @endforeach
+                     @endforelse
                   </tbody>
                </table>
             </div>
          </div>
-      @endif
+      </div>
+   </div>
 
-      <!-- Removal Record -->
-      @if ($session->removal)
-         <div class="card mb-4 border-danger">
-            <div class="card-header bg-danger text-white">
-               <h5 class="card-title mb-0 text-white">Removal Record</h5>
-            </div>
-            <div class="card-body pt-3">
-               <div class="row">
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Date:</b> {{ $session->removal->removal_date }}</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Total KM:</b> {{ number_format($session->removal->total_mileage) }}</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Final RTD:</b> {{ $session->removal->final_rtd }} mm</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Reason:</b> {{ $session->removal->removal_reason }}</p>
-                  </div>
+   <!-- Check History (Grouped) -->
+   @if ($session->checks->count() > 0)
+      <div class="card mb-4">
+         <div class="card-header border-bottom">
+            <h5 class="card-title mb-0"><i class="ri-history-line me-1"></i> Examination Events & Analysis</h5>
+         </div>
+         <div class="table-responsive">
+            <table class="table table-hover align-middle">
+               <thead class="table-light">
+                  <tr class="text-nowrap">
+                     <th>Event</th>
+                     <th>Check Date</th>
+                     <th>Odometer</th>
+                     <th>Op. Mileage</th>
+                     <th>Avg. RTD</th>
+                     <th>Worn (%)</th>
+                     <th>Km/mm</th>
+                     <th>Proj. Life (3mm)</th>
+                     <th>Actions</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  @foreach ($session->checks->groupBy('check_number')->sortByDesc(function ($item, $key) {
+           return $key;
+       }) as $checkNumber => $group)
+                     @php
+                        $first = $group->first();
+                        $avgRtd = $group->avg(function ($c) {
+                            return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4;
+                        });
+                        $avgWorn = $group->avg('worn_percentage');
+                        $avgKmPerMm = $group->avg('km_per_mm');
+                        $avgProjLife = $group->avg('projected_life_km');
+
+                        $startDate = \Carbon\Carbon::parse($session->install_date);
+                        $checkDate = \Carbon\Carbon::parse($first->check_date);
+                        $days = $startDate->diffInDays($checkDate);
+                        $months = number_format($days / 30, 1);
+                     @endphp
+                     <tr>
+                        <td><span class="badge bg-primary">CHECK #{{ $checkNumber }}</span></td>
+                        <td>
+                           <div class="d-flex flex-column">
+                              <span>{{ $first->check_date }}</span>
+                              <small class="text-muted">{{ $days }} Days / {{ $months }} Mo</small>
+                           </div>
+                        </td>
+                        <td>{{ number_format($first->odometer) }} KM</td>
+                        <td class="fw-bold">{{ number_format($first->operation_mileage) }} KM</td>
+                        <td class="fw-bold">{{ number_format($avgRtd, 2) }} mm</td>
+                        <td>
+                           <div class="d-flex align-items-center">
+                              <div class="progress w-100 me-2" style="height: 6px;">
+                                 <div
+                                    class="progress-bar bg-{{ $avgWorn > 80 ? 'danger' : ($avgWorn > 50 ? 'warning' : 'success') }}"
+                                    style="width: {{ min(100, $avgWorn) }}%"></div>
+                              </div>
+                              <small>{{ round($avgWorn) }}%</small>
+                           </div>
+                        </td>
+                        <td>{{ number_format($avgKmPerMm, 0) }}</td>
+                        <td class="text-primary fw-bold">{{ number_format($avgProjLife, 0) }} KM</td>
+                        <td>
+                           <button class="btn btn-sm btn-icon btn-outline-primary" type="button"
+                              data-bs-toggle="collapse" data-bs-target="#checkDetails{{ $checkNumber }}">
+                              <i class="ri-arrow-down-s-line"></i>
+                           </button>
+                        </td>
+                     </tr>
+                     <tr class="collapse" id="checkDetails{{ $checkNumber }}">
+                        <td colspan="9" class="p-0">
+                           <div class="bg-light p-3">
+                              <table class="table table-sm table-bordered bg-white mb-0">
+                                 <thead class="table-dark">
+                                    <tr class="small text-uppercase">
+                                       <th>Pos</th>
+                                       <th>Serial Number</th>
+                                       <th>Psi (R/A)</th>
+                                       <th>Assembly</th>
+                                       <th>RTD(1-4)</th>
+                                       <th>Avg</th>
+                                       <th>Worn%</th>
+                                       <th>Km/mm</th>
+                                       <th>Proj. Life</th>
+                                       <th>Condition</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    @foreach ($group as $c)
+                                       @php $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + $c->rtd_4) / 4; @endphp
+                                       <tr class="small">
+                                          <td class="fw-bold text-center">{{ $c->position }}</td>
+                                          <td>{{ $c->serial_number }}</td>
+                                          <td>{{ $c->inf_press_recommended ?? '-' }}/{{ $c->inf_press_actual ?? '-' }}
+                                          </td>
+                                          <td>{{ $c->date_assembly ?? '-' }}</td>
+                                          <td>
+                                             {{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}/{{ $c->rtd_4 }}
+                                          </td>
+                                          <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
+                                          <td>{{ number_format($c->worn_percentage, 0) }}%</td>
+                                          <td>{{ number_format($c->km_per_mm, 0) }}</td>
+                                          <td class="fw-bold text-primary">
+                                             {{ number_format($c->projected_life_km, 0) }}</td>
+                                          <td>
+                                             <span
+                                                class="badge badge-dot bg-{{ $c->condition == 'ok' ? 'success' : ($c->condition == 'warning' ? 'warning' : 'danger') }}"></span>
+                                             {{ strtoupper($c->condition) }}
+                                          </td>
+                                       </tr>
+                                    @endforeach
+                                 </tbody>
+                              </table>
+                           </div>
+                        </td>
+                     </tr>
+                  @endforeach
+               </tbody>
+            </table>
+         </div>
+      </div>
+   @endif
+
+   <!-- Removal Record -->
+   @if ($session->removal)
+      <div class="card mb-4 border-danger">
+         <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0 text-white">Removal Record</h5>
+         </div>
+         <div class="card-body pt-3">
+            <div class="row">
+               <div class="col-md-3">
+                  <p class="mb-1"><b>Date:</b> {{ $session->removal->removal_date }}</p>
                </div>
-               <p class="mt-2 mb-0"><b>Condition After:</b> {{ $session->removal->tyre_condition_after }}</p>
-               <p class="mb-0"><b>Notes:</b> {{ $session->removal->notes }}</p>
+               <div class="col-md-3">
+                  <p class="mb-1"><b>Total KM:</b> {{ number_format($session->removal->total_mileage) }}</p>
+               </div>
+               <div class="col-md-3">
+                  <p class="mb-1"><b>Final RTD:</b> {{ $session->removal->final_rtd }} mm</p>
+               </div>
+               <div class="col-md-3">
+                  <p class="mb-1"><b>Reason:</b> {{ $session->removal->removal_reason }}</p>
+               </div>
             </div>
+            <p class="mt-2 mb-0"><b>Condition After:</b> {{ $session->removal->tyre_condition_after }}</p>
+            <p class="mb-0"><b>Notes:</b> {{ $session->removal->notes }}</p>
          </div>
-      @elseif($session->status == 'active' && $session->installations->count() > 0)
-         <div class="d-grid mb-4">
-            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
-               data-bs-target="#addRemovalModal">
-               <i class="ri ri-close-circle-line me-1"></i> Close Session / Record Removal
-            </button>
-         </div>
-      @endif
+      </div>
+   @elseif($session->status == 'active' && $session->installations->count() > 0)
+      <div class="d-grid mb-4">
+         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+            data-bs-target="#addRemovalModal">
+            <i class="ri ri-close-circle-line me-1"></i> Close Session / Record Removal
+         </button>
+      </div>
+   @endif
    </div>
 
    <!-- Modal Installation -->
@@ -1000,7 +998,7 @@
             </form>
          </div>
       </div>
-   </div>
+@endsection
    @section('page-script')
       <script>
          $(function() {
