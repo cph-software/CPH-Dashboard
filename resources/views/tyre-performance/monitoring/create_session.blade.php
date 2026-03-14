@@ -1,4 +1,4 @@
-@extends('layouts/layoutMaster')
+@extends('layouts.admin')
 
 @section('title', 'Start New Monitoring Session')
 
