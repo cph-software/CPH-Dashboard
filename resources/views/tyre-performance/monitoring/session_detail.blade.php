@@ -166,7 +166,7 @@
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
             class="btn btn-icon btn-outline-secondary me-3">
-            <i class="ri-arrow-left-line"></i>
+            <i class="ri ri-arrow-left-line"></i>
          </a>
          <div>
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session
@@ -176,7 +176,7 @@
          </div>
       </div>
       <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
-         <i class="ri-file-excel-2-line me-1"></i> Export Excel
+         <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
       </a>
    </div>
 
@@ -261,7 +261,7 @@
          <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
             <div class="card h-100">
                <div class="card-header border-bottom">
-                  <h6 class="card-title mb-0"><i class="ri-truck-line me-1"></i> Vehicle Layout</h6>
+                  <h6 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Vehicle Layout</h6>
                </div>
                <div class="card-body pt-3">
                   <div class="v-chassis">
@@ -356,7 +356,7 @@
       <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
          <div class="card h-100">
             <div class="card-header border-bottom">
-               <h6 class="card-title mb-0"><i class="ri-list-check me-1"></i> Installed Tyres</h6>
+               <h6 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Installed Tyres</h6>
             </div>
             <div class="table-responsive">
                <table class="table table-hover mb-0">
@@ -449,7 +449,7 @@
    {{-- Event Timeline --}}
    <div class="card mb-4">
       <div class="card-header border-bottom">
-         <h6 class="card-title mb-0"><i class="ri-timeline-view me-1"></i> Monitoring Timeline</h6>
+         <h6 class="card-title mb-0"><i class="ri ri-timeline-view me-1"></i> Monitoring Timeline</h6>
       </div>
       <div class="card-body pt-4">
          <div class="timeline-wrapper">
@@ -567,7 +567,7 @@
             {{-- No events --}}
             @if ($session->installations->count() == 0 && $session->checks->count() == 0 && !$session->removal)
                <div class="text-center py-4 text-muted">
-                  <i class="ri-information-line ri-xl me-1"></i> Belum ada data monitoring pada sesi ini.
+                  <i class="ri ri-information-line ri-xl me-1"></i> Belum ada data monitoring pada sesi ini.
                </div>
             @endif
          </div>

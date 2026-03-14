@@ -134,7 +134,7 @@
    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.index') }}" class="btn btn-icon btn-outline-secondary me-3">
-            <i class="ri-arrow-left-line"></i>
+            <i class="ri ri-arrow-left-line"></i>
          </a>
          <div>
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span>
@@ -145,7 +145,7 @@
       <div class="d-flex gap-2 flex-wrap">
          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
             data-bs-target="#editVehicleModal">
-            <i class="ri-settings-3-line me-1"></i> Config
+            <i class="ri ri-settings-3-line me-1"></i> Config
          </button>
       </div>
    </div>
@@ -156,7 +156,7 @@
          <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="ri-route-line me-1"></i> Monitoring Progress — Session #{{ $activeSession->session_id }}
+                  <i class="ri ri-route-line me-1"></i> Monitoring Progress — Session #{{ $activeSession->session_id }}
                </h6>
                <span class="badge bg-label-{{ $activeSession->status == 'active' ? 'success' : 'secondary' }}">
                   {{ ucfirst($activeSession->status) }}
@@ -166,10 +166,10 @@
                {{-- Installation Step --}}
                <div class="step-item">
                   <span class="step-badge {{ $hasInstallation ? 'completed' : 'active' }}">
-                     <i class="ri-install-line step-icon"></i>
+                     <i class="ri ri-install-line step-icon"></i>
                      Installation
                      @if ($hasInstallation)
-                        <i class="ri-check-line"></i>
+                        <i class="ri ri-check-line"></i>
                      @endif
                   </span>
                </div>
@@ -179,10 +179,10 @@
                   <div class="step-connector {{ $i <= $checkCount ? 'completed' : '' }}"></div>
                   <div class="step-item">
                      <span class="step-badge {{ $i <= $checkCount ? 'completed' : 'active' }}">
-                        <i class="ri-search-eye-line step-icon"></i>
+                        <i class="ri ri-search-eye-line step-icon"></i>
                         Check {{ $i }}
                         @if ($i <= $checkCount)
-                           <i class="ri-check-line"></i>
+                           <i class="ri ri-check-line"></i>
                         @endif
                      </span>
                   </div>
@@ -198,7 +198,7 @@
                <div class="d-flex align-items-center gap-3">
                   @if ($currentStage == 'installation')
                      <div class="avatar avatar-lg bg-label-warning rounded-circle">
-                        <i class="ri-install-line ri-lg"></i>
+                        <i class="ri ri-install-line ri-lg"></i>
                      </div>
                      <div>
                         <h6 class="mb-0 fw-bold">Record Installation</h6>
@@ -206,7 +206,7 @@
                      </div>
                   @elseif (str_starts_with($currentStage, 'check_'))
                      <div class="avatar avatar-lg bg-label-info rounded-circle">
-                        <i class="ri-search-eye-line ri-lg"></i>
+                        <i class="ri ri-search-eye-line ri-lg"></i>
                      </div>
                      <div>
                         <h6 class="mb-0 fw-bold">Periodic Check {{ $checkCount + 1 }}</h6>
@@ -218,16 +218,16 @@
                   @if ($currentStage == 'installation')
                      <a href="{{ route('monitoring.sessions.create', $vehicle->vehicle_id) }}"
                         class="btn btn-primary shadow-sm">
-                        <i class="ri-add-line me-1"></i> Start Installation
+                        <i class="ri ri-add-line me-1"></i> Start Installation
                      </a>
                   @elseif (str_starts_with($currentStage, 'check_'))
                      <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
                         data-bs-target="#addCheckModal">
-                        <i class="ri-add-line me-1"></i> Add Check {{ $checkCount + 1 }}
+                        <i class="ri ri-add-line me-1"></i> Add Check {{ $checkCount + 1 }}
                      </button>
                      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
                         data-bs-target="#addRemovalModal">
-                        <i class="ri-close-circle-line me-1"></i> Record Removal
+                        <i class="ri ri-close-circle-line me-1"></i> Record Removal
                      </button>
                   @endif
                </div>
@@ -238,12 +238,12 @@
       {{-- No Active Session --}}
       <div class="card mb-4 border-dashed border-2">
          <div class="card-body text-center py-4">
-            <i class="ri-add-circle-line ri-3x text-primary mb-2"></i>
+            <i class="ri ri-add-circle-line ri-3x text-primary mb-2"></i>
             <h5 class="fw-bold">Belum Ada Sesi Aktif</h5>
             <p class="text-muted mb-3">Mulai sesi monitoring baru untuk mencatat pemasangan dan pemeriksaan ban kendaraan
                ini.</p>
             <a href="{{ route('monitoring.sessions.create', $vehicle->vehicle_id) }}" class="btn btn-primary">
-               <i class="ri-add-line me-1"></i> Start New Session
+               <i class="ri ri-add-line me-1"></i> Start New Session
             </a>
          </div>
       </div>
@@ -255,7 +255,7 @@
       <div class="col-xl-4 col-lg-5 col-md-12 mb-4 mb-xl-0">
          <div class="card h-100">
             <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-               <h5 class="card-title mb-0"><i class="ri-truck-line me-1"></i> Vehicle Layout</h5>
+               <h5 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Vehicle Layout</h5>
                <span class="badge bg-label-primary">Live</span>
             </div>
             <div class="card-body p-4 text-center">
@@ -266,7 +266,7 @@
                   ])
                @else
                   <div class="py-5">
-                     <i class="ri-truck-line ri-4x text-light"></i>
+                     <i class="ri ri-truck-line ri-4x text-light"></i>
                      <p class="text-muted mt-2">Konfigurasi posisi ban belum tersedia.</p>
                      <button class="btn btn-sm btn-label-primary" data-bs-toggle="modal"
                         data-bs-target="#editVehicleModal">Link Master Vehicle</button>
@@ -280,7 +280,7 @@
       <div class="col-xl-8 col-lg-7 col-md-12">
          <div class="card h-100">
             <div class="card-header border-bottom">
-               <h5 class="card-title mb-0"><i class="ri-list-check me-1"></i> Current Tyre Status</h5>
+               <h5 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Current Tyre Status</h5>
             </div>
             <div class="table-responsive">
                <table class="table table-hover mb-0">
@@ -358,7 +358,7 @@
    {{-- Sessions History --}}
    <div class="card mb-4">
       <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-         <h5 class="card-title mb-0"><i class="ri-history-line me-1"></i> Monitoring History</h5>
+         <h5 class="card-title mb-0"><i class="ri ri-history-line me-1"></i> Monitoring History</h5>
       </div>
       <div class="card-datatable table-responsive">
          <table class="datatables-sessions table table-hover">
@@ -381,14 +381,14 @@
                      <td>
                         <div class="d-flex align-items-center gap-1">
                            <span class="badge bg-label-warning" title="Installations">
-                              <i class="ri-install-line me-1"></i>{{ $session->installations_count ?? 0 }}
+                              <i class="ri ri-install-line me-1"></i>{{ $session->installations_count ?? 0 }}
                            </span>
                            <span class="badge bg-label-info" title="Checks">
-                              <i class="ri-search-eye-line me-1"></i>{{ $session->checks_count }}
+                              <i class="ri ri-search-eye-line me-1"></i>{{ $session->checks_count }}
                            </span>
                            @if ($session->removal_count > 0)
                               <span class="badge bg-label-danger" title="Removal">
-                                 <i class="ri-delete-bin-line"></i>
+                                 <i class="ri ri-delete-bin-line"></i>
                               </span>
                            @endif
                         </div>
@@ -402,11 +402,11 @@
                         <div class="d-flex gap-1">
                            <a href="{{ route('monitoring.sessions.show', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-primary" title="View Detail">
-                              <i class="ri-eye-line"></i>
+                              <i class="ri ri-eye-line"></i>
                            </a>
                            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-success" title="Export Excel">
-                              <i class="ri-file-excel-2-line"></i>
+                              <i class="ri ri-file-excel-2-line"></i>
                            </a>
                            @if ($session->status == 'active')
                               <form action="{{ route('monitoring.sessions.update', $session->session_id) }}"
@@ -415,7 +415,7 @@
                                  <input type="hidden" name="status" value="completed">
                                  <button type="submit" class="btn btn-sm btn-icon btn-outline-secondary" title="Finish"
                                     onclick="return confirm('Selesaikan sesi monitoring ini?')">
-                                    <i class="ri-checkbox-circle-line"></i>
+                                    <i class="ri ri-checkbox-circle-line"></i>
                                  </button>
                               </form>
                            @endif
@@ -442,7 +442,7 @@
          <div class="modal-dialog modal-xl">
             <div class="modal-content">
                <div class="modal-header bg-primary text-white">
-                  <h5 class="modal-title text-white"><i class="ri-search-eye-line me-1"></i> Periodic Check
+                  <h5 class="modal-title text-white"><i class="ri ri-search-eye-line me-1"></i> Periodic Check
                      #{{ $checkCount + 1 }}</h5>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                      aria-label="Close"></button>
@@ -475,7 +475,7 @@
                         </div>
                      </div>
                      <div class="alert alert-info small py-2">
-                        <i class="ri-information-line me-1"></i> Isi data RTD untuk setiap posisi ban yang terpasang.
+                        <i class="ri ri-information-line me-1"></i> Isi data RTD untuk setiap posisi ban yang terpasang.
                      </div>
                      <div class="table-responsive">
                         <table class="table table-bordered" id="checkTable">
@@ -543,7 +543,7 @@
                   <div class="modal-footer">
                      <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
                      <button type="submit" class="btn btn-primary">
-                        <i class="ri-save-line me-1"></i> Submit Check {{ $checkCount + 1 }}
+                        <i class="ri ri-save-line me-1"></i> Submit Check {{ $checkCount + 1 }}
                      </button>
                   </div>
                </form>
@@ -556,7 +556,7 @@
          <div class="modal-dialog modal-lg">
             <div class="modal-content">
                <div class="modal-header bg-danger text-white">
-                  <h5 class="modal-title text-white"><i class="ri-close-circle-line me-1"></i> Record Removal</h5>
+                  <h5 class="modal-title text-white"><i class="ri ri-close-circle-line me-1"></i> Record Removal</h5>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                      aria-label="Close"></button>
                </div>
@@ -625,7 +625,7 @@
                   <div class="modal-footer">
                      <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
                      <button type="submit" class="btn btn-danger">
-                        <i class="ri-delete-bin-line me-1"></i> Record Removal
+                        <i class="ri ri-delete-bin-line me-1"></i> Record Removal
                      </button>
                   </div>
                </form>

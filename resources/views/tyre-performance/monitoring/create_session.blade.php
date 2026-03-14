@@ -128,9 +128,10 @@
       <div class="col-12">
          <div class="card mb-4 shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center py-3">
-               <h5 class="mb-0 fw-bold"><i class="ri-dashboard-line me-2"></i>Start New Monitoring & Bulk Installation</h5>
+               <h5 class="mb-0 fw-bold"><i class="ri ri-dashboard-line me-2"></i>Start New Monitoring & Bulk Installation
+               </h5>
                <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}" class="btn btn-label-secondary">
-                  <i class="ri-arrow-left-line me-1"></i> Kembali
+                  <i class="ri ri-arrow-left-line me-1"></i> Kembali
                </a>
             </div>
             <div class="card-body">
@@ -167,9 +168,9 @@
                   </div>
 
                   <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
-                     <h6 class="fw-bold mb-0 text-primary"><i class="ri-list-check-2 me-1"></i> Data Ban Terpasang (Bulk
+                     <h6 class="fw-bold mb-0 text-primary"><i class="ri ri-list-check-2 me-1"></i> Data Ban Terpasang (Bulk
                         Snapshot)</h6>
-                     <small class="text-muted"><i class="ri-information-line me-1"></i>Gunakan scroll horizontal untuk
+                     <small class="text-muted"><i class="ri ri-information-line me-1"></i>Gunakan scroll horizontal untuk
                         melihat semua kolom</small>
                   </div>
 
@@ -183,7 +184,7 @@
                                  Psi (Rec/Act)<br>
                                  <button type="button" class="btn btn-xxs btn-primary mt-1" id="btn-apply-all-psi"
                                     title="Copy Rec to Act for all rows">
-                                    <i class="ri-arrow-down-line"></i> All Act
+                                    <i class="ri ri-arrow-down-line"></i> All Act
                                  </button>
                               </th>
                               <th class="col-date">
@@ -246,7 +247,7 @@
                                              <div class="p-2 border rounded bg-white shadow-sm"
                                                 style="font-size: 0.75rem;">
                                                 <div class="text-primary fw-bold"><i
-                                                      class="ri-settings-line me-1"></i>Detail Ban:</div>
+                                                      class="ri ri-settings-line me-1"></i>Detail Ban:</div>
                                                 <div class="row g-0">
                                                    <div class="col-12"><span class="text-muted">Brand:</span> <span
                                                          class="tyre-brand fw-semibold"></span></div>
@@ -320,7 +321,7 @@
 
                   <div class="mt-4 text-end">
                      <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="ri-checkbox-circle-line me-1"></i> Confirm Installation & Start Period
+                        <i class="ri ri-checkbox-circle-line me-1"></i> Confirm Installation & Start Period
                      </button>
                   </div>
                </form>
