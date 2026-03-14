@@ -251,6 +251,10 @@ class MonitoringController extends Controller
         $brands = TyreBrand::orderBy('brand_name')->get();
         $patterns = TyrePattern::orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
+        $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
+            ->select('id', 'serial_number')
+            ->orderBy('serial_number')
+            ->get();
 
         return view('tyre-performance.monitoring.create_session', compact(
             'vehicle',
@@ -258,7 +262,8 @@ class MonitoringController extends Controller
             'assignedTyres',
             'brands',
             'patterns',
-            'sizes'
+            'sizes',
+            'availableTyres'
         ));
     }
 

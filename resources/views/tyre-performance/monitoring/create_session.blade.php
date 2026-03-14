@@ -5,6 +5,49 @@
 @section('vendor-style')
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/flatpickr/flatpickr.css') }}" />
+   <style>
+      .rtd-input {
+         height: 50px !important;
+         font-size: 1.25rem !important;
+         font-weight: 800 !important;
+         text-align: center;
+         padding: 5px !important;
+         min-width: 100px;
+         color: #2c3e50;
+         background-color: #fffef2 !important;
+         border: 2px solid #d1d5db !important;
+      }
+
+      .rtd-input:focus {
+         border-color: #7367f0 !important;
+         background-color: #fff !important;
+         box-shadow: 0 0 0 0.25rem rgba(115, 103, 240, 0.25);
+      }
+
+      .avg-rtd {
+         font-size: 1.2rem !important;
+         display: block;
+         margin-top: 5px;
+      }
+
+      #bulk-install-table th {
+         vertical-align: middle;
+         text-align: center;
+         font-size: 0.85rem;
+         padding: 12px 8px;
+      }
+
+      .select2-container--default .select2-selection--single {
+         height: 40px !important;
+         display: flex;
+         align-items: center;
+      }
+
+      .tyre-info-box {
+         padding: 5px;
+         border-radius: 4px;
+      }
+   </style>
 @endsection
 
 @section('content')
@@ -56,13 +99,13 @@
                         <thead class="table-dark">
                            <tr class="text-nowrap text-center">
                               <th width="40">Pos</th>
-                              <th width="180">Tyre Information</th>
+                              <th width="250">Tyre Information</th>
                               <th width="120">Psi (Rec/Act)</th>
                               <th width="120">Date Assembly</th>
-                              <th width="90">RTD 1</th>
-                              <th width="90">RTD 2</th>
-                              <th width="90">RTD 3</th>
-                              <th width="90">RTD 4</th>
+                              <th width="115">RTD 1</th>
+                              <th width="115">RTD 2</th>
+                              <th width="115">RTD 3</th>
+                              <th width="115">RTD 4</th>
                               <th width="100">Avg RTD</th>
                               <th width="80">Worn %</th>
                               <th width="180">Cond / Rec</th>
@@ -79,7 +122,7 @@
                                  <td class="text-center fw-bold">{{ $pos->position_code }}</td>
                                  <td>
                                     @if ($tyre)
-                                       <div class="d-flex flex-column">
+                                       <div class="d-flex flex-column tyre-info-box">
                                           <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
                                           <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
                                              {{ $tyre->size->size ?? '-' }}</small>
@@ -91,9 +134,20 @@
                                              value="{{ $pos->id }}">
                                        </div>
                                     @else
-                                       <span class="text-muted italic small">No tyre found</span>
-                                       <input type="hidden" name="checks[{{ $rowId }}][position_id]"
-                                          value="{{ $pos->id }}">
+                                       <div class="d-flex flex-column gap-1">
+                                          <select name="checks[{{ $rowId }}][tyre_id]"
+                                             class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
+                                             <option value="">-- Select Tyre --</option>
+                                             @foreach ($availableTyres as $at)
+                                                <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}">
+                                                   {{ $at->serial_number }}</option>
+                                             @endforeach
+                                          </select>
+                                          <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
+                                             class="row-sn-{{ $rowId }}">
+                                          <input type="hidden" name="checks[{{ $rowId }}][position_id]"
+                                             value="{{ $pos->id }}">
+                                       </div>
                                     @endif
                                  </td>
                                  <td>
@@ -108,7 +162,7 @@
                                  </td>
                                  <td>
                                     <input type="date" name="checks[{{ $rowId }}][date_assembly]"
-                                       class="form-control form-control-sm">
+                                       class="form-control">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $rowId }}][rtd_1]"
@@ -174,6 +228,18 @@
    <script>
       $(function() {
          $('.select2').select2();
+
+         $(document).on('change', '.select2-tyre', function() {
+            const rowId = $(this).data('row');
+            const sn = $(this).find(':selected').data('sn');
+            $('.row-sn-' + rowId).val(sn);
+
+            if ($(this).val()) {
+               $(this).closest('tr').addClass('table-info');
+            } else {
+               $(this).closest('tr').removeClass('table-info');
+            }
+         });
 
          const calculateRow = (row) => {
             const originalRtd = parseFloat($('input[name="original_rtd"]').val()) || 0;
