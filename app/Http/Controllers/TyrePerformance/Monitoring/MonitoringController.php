@@ -311,7 +311,7 @@ class MonitoringController extends Controller
                         'tyre_id' => $tyreId,
                         'serial_number' => $serial,
                         'install_date' => $request->install_date,
-                        'odometer' => $request->odometer_start,
+                        'odometer_reading' => $request->odometer_start,
                         'position' => $posName,
                         'position_id' => $posId,
                         'brand' => $c['brand'] ?? '-',
@@ -340,7 +340,7 @@ class MonitoringController extends Controller
                             'position' => $posName,
                             'position_id' => $posId,
                             'check_date' => $request->install_date,
-                            'odometer' => $request->odometer_start,
+                            'odometer_reading' => $request->odometer_start,
                             'operation_mileage' => 0,
                             'inf_press_recommended' => $c['inf_press_recommended'] ?? null,
                             'inf_press_actual' => $c['inf_press_actual'] ?? null,
@@ -362,20 +362,45 @@ class MonitoringController extends Controller
                         if ($tyreId) {
                             $tyre = Tyre::find($tyreId);
                             if ($tyre) {
+                                // Determine if this is a new installation or just a check for existing tyre
+                                $isNewInstallation = ($tyre->current_vehicle_id != $vehicle->master_vehicle_id);
+
+                                // 1. Update Master Tyre Record
                                 $tyre->current_tread_depth = $avgRtd;
                                 $tyre->last_inspection_date = $request->install_date;
+                                
+                                if ($isNewInstallation) {
+                                    $tyre->status = 'Installed';
+                                    $tyre->current_vehicle_id = $vehicle->master_vehicle_id;
+                                    $tyre->current_position_id = $posId;
+                                }
                                 $tyre->save();
 
+                                // 2. Record Movement Log
                                 TyreMovement::create([
                                     'tyre_id' => $tyre->id,
                                     'vehicle_id' => $vehicle->master_vehicle_id,
                                     'movement_date' => $request->install_date,
-                                    'movement_type' => 'Inspection',
-                                    'odometer' => $request->odometer_start,
+                                    'movement_type' => $isNewInstallation ? 'Installation' : 'Inspection',
+                                    'odometer_reading' => $request->odometer_start,
                                     'position_id' => $posId,
-                                    'tread_depth' => $avgRtd,
-                                    'remark' => "Monitoring Sesi Start - Cek #1",
+                                    'rtd_reading' => $avgRtd,
+                                    'notes' => $isNewInstallation ? "Monitoring Sesi Start - New Installation" : "Monitoring Sesi Start - Periodic Check #1",
+                                    'tyre_company_id' => $tyre->tyre_company_id,
+                                    'created_by' => \Auth::id()
                                 ]);
+
+                                // 3. Sync Stock if it's a new installation from a location
+                                if ($isNewInstallation && $tyre->work_location_id) {
+                                    DB::table('tyre_locations')
+                                        ->where('id', $tyre->work_location_id)
+                                        ->decrement('current_stock');
+                                }
+
+                                // 4. Sync Position Detail
+                                if ($posId) {
+                                    TyrePositionDetail::where('id', $posId)->update(['tyre_id' => $tyre->id]);
+                                }
                             }
                         }
                     }
@@ -447,7 +472,8 @@ class MonitoringController extends Controller
                 'status' => 'Installed',
                 'current_vehicle_id' => $session->master_vehicle_id,
                 'current_position_id' => $request->position_id,
-                'current_tread_depth' => $data['avg_rtd']
+                'current_tread_depth' => $data['avg_rtd'],
+                'last_inspection_date' => $session->install_date
             ]);
 
             // Record Movement
@@ -579,7 +605,8 @@ class MonitoringController extends Controller
 
                     $tyre->update([
                         'current_tread_depth' => $avgRtd,
-                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
+                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                        'last_inspection_date' => $request->check_date
                     ]);
                 }
             }
@@ -651,7 +678,8 @@ class MonitoringController extends Controller
                     'current_position_id' => null,
                     'work_location_id' => $request->work_location_id,
                     'current_tread_depth' => $request->final_rtd,
-                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                    'last_inspection_date' => $request->removal_date
                 ]);
 
                 // Sync with Position Detail (Clear the position)
