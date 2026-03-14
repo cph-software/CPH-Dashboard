@@ -252,7 +252,7 @@ class MonitoringController extends Controller
         $patterns = TyrePattern::orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
-            ->select('id', 'serial_number')
+            ->with(['brand', 'size', 'pattern'])
             ->orderBy('serial_number')
             ->get();
 

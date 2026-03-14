@@ -221,10 +221,27 @@
                                              class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
                                              <option value="">-- Pilih Ban Stok --</option>
                                              @foreach ($availableTyres as $at)
-                                                <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}">
-                                                   {{ $at->serial_number }}</option>
+                                                <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}"
+                                                   data-brand="{{ $at->brand->brand_name ?? '-' }}"
+                                                   data-size="{{ $at->size->size ?? '-' }}"
+                                                   data-pattern="{{ $at->pattern->name ?? '-' }}">
+                                                   {{ $at->serial_number }}
+                                                </option>
                                              @endforeach
                                           </select>
+                                          <div class="tyre-detail-info-{{ $rowId }} mt-1 d-none">
+                                             <div class="p-2 border rounded bg-white shadow-sm"
+                                                style="font-size: 0.75rem;">
+                                                <div class="text-primary fw-bold"><i
+                                                      class="ri-settings-line me-1"></i>Detail Ban:</div>
+                                                <div class="row g-0">
+                                                   <div class="col-12"><span class="text-muted">Brand:</span> <span
+                                                         class="tyre-brand fw-semibold"></span></div>
+                                                   <div class="col-12"><span class="text-muted">Specs:</span> <span
+                                                         class="tyre-specs fw-semibold"></span></div>
+                                                </div>
+                                             </div>
+                                          </div>
                                           <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
                                              class="row-sn-{{ $rowId }}">
                                           <input type="hidden" name="checks[{{ $rowId }}][position_id]"
@@ -271,9 +288,9 @@
                                  <td>
                                     <select name="checks[{{ $rowId }}][condition]"
                                        class="form-select mb-2 fw-bold">
-                                       <option value="ok" class="text-success">✅ OK</option>
-                                       <option value="warning" class="text-warning">⚠️ Warning</option>
-                                       <option value="critical" class="text-danger">❌ Critical</option>
+                                       <option value="ok" class="text-success">OK</option>
+                                       <option value="warning" class="text-warning">Warning</option>
+                                       <option value="critical" class="text-danger">Critical</option>
                                     </select>
                                     <input type="text" name="checks[{{ $rowId }}][recommendation]"
                                        class="form-control" placeholder="Tulis saran/rekomendasi...">
@@ -311,12 +328,22 @@
 
          $(document).on('change', '.select2-tyre', function() {
             const rowId = $(this).data('row');
-            const sn = $(this).find(':selected').data('sn');
+            const selected = $(this).find(':selected');
+            const sn = selected.data('sn');
+            const brand = selected.data('brand');
+            const size = selected.data('size');
+            const pattern = selected.data('pattern');
+
             $('.row-sn-' + rowId).val(sn);
 
+            const detailBox = $('.tyre-detail-info-' + rowId);
             if ($(this).val()) {
+               detailBox.find('.tyre-brand').text(brand);
+               detailBox.find('.tyre-specs').text(size + ' / ' + pattern);
+               detailBox.removeClass('d-none');
                $(this).closest('tr').addClass('table-info');
             } else {
+               detailBox.addClass('d-none');
                $(this).closest('tr').removeClass('table-info');
             }
          });
