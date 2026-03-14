@@ -179,8 +179,20 @@
                            <tr class="text-nowrap">
                               <th class="col-pos text-center">Pos</th>
                               <th class="col-info">Informasi Ban</th>
-                              <th class="col-psi">Psi (Rec/Act)</th>
-                              <th class="col-date">Tgl Assembly</th>
+                              <th class="col-psi">
+                                 Psi (Rec/Act)<br>
+                                 <button type="button" class="btn btn-xxs btn-primary mt-1" id="btn-apply-all-psi"
+                                    title="Copy Rec to Act for all rows">
+                                    <i class="ri-arrow-down-line"></i> All Act
+                                 </button>
+                              </th>
+                              <th class="col-date">
+                                 Tgl Assembly<br>
+                                 <button type="button" class="btn btn-xxs btn-info mt-1" id="btn-today-assembly"
+                                    title="Set all to today">
+                                    Today
+                                 </button>
+                              </th>
                               <th class="col-rtd">RTD 1</th>
                               <th class="col-rtd">RTD 2</th>
                               <th class="col-rtd">RTD 3</th>
@@ -224,7 +236,8 @@
                                                 <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}"
                                                    data-brand="{{ $at->brand->brand_name ?? '-' }}"
                                                    data-size="{{ $at->size->size ?? '-' }}"
-                                                   data-pattern="{{ $at->pattern->name ?? '-' }}">
+                                                   data-pattern="{{ $at->pattern->name ?? '-' }}"
+                                                   data-rtd="{{ $at->current_tread_depth ?? '' }}">
                                                    {{ $at->serial_number }}
                                                 </option>
                                              @endforeach
@@ -326,6 +339,30 @@
       $(function() {
          $('.select2').select2();
 
+         const syncTyreSelections = () => {
+            let selectedTyres = [];
+            $('.select2-tyre').each(function() {
+               let val = $(this).val();
+               if (val) selectedTyres.push(val);
+            });
+
+            $('.select2-tyre').each(function() {
+               let currentSelect = $(this);
+               let currentVal = currentSelect.val();
+
+               currentSelect.find('option').each(function() {
+                  let optionVal = $(this).val();
+                  if (!optionVal) return;
+
+                  if (selectedTyres.includes(optionVal) && optionVal !== currentVal) {
+                     $(this).prop('disabled', true);
+                  } else {
+                     $(this).prop('disabled', false);
+                  }
+               });
+            });
+         };
+
          $(document).on('change', '.select2-tyre', function() {
             const rowId = $(this).data('row');
             const selected = $(this).find(':selected');
@@ -333,19 +370,62 @@
             const brand = selected.data('brand');
             const size = selected.data('size');
             const pattern = selected.data('pattern');
+            const rtd = selected.data('rtd');
 
             $('.row-sn-' + rowId).val(sn);
 
             const detailBox = $('.tyre-detail-info-' + rowId);
+            const row = $(this).closest('tr');
+
             if ($(this).val()) {
                detailBox.find('.tyre-brand').text(brand);
                detailBox.find('.tyre-specs').text(size + ' / ' + pattern);
                detailBox.removeClass('d-none');
-               $(this).closest('tr').addClass('table-info');
+               row.addClass('table-info');
+
+               // Auto-fill RTD if it exists
+               if (rtd) {
+                  row.find('.rtd-input').val(rtd).trigger('input');
+               }
             } else {
                detailBox.addClass('d-none');
-               $(this).closest('tr').removeClass('table-info');
+               row.removeClass('table-info');
             }
+
+            // Sync other dropdowns to prevent duplicates
+            syncTyreSelections();
+         });
+
+         // RTD Auto-fill: Typing in RTD 1 copies to 2,3,4 if they are empty
+         $(document).on('input', 'input[name$="[rtd_1]"]', function() {
+            const row = $(this).closest('tr');
+            const val = $(this).val();
+
+            row.find('.rtd-input').each(function() {
+               const idx = $(this).data('idx');
+               if (idx > 1) {
+                  const currentVal = $(this).val();
+                  if (!currentVal || currentVal == "0") {
+                     $(this).val(val);
+                  }
+               }
+            });
+         });
+
+         // PSI Apply All
+         $(document).on('click', '#btn-apply-all-psi', function() {
+            $('.tyre-row').each(function() {
+               const rec = $(this).find('input[name$="[inf_press_recommended]"]').val();
+               if (rec) {
+                  $(this).find('input[name$="[inf_press_actual]"]').val(rec);
+               }
+            });
+         });
+
+         // Assembly Date Apply All
+         $(document).on('click', '#btn-today-assembly', function() {
+            const today = new Date().toISOString().split('T')[0];
+            $('input[name$="[date_assembly]"]').val(today);
          });
 
          const calculateRow = (row) => {
