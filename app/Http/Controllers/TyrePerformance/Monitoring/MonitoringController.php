@@ -115,7 +115,10 @@ class MonitoringController extends Controller
     public function showVehicle($id)
     {
         $vehicle = TyreMonitoringVehicle::findOrFail($id);
-        $sessions = TyreMonitoringSession::where('vehicle_id', $id)->withCount('checks')->latest()->get();
+        $sessions = TyreMonitoringSession::where('vehicle_id', $id)
+            ->withCount(['checks', 'installations', 'removal'])
+            ->latest()
+            ->get();
         
         $masterPositions = [];
         $assignedTyres = collect();
@@ -154,7 +157,7 @@ class MonitoringController extends Controller
 
     public function showSession($id)
     {
-        $session = TyreMonitoringSession::with(['vehicle.sessions', 'installations.positionDetail', 'checks', 'removal'])->findOrFail($id);
+        $session = TyreMonitoringSession::with(['vehicle', 'installations.positionDetail', 'checks', 'removal'])->findOrFail($id);
 
         $masterPositions = [];
         $assignedTyres = collect();
@@ -166,7 +169,6 @@ class MonitoringController extends Controller
                     ->orderBy('display_order')
                     ->get();
 
-                // Fetch tyres currently installed on this master vehicle
                 $assignedTyres = Tyre::where('current_vehicle_id', $session->master_vehicle_id)
                     ->with(['brand', 'pattern', 'size'])
                     ->get()
@@ -174,26 +176,10 @@ class MonitoringController extends Controller
             }
         }
 
-        $locations = TyreLocation::all();
-        $brands = TyreBrand::orderBy('brand_name')->get();
-        $patterns = TyrePattern::orderBy('name')->get();
-        $sizes = TyreSize::orderBy('size')->get();
-
-        // Get available tyres for installation dropdown
-        $availableTyres = Tyre::whereNull('current_vehicle_id')
-            ->select('id', 'serial_number')
-            ->orderBy('serial_number')
-            ->get();
-
         return view('tyre-performance.monitoring.session_detail', compact(
             'session',
             'masterPositions',
-            'locations',
-            'brands',
-            'patterns',
-            'sizes',
-            'assignedTyres',
-            'availableTyres'
+            'assignedTyres'
         ));
     }
 
