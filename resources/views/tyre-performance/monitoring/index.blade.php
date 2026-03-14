@@ -8,7 +8,7 @@
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
    <style>
-      #layoutPreview .v-chassis {
+      #LayoutPreview .v-chassis {
          transform: scale(0.7);
          transform-origin: top center;
          margin-bottom: -100px;
@@ -169,7 +169,11 @@
                                  data-master="{{ $vehicle->master_vehicle_id }}">
                                  <i class="ri ri-edit-line"></i>
                               </button>
-                               <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf @method('DELETE')<button type="submit" class="btn btn-sm btn-icon btn-outline-danger"><i class="ri ri-delete-bin-line"></i></button></form>
+                              <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}"
+                                 method="POST" class="d-inline"
+                                 onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf
+                                 @method('DELETE')<button type="submit" class="btn btn-sm btn-icon btn-outline-danger"><i
+                                       class="ri ri-delete-bin-line"></i></button></form>
                            </div>
                         </td>
                      </tr>
@@ -210,12 +214,12 @@
                            </div>
                            <div class="col-md-6">
                               <label class="form-label">Fleet Name</label>
-                              <input type="text" name="fleet_name" id="fleetNameField" class="form-control" required
+                              <input type="text" name="fleet_name" id="FleetNameField" class="form-control" required
                                  placeholder="example: FL-01">
                            </div>
                            <div class="col-md-6">
                               <label class="form-label">Vehicle Number (Plate)</label>
-                              <input type="text" name="vehicle_number" id="vehicleNumberField" class="form-control"
+                              <input type="text" name="vehicle_number" id="VehicleNumberField" class="form-control"
                                  required placeholder="B 1234 ABC">
                            </div>
                            <div class="col-md-6">
@@ -233,12 +237,12 @@
                            </div>
                            <div class="col-md-6">
                               <label class="form-label">Load Capacity (Payload)</label>
-                              <input type="text" name="load_capacity" id="loadCapacityField" class="form-control"
+                              <input type="text" name="load_capacity" id="LoadCapacityField" class="form-control"
                                  placeholder="e.g. 30 Ton">
                            </div>
                            <div class="col-md-6">
                               <label class="form-label">Tire Positions</label>
-                              <input type="number" name="tire_positions" id="tirePositionsField" class="form-control"
+                              <input type="number" name="tire_positions" id="TirePositionsField" class="form-control"
                                  value="6" required min="1">
                            </div>
                         </div>
@@ -246,7 +250,7 @@
                      <div
                         class="col-md-5 text-center bg-light rounded d-flex flex-column align-items-center justify-content-center p-3">
                         <small class="fw-bold mb-3 text-primary">LAYOUT PREVIEW</small>
-                        <div id="layoutPreview" class="w-100">
+                        <div id="LayoutPreview" class="w-100">
                            <span class="text-muted italic small"><i class="ri-information-line me-1"></i>Select master
                               vehicle to preview layout and installed tyres</span>
                         </div>
