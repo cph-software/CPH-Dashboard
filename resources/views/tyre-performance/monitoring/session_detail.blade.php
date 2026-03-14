@@ -1,555 +1,576 @@
 @extends('layouts.admin')
 
-@section('title', 'Monitoring Session Details')
+@section('title', 'Session Detail #' . $session->session_id)
 
 @section('vendor-style')
    <link rel="stylesheet"
       href="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
-   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
-   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+   <style>
+      .timeline-item {
+         position: relative;
+         padding-left: 30px;
+         padding-bottom: 24px;
+         border-left: 2px solid #e0e0e0;
+      }
+
+      .timeline-item:last-child {
+         border-left-color: transparent;
+         padding-bottom: 0;
+      }
+
+      .timeline-item::before {
+         content: '';
+         position: absolute;
+         left: -7px;
+         top: 4px;
+         width: 12px;
+         height: 12px;
+         border-radius: 50%;
+         background: #7367f0;
+         border: 2px solid #fff;
+         box-shadow: 0 0 0 2px #7367f0;
+      }
+
+      .timeline-item.installation::before {
+         background: #ff9f43;
+         box-shadow: 0 0 0 2px #ff9f43;
+      }
+
+      .timeline-item.check::before {
+         background: #00cfe8;
+         box-shadow: 0 0 0 2px #00cfe8;
+      }
+
+      .timeline-item.removal::before {
+         background: #ea5455;
+         box-shadow: 0 0 0 2px #ea5455;
+      }
+
+      .v-chassis {
+         position: relative;
+         width: 100%;
+         max-width: 300px;
+         margin: 0 auto;
+         background: #fafafa;
+         border-radius: 16px;
+         padding: 30px 15px;
+         border: 2px solid #eee;
+      }
+
+      .v-cabin {
+         width: 80px;
+         height: 35px;
+         background: #333;
+         margin: 0 auto 20px;
+         border-radius: 6px;
+         text-align: center;
+         line-height: 35px;
+         font-size: 10px;
+         color: #fff;
+         font-weight: bold;
+      }
+
+      .v-axle {
+         display: flex;
+         justify-content: space-between;
+         margin-bottom: 20px;
+         position: relative;
+      }
+
+      .v-axle::after {
+         content: '';
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         width: 60%;
+         height: 3px;
+         background: #e0e0e0;
+         z-index: 1;
+      }
+
+      .v-tyre {
+         width: 28px;
+         height: 48px;
+         background: #fff;
+         border: 2px solid #ddd;
+         border-radius: 5px;
+         z-index: 2;
+         position: relative;
+         display: flex;
+         flex-direction: column;
+         justify-content: center;
+         align-items: center;
+      }
+
+      .v-tyre.filled {
+         background: #2d2d2d !important;
+         border-color: #1a1a1a;
+      }
+
+      .v-tyre-code {
+         font-size: 8px;
+         font-weight: 800;
+         color: #666;
+      }
+
+      .v-tyre.filled .v-tyre-code {
+         color: #fff;
+      }
+
+      .v-tyre.front {
+         border-top: 3px solid #ff9f43;
+      }
+
+      .v-tyre.rear {
+         border-top: 3px solid #28c76f;
+      }
+
+      .v-tyre.middle {
+         border-top: 3px solid #7367f0;
+      }
+
+      .v-group {
+         display: flex;
+         gap: 4px;
+      }
+
+      .v-spare-list {
+         display: flex;
+         justify-content: center;
+         gap: 10px;
+         margin-top: 15px;
+         padding-top: 15px;
+         border-top: 2px dashed #eee;
+      }
+
+      .v-tyre.spare {
+         width: 50px;
+         height: 28px;
+         border-top: none;
+         border-right: 3px solid #00cfe8;
+      }
+   </style>
 @endsection
 
 @section('content')
    @php
       use App\Services\TyreMonitoringCalculator;
+      $lastCheck = $session->checks->sortByDesc('check_number')->first();
+      $runningKm = $lastCheck ? $lastCheck->operation_mileage : 0;
+      $checkGroups = $session->checks->groupBy('check_number')->sortKeys();
    @endphp
-   <div class="container-xxl flex-grow-1 container-p-y">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-         <div class="d-flex align-items-center">
-            <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
-               class="btn btn-icon btn-outline-secondary me-3">
-               <i class="ri ri-arrow-left-line"></i>
-            </a>
-            <div>
-               <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span> Session
-                  #{{ $session->session_id }}</h4>
-               <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} - {{ $session->tyre_size }}
-                  ({{ $session->install_date }})</p>
-            </div>
-         </div>
-         <div class="d-flex gap-2">
-            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
-               <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
-            </a>
-            @if ($session->status == 'active')
-               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCheckModal">
-                  <i class="ri ri-add-line me-1"></i> Add Periodic Check
-               </button>
-            @endif
+
+   {{-- Page Header --}}
+   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+      <div class="d-flex align-items-center">
+         <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
+            class="btn btn-icon btn-outline-secondary me-3">
+            <i class="ri ri-arrow-left-line"></i>
+         </a>
+         <div>
+            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session
+               #{{ $session->session_id }}</h4>
+            <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} · {{ $session->tyre_size }}
+               · {{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}</p>
          </div>
       </div>
+      <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
+         <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
+      </a>
+   </div>
 
-      <!-- Session Overview -->
-      <div class="row mb-4">
-         <div class="col-md-3">
-            <div class="card h-100 border-start border-primary border-3">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Baseline RTD</h6>
-                  <h4 class="mb-0 text-primary">{{ $session->original_rtd }} mm</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Checks Count</h6>
-                  <h4 class="mb-0">{{ $session->checks->count() }} Kali</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body">
-                  <h6 class="text-muted fw-normal mb-1">Running Mileage</h6>
-                  @php
-                     $lastCheck = $session->checks->sortByDesc('check_number')->first();
-                     $runningKm = $lastCheck ? $lastCheck->operation_mileage : 0;
-                  @endphp
-                  <h4 class="mb-0">{{ number_format($runningKm) }} KM</h4>
-               </div>
-            </div>
-         </div>
-         <div class="col-md-3">
-            <div class="card h-100">
-               <div class="card-body d-flex justify-content-between align-items-center">
-                  <div>
-                     <h6 class="text-muted fw-normal mb-1">Status</h6>
-                     <h4 class="mb-0 {{ $session->status == 'active' ? 'text-success' : 'text-secondary' }}">
-                        {{ ucfirst($session->status) }}</h4>
-                  </div>
-                  @if ($session->status == 'active')
-                     <form action="{{ route('monitoring.sessions.update', $session->session_id) }}" method="POST"
-                        class="d-inline ms-2">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary"
-                           onclick="return confirm('Selesaikan sesi monitoring ini?')">Finish</button>
-                     </form>
-                  @endif
-               </div>
+   {{-- Session Overview Cards --}}
+   <div class="row mb-4 g-3">
+      <div class="col-6 col-md-3">
+         <div class="card h-100 border-start border-primary border-3">
+            <div class="card-body py-3">
+               <p class="text-muted small mb-1">Baseline RTD</p>
+               <h4 class="mb-0 text-primary fw-bold">{{ $session->original_rtd }} mm</h4>
             </div>
          </div>
       </div>
+      <div class="col-6 col-md-3">
+         <div class="card h-100">
+            <div class="card-body py-3">
+               <p class="text-muted small mb-1">Checks Done</p>
+               <h4 class="mb-0 fw-bold">{{ $checkGroups->count() }} <small class="text-muted fw-normal">kali</small></h4>
+            </div>
+         </div>
+      </div>
+      <div class="col-6 col-md-3">
+         <div class="card h-100">
+            <div class="card-body py-3">
+               <p class="text-muted small mb-1">Running Mileage</p>
+               <h4 class="mb-0 fw-bold">{{ number_format($runningKm) }} <small class="text-muted fw-normal">KM</small></h4>
+            </div>
+         </div>
+      </div>
+      <div class="col-6 col-md-3">
+         <div class="card h-100">
+            <div class="card-body py-3">
+               <p class="text-muted small mb-1">Status</p>
+               <h4 class="mb-0">
+                  <span class="badge bg-label-{{ $session->status == 'active' ? 'success' : 'secondary' }} fs-6">
+                     {{ ucfirst($session->status) }}
+                  </span>
+               </h4>
+            </div>
+         </div>
+      </div>
+   </div>
 
-      @if ($lastCheck)
-         @php
-            $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck);
-         @endphp
-         <!-- Wear Calculation Summary -->
-         <div class="card mb-4 bg-primary text-white">
-            <div class="card-body">
-               <div class="row text-center g-3">
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Current Avg RTD</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} mm</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Worn Percetage</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['worn_pct'] }}%</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">KM / mm</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">KM / Day</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h3>
-                  </div>
-                  <div class="col-md-2 border-end border-white border-opacity-25 col-6">
-                     <p class="mb-0 opacity-75 small">Proj. Life (KM)</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h3>
-                  </div>
-                  <div class="col-md-2 col-6">
-                     <p class="mb-0 opacity-75 small">Proj. Remain (Months)</p>
-                     <h3 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} Mo</h3>
+   {{-- Wear Calculation Summary --}}
+   @if ($lastCheck)
+      @php $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck); @endphp
+      <div class="card mb-4 bg-primary text-white">
+         <div class="card-body py-3">
+            <div class="row text-center g-3">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+                  <p class="mb-0 opacity-75 small">Current Avg RTD</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} mm</h4>
+               </div>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+                  <p class="mb-0 opacity-75 small">Worn %</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['worn_pct'] }}%</h4>
+               </div>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+                  <p class="mb-0 opacity-75 small">KM / mm</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
+               </div>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+                  <p class="mb-0 opacity-75 small">KM / Day</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
+               </div>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+                  <p class="mb-0 opacity-75 small">Proj. Life (KM)</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h4>
+               </div>
+               <div class="col-md-2 col-6">
+                  <p class="mb-0 opacity-75 small">Proj. Remain</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} Mo</h4>
+               </div>
+            </div>
+         </div>
+      </div>
+   @endif
+
+   <div class="row mb-4">
+      {{-- Vehicle Visual Layout --}}
+      @if (count($masterPositions) > 0)
+         <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
+            <div class="card h-100">
+               <div class="card-header border-bottom">
+                  <h6 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Vehicle Layout</h6>
+               </div>
+               <div class="card-body pt-3">
+                  <div class="v-chassis">
+                     <div class="v-cabin">FRONT</div>
+                     @php
+                        $frontAxles = $masterPositions->where('axle_type', 'Front')->groupBy('axle_number');
+                        $middleAxles = $masterPositions->where('axle_type', 'Middle')->groupBy('axle_number');
+                        $rearAxles = $masterPositions->where('axle_type', 'Rear')->groupBy('axle_number');
+                        $spares = $masterPositions->where('is_spare', true);
+                     @endphp
+
+                     @foreach ($frontAxles as $positions)
+                        <div class="v-axle">
+                           @php
+                              $left = $positions->where('side', 'Left')->first();
+                              $right = $positions->where('side', 'Right')->first();
+                           @endphp
+                           @if ($left)
+                              @php $t = $assignedTyres->get($left->id); @endphp
+                              <div class="v-tyre front {{ $t ? 'filled' : '' }}" title="{{ $left->position_name }}">
+                                 <span class="v-tyre-code">{{ $left->position_code }}</span>
+                              </div>
+                           @endif
+                           @if ($right)
+                              @php $t = $assignedTyres->get($right->id); @endphp
+                              <div class="v-tyre front {{ $t ? 'filled' : '' }}" title="{{ $right->position_name }}">
+                                 <span class="v-tyre-code">{{ $right->position_code }}</span>
+                              </div>
+                           @endif
+                        </div>
+                     @endforeach
+
+                     @foreach ($middleAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                 </div>
+                              @endforeach
+                           </div>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                 </div>
+                              @endforeach
+                           </div>
+                        </div>
+                     @endforeach
+
+                     @foreach ($rearAxles as $positions)
+                        <div class="v-axle">
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                 </div>
+                              @endforeach
+                           </div>
+                           <div class="v-group">
+                              @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
+                                 @php $t = $assignedTyres->get($p->id); @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                    <span class="v-tyre-code">{{ $p->position_code }}</span>
+                                 </div>
+                              @endforeach
+                           </div>
+                        </div>
+                     @endforeach
+
+                     @if ($spares->count() > 0)
+                        <div class="v-spare-list">
+                           @foreach ($spares as $s)
+                              @php $t = $assignedTyres->get($s->id); @endphp
+                              <div class="v-tyre spare {{ $t ? 'filled' : '' }}" title="{{ $s->position_name }}">
+                                 <span class="v-tyre-code">{{ $s->position_code }}</span>
+                              </div>
+                           @endforeach
+                        </div>
+                     @endif
                   </div>
                </div>
             </div>
          </div>
       @endif
 
-      <!-- Installation Records -->
-      <div class="card mb-4">
-         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Installation Records</h5>
-            @if ($session->status == 'active')
-               <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                  data-bs-target="#addInstallationModal">
-                  <i class="ri ri-add-line me-1"></i> Add Installation
-               </button>
-            @endif
-         </div>
-         <div class="table-responsive">
-            <table class="table table-hover">
-               <thead>
-                  <tr>
-                     <th>Pos</th>
-                     <th>Serial Number</th>
-                     <th>Brand/Pattern</th>
-                     <th>Size</th>
-                     <th>Baseline Avg RTD</th>
-                     <th>Odometer</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  @foreach ($session->installations as $inst)
-                     <tr>
-                        <td>{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}</td>
-                        <td>{{ $inst->serial_number }}</td>
-                        <td>{{ $inst->brand }} / {{ $inst->pattern }}</td>
-                        <td>{{ $inst->size }}</td>
-                        <td>{{ $inst->avg_rtd }} mm</td>
-                        <td>{{ number_format($inst->odometer) }}</td>
-                     </tr>
-                  @endforeach
-               </tbody>
-            </table>
-         </div>
-      </div>
-
-      <!-- Check History -->
-      @if ($session->checks->count() > 0)
-         <div class="card mb-4">
-            <div class="card-header">
-               <h5 class="card-title mb-0">Monitoring Checks History</h5>
+      {{-- Installed Tyres Table --}}
+      <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
+         <div class="card h-100">
+            <div class="card-header border-bottom">
+               <h6 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Installed Tyres</h6>
             </div>
             <div class="table-responsive">
-               <table class="table table-bordered table-striped">
-                  <thead>
-                     <tr class="table-primary text-white">
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Ser# (Pos)</th>
-                        <th>Avg RTD</th>
-                        <th>Mileage</th>
-                        <th>Worn%</th>
-                        <th>KM/mm</th>
-                        <th>Proj. (KM)</th>
-                        <th>Proj. (Mth)</th>
-                        <th>Cond.</th>
+               <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                     <tr>
+                        <th class="text-center" width="60">Pos</th>
+                        <th>Tyre Details</th>
+                        <th>Status</th>
+                        <th>Current RTD</th>
+                        <th>Last Inspection</th>
                      </tr>
                   </thead>
                   <tbody>
-                     @foreach ($session->checks->sortByDesc('check_number') as $check)
+                     @forelse($masterPositions as $pos)
                         @php
-                           $calc = TyreMonitoringCalculator::calculate(
-                               $session->original_rtd,
-                               $session->install_date,
-                               $check,
-                           );
+                           $tyre = $assignedTyres->get($pos->id);
+                           $inst = $session->installations->where('position_id', $pos->id)->first();
                         @endphp
                         <tr>
-                           <td>{{ $check->check_number }}</td>
-                           <td>{{ $check->check_date }}</td>
-                           <td>{{ $check->serial_number }} ({{ $check->position }})</td>
-                           <td>{{ $calc['avg_rtd'] }} mm</td>
-                           <td>{{ number_format($check->operation_mileage) }}</td>
-                           <td>{{ $calc['worn_pct'] }}%</td>
-                           <td>{{ $calc['km_per_mm'] }}</td>
-                           <td>{{ number_format($calc['proj_life_km']) }}</td>
-                           <td>{{ $calc['proj_life_month'] }}</td>
-                           <td>
-                              <span
-                                 class="badge bg-label-{{ $check->condition == 'ok' ? 'success' : ($check->condition == 'warning' ? 'warning' : 'danger') }}">
-                                 {{ strtoupper($check->condition) }}
-                              </span>
+                           <td class="text-center fw-bold align-middle bg-light">
+                              <span class="badge bg-label-primary rounded-circle"
+                                 style="width: 32px; height: 32px; line-height: 22px;">{{ $pos->position_code }}</span>
+                           </td>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <div class="d-flex flex-column">
+                                    <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
+                                    <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
+                                       {{ $tyre->pattern->name ?? '-' }} / {{ $tyre->size->size ?? '-' }}</small>
+                                 </div>
+                              @else
+                                 <span class="text-muted fst-italic">Posisi Kosong</span>
+                              @endif
+                           </td>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <span class="badge bg-label-success">Installed</span>
+                              @else
+                                 <span class="badge bg-label-secondary">Available</span>
+                              @endif
+                           </td>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 <span class="fw-bold">{{ $tyre->current_tread_depth }} mm</span>
+                              @else
+                                 -
+                              @endif
+                           </td>
+                           <td class="align-middle">
+                              @if ($tyre)
+                                 @php
+                                    $latestCheck = $session->checks
+                                        ->where('serial_number', $tyre->serial_number)
+                                        ->sortByDesc('check_date')
+                                        ->first();
+                                 @endphp
+                                 @if ($latestCheck)
+                                    <div class="d-flex flex-column">
+                                       <small
+                                          class="fw-bold">{{ \Carbon\Carbon::parse($latestCheck->check_date)->format('d/m/Y') }}</small>
+                                       <small class="text-info">{{ number_format($latestCheck->operation_mileage) }}
+                                          KM</small>
+                                    </div>
+                                 @else
+                                    <small class="text-muted">No check yet</small>
+                                 @endif
+                              @else
+                                 -
+                              @endif
                            </td>
                         </tr>
-                        @if ($check->recommendation)
-                           <tr class="table-warning">
-                              <td colspan="10" class="small"><b>Rec:</b> {{ $check->recommendation }}</td>
+                     @empty
+                        @foreach ($session->installations as $inst)
+                           <tr>
+                              <td class="text-center fw-bold align-middle">{{ $inst->position }}</td>
+                              <td>{{ $inst->serial_number }} ({{ $inst->brand }} / {{ $inst->pattern }})</td>
+                              <td><span class="badge bg-label-success">Installed</span></td>
+                              <td>-</td>
+                              <td>-</td>
                            </tr>
-                        @endif
-                     @endforeach
+                        @endforeach
+                     @endforelse
                   </tbody>
                </table>
             </div>
          </div>
-      @endif
-
-      <!-- Removal Record -->
-      @if ($session->removal)
-         <div class="card mb-4 border-danger">
-            <div class="card-header bg-danger text-white">
-               <h5 class="card-title mb-0 text-white">Removal Record</h5>
-            </div>
-            <div class="card-body pt-3">
-               <div class="row">
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Date:</b> {{ $session->removal->removal_date }}</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Total KM:</b> {{ number_format($session->removal->total_mileage) }}</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Final RTD:</b> {{ $session->removal->final_rtd }} mm</p>
-                  </div>
-                  <div class="col-md-3">
-                     <p class="mb-1"><b>Reason:</b> {{ $session->removal->removal_reason }}</p>
-                  </div>
-               </div>
-               <p class="mt-2 mb-0"><b>Condition After:</b> {{ $session->removal->tyre_condition_after }}</p>
-               <p class="mb-0"><b>Notes:</b> {{ $session->removal->notes }}</p>
-            </div>
-         </div>
-      @elseif($session->status == 'active' && $session->installations->count() > 0)
-         <div class="d-grid mb-4">
-            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
-               data-bs-target="#addRemovalModal">
-               <i class="ri ri-close-circle-line me-1"></i> Close Session / Record Removal
-            </button>
-         </div>
-      @endif
+      </div>
    </div>
 
-   <!-- Modal Installation -->
-   <div class="modal fade" id="addInstallationModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Record Installation</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('monitoring.installation.store') }}" method="POST">
-               @csrf
-               <input type="hidden" name="session_id" value="{{ $session->session_id }}">
-               <div class="modal-body">
-                  <div class="row g-3">
-                     <div class="col-12">
-                        <label class="form-label">Tyre Serial Number</label>
-                        <div class="input-group">
-                           <input type="text" name="serial_number" id="install_serial" class="form-control"
-                              placeholder="Enter Serial Number" required>
-                           <button class="btn btn-outline-primary" type="button" id="btnCheckTyre">Check</button>
-                        </div>
-                        <div id="tyre_info_box" class="mt-2 small text-muted" style="display:none;">
-                           Brand: <span id="info_brand"></span> | Size: <span id="info_size"></span> | Pattern: <span
-                              id="info_pattern"></span>
+   {{-- Event Timeline --}}
+   <div class="card mb-4">
+      <div class="card-header border-bottom">
+         <h6 class="card-title mb-0"><i class="ri ri-timeline-view me-1"></i> Monitoring Timeline</h6>
+      </div>
+      <div class="card-body pt-4">
+         <div class="timeline-wrapper">
+            {{-- Installation Event --}}
+            @if ($session->installations->count() > 0)
+               <div class="timeline-item installation">
+                  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+                     <div>
+                        <h6 class="fw-bold mb-1">
+                           <span class="badge bg-warning me-1">Installation</span>
+                           {{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}
+                        </h6>
+                        <p class="text-muted small mb-1">{{ $session->installations->count() }} ban terpasang · Odometer:
+                           {{ number_format($session->odometer_start) }} KM</p>
+                        <div class="d-flex flex-wrap gap-1">
+                           @foreach ($session->installations as $inst)
+                              <span class="badge bg-label-dark"
+                                 title="{{ $inst->position }}">{{ $inst->serial_number }}</span>
+                           @endforeach
                         </div>
                      </div>
-                     <div class="col-6">
-                        @if (count($masterPositions) > 0)
-                           <label class="form-label">Position Code</label>
-                           <select name="position_id" class="form-select" required>
-                              <option value="">-- Select Position --</option>
-                              @foreach ($masterPositions as $pos)
-                                 <option value="{{ $pos->id }}">{{ $pos->position_code }}</option>
-                              @endforeach
-                           </select>
-                        @else
-                           <label class="form-label">Position</label>
-                           <input type="number" name="position" class="form-control" required min="1"
-                              max="{{ $session->vehicle->tire_positions }}" placeholder="E.g. 1">
-                        @endif
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Odometer</label>
-                        <input type="number" name="odometer" class="form-control" required
-                           value="{{ $session->odometer_start }}" placeholder="Odo at install">
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 1</label>
-                        <input type="number" name="rtd_1" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 2</label>
-                        <input type="number" name="rtd_2" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 3</label>
-                        <input type="number" name="rtd_3" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Psi Rcmd</label>
-                        <input type="number" name="inf_press_recommended" class="form-control"
-                           value="{{ $session->retase }}" placeholder="E.g. 110">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Psi Actual</label>
-                        <input type="number" name="inf_press_actual" class="form-control" placeholder="E.g. 105">
+                  </div>
+               </div>
+            @endif
+
+            {{-- Check Events --}}
+            @foreach ($checkGroups as $checkNumber => $group)
+               @php
+                  $first = $group->first();
+                  $avgRtd = $group->avg(function ($c) {
+                      return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + ($c->rtd_4 ?? 0)) / ($c->rtd_4 ? 4 : 3);
+                  });
+                  $startDate = \Carbon\Carbon::parse($session->install_date);
+                  $checkDate = \Carbon\Carbon::parse($first->check_date);
+                  $days = $startDate->diffInDays($checkDate);
+               @endphp
+               <div class="timeline-item check">
+                  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+                     <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1">
+                           <span class="badge bg-info me-1">Check #{{ $checkNumber }}</span>
+                           {{ $checkDate->format('d M Y') }}
+                           <small class="text-muted ms-1">({{ $days }} days)</small>
+                        </h6>
+                        <p class="text-muted small mb-2">{{ $group->count() }} posisi diperiksa · Op. Mileage:
+                           {{ number_format($first->operation_mileage) }} KM · Avg RTD: {{ number_format($avgRtd, 2) }}
+                           mm</p>
+                        {{-- Detail Table --}}
+                        <div class="table-responsive">
+                           <table class="table table-sm table-bordered bg-white mb-0">
+                              <thead class="table-light">
+                                 <tr class="small">
+                                    <th>Pos</th>
+                                    <th>Serial</th>
+                                    <th>PSI (R/A)</th>
+                                    <th>RTD</th>
+                                    <th>Avg</th>
+                                    <th>Worn%</th>
+                                    <th>KM/mm</th>
+                                    <th>Proj.Life</th>
+                                    <th>Condition</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 @foreach ($group as $c)
+                                    @php $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + ($c->rtd_4 ?? 0)) / ($c->rtd_4 ? 4 : 3); @endphp
+                                    <tr class="small">
+                                       <td class="fw-bold">{{ $c->position }}</td>
+                                       <td>{{ $c->serial_number }}</td>
+                                       <td>{{ $c->inf_press_recommended ?? '-' }}/{{ $c->inf_press_actual ?? '-' }}</td>
+                                       <td>
+                                          {{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}{{ $c->rtd_4 ? '/' . $c->rtd_4 : '' }}
+                                       </td>
+                                       <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
+                                       <td>{{ number_format($c->worn_percentage, 0) }}%</td>
+                                       <td>{{ number_format($c->km_per_mm, 0) }}</td>
+                                       <td class="fw-bold text-primary">{{ number_format($c->projected_life_km, 0) }}
+                                       </td>
+                                       <td>
+                                          <span
+                                             class="badge bg-{{ $c->condition == 'ok' ? 'success' : ($c->condition == 'warning' ? 'warning' : 'danger') }}">
+                                             {{ strtoupper($c->condition) }}
+                                          </span>
+                                       </td>
+                                    </tr>
+                                 @endforeach
+                              </tbody>
+                           </table>
+                        </div>
                      </div>
                   </div>
                </div>
-               <div class="modal-footer">
-                  <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save Installation</button>
+            @endforeach
+
+            {{-- Removal Event --}}
+            @if ($session->removal)
+               <div class="timeline-item removal">
+                  <h6 class="fw-bold mb-1">
+                     <span class="badge bg-danger me-1">Removal</span>
+                     {{ \Carbon\Carbon::parse($session->removal->removal_date)->format('d M Y') }}
+                  </h6>
+                  <div class="row g-2 small">
+                     <div class="col-md-3"><strong>Serial:</strong> {{ $session->removal->serial_number }}</div>
+                     <div class="col-md-3"><strong>Total KM:</strong>
+                        {{ number_format($session->removal->total_mileage) }}</div>
+                     <div class="col-md-3"><strong>Final RTD:</strong> {{ $session->removal->final_rtd }} mm</div>
+                     <div class="col-md-3"><strong>Reason:</strong> {{ $session->removal->removal_reason }}</div>
+                  </div>
+                  <p class="small mt-1 mb-0"><strong>Condition:</strong> {{ $session->removal->tyre_condition_after }} ·
+                     <strong>Notes:</strong> {{ $session->removal->notes }}
+                  </p>
                </div>
-            </form>
+            @endif
+
+            {{-- No events --}}
+            @if ($session->installations->count() == 0 && $session->checks->count() == 0 && !$session->removal)
+               <div class="text-center py-4 text-muted">
+                  <i class="ri ri-information-line ri-xl me-1"></i> Belum ada data monitoring pada sesi ini.
+               </div>
+            @endif
          </div>
       </div>
    </div>
-
-   <!-- Modal Periodic Check -->
-   <div class="modal fade" id="addCheckModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Record Periodic Check</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('monitoring.check.store') }}" method="POST">
-               @csrf
-               <input type="hidden" name="session_id" value="{{ $session->session_id }}">
-               <div class="modal-body">
-                  <div class="row g-3">
-                     <div class="col-12">
-                        <label class="form-label">Tire In Test</label>
-                        <select name="serial_number" class="form-select" required>
-                           @foreach ($session->installations as $inst)
-                              <option value="{{ $inst->serial_number }}"
-                                 data-pos="{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}"
-                                 data-rtd1="{{ $inst->rtd_1 }}" data-rtd2="{{ $inst->rtd_2 }}"
-                                 data-rtd3="{{ $inst->rtd_3 }}">
-                                 {{ $inst->serial_number }} (Pos
-                                 {{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }})
-                              </option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col-12">
-                        <label class="form-label">Check Date</label>
-                        <input type="date" name="check_date" class="form-control" required
-                           value="{{ date('Y-m-d') }}">
-                     </div>
-                     <div class="col-md-6">
-                        <label class="form-label">Current Odometer</label>
-                        <input type="number" name="odometer" class="form-control" required placeholder="KM at check">
-                     </div>
-                     <div class="col-md-6">
-                        <label class="form-label">Condition</label>
-                        <select name="condition" class="form-select">
-                           <option value="ok">OK</option>
-                           <option value="warning">Warning</option>
-                           <option value="critical">Critical</option>
-                        </select>
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 1</label>
-                        <input type="number" name="rtd_1" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 2</label>
-                        <input type="number" name="rtd_2" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-4">
-                        <label class="form-label">RTD 3</label>
-                        <input type="number" name="rtd_3" class="form-control" step="0.1" required
-                           placeholder="mm">
-                     </div>
-                     <div class="col-12">
-                        <label class="form-label">Recommendation</label>
-                        <textarea name="recommendation" class="form-control" rows="2"
-                           placeholder="E.g. Rotate, Repair, Continue, etc"></textarea>
-                     </div>
-                  </div>
-               </div>
-               <div class="modal-footer">
-                  <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save Check</button>
-               </div>
-            </form>
-         </div>
-      </div>
-   </div>
-
-   <!-- Modal Removal -->
-   <div class="modal fade" id="addRemovalModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title">Record Removal / Close Session</h5>
-               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('monitoring.removal.store') }}" method="POST">
-               @csrf
-               <input type="hidden" name="session_id" value="{{ $session->session_id }}">
-               <div class="modal-body">
-                  <div class="row g-3">
-                     <div class="col-12">
-                        <label class="form-label">Tire to Remove</label>
-                        <select name="serial_number" class="form-select" required>
-                           @foreach ($session->installations as $inst)
-                              <option value="{{ $inst->serial_number }}"
-                                 data-pos="{{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }}"
-                                 data-rtd1="{{ $inst->rtd_1 }}" data-rtd2="{{ $inst->rtd_2 }}"
-                                 data-rtd3="{{ $inst->rtd_3 }}">
-                                 {{ $inst->serial_number }} (Pos
-                                 {{ $inst->positionDetail ? $inst->positionDetail->position_code : $inst->position }})
-                              </option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Removal Date</label>
-                        <input type="date" name="removal_date" class="form-control" required
-                           value="{{ date('Y-m-d') }}">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Odometer</label>
-                        <input type="number" name="odometer" class="form-control" required placeholder="Final KM">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Final RTD (mm)</label>
-                        <input type="number" name="final_rtd" class="form-control" step="0.1" required
-                           placeholder="E.g. 3.0">
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Removal Reason</label>
-                        <select name="removal_reason" class="form-select">
-                           <option value="Worn Out">Worn Out</option>
-                           <option value="Damage">Damage</option>
-                           <option value="Rotation">Rotation</option>
-                           <option value="End of Test">End of Test</option>
-                        </select>
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Target Status</label>
-                        <select name="target_status" class="form-select" required>
-                           <option value="Repaired">Repaired</option>
-                           <option value="Scrap">Scrap</option>
-                           <option value="New">New</option>
-                        </select>
-                     </div>
-                     <div class="col-6">
-                        <label class="form-label">Destination Location</label>
-                        <select name="work_location_id" class="form-select" required>
-                           <option value="">-- Select Location --</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col-12">
-                        <label class="form-label">Notes / Detailed Condition</label>
-                        <input type="text" name="tyre_condition_after" class="form-control"
-                           placeholder="example: Buffable, Sidewall Cut, etc">
-                     </div>
-                  </div>
-                  <div class="alert alert-warning mt-3 mb-0">
-                     <i class="ri ri-error-warning-line me-1"></i> Removing the last tyre will not automatically close the
-                     session. Update session status manually if needed.
-                  </div>
-               </div>
-               <div class="modal-footer">
-                  <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-danger">Record Removal</button>
-               </div>
-            </form>
-         </div>
-      </div>
-   </div>
-@section('page-script')
-   <script>
-      $(function() {
-         // --- 1. Installation Auto-fill ---
-         $('#btnCheckTyre').on('click', function() {
-            const serial = $('#install_serial').val();
-            if (!serial) {
-               Swal.fire('Error', 'Please enter serial number', 'error');
-               return;
-            }
-
-            $.get("{{ route('monitoring.tyre-by-serial') }}", {
-               serial_number: serial
-            }, function(res) {
-               if (res.success) {
-                  $('#tyre_info_box').show();
-                  $('#info_brand').text(res.data.brand);
-                  $('#info_size').text(res.data.size);
-                  $('#info_pattern').text(res.data.pattern);
-
-                  // Optional: fill RTD fields with current OTD if it's the first time
-                  // or just leave it for user to fill based on physical check
-                  if (!$('input[name="rtd_1"]').val()) {
-                     $('input[name="rtd_1"]').val(res.data.rtd);
-                     $('input[name="rtd_2"]').val(res.data.rtd);
-                     $('input[name="rtd_3"]').val(res.data.rtd);
-                  }
-               } else {
-                  $('#tyre_info_box').hide();
-                  Swal.fire('Warning', res.message, 'warning');
-               }
-            });
-         });
-
-         // --- 2. Check/Removal Auto-fill RTD ---
-         $('select[name="serial_number"]').on('change', function() {
-            const selected = $(this).find(':selected');
-            const modal = $(this).closest('.modal');
-
-            if (selected.val() && selected.data('rtd1')) {
-               modal.find('input[name="rtd_1"]').val(selected.data('rtd1'));
-               modal.find('input[name="rtd_2"]').val(selected.data('rtd2'));
-               modal.find('input[name="rtd_3"]').val(selected.data('rtd3'));
-               modal.find('input[name="final_rtd"]').val(selected.data('rtd1')); // for removal
-            }
-         });
-      });
-   </script>
 @endsection

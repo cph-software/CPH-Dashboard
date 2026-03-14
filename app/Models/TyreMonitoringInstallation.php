@@ -23,12 +23,16 @@ class TyreMonitoringInstallation extends Model
         'size',
         'inf_press_recommended',
         'inf_press_actual',
+        'date_assembly',
+        'date_inspection',
         'install_date',
         'rtd_1',
         'rtd_2',
         'rtd_3',
+        'rtd_4',
         'avg_rtd',
-        'odometer',
+        'original_rtd',
+        'odometer_reading',
         'notes',
     ];
 
