@@ -6,46 +6,119 @@
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/select2/select2.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/flatpickr/flatpickr.css') }}" />
    <style>
+      /* Table container for horizontal scroll */
+      .table-responsive {
+         overflow-x: auto;
+         -webkit-overflow-scrolling: touch;
+         margin-bottom: 1rem;
+         border: 1px solid #e5e7eb;
+         border-radius: 8px;
+         background: #fff;
+      }
+
+      #bulk-install-table {
+         min-width: 1800px;
+         /* Force overflow to trigger scroll */
+         table-layout: fixed;
+      }
+
+      #bulk-install-table th,
+      #bulk-install-table td {
+         padding: 12px 10px !important;
+         vertical-align: middle;
+      }
+
       .rtd-input {
-         height: 50px !important;
-         font-size: 1.25rem !important;
+         height: 55px !important;
+         font-size: 1.4rem !important;
          font-weight: 800 !important;
          text-align: center;
          padding: 5px !important;
-         min-width: 100px;
-         color: #2c3e50;
-         background-color: #fffef2 !important;
-         border: 2px solid #d1d5db !important;
+         width: 100%;
+         color: #1a202c;
+         background-color: #fff !important;
+         border: 2px solid #94a3b8 !important;
+         border-radius: 6px;
       }
 
       .rtd-input:focus {
          border-color: #7367f0 !important;
-         background-color: #fff !important;
-         box-shadow: 0 0 0 0.25rem rgba(115, 103, 240, 0.25);
+         background-color: #f8fafc !important;
+         box-shadow: 0 0 0 4px rgba(115, 103, 240, 0.15);
+         outline: none;
       }
 
       .avg-rtd {
-         font-size: 1.2rem !important;
+         font-size: 1.3rem !important;
+         font-weight: 800;
+         color: #7367f0;
          display: block;
-         margin-top: 5px;
       }
 
-      #bulk-install-table th {
-         vertical-align: middle;
+      .worn-pct {
+         font-size: 1.1rem;
+      }
+
+      #bulk-install-table thead th {
+         background-color: #233446 !important;
+         color: #fff !important;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         font-size: 0.8rem;
+         font-weight: 600;
          text-align: center;
-         font-size: 0.85rem;
-         padding: 12px 8px;
       }
 
       .select2-container--default .select2-selection--single {
-         height: 40px !important;
+         height: 45px !important;
          display: flex;
          align-items: center;
+         font-weight: 600;
       }
 
       .tyre-info-box {
-         padding: 5px;
-         border-radius: 4px;
+         background: #f1f5f9;
+         padding: 8px 12px;
+         border-radius: 6px;
+         border-left: 4px solid #7367f0;
+         white-space: normal;
+      }
+
+      /* Column Width Definitions */
+      .col-pos {
+         width: 70px;
+      }
+
+      .col-info {
+         width: 320px;
+      }
+
+      .col-psi {
+         width: 150px;
+      }
+
+      .col-date {
+         width: 180px;
+      }
+
+      .col-rtd {
+         width: 140px;
+      }
+
+      .col-avg {
+         width: 120px;
+      }
+
+      .col-worn {
+         width: 100px;
+      }
+
+      .col-cond {
+         width: 240px;
+      }
+
+      .col-notes {
+         width: 400px;
       }
    </style>
 @endsection
@@ -53,11 +126,11 @@
 @section('content')
    <div class="row">
       <div class="col-12">
-         <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-               <h5 class="mb-0">Start New Monitoring & Bulk Installation</h5>
+         <div class="card mb-4 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+               <h5 class="mb-0 fw-bold"><i class="ri-dashboard-line me-2"></i>Start New Monitoring & Bulk Installation</h5>
                <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}" class="btn btn-label-secondary">
-                  <i class="ri-arrow-left-line me-1"></i> Back
+                  <i class="ri-arrow-left-line me-1"></i> Kembali
                </a>
             </div>
             <div class="card-body">
@@ -66,25 +139,26 @@
                   <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicle_id }}">
                   <input type="hidden" name="master_vehicle_id" value="{{ $vehicle->master_vehicle_id }}">
 
-                  <div class="row g-4 mb-5 border-bottom pb-4 bg-light p-3 rounded">
+                  <div class="row g-4 mb-5 border-bottom pb-4 bg-light p-3 rounded shadow-inner">
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Installation Date</label>
-                        <input type="date" name="install_date" class="form-control" required
+                        <label class="form-label fw-bold">Tanggal Pemasangan</label>
+                        <input type="date" name="install_date" class="form-control form-control-lg" required
                            value="{{ date('Y-m-d') }}">
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Odometer at Installation</label>
-                        <input type="number" name="odometer_start" class="form-control" required placeholder="KM">
+                        <label class="form-label fw-bold">Odometer Saat Ini</label>
+                        <input type="number" name="odometer_start" class="form-control form-control-lg" required
+                           placeholder="KM">
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Default Original RTD</label>
-                        <input type="number" name="original_rtd" class="form-control" step="0.1" required
-                           placeholder="E.g. 14.5">
+                        <label class="form-label fw-bold">Standar RTD Awal (Baru)</label>
+                        <input type="number" name="original_rtd" class="form-control form-control-lg" step="0.1"
+                           required placeholder="Contoh: 14.5">
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Common Tyre Size</label>
+                        <label class="form-label fw-bold">Ukuran Ban Umum</label>
                         <select name="tyre_size" class="form-select select2" required>
-                           <option value="">-- Select Size --</option>
+                           <option value="">-- Pilih Ukuran --</option>
                            @foreach ($sizes as $s)
                               <option value="{{ $s->size }}">{{ $s->size }}</option>
                            @endforeach
@@ -92,24 +166,29 @@
                      </div>
                   </div>
 
-                  <h6 class="fw-bold mb-3 mt-4"><i class="ri-list-check me-1"></i> Bulk Installation (Current Vehicle
-                     Snapshot)</h6>
+                  <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
+                     <h6 class="fw-bold mb-0 text-primary"><i class="ri-list-check-2 me-1"></i> Data Ban Terpasang (Bulk
+                        Snapshot)</h6>
+                     <small class="text-muted"><i class="ri-information-line me-1"></i>Gunakan scroll horizontal untuk
+                        melihat semua kolom</small>
+                  </div>
+
                   <div class="table-responsive">
                      <table class="table table-bordered align-middle" id="bulk-install-table">
-                        <thead class="table-dark">
-                           <tr class="text-nowrap text-center">
-                              <th width="40">Pos</th>
-                              <th width="250">Tyre Information</th>
-                              <th width="120">Psi (Rec/Act)</th>
-                              <th width="120">Date Assembly</th>
-                              <th width="115">RTD 1</th>
-                              <th width="115">RTD 2</th>
-                              <th width="115">RTD 3</th>
-                              <th width="115">RTD 4</th>
-                              <th width="100">Avg RTD</th>
-                              <th width="80">Worn %</th>
-                              <th width="180">Cond / Rec</th>
-                              <th width="200">Notes</th>
+                        <thead>
+                           <tr class="text-nowrap">
+                              <th class="col-pos text-center">Pos</th>
+                              <th class="col-info">Informasi Ban</th>
+                              <th class="col-psi">Psi (Rec/Act)</th>
+                              <th class="col-date">Tgl Assembly</th>
+                              <th class="col-rtd">RTD 1</th>
+                              <th class="col-rtd">RTD 2</th>
+                              <th class="col-rtd">RTD 3</th>
+                              <th class="col-rtd">RTD 4</th>
+                              <th class="col-avg">Avg RTD</th>
+                              <th class="col-worn">Worn %</th>
+                              <th class="col-cond">Kondisi / Rekomendasi</th>
+                              <th class="col-notes">Catatan (Notes)</th>
                            </tr>
                         </thead>
                         <tbody>
@@ -119,13 +198,16 @@
                                  $rowId = $tyre ? $tyre->serial_number : 'pos_' . $pos->id;
                               @endphp
                               <tr class="tyre-row" data-serial="{{ $tyre ? $tyre->serial_number : '' }}">
-                                 <td class="text-center fw-bold">{{ $pos->position_code }}</td>
+                                 <td class="text-center fw-bold bg-light" style="font-size: 1.2rem;">
+                                    {{ $pos->position_code }}</td>
                                  <td>
                                     @if ($tyre)
                                        <div class="d-flex flex-column tyre-info-box">
-                                          <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
-                                          <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
-                                             {{ $tyre->size->size ?? '-' }}</small>
+                                          <span class="fw-bold text-primary"
+                                             style="font-size: 1rem;">{{ $tyre->serial_number }}</span>
+                                          <small
+                                             class="text-dark fw-semibold">{{ $tyre->brand->brand_name ?? '-' }}</small>
+                                          <small class="text-muted">{{ $tyre->size->size ?? '-' }}</small>
                                           <input type="hidden" name="checks[{{ $rowId }}][tyre_id]"
                                              value="{{ $tyre->id }}">
                                           <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
@@ -137,7 +219,7 @@
                                        <div class="d-flex flex-column gap-1">
                                           <select name="checks[{{ $rowId }}][tyre_id]"
                                              class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
-                                             <option value="">-- Select Tyre --</option>
+                                             <option value="">-- Pilih Ban Stok --</option>
                                              @foreach ($availableTyres as $at)
                                                 <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}">
                                                    {{ $at->serial_number }}</option>
@@ -151,56 +233,54 @@
                                     @endif
                                  </td>
                                  <td>
-                                    <div class="input-group input-group-sm mb-1">
+                                    <div class="input-group mb-1">
+                                       <span class="input-group-text p-1" style="font-size: 0.75rem">Rec</span>
                                        <input type="number" name="checks[{{ $rowId }}][inf_press_recommended]"
-                                          class="form-control" placeholder="Rec">
+                                          class="form-control" placeholder="0">
                                     </div>
-                                    <div class="input-group input-group-sm">
+                                    <div class="input-group">
+                                       <span class="input-group-text p-1 text-primary fw-bold"
+                                          style="font-size: 0.75rem">Act</span>
                                        <input type="number" name="checks[{{ $rowId }}][inf_press_actual]"
-                                          class="form-control" placeholder="Act">
+                                          class="form-control border-primary" placeholder="0">
                                     </div>
                                  </td>
                                  <td>
                                     <input type="date" name="checks[{{ $rowId }}][date_assembly]"
                                        class="form-control">
                                  </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $rowId }}][rtd_1]"
+                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_1]"
                                        class="form-control rtd-input" data-idx="1" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}">
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $rowId }}][rtd_2]"
+                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_2]"
                                        class="form-control rtd-input" data-idx="2" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}">
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $rowId }}][rtd_3]"
+                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_3]"
                                        class="form-control rtd-input" data-idx="3" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}">
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $rowId }}][rtd_4]"
+                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_4]"
                                        class="form-control rtd-input" data-idx="4" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}">
-                                 </td>
-                                 <td class="text-center font-monospace fw-bold bg-light">
-                                    <span class="avg-rtd text-primary">0.00</span>
-                                 </td>
+                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
                                  <td class="text-center bg-light">
+                                    <span class="avg-rtd">0.00</span>
+                                    <small class="text-muted" style="font-size: 0.7rem">mm</small>
+                                 </td>
+                                 <td class="text-center">
                                     <span class="worn-pct fw-bold">0%</span>
                                  </td>
                                  <td>
-                                    <select name="checks[{{ $rowId }}][condition]" class="form-select mb-1">
-                                       <option value="ok">OK</option>
-                                       <option value="warning">Warning</option>
-                                       <option value="critical">Critical</option>
+                                    <select name="checks[{{ $rowId }}][condition]"
+                                       class="form-select mb-2 fw-bold">
+                                       <option value="ok" class="text-success">✅ OK</option>
+                                       <option value="warning" class="text-warning">⚠️ Warning</option>
+                                       <option value="critical" class="text-danger">❌ Critical</option>
                                     </select>
                                     <input type="text" name="checks[{{ $rowId }}][recommendation]"
-                                       class="form-control" placeholder="Rec...">
+                                       class="form-control" placeholder="Tulis saran/rekomendasi...">
                                  </td>
                                  <td>
-                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control" rows="2" placeholder="Notes"></textarea>
+                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control" rows="3"
+                                       placeholder="Tambahkan catatan khusus ban ini..."></textarea>
                                  </td>
                               </tr>
                            @endforeach
