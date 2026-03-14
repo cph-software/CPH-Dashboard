@@ -253,6 +253,49 @@ class MonitoringController extends Controller
         ));
     }
 
+    public function createCheck($session_id)
+    {
+        $session = TyreMonitoringSession::with(['vehicle', 'installations.positionDetail'])->findOrFail($session_id);
+        $vehicle = TyreMonitoringVehicle::findOrFail($session->vehicle_id);
+        $checkCount = TyreMonitoringCheck::where('session_id', $session_id)->distinct('check_number')->count();
+
+        $masterPositions = [];
+        $assignedTyres = collect();
+
+        if ($session->master_vehicle_id) {
+            $masterVehicle = MasterImportKendaraan::with(['tyrePositionConfiguration.details'])->find($session->master_vehicle_id);
+            if ($masterVehicle && $masterVehicle->tyrePositionConfiguration) {
+                $masterPositions = $masterVehicle->tyrePositionConfiguration->details()
+                    ->orderBy('display_order')
+                    ->get();
+                
+                $assignedTyres = Tyre::where('current_vehicle_id', $session->master_vehicle_id)
+                    ->with(['brand', 'pattern', 'size'])
+                    ->get()
+                    ->keyBy('current_position_id');
+            }
+        }
+
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
+        $installedTyres = \App\Models\Tyre::where('current_vehicle_id', $session->master_vehicle_id)
+            ->with(['brand', 'size', 'pattern'])
+            ->get();
+
+        return view('tyre-performance.monitoring.add_check', compact(
+            'session',
+            'vehicle',
+            'checkCount',
+            'masterPositions',
+            'assignedTyres',
+            'brands',
+            'patterns',
+            'sizes',
+            'installedTyres'
+        ));
+    }
+
     public function storeSession(Request $request)
     {
         $request->validate([
