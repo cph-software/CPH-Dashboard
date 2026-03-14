@@ -52,21 +52,21 @@
                   <h6 class="fw-bold mb-3 mt-4"><i class="ri-list-check me-1"></i> Bulk Installation (Current Vehicle
                      Snapshot)</h6>
                   <div class="table-responsive">
-                     <table class="table table-bordered table-sm align-middle" id="bulk-install-table">
+                     <table class="table table-bordered align-middle" id="bulk-install-table">
                         <thead class="table-dark">
                            <tr class="text-nowrap text-center">
                               <th width="40">Pos</th>
-                              <th width="150">Tyre Information</th>
-                              <th width="100">Psi (Rec/Act)</th>
-                              <th width="100">Date Assembly</th>
-                              <th width="80">RTD 1</th>
-                              <th width="80">RTD 2</th>
-                              <th width="80">RTD 3</th>
-                              <th width="80">RTD 4</th>
-                              <th width="80">Avg RTD</th>
+                              <th width="180">Tyre Information</th>
+                              <th width="120">Psi (Rec/Act)</th>
+                              <th width="120">Date Assembly</th>
+                              <th width="90">RTD 1</th>
+                              <th width="90">RTD 2</th>
+                              <th width="90">RTD 3</th>
+                              <th width="90">RTD 4</th>
+                              <th width="100">Avg RTD</th>
                               <th width="80">Worn %</th>
-                              <th width="100">Cond / Rec</th>
-                              <th width="150">Notes</th>
+                              <th width="180">Cond / Rec</th>
+                              <th width="200">Notes</th>
                            </tr>
                         </thead>
                         <tbody>
@@ -112,22 +112,22 @@
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $rowId }}][rtd_1]"
-                                       class="form-control form-control-sm rtd-input" data-idx="1" step="0.1"
+                                       class="form-control rtd-input" data-idx="1" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $rowId }}][rtd_2]"
-                                       class="form-control form-control-sm rtd-input" data-idx="2" step="0.1"
+                                       class="form-control rtd-input" data-idx="2" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $rowId }}][rtd_3]"
-                                       class="form-control form-control-sm rtd-input" data-idx="3" step="0.1"
+                                       class="form-control rtd-input" data-idx="3" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
                                     <input type="number" name="checks[{{ $rowId }}][rtd_4]"
-                                       class="form-control form-control-sm rtd-input" data-idx="4" step="0.1"
+                                       class="form-control rtd-input" data-idx="4" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td class="text-center font-monospace fw-bold bg-light">
@@ -137,18 +137,16 @@
                                     <span class="worn-pct fw-bold">0%</span>
                                  </td>
                                  <td>
-                                    <select name="checks[{{ $rowId }}][condition]"
-                                       class="form-select form-select-sm mb-1">
+                                    <select name="checks[{{ $rowId }}][condition]" class="form-select mb-1">
                                        <option value="ok">OK</option>
                                        <option value="warning">Warning</option>
                                        <option value="critical">Critical</option>
                                     </select>
                                     <input type="text" name="checks[{{ $rowId }}][recommendation]"
-                                       class="form-control form-control-sm" placeholder="Rec...">
+                                       class="form-control" placeholder="Rec...">
                                  </td>
                                  <td>
-                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control form-control-sm" rows="1"
-                                       placeholder="Notes"></textarea>
+                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control" rows="2" placeholder="Notes"></textarea>
                                  </td>
                               </tr>
                            @endforeach
