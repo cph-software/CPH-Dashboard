@@ -110,26 +110,31 @@
       // Determine the active session and its current stage
       $activeSession = $sessions->where('status', 'active')->first();
       $hasInstallation = $activeSession && $activeSession->installations_count > 0;
-      $checkCount = $activeSession ? $activeSession->checks_count : 0;
-      $hasRemoval = $activeSession && $activeSession->removal_count > 0;
 
-      // Build stepper stages
-      // Stage flow: Installation → Check 1 → Check 2 → ... → Removal
+      // checkCount = jumlah grup check berbeda (check number), bukan jumlah row
+      $checkCount = 0;
+      if ($activeSession) {
+          // We calculate unique check_numbers for the active session
+          $uniqueChecks = \App\Models\TyreMonitoringCheck::where('session_id', $activeSession->session_id)
+              ->distinct('check_number')
+              ->pluck('check_number');
+          $checkCount = $uniqueChecks->count();
+      }
+
+      // Current stage logic
       if (!$activeSession) {
           $currentStage = 'none';
       } elseif (!$hasInstallation) {
           $currentStage = 'installation';
-      } elseif (!$hasRemoval) {
-          $currentStage = 'check_' . ($checkCount + 1); // next check to do
       } else {
-          $currentStage = 'completed';
+          $currentStage = 'check_' . ($checkCount + 1);
       }
    @endphp
    {{-- Page Header --}}
    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.index') }}" class="btn btn-icon btn-outline-secondary me-3">
-            <i class="ri ri-arrow-left-line"></i>
+            <i class="ri-arrow-left-line"></i>
          </a>
          <div>
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Operations / Monitoring /</span>
@@ -140,7 +145,7 @@
       <div class="d-flex gap-2 flex-wrap">
          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
             data-bs-target="#editVehicleModal">
-            <i class="ri ri-settings-3-line me-1"></i> Config
+            <i class="ri-settings-3-line me-1"></i> Config
          </button>
       </div>
    </div>
@@ -160,8 +165,7 @@
             <div class="monitoring-stepper">
                {{-- Installation Step --}}
                <div class="step-item">
-                  <span
-                     class="step-badge {{ $hasInstallation ? 'completed' : ($currentStage == 'installation' ? 'active' : '') }}">
+                  <span class="step-badge {{ $hasInstallation ? 'completed' : 'active' }}">
                      <i class="ri-install-line step-icon"></i>
                      Installation
                      @if ($hasInstallation)
@@ -170,12 +174,11 @@
                   </span>
                </div>
 
-               {{-- Check Steps --}}
-               @for ($i = 1; $i <= max($checkCount + ($currentStage != 'completed' && $hasInstallation ? 1 : 0), $checkCount); $i++)
+               {{-- Check Steps: always show the next expected check --}}
+               @for ($i = 1; $i <= $checkCount + ($hasInstallation ? 1 : 0); $i++)
                   <div class="step-connector {{ $i <= $checkCount ? 'completed' : '' }}"></div>
                   <div class="step-item">
-                     <span
-                        class="step-badge {{ $i <= $checkCount ? 'completed' : ($currentStage == 'check_' . $i ? 'active' : '') }}">
+                     <span class="step-badge {{ $i <= $checkCount ? 'completed' : 'active' }}">
                         <i class="ri-search-eye-line step-icon"></i>
                         Check {{ $i }}
                         @if ($i <= $checkCount)
@@ -184,18 +187,6 @@
                      </span>
                   </div>
                @endfor
-
-               {{-- Removal Step --}}
-               <div class="step-connector {{ $hasRemoval ? 'completed' : '' }}"></div>
-               <div class="step-item">
-                  <span class="step-badge {{ $hasRemoval ? 'completed' : '' }}">
-                     <i class="ri-delete-bin-line step-icon"></i>
-                     Removal
-                     @if ($hasRemoval)
-                        <i class="ri-check-line"></i>
-                     @endif
-                  </span>
-               </div>
             </div>
          </div>
       </div>
@@ -210,35 +201,28 @@
                         <i class="ri-install-line ri-lg"></i>
                      </div>
                      <div>
-                        <h6 class="mb-0 fw-bold">Langkah Berikutnya: Record Installation</h6>
-                        <p class="text-muted mb-0 small">Catat pemasangan ban untuk sesi monitoring ini.</p>
+                        <h6 class="mb-0 fw-bold">Record Installation</h6>
+                        <p class="text-muted mb-0 small">Mulai monitoring dengan mencatat pemasangan ban.</p>
                      </div>
                   @elseif (str_starts_with($currentStage, 'check_'))
                      <div class="avatar avatar-lg bg-label-info rounded-circle">
                         <i class="ri-search-eye-line ri-lg"></i>
                      </div>
                      <div>
-                        <h6 class="mb-0 fw-bold">Langkah Berikutnya: Periodic Check {{ $checkCount + 1 }}</h6>
-                        <p class="text-muted mb-0 small">Lakukan pemeriksaan kedalaman tapak ban secara berkala, atau
-                           record removal untuk mengakhiri sesi.</p>
-                     </div>
-                  @elseif ($currentStage == 'completed')
-                     <div class="avatar avatar-lg bg-label-success rounded-circle">
-                        <i class="ri-checkbox-circle-line ri-lg"></i>
-                     </div>
-                     <div>
-                        <h6 class="mb-0 fw-bold">Sesi Monitoring Selesai</h6>
-                        <p class="text-muted mb-0 small">Semua data sudah tercatat lengkap.</p>
+                        <h6 class="mb-0 fw-bold">Periodic Check {{ $checkCount + 1 }}</h6>
+                        <p class="text-muted mb-0 small">Lakukan pemeriksaan rutin untuk memantau performa ban.</p>
                      </div>
                   @endif
                </div>
                <div class="d-flex gap-2 flex-wrap">
                   @if ($currentStage == 'installation')
-                     <a href="{{ route('monitoring.sessions.create', $vehicle->vehicle_id) }}" class="btn btn-primary">
+                     <a href="{{ route('monitoring.sessions.create', $vehicle->vehicle_id) }}"
+                        class="btn btn-primary shadow-sm">
                         <i class="ri-add-line me-1"></i> Start Installation
                      </a>
                   @elseif (str_starts_with($currentStage, 'check_'))
-                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCheckModal">
+                     <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                        data-bs-target="#addCheckModal">
                         <i class="ri-add-line me-1"></i> Add Check {{ $checkCount + 1 }}
                      </button>
                      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
@@ -418,11 +402,11 @@
                         <div class="d-flex gap-1">
                            <a href="{{ route('monitoring.sessions.show', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-primary" title="View Detail">
-                              <i class="ri ri-eye-line"></i>
+                              <i class="ri-eye-line"></i>
                            </a>
                            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-success" title="Export Excel">
-                              <i class="ri ri-file-excel-2-line"></i>
+                              <i class="ri-file-excel-2-line"></i>
                            </a>
                            @if ($session->status == 'active')
                               <form action="{{ route('monitoring.sessions.update', $session->session_id) }}"

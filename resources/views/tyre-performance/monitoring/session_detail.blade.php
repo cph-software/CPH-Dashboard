@@ -166,7 +166,7 @@
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
             class="btn btn-icon btn-outline-secondary me-3">
-            <i class="ri ri-arrow-left-line"></i>
+            <i class="ri-arrow-left-line"></i>
          </a>
          <div>
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session
@@ -176,7 +176,7 @@
          </div>
       </div>
       <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
-         <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
+         <i class="ri-file-excel-2-line me-1"></i> Export Excel
       </a>
    </div>
 
@@ -559,7 +559,8 @@
                      <div class="col-md-3"><strong>Reason:</strong> {{ $session->removal->removal_reason }}</div>
                   </div>
                   <p class="small mt-1 mb-0"><strong>Condition:</strong> {{ $session->removal->tyre_condition_after }} ·
-                     <strong>Notes:</strong> {{ $session->removal->notes }}</p>
+                     <strong>Notes:</strong> {{ $session->removal->notes }}
+                  </p>
                </div>
             @endif
 

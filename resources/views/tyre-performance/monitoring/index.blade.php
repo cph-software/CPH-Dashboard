@@ -113,74 +113,73 @@
 @endsection
 
 @section('content')
-      <div class="d-flex justify-content-between align-items-center mb-4">
-         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Operations /</span> Tyre Monitoring</h4>
-         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
-            <i class="ri ri-add-line me-1"></i> Add Vehicle for Monitoring
-         </button>
-      </div>
+   <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Operations /</span> Tyre Monitoring</h4>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+         <i class="ri ri-add-line me-1"></i> Add Vehicle for Monitoring
+      </button>
+   </div>
 
-      <div class="card">
-         <div class="card-datatable table-responsive">
-            <table class="datatables-monitoring-vehicles table border-top table-hover">
-               <thead>
+   <div class="card">
+      <div class="card-datatable table-responsive">
+         <table class="datatables-monitoring-vehicles table border-top table-hover">
+            <thead>
+               <tr>
+                  <th>Fleet Name</th>
+                  <th>Vehicle Number</th>
+                  <th>Driver</th>
+                  <th>Pos</th>
+                  <th>Active Sessions</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+               </tr>
+            </thead>
+            <tbody>
+               @foreach ($vehicles as $vehicle)
                   <tr>
-                     <th>Fleet Name</th>
-                     <th>Vehicle Number</th>
-                     <th>Driver</th>
-                     <th>Pos</th>
-                     <th>Active Sessions</th>
-                     <th>Status</th>
-                     <th>Actions</th>
+                     <td>{{ $vehicle->fleet_name }}</td>
+                     <td>{{ $vehicle->vehicle_number }}</td>
+                     <td>{{ $vehicle->driver_name }}</td>
+                     <td>{{ $vehicle->tire_positions }}</td>
+                     <td>
+                        @if ($vehicle->sessions_count > 0)
+                           <span class="badge bg-label-success">{{ $vehicle->sessions_count }} Active</span>
+                        @else
+                           <span class="badge bg-label-secondary">None</span>
+                        @endif
+                     </td>
+                     <td>
+                        <span class="badge bg-label-{{ $vehicle->status == 'active' ? 'success' : 'danger' }}">
+                           {{ ucfirst($vehicle->status) }}
+                        </span>
+                     </td>
+                     <td>
+                        <div class="d-flex gap-2">
+                           <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}"
+                              class="btn btn-sm btn-icon btn-outline-primary" title="View Sessions">
+                              <i class="ri-eye-line"></i>
+                           </a>
+                           <button type="button" class="btn btn-sm btn-icon btn-outline-warning edit-vehicle-btn"
+                              title="Edit Vehicle" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
+                              data-id="{{ $vehicle->vehicle_id }}" data-fleet="{{ $vehicle->fleet_name }}"
+                              data-no="{{ $vehicle->vehicle_number }}" data-driver="{{ $vehicle->driver_name }}"
+                              data-phone="{{ $vehicle->phone_number }}" data-app="{{ $vehicle->application }}"
+                              data-capacity="{{ $vehicle->load_capacity }}" data-pos="{{ $vehicle->tire_positions }}"
+                              data-master="{{ $vehicle->master_vehicle_id }}">
+                              <i class="ri-edit-line"></i>
+                           </button>
+                           <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}" method="POST"
+                              class="d-inline" onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf
+                              @method('DELETE')<button type="submit" class="btn btn-sm btn-icon btn-outline-danger"><i
+                                    class="ri-delete-bin-line"></i></button></form>
+                        </div>
+                     </td>
                   </tr>
-               </thead>
-               <tbody>
-                  @foreach ($vehicles as $vehicle)
-                     <tr>
-                        <td>{{ $vehicle->fleet_name }}</td>
-                        <td>{{ $vehicle->vehicle_number }}</td>
-                        <td>{{ $vehicle->driver_name }}</td>
-                        <td>{{ $vehicle->tire_positions }}</td>
-                        <td>
-                           @if ($vehicle->sessions_count > 0)
-                              <span class="badge bg-label-success">{{ $vehicle->sessions_count }} Active</span>
-                           @else
-                              <span class="badge bg-label-secondary">None</span>
-                           @endif
-                        </td>
-                        <td>
-                           <span class="badge bg-label-{{ $vehicle->status == 'active' ? 'success' : 'danger' }}">
-                              {{ ucfirst($vehicle->status) }}
-                           </span>
-                        </td>
-                        <td>
-                           <div class="d-flex gap-2">
-                              <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}"
-                                 class="btn btn-sm btn-icon btn-outline-primary" title="View Sessions">
-                                 <i class="ri ri-eye-line"></i>
-                              </a>
-                              <button type="button" class="btn btn-sm btn-icon btn-outline-warning edit-vehicle-btn"
-                                 title="Edit Vehicle" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                 data-id="{{ $vehicle->vehicle_id }}" data-fleet="{{ $vehicle->fleet_name }}"
-                                 data-no="{{ $vehicle->vehicle_number }}" data-driver="{{ $vehicle->driver_name }}"
-                                 data-phone="{{ $vehicle->phone_number }}" data-app="{{ $vehicle->application }}"
-                                 data-capacity="{{ $vehicle->load_capacity }}" data-pos="{{ $vehicle->tire_positions }}"
-                                 data-master="{{ $vehicle->master_vehicle_id }}">
-                                 <i class="ri ri-edit-line"></i>
-                              </button>
-                              <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}"
-                                 method="POST" class="d-inline"
-                                 onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf
-                                 @method('DELETE')<button type="submit" class="btn btn-sm btn-icon btn-outline-danger"><i
-                                       class="ri ri-delete-bin-line"></i></button></form>
-                           </div>
-                        </td>
-                     </tr>
-                  @endforeach
-               </tbody>
-            </table>
-         </div>
+               @endforeach
+            </tbody>
+         </table>
       </div>
+   </div>
    </div>
 
    <!-- Add Vehicle Modal -->
@@ -344,113 +343,113 @@
             </form>
          </div>
       </div>
-@endsection
+   @endsection
 
-@section('vendor-script')
-   <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
-   <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
-   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
-@endsection
+   @section('vendor-script')
+      <script src="{{ asset('template/full-version/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
+      <script src="{{ asset('template/full-version/assets/vendor/libs/select2/select2.js') }}"></script>
+      <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+   @endsection
 
-@section('page-script')
-   <script>
-      $(function() {
-         $('.datatables-monitoring-vehicles').DataTable({
-            order: [
-               [0, 'desc']
-            ]
-         });
+   @section('page-script')
+      <script>
+         $(function() {
+            $('.datatables-monitoring-vehicles').DataTable({
+               order: [
+                  [0, 'desc']
+               ]
+            });
 
-         $(document).on('change', '#selectMasterVehicle, #editSelectMasterVehicle', function() {
-            const isEdit = $(this).attr('id').includes('edit');
-            const prefix = isEdit ? '#edit' : '#';
-            const selected = $(this).find(':selected');
-            const vehicleId = selected.val();
+            $(document).on('change', '#selectMasterVehicle, #editSelectMasterVehicle', function() {
+               const isEdit = $(this).attr('id').includes('edit');
+               const prefix = isEdit ? '#edit' : '#';
+               const selected = $(this).find(':selected');
+               const vehicleId = selected.val();
 
-            if (vehicleId) {
-               // Initial auto-fill from data attributes
-               $(prefix + 'FleetNameField').val(selected.data('code') || selected.data('kode'));
-               $(prefix + 'VehicleNumberField').val(selected.data('no'));
-               $(prefix + 'LoadCapacityField').val(selected.data('payload'));
+               if (vehicleId) {
+                  // Initial auto-fill from data attributes
+                  $(prefix + 'FleetNameField').val(selected.data('code') || selected.data('kode'));
+                  $(prefix + 'VehicleNumberField').val(selected.data('no'));
+                  $(prefix + 'LoadCapacityField').val(selected.data('payload'));
 
-               // Force fill the position field
-               const posCount = selected.data('pos');
-               if (posCount) {
-                  $(prefix + 'TirePositionsField').val(posCount);
-               }
-
-               // Fetch detailed preview
-               $(prefix + 'LayoutPreview').html(
-                  '<div class="spinner-border text-primary spinner-border-sm" role="status"></div><br><span class="small text-muted">Loading preview...</span>'
-               );
-
-               const detailUrl = "{{ route('monitoring.master-vehicle.details', ':id') }}".replace(':id',
-                  vehicleId);
-
-               $.get(detailUrl, function(res) {
-                  if (res.success) {
-                     $(prefix + 'LayoutPreview').html(res.data.layout_html);
-
-                     // Initialize tooltips for the new layout
-                     if (typeof bootstrap !== 'undefined') {
-                        const tooltipTriggerList = [].slice.call(document.querySelectorAll(
-                           prefix + 'LayoutPreview [title]'))
-                        tooltipTriggerList.map(function(tooltipTriggerEl) {
-                           return new bootstrap.Tooltip(tooltipTriggerEl)
-                        });
-                     }
-
-                     // Auto-fill from AJAX results if exists (highest priority)
-                     if (res.data.payload_capacity) $(prefix + 'LoadCapacityField').val(res.data
-                        .payload_capacity);
-                     if (res.data.total_tyre_position) $(prefix + 'TirePositionsField').val(res.data
-                        .total_tyre_position);
-                  } else {
-                     $(prefix + 'LayoutPreview').html(
-                        '<span class="text-danger small">Failed to load preview</span>');
+                  // Force fill the position field
+                  const posCount = selected.data('pos');
+                  if (posCount) {
+                     $(prefix + 'TirePositionsField').val(posCount);
                   }
-               }).fail(function() {
+
+                  // Fetch detailed preview
                   $(prefix + 'LayoutPreview').html(
-                     '<span class="text-danger small">Error loading preview</span>');
-               });
-            } else {
-               if (!isEdit) {
-                  $(prefix + 'FleetNameField').val('');
-                  $(prefix + 'VehicleNumberField').val('');
-                  $(prefix + 'LoadCapacityField').val('');
-                  $(prefix + 'TirePositionsField').val(6);
+                     '<div class="spinner-border text-primary spinner-border-sm" role="status"></div><br><span class="small text-muted">Loading preview...</span>'
+                  );
+
+                  const detailUrl = "{{ route('monitoring.master-vehicle.details', ':id') }}".replace(':id',
+                     vehicleId);
+
+                  $.get(detailUrl, function(res) {
+                     if (res.success) {
+                        $(prefix + 'LayoutPreview').html(res.data.layout_html);
+
+                        // Initialize tooltips for the new layout
+                        if (typeof bootstrap !== 'undefined') {
+                           const tooltipTriggerList = [].slice.call(document.querySelectorAll(
+                              prefix + 'LayoutPreview [title]'))
+                           tooltipTriggerList.map(function(tooltipTriggerEl) {
+                              return new bootstrap.Tooltip(tooltipTriggerEl)
+                           });
+                        }
+
+                        // Auto-fill from AJAX results if exists (highest priority)
+                        if (res.data.payload_capacity) $(prefix + 'LoadCapacityField').val(res.data
+                           .payload_capacity);
+                        if (res.data.total_tyre_position) $(prefix + 'TirePositionsField').val(res.data
+                           .total_tyre_position);
+                     } else {
+                        $(prefix + 'LayoutPreview').html(
+                           '<span class="text-danger small">Failed to load preview</span>');
+                     }
+                  }).fail(function() {
+                     $(prefix + 'LayoutPreview').html(
+                        '<span class="text-danger small">Error loading preview</span>');
+                  });
+               } else {
+                  if (!isEdit) {
+                     $(prefix + 'FleetNameField').val('');
+                     $(prefix + 'VehicleNumberField').val('');
+                     $(prefix + 'LoadCapacityField').val('');
+                     $(prefix + 'TirePositionsField').val(6);
+                  }
+                  $(prefix + 'LayoutPreview').html(
+                     '<span class="text-muted italic small">Select master vehicle to preview layout</span>');
                }
-               $(prefix + 'LayoutPreview').html(
-                  '<span class="text-muted italic small">Select master vehicle to preview layout</span>');
-            }
+            });
+
+            // Populate Edit Modal
+            $(document).on('click', '.edit-vehicle-btn', function() {
+               const btn = $(this);
+               const id = btn.data('id');
+               const form = $('#editVehicleForm');
+
+               // Set action URL
+               form.attr('action', "{{ route('monitoring.vehicle.update', ':id') }}".replace(':id', id));
+
+               // Fill fields
+               $('#editFleetNameField').val(btn.data('fleet'));
+               $('#editVehicleNumberField').val(btn.data('no'));
+               $('#editDriverNameField').val(btn.data('driver'));
+               $('#editPhoneField').val(btn.data('phone'));
+               $('#editApplicationField').val(btn.data('app'));
+               $('#editLoadCapacityField').val(btn.data('capacity'));
+               $('#editTirePositionsField').val(btn.data('pos'));
+
+               // Set Master Vehicle link
+               const masterId = btn.data('master');
+               if (masterId) {
+                  $('#editSelectMasterVehicle').val(masterId).trigger('change');
+               } else {
+                  $('#editSelectMasterVehicle').val('').trigger('change');
+               }
+            });
          });
-
-         // Populate Edit Modal
-         $(document).on('click', '.edit-vehicle-btn', function() {
-            const btn = $(this);
-            const id = btn.data('id');
-            const form = $('#editVehicleForm');
-
-            // Set action URL
-            form.attr('action', "{{ route('monitoring.vehicle.update', ':id') }}".replace(':id', id));
-
-            // Fill fields
-            $('#editFleetNameField').val(btn.data('fleet'));
-            $('#editVehicleNumberField').val(btn.data('no'));
-            $('#editDriverNameField').val(btn.data('driver'));
-            $('#editPhoneField').val(btn.data('phone'));
-            $('#editApplicationField').val(btn.data('app'));
-            $('#editLoadCapacityField').val(btn.data('capacity'));
-            $('#editTirePositionsField').val(btn.data('pos'));
-
-            // Set Master Vehicle link
-            const masterId = btn.data('master');
-            if (masterId) {
-               $('#editSelectMasterVehicle').val(masterId).trigger('change');
-            } else {
-               $('#editSelectMasterVehicle').val('').trigger('change');
-            }
-         });
-      });
-   </script>
-@endsection
+      </script>
+   @endsection
