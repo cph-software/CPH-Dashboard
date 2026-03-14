@@ -340,7 +340,7 @@ class MonitoringController extends Controller
                             'inf_press_recommended' => $c['inf_press_recommended'] ?? null,
                             'inf_press_actual' => $c['inf_press_actual'] ?? null,
                             'date_assembly' => $c['date_assembly'] ?? null,
-                            'date_inspection' => $c['date_inspection'] ?? $request->install_date,
+                            'date_inspection' => $request->install_date,
                             'rtd_1' => $r1,
                             'rtd_2' => $r2,
                             'rtd_3' => $r3,
@@ -348,8 +348,9 @@ class MonitoringController extends Controller
                             'worn_percentage' => $wornPct,
                             'km_per_mm' => 0,
                             'projected_life_km' => 0,
-                            'condition' => 'ok',
-                            'notes' => 'Cek 1 (Start Session)',
+                            'condition' => $c['condition'] ?? 'ok',
+                            'recommendation' => $c['recommendation'] ?? null,
+                            'notes' => $c['notes'] ?? 'Cek 1 (Start Session)',
                         ]);
 
                         // Sync Master Tyre

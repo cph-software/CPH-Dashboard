@@ -52,27 +52,30 @@
                   <h6 class="fw-bold mb-3 mt-4"><i class="ri-list-check me-1"></i> Bulk Installation (Current Vehicle
                      Snapshot)</h6>
                   <div class="table-responsive">
-                     <table class="table table-bordered table-sm align-middle">
+                     <table class="table table-bordered table-sm align-middle" id="bulk-install-table">
                         <thead class="table-dark">
-                           <tr class="text-nowrap">
+                           <tr class="text-nowrap text-center">
                               <th width="40">Pos</th>
                               <th width="150">Tyre Information</th>
                               <th width="100">Psi (Rec/Act)</th>
                               <th width="100">Date Assembly</th>
-                              <th width="100">Date Inspect</th>
                               <th width="80">RTD 1</th>
                               <th width="80">RTD 2</th>
                               <th width="80">RTD 3</th>
                               <th width="80">RTD 4</th>
-                              <th width="150">Notes / Action</th>
+                              <th width="80">Avg RTD</th>
+                              <th width="80">Worn %</th>
+                              <th width="100">Cond / Rec</th>
+                              <th width="150">Notes</th>
                            </tr>
                         </thead>
                         <tbody>
                            @foreach ($masterPositions as $pos)
                               @php
                                  $tyre = $assignedTyres->get($pos->id) ?? null;
+                                 $rowId = $tyre ? $tyre->serial_number : 'pos_' . $pos->id;
                               @endphp
-                              <tr>
+                              <tr class="tyre-row" data-serial="{{ $tyre ? $tyre->serial_number : '' }}">
                                  <td class="text-center fw-bold">{{ $pos->position_code }}</td>
                                  <td>
                                     @if ($tyre)
@@ -80,67 +83,72 @@
                                           <span class="fw-bold text-primary">{{ $tyre->serial_number }}</span>
                                           <small class="text-muted">{{ $tyre->brand->brand_name ?? '-' }} /
                                              {{ $tyre->size->size ?? '-' }}</small>
-                                          <input type="hidden" name="checks[{{ $tyre->serial_number }}][tyre_id]"
+                                          <input type="hidden" name="checks[{{ $rowId }}][tyre_id]"
                                              value="{{ $tyre->id }}">
-                                          <input type="hidden" name="checks[{{ $tyre->serial_number }}][serial_number]"
+                                          <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
                                              value="{{ $tyre->serial_number }}">
-                                          <input type="hidden" name="checks[{{ $tyre->serial_number }}][position_id]"
+                                          <input type="hidden" name="checks[{{ $rowId }}][position_id]"
                                              value="{{ $pos->id }}">
                                        </div>
                                     @else
-                                       <span class="text-muted italic">No tyre found</span>
+                                       <span class="text-muted italic small">No tyre found</span>
+                                       <input type="hidden" name="checks[{{ $rowId }}][position_id]"
+                                          value="{{ $pos->id }}">
                                     @endif
                                  </td>
                                  <td>
                                     <div class="input-group input-group-sm mb-1">
-                                       <input type="number"
-                                          name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][inf_press_recommended]"
+                                       <input type="number" name="checks[{{ $rowId }}][inf_press_recommended]"
                                           class="form-control" placeholder="Rec">
                                     </div>
                                     <div class="input-group input-group-sm">
-                                       <input type="number"
-                                          name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][inf_press_actual]"
+                                       <input type="number" name="checks[{{ $rowId }}][inf_press_actual]"
                                           class="form-control" placeholder="Act">
                                     </div>
                                  </td>
                                  <td>
-                                    <input type="date"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][date_assembly]"
+                                    <input type="date" name="checks[{{ $rowId }}][date_assembly]"
                                        class="form-control form-control-sm">
                                  </td>
                                  <td>
-                                    <input type="date"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][date_inspection]"
-                                       class="form-control form-control-sm" value="{{ date('Y-m-d') }}">
-                                 </td>
-                                 <td>
-                                    <input type="number"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][rtd_1]"
-                                       class="form-control form-control-sm" step="0.1"
+                                    <input type="number" name="checks[{{ $rowId }}][rtd_1]"
+                                       class="form-control form-control-sm rtd-input" data-idx="1" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
-                                    <input type="number"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][rtd_2]"
-                                       class="form-control form-control-sm" step="0.1"
+                                    <input type="number" name="checks[{{ $rowId }}][rtd_2]"
+                                       class="form-control form-control-sm rtd-input" data-idx="2" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
-                                    <input type="number"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][rtd_3]"
-                                       class="form-control form-control-sm" step="0.1"
+                                    <input type="number" name="checks[{{ $rowId }}][rtd_3]"
+                                       class="form-control form-control-sm rtd-input" data-idx="3" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
                                  <td>
-                                    <input type="number"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][rtd_4]"
-                                       class="form-control form-control-sm" step="0.1"
+                                    <input type="number" name="checks[{{ $rowId }}][rtd_4]"
+                                       class="form-control form-control-sm rtd-input" data-idx="4" step="0.1"
                                        value="{{ $tyre->current_tread_depth ?? '' }}">
                                  </td>
+                                 <td class="text-center font-monospace fw-bold bg-light">
+                                    <span class="avg-rtd text-primary">0.00</span>
+                                 </td>
+                                 <td class="text-center bg-light">
+                                    <span class="worn-pct fw-bold">0%</span>
+                                 </td>
                                  <td>
-                                    <input type="text"
-                                       name="checks[{{ $tyre ? $tyre->serial_number : 'pos_' . $pos->id }}][notes]"
-                                       class="form-control form-control-sm" placeholder="Catatan">
+                                    <select name="checks[{{ $rowId }}][condition]"
+                                       class="form-select form-select-sm mb-1">
+                                       <option value="ok">OK</option>
+                                       <option value="warning">Warning</option>
+                                       <option value="critical">Critical</option>
+                                    </select>
+                                    <input type="text" name="checks[{{ $rowId }}][recommendation]"
+                                       class="form-control form-control-sm" placeholder="Rec...">
+                                 </td>
+                                 <td>
+                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control form-control-sm" rows="1"
+                                       placeholder="Notes"></textarea>
                                  </td>
                               </tr>
                            @endforeach
@@ -168,6 +176,52 @@
    <script>
       $(function() {
          $('.select2').select2();
+
+         const calculateRow = (row) => {
+            const originalRtd = parseFloat($('input[name="original_rtd"]').val()) || 0;
+            let sum = 0;
+            let count = 0;
+
+            row.find('.rtd-input').each(function() {
+               const val = parseFloat($(this).val());
+               if (!isNaN(val)) {
+                  sum += val;
+                  count++;
+               }
+            });
+
+            const avg = count > 0 ? sum / count : 0;
+            row.find('.avg-rtd').text(avg.toFixed(2));
+
+            if (originalRtd > 0) {
+               const loss = originalRtd - avg;
+               const worn = (loss / originalRtd) * 100;
+               const wornSpan = row.find('.worn-pct');
+               wornSpan.text(Math.round(worn) + '%');
+
+               // Color coding
+               wornSpan.removeClass('text-success text-warning text-danger');
+               if (worn > 80) wornSpan.addClass('text-danger');
+               else if (worn > 50) wornSpan.addClass('text-warning');
+               else wornSpan.addClass('text-success');
+            }
+         };
+
+         // Event listeners
+         $(document).on('input', '.rtd-input', function() {
+            calculateRow($(this).closest('tr'));
+         });
+
+         $(document).on('input', 'input[name="original_rtd"]', function() {
+            $('.tyre-row').each(function() {
+               calculateRow($(this));
+            });
+         });
+
+         // Initial calculation
+         $('.tyre-row').each(function() {
+            calculateRow($(this));
+         });
       });
    </script>
 @endsection
