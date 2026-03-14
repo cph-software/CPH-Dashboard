@@ -16,7 +16,7 @@ class TyreMonitoringCheck extends Model
         'session_id',
         'check_number',
         'check_date',
-        'odometer',
+        'odometer_reading',
         'operation_mileage',
         'position',
         'position_id',

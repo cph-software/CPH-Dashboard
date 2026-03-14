@@ -32,7 +32,7 @@ class TyreMonitoringInstallation extends Model
         'rtd_4',
         'avg_rtd',
         'original_rtd',
-        'odometer',
+        'odometer_reading',
         'notes',
     ];
 

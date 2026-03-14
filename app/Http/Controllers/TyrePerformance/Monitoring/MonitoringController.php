@@ -465,6 +465,7 @@ class MonitoringController extends Controller
                 $data['position'] = $posDetail->display_order;
             }
 
+            $data['odometer_reading'] = $request->odometer ?? $session->odometer_start;
             TyreMonitoringInstallation::create($data);
 
             // Sync with Master Tyre
@@ -553,7 +554,7 @@ class MonitoringController extends Controller
                     'session_id' => $session->session_id,
                     'check_number' => $newCheckNumber,
                     'check_date' => $request->check_date,
-                    'odometer' => $request->odometer,
+                    'odometer_reading' => $request->odometer,
                     'operation_mileage' => $opMileage,
                     'position' => $inst ? $inst->position : '?',
                     'position_id' => $inst ? $inst->position_id : null,
@@ -645,6 +646,7 @@ class MonitoringController extends Controller
             $data['position'] = $inst ? $inst->position : 0;
             $data['position_id'] = $inst ? $inst->position_id : null;
 
+            $data['odometer_reading'] = $request->odometer;
             TyreMonitoringRemoval::create($data);
 
             // Update main tyre status

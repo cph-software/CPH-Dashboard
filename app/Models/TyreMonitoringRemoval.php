@@ -18,7 +18,7 @@ class TyreMonitoringRemoval extends Model
         'position_id',
         'serial_number',
         'removal_date',
-        'odometer',
+        'odometer_reading',
         'total_mileage',
         'final_rtd',
         'removal_reason',
