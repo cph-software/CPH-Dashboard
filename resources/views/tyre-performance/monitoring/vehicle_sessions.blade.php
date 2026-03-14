@@ -156,7 +156,14 @@
          <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="ri ri-route-line me-1"></i> Monitoring Progress — Session #{{ $activeSession->session_id }}
+                  <i class="ri ri-route-line me-1"></i>
+                  @if (!$hasInstallation)
+                     Status: Awaiting Initial Installation
+                  @elseif ($checkCount == 0)
+                     Status: Periodic Monitoring Started
+                  @else
+                     Status: Active Monitoring · Check #{{ $checkCount }}
+                  @endif
                </h6>
                <span class="badge bg-label-{{ $activeSession->status == 'active' ? 'success' : 'secondary' }}">
                   {{ ucfirst($activeSession->status) }}
@@ -174,16 +181,14 @@
                   </span>
                </div>
 
-               {{-- Check Steps: always show the next expected check --}}
-               @for ($i = 1; $i <= $checkCount + ($hasInstallation ? 1 : 0); $i++)
-                  <div class="step-connector {{ $i <= $checkCount ? 'completed' : '' }}"></div>
+               {{-- Check Steps: only show recorded checks --}}
+               @for ($i = 1; $i <= $checkCount; $i++)
+                  <div class="step-connector completed"></div>
                   <div class="step-item">
-                     <span class="step-badge {{ $i <= $checkCount ? 'completed' : 'active' }}">
+                     <span class="step-badge completed">
                         <i class="ri ri-search-eye-line step-icon"></i>
                         Check {{ $i }}
-                        @if ($i <= $checkCount)
-                           <i class="ri ri-check-line"></i>
-                        @endif
+                        <i class="ri ri-check-line"></i>
                      </span>
                   </div>
                @endfor
@@ -197,19 +202,23 @@
             <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                <div class="d-flex align-items-center gap-3">
                   @if ($currentStage == 'installation')
-                     <div class="avatar avatar-lg bg-label-warning rounded-circle">
-                        <i class="ri ri-install-line ri-lg"></i>
+                     <div
+                        class="avatar avatar-xl bg-label-warning rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 70px; height: 70px;">
+                        <i class="ri ri-install-line ri-2x"></i>
                      </div>
                      <div>
-                        <h6 class="mb-0 fw-bold">Record Installation</h6>
+                        <h5 class="mb-1 fw-bold text-dark">Record Installation</h5>
                         <p class="text-muted mb-0 small">Mulai monitoring dengan mencatat pemasangan ban.</p>
                      </div>
                   @elseif (str_starts_with($currentStage, 'check_'))
-                     <div class="avatar avatar-lg bg-label-info rounded-circle">
-                        <i class="ri ri-search-eye-line ri-lg"></i>
+                     <div
+                        class="avatar avatar-xl bg-label-info rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 70px; height: 70px;">
+                        <i class="ri ri-search-eye-line ri-2x"></i>
                      </div>
                      <div>
-                        <h6 class="mb-0 fw-bold">Periodic Check {{ $checkCount + 1 }}</h6>
+                        <h5 class="mb-1 fw-bold text-dark">Periodic Check #{{ $checkCount + 1 }}</h5>
                         <p class="text-muted mb-0 small">Lakukan pemeriksaan rutin untuk memantau performa ban.</p>
                      </div>
                   @endif
@@ -222,13 +231,9 @@
                      </a>
                   @elseif (str_starts_with($currentStage, 'check_'))
                      <a href="{{ route('monitoring.check.create', $activeSession->session_id) }}"
-                        class="btn btn-primary shadow-sm">
-                        <i class="ri ri-add-line me-1"></i> Add Check {{ $checkCount + 1 }}
+                        class="btn btn-primary btn-lg shadow-sm px-4">
+                        <i class="ri ri-add-line me-1"></i> Add Check #{{ $checkCount + 1 }}
                      </a>
-                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
-                        data-bs-target="#addRemovalModal">
-                        <i class="ri ri-close-circle-line me-1"></i> Record Removal
-                     </button>
                   @endif
                </div>
             </div>
@@ -430,89 +435,6 @@
 
    {{-- ======= MODALS ======= --}}
 
-   {{-- Removal Modal --}}
-   @if ($activeSession)
-      <div class="modal fade" id="addRemovalModal" tabindex="-1" aria-hidden="true">
-         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-               <div class="modal-header bg-danger text-white">
-                  <h5 class="modal-title text-white"><i class="ri ri-close-circle-line me-1"></i> Record Removal</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                     aria-label="Close"></button>
-               </div>
-               <form action="{{ route('monitoring.removal.store') }}" method="POST">
-                  @csrf
-                  <input type="hidden" name="session_id" value="{{ $activeSession->session_id }}">
-                  <div class="modal-body">
-                     <div class="row g-3">
-                        <div class="col-md-6">
-                           <label class="form-label">Serial Number</label>
-                           <select name="serial_number" class="form-select select2-setup" required>
-                              <option value="">-- Select Tyre --</option>
-                              @foreach ($availableTyres as $tyre)
-                                 <option value="{{ $tyre->serial_number }}">{{ $tyre->serial_number }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label">Removal Date</label>
-                           <input type="date" name="removal_date" class="form-control" required
-                              value="{{ date('Y-m-d') }}">
-                        </div>
-                        <div class="col-md-4">
-                           <label class="form-label">Odometer (KM)</label>
-                           <input type="number" name="odometer" class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                           <label class="form-label">Final RTD (mm)</label>
-                           <input type="number" name="final_rtd" class="form-control" step="0.1" required>
-                        </div>
-                        <div class="col-md-4">
-                           <label class="form-label">Total Mileage (KM)</label>
-                           <input type="number" name="total_mileage" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label">Removal Reason</label>
-                           <select name="removal_reason" class="form-select" required>
-                              <option value="">-- Select --</option>
-                              <option value="Worn Out">Worn Out</option>
-                              <option value="Damage">Damage</option>
-                              <option value="Rotation">Rotation</option>
-                              <option value="Customer Request">Customer Request</option>
-                              <option value="Other">Other</option>
-                           </select>
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label">Target Location</label>
-                           <select name="work_location_id" class="form-select select2-setup">
-                              <option value="">-- Select Location --</option>
-                              @foreach ($locations as $loc)
-                                 <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                        <div class="col-12">
-                           <label class="form-label">Condition After</label>
-                           <input type="text" name="tyre_condition_after" class="form-control"
-                              placeholder="e.g. Buffable, Sidewall Cut">
-                        </div>
-                        <div class="col-12">
-                           <label class="form-label">Notes</label>
-                           <textarea name="notes" class="form-control" rows="2"></textarea>
-                        </div>
-                     </div>
-                  </div>
-                  <div class="modal-footer">
-                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
-                     <button type="submit" class="btn btn-danger">
-                        <i class="ri ri-delete-bin-line me-1"></i> Record Removal
-                     </button>
-                  </div>
-               </form>
-            </div>
-         </div>
-      </div>
-   @endif
 
    {{-- Edit Vehicle Config Modal --}}
    <div class="modal fade" id="editVehicleModal" tabindex="-1" aria-hidden="true">
