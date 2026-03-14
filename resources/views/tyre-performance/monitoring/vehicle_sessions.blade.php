@@ -221,10 +221,10 @@
                         <i class="ri ri-add-line me-1"></i> Start Installation
                      </a>
                   @elseif (str_starts_with($currentStage, 'check_'))
-                     <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
-                        data-bs-target="#addCheckModal">
+                     <a href="{{ route('monitoring.check.create', $activeSession->session_id) }}"
+                        class="btn btn-primary shadow-sm">
                         <i class="ri ri-add-line me-1"></i> Add Check {{ $checkCount + 1 }}
-                     </button>
+                     </a>
                      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
                         data-bs-target="#addRemovalModal">
                         <i class="ri ri-close-circle-line me-1"></i> Record Removal
@@ -430,128 +430,8 @@
 
    {{-- ======= MODALS ======= --}}
 
-   {{-- Add Check Modal --}}
+   {{-- Removal Modal --}}
    @if ($activeSession)
-      @php
-         $availableTyres = \App\Models\Tyre::where('current_vehicle_id', $vehicle->master_vehicle_id)
-             ->with(['brand', 'pattern', 'size'])
-             ->get();
-         $locations = \App\Models\TyreLocation::all();
-      @endphp
-      <div class="modal fade" id="addCheckModal" tabindex="-1" aria-hidden="true">
-         <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-               <div class="modal-header bg-primary text-white">
-                  <h5 class="modal-title text-white"><i class="ri ri-search-eye-line me-1"></i> Periodic Check
-                     #{{ $checkCount + 1 }}</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                     aria-label="Close"></button>
-               </div>
-               <form action="{{ route('monitoring.check.store') }}" method="POST">
-                  @csrf
-                  <input type="hidden" name="session_id" value="{{ $activeSession->session_id }}">
-                  <input type="hidden" name="check_number" value="{{ $checkCount + 1 }}">
-                  <div class="modal-body">
-                     <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                           <label class="form-label">Check Date</label>
-                           <input type="date" name="check_date" class="form-control" required
-                              value="{{ date('Y-m-d') }}">
-                        </div>
-                        <div class="col-md-3">
-                           <label class="form-label">Odometer (KM)</label>
-                           <input type="number" name="odometer" class="form-control" required
-                              placeholder="Current Odo">
-                        </div>
-                        <div class="col-md-3">
-                           <label class="form-label">Operation Mileage (KM)</label>
-                           <input type="number" name="operation_mileage" class="form-control"
-                              placeholder="Op. Mileage">
-                        </div>
-                        <div class="col-md-3">
-                           <label class="form-label">Load (Ton)</label>
-                           <input type="text" name="load" class="form-control"
-                              value="{{ $vehicle->load_capacity }}">
-                        </div>
-                     </div>
-                     <div class="alert alert-info small py-2">
-                        <i class="ri ri-information-line me-1"></i> Isi data RTD untuk setiap posisi ban yang terpasang.
-                     </div>
-                     <div class="table-responsive">
-                        <table class="table table-bordered" id="checkTable">
-                           <thead class="table-dark">
-                              <tr class="small text-uppercase">
-                                 <th>Pos</th>
-                                 <th>Serial Number</th>
-                                 <th>Rcmd PSI</th>
-                                 <th>Actl PSI</th>
-                                 <th>RTD 1</th>
-                                 <th>RTD 2</th>
-                                 <th>RTD 3</th>
-                                 <th>Condition</th>
-                                 <th>Notes</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                              @foreach ($availableTyres as $idx => $tyre)
-                                 @php
-                                    $posDetail = $masterPositions->firstWhere('id', $tyre->current_position_id);
-                                 @endphp
-                                 <tr>
-                                    <td>
-                                       <span class="badge bg-label-primary">{{ $posDetail->position_code ?? '-' }}</span>
-                                       <input type="hidden" name="tyres[{{ $idx }}][position]"
-                                          value="{{ $posDetail->position_code ?? '-' }}">
-                                       <input type="hidden" name="tyres[{{ $idx }}][position_id]"
-                                          value="{{ $tyre->current_position_id }}">
-                                    </td>
-                                    <td>
-                                       <span class="fw-bold small">{{ $tyre->serial_number }}</span>
-                                       <input type="hidden" name="tyres[{{ $idx }}][serial_number]"
-                                          value="{{ $tyre->serial_number }}">
-                                    </td>
-                                    <td><input type="number" name="tyres[{{ $idx }}][inf_press_recommended]"
-                                          class="form-control form-control-sm" value="{{ $activeSession->retase }}"
-                                          style="width:70px"></td>
-                                    <td><input type="number" name="tyres[{{ $idx }}][inf_press_actual]"
-                                          class="form-control form-control-sm" style="width:70px"></td>
-                                    <td><input type="number" name="tyres[{{ $idx }}][rtd_1]"
-                                          class="form-control form-control-sm" step="0.1" required
-                                          style="width:70px"></td>
-                                    <td><input type="number" name="tyres[{{ $idx }}][rtd_2]"
-                                          class="form-control form-control-sm" step="0.1" required
-                                          style="width:70px"></td>
-                                    <td><input type="number" name="tyres[{{ $idx }}][rtd_3]"
-                                          class="form-control form-control-sm" step="0.1" required
-                                          style="width:70px"></td>
-                                    <td>
-                                       <select name="tyres[{{ $idx }}][condition]"
-                                          class="form-select form-select-sm" style="width:100px">
-                                          <option value="ok">OK</option>
-                                          <option value="warning">Warning</option>
-                                          <option value="critical">Critical</option>
-                                       </select>
-                                    </td>
-                                    <td><input type="text" name="tyres[{{ $idx }}][notes]"
-                                          class="form-control form-control-sm" style="width:120px"></td>
-                                 </tr>
-                              @endforeach
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-                  <div class="modal-footer">
-                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
-                     <button type="submit" class="btn btn-primary">
-                        <i class="ri ri-save-line me-1"></i> Submit Check {{ $checkCount + 1 }}
-                     </button>
-                  </div>
-               </form>
-            </div>
-         </div>
-      </div>
-
-      {{-- Removal Modal --}}
       <div class="modal fade" id="addRemovalModal" tabindex="-1" aria-hidden="true">
          <div class="modal-dialog modal-lg">
             <div class="modal-content">
