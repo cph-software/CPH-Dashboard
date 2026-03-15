@@ -88,7 +88,7 @@
                         <label class="form-label fw-bold">Odometer Check (KM)</label>
                         <input type="number" name="odometer"
                            class="form-control form-control-lg @error('odometer') is-invalid @enderror" required
-                           placeholder="KM" value="{{ old('odometer') }}">
+                           placeholder="KM" value="{{ old('odometer', $currentKM) }}">
                         @error('odometer')
                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -97,7 +97,7 @@
                         <label class="form-label fw-bold">Hour Meter Check (HM)</label>
                         <input type="number" name="hour_meter"
                            class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM"
-                           value="{{ old('hour_meter') }}">
+                           value="{{ old('hour_meter', $currentHM) }}">
                      </div>
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Driver Name</label>

@@ -172,10 +172,18 @@ class MonitoringController extends Controller
                     ->orderBy('display_order')
                     ->get();
 
-                $assignedTyres = Tyre::where('current_vehicle_id', $session->master_vehicle_id)
-                    ->with(['brand', 'pattern', 'size'])
-                    ->get()
-                    ->keyBy('current_position_id');
+                // Get tyres that were part of this session's installations
+                $assignedTyres = $session->installations->mapWithKeys(function($inst) {
+                    // Try to attach the tyre model for UI compatibility, but prioritize session fields
+                    $t = $inst->tyre ?: (object)[
+                        'serial_number' => $inst->serial_number,
+                        'brand' => (object)['brand_name' => $inst->brand],
+                        'pattern' => (object)['name' => $inst->pattern],
+                        'size' => (object)['size' => $inst->size],
+                        'current_tread_depth' => $inst->avg_rtd // Fallback
+                    ];
+                    return [$inst->position_id => $t];
+                });
             }
         }
 
@@ -245,6 +253,15 @@ class MonitoringController extends Controller
             ->orderBy('serial_number')
             ->get();
 
+        // Get latest vehicle readings
+        $latestMovement = TyreMovement::where('vehicle_id', $vehicle->master_vehicle_id)
+            ->latest('movement_date')
+            ->latest('id')
+            ->first();
+        
+        $currentKM = $latestMovement->odometer_reading ?? 0;
+        $currentHM = $latestMovement->hour_meter_reading ?? 0;
+
         return view('tyre-performance.monitoring.create_session', compact(
             'vehicle',
             'masterPositions',
@@ -252,7 +269,9 @@ class MonitoringController extends Controller
             'brands',
             'patterns',
             'sizes',
-            'availableTyres'
+            'availableTyres',
+            'currentKM',
+            'currentHM'
         ));
     }
 
@@ -282,9 +301,20 @@ class MonitoringController extends Controller
         $brands = TyreBrand::orderBy('brand_name')->get();
         $patterns = TyrePattern::orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
-        $installedTyres = \App\Models\Tyre::where('current_vehicle_id', $session->master_vehicle_id)
+        
+        // Only check tyres that were installed for this session
+        $installedTyres = Tyre::whereIn('serial_number', $session->installations->pluck('serial_number'))
+            ->where('current_vehicle_id', $session->master_vehicle_id)
             ->with(['brand', 'size', 'pattern'])
             ->get();
+
+        // Get latest readings for this session
+        $lastCheck = TyreMonitoringCheck::where('session_id', $session_id)
+            ->orderBy('check_number', 'desc')
+            ->first();
+        
+        $currentKM = $lastCheck ? $lastCheck->odometer_reading : ($session->odometer_start ?? 0);
+        $currentHM = $lastCheck ? $lastCheck->hm_reading : ($session->hm_start ?? 0);
 
         return view('tyre-performance.monitoring.add_check', compact(
             'session',
@@ -295,7 +325,9 @@ class MonitoringController extends Controller
             'brands',
             'patterns',
             'sizes',
-            'installedTyres'
+            'installedTyres',
+            'currentKM',
+            'currentHM'
         ));
     }
 
@@ -329,6 +361,12 @@ class MonitoringController extends Controller
                     $posDetail = TyrePositionDetail::find($posId);
                     $posName = $posDetail ? $posDetail->position_code : "Pos $posId";
 
+                    // Fetch tyre info for snapshot
+                    $tyreSnapshot = null;
+                    if ($tyreId) {
+                        $tyreSnapshot = Tyre::with(['brand', 'pattern', 'size'])->find($tyreId);
+                    }
+
                     $r1 = (float) ($c['rtd_1'] ?? $request->original_rtd);
                     $r2 = (float) ($c['rtd_2'] ?? $request->original_rtd);
                     $r3 = (float) ($c['rtd_3'] ?? $request->original_rtd);
@@ -348,9 +386,9 @@ class MonitoringController extends Controller
                         'hm_reading' => $request->hm_start,
                         'position' => $posName,
                         'position_id' => $posId,
-                        'brand' => $c['brand'] ?? '-',
-                        'pattern' => $c['pattern'] ?? '-',
-                        'size' => $request->tyre_size,
+                        'brand' => $tyreSnapshot ? ($tyreSnapshot->brand->brand_name ?? '-') : ($c['brand'] ?? '-'),
+                        'pattern' => $tyreSnapshot ? ($tyreSnapshot->pattern->name ?? '-') : ($c['pattern'] ?? '-'),
+                        'size' => $tyreSnapshot ? ($tyreSnapshot->size->size ?? '-') : ($request->tyre_size ?? '-'),
                         'original_rtd' => $request->original_rtd,
                         'rtd_1' => $r1,
                         'rtd_2' => $r2,
