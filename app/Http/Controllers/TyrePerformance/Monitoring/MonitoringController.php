@@ -33,7 +33,7 @@ class MonitoringController extends Controller
      */
     private function calculateLifetimeDiff($currentReading, $lastInstallReading)
     {
-        if (!$currentReading || !$lastInstallReading)
+        if ($currentReading === null || $lastInstallReading === null)
             return 0;
 
         $diff = $currentReading - $lastInstallReading;
