@@ -693,7 +693,7 @@ class MonitoringController extends Controller
                     'serial_number' => $serial,
                     'inf_press_recommended' => $c['psi_recommended'] ?? $request->retase,
                     'inf_press_actual' => $c['psi_actual'] ?? null,
-                    'date_assembly' => $c['date_assembly'] ?? null,
+                    'date_assembly' => $c['date_assembly'] ?? ($inst->date_assembly ?? null),
                     'date_inspection' => $request->check_date,
                     'rtd_1' => $r1,
                     'rtd_2' => $r2,

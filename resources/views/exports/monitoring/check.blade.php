@@ -65,7 +65,7 @@
       <td colspan="4">{{ $session->vehicle->vehicle_number }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Odometer at Start</td>
-      <td colspan="4">{{ number_format($session->odometer_start) }}</td>
+      <td colspan="4">{{ number_format($session->odometer_start ?? 0) }}</td>
    </tr>
    {{-- Row 6: Driver Name / Odometer at Nth Check --}}
    <tr>
@@ -73,7 +73,7 @@
       <td colspan="4">{{ $checks[0]->driver_name ?? $session->vehicle->driver_name }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Odometer at {{ $ordCheck }} Check</td>
-      <td colspan="4">{{ number_format($odometerCheck) }}</td>
+      <td colspan="4">{{ number_format($odometerCheck ?? 0) }}</td>
    </tr>
    {{-- Row 7: Phone Number / Operation Mileage --}}
    <tr>
@@ -117,8 +117,8 @@
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Worn%</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">KM/mm</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj.Life 3mm (KM)</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Day</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Month</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj. Day</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj. Month</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Condition</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Recommendation</th>
    </tr>
@@ -138,7 +138,11 @@
          $posName = $check->position ?? '-';
          $inst = $session->installations->where('serial_number', $check->serial_number)->first();
          $sizeName = $inst->size ?? $session->tyre_size;
-         $dateAsm = $check->date_assembly ? \Carbon\Carbon::parse($check->date_assembly)->format('d/m/Y') : '-';
+
+         // Fix date_assembly fallback: check -> installation -> master tyre
+         $dateAsmRaw = $check->date_assembly ?? ($inst->date_assembly ?? ($inst->masterTyre->date_assembly ?? null));
+         $dateAsm = $dateAsmRaw ? \Carbon\Carbon::parse($dateAsmRaw)->format('d/m/Y') : '-';
+
          $dateInsp = $check->check_date ? \Carbon\Carbon::parse($check->check_date)->format('d/m/Y') : $checkDateTable;
 
          // Excel row (title2 + info7 + spacer1 + header2 + 1-indexed = 13 + row)

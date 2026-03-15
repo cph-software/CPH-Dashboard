@@ -30,17 +30,24 @@ class CheckSheet implements FromView, WithTitle
     {
         $calculatedChecks = [];
         foreach ($this->checks as $check) {
+            $inst = $this->session->installations->where('serial_number', $check->serial_number)->first();
+            $origRtd = $inst->original_rtd ?? ($this->session->original_rtd ?? 12); // Fallback to 12 if none
+
             $calc = TyreMonitoringCalculator::calculate(
-                $this->session->original_rtd,
+                $origRtd,
                 $this->session->install_date,
                 $check
             );
             $check->calculated = $calc;
 
             // Get brand/pattern from installation record
-            $inst = $this->session->installations->where('serial_number', $check->serial_number)->first();
-            $check->brand_name = $inst->masterTyre->brand->brand_name ?? ($inst->brand ?? '-');
-            $check->pattern_name = $inst->masterTyre->pattern->name ?? ($inst->pattern ?? '-');
+            if ($inst) {
+                $check->brand_name = $inst->masterTyre->brand->brand_name ?? ($inst->brand ?? '-');
+                $check->pattern_name = $inst->masterTyre->pattern->name ?? ($inst->pattern ?? '-');
+            } else {
+                $check->brand_name = '-';
+                $check->pattern_name = '-';
+            }
 
             $calculatedChecks[] = $check;
         }

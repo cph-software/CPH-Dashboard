@@ -47,7 +47,7 @@
       <td colspan="4">{{ $session->vehicle->vehicle_number }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Odometer at Start</td>
-      <td colspan="4">{{ number_format($session->odometer_start) }}</td>
+      <td colspan="4">{{ number_format($session->odometer_start ?? 0) }}</td>
    </tr>
    {{-- Row 6: Driver Name / Odometer at 1st Check --}}
    <tr>
@@ -55,7 +55,7 @@
       <td colspan="4">{{ $session->vehicle->driver_name }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Odometer at 1st Check</td>
-      <td colspan="4">{{ number_format($session->odometer_start) }}</td>
+      <td colspan="4">{{ number_format($session->odometer_start ?? 0) }}</td>
    </tr>
    {{-- Row 7: Phone Number / Operation Mileage --}}
    <tr>
