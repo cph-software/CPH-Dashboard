@@ -323,7 +323,7 @@
                            </td>
                            <td>
                               @if ($t)
-                                 <span class="fw-bold">{{ $t->current_rtd ?? '-' }} mm</span>
+                                 <span class="fw-bold">{{ $t->current_tread_depth ?? '-' }} mm</span>
                               @else
                                  -
                               @endif
@@ -331,8 +331,11 @@
                            <td>
                               @if ($t)
                                  @php
-                                    $orig = $t->original_rtd > 0 ? $t->original_rtd : 1;
-                                    $curr = $t->current_rtd ?? 0;
+                                    $orig =
+                                        $t->initial_tread_depth && $t->initial_tread_depth > 0
+                                            ? $t->initial_tread_depth
+                                            : 1;
+                                    $curr = $t->current_tread_depth ?? 0;
                                     $perc = ($curr / $orig) * 100;
                                     $color = $perc < 20 ? 'danger' : ($perc < 50 ? 'warning' : 'success');
                                  @endphp

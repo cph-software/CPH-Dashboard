@@ -28,11 +28,18 @@ class TyreMonitoringCalculator
         $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
         
         $wearAmount = $originalRtd - $avgRtd;
-        if ($wearAmount <= 0) $wearAmount = 0.001;
         
-        $wornPct = ($wearAmount / $originalRtd) * 100;
-        $kmPerMm = $operationMileage / $wearAmount;
-        $projLifeKm = $kmPerMm * ($originalRtd - 3);
+        // Threshold: If wear is less than 0.1mm, we don't calculate performance yet
+        // to avoid "immortal tyre" numbers (huge values)
+        if ($wearAmount < 0.1) {
+            $kmPerMm = 0;
+            $projLifeKm = 0;
+            $wornPct = ($wearAmount > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
+        } else {
+            $wornPct = ($wearAmount / $originalRtd) * 100;
+            $kmPerMm = $operationMileage / $wearAmount;
+            $projLifeKm = $kmPerMm * ($originalRtd - 3);
+        }
         
         $installDateCarbon = Carbon::parse($installDate);
         $checkDateCarbon = Carbon::parse($checkDate);

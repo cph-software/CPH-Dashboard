@@ -170,6 +170,17 @@
                            @endforeach
                         </select>
                      </div>
+                     <div class="col-md-3">
+                        <label class="form-label fw-bold">Pattern Umum</label>
+                        <select name="pattern" class="form-select select2">
+                           <option value="">-- Pilih Pattern --</option>
+                           @foreach ($patterns as $p)
+                              <option value="{{ $p->name }}">{{ $p->brand->brand_name ?? '-' }} -
+                                 {{ $p->name }}
+                              </option>
+                           @endforeach
+                        </select>
+                     </div>
                   </div>
 
                   <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
@@ -244,7 +255,8 @@
                                                    data-size="{{ $at->size->size ?? '-' }}"
                                                    data-pattern="{{ $at->pattern->name ?? '-' }}"
                                                    data-rtd="{{ $at->current_tread_depth ?? '' }}">
-                                                   {{ $at->serial_number }}
+                                                   {{ $at->brand->brand_name ?? '-' }} | {{ $at->serial_number }} |
+                                                   {{ $at->pattern->name ?? '-' }}
                                                 </option>
                                              @endforeach
                                           </select>
