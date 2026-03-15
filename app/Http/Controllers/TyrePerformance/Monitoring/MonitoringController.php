@@ -967,4 +967,20 @@ class MonitoringController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    private function determineCondition($wornPct, $psiActual, $psiRec)
+    {
+        // 1. Check Air Pressure (Most critical)
+        if ($psiActual && $psiRec) {
+            $diffPct = abs(($psiActual - $psiRec) / $psiRec * 100);
+            if ($diffPct > 20) return 'critical'; // More than 20% diff is dangerous
+            if ($diffPct > 10) return 'warning';
+        }
+
+        // 2. Check Wear Percentage
+        if ($wornPct >= 85) return 'critical'; // Time to scrap
+        if ($wornPct >= 70) return 'warning';  // Monitor closely
+
+        return 'ok';
+    }
 }
