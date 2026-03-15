@@ -43,22 +43,29 @@ class TyreMonitoringCalculator
         
         $installDateCarbon = Carbon::parse($installDate);
         $checkDateCarbon = Carbon::parse($checkDate);
-        $daysElapsed = $installDateCarbon->diffInDays($checkDateCarbon);
-        if ($daysElapsed <= 0) $daysElapsed = 1;
         
-        $kmPerDay = $operationMileage / $daysElapsed;
+        // Elapsed days since INSTALLATION (for KM/Day)
+        $daysSinceInstall = $installDateCarbon->diffInDays($checkDateCarbon);
+        if ($daysSinceInstall <= 0) $daysSinceInstall = 1;
+        
+        // Elapsed days since ASSEMBLY (for the user's Day/Month columns)
+        $asmDateRaw = is_object($checkData) ? ($checkData->date_assembly ?? null) : ($checkData['date_assembly'] ?? null);
+        $asmDateCarbon = $asmDateRaw ? Carbon::parse($asmDateRaw) : $installDateCarbon;
+        $daysSinceAsm = $asmDateCarbon->diffInDays($checkDateCarbon);
+
+        $kmPerDay = $operationMileage / $daysSinceInstall;
         $projLifeDay = ($kmPerDay > 0) ? ($projLifeKm / $kmPerDay) : 0;
-        $projLifeMonth = $projLifeDay / 30;
 
         return [
             'avg_rtd' => round($avgRtd, 2),
             'worn_pct' => round($wornPct, 1),
             'km_per_mm' => round($kmPerMm, 1),
             'proj_life_km' => round($projLifeKm, 0),
-            'days_elapsed' => $daysElapsed,
+            'days_elapsed' => $daysSinceAsm, // Now matches assembly to inspection
+            'months_elapsed' => round($daysSinceAsm / 30, 1),
             'km_per_day' => round($kmPerDay, 1),
             'proj_life_day' => round($projLifeDay, 0),
-            'proj_life_month' => round($projLifeMonth, 1),
+            'proj_life_month' => round($projLifeDay / 30, 1),
         ];
     }
 }

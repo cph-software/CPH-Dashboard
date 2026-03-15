@@ -117,8 +117,8 @@
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Worn%</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">KM/mm</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj.Life 3mm (KM)</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj. Day</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj. Month</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Day</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Month</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Condition</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Recommendation</th>
    </tr>
@@ -182,8 +182,8 @@
             {{ number_format($check->calculated['km_per_mm'], 1) }}</td>
          <td style="border: 1px solid #000; text-align: center; font-weight: bold;">
             {{ number_format($check->calculated['proj_life_km']) }}</td>
-         <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['proj_life_day'] }}</td>
-         <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['proj_life_month'] }}</td>
+         <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['days_elapsed'] }}</td>
+         <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['months_elapsed'] }}</td>
          <td style="border: 1px solid #000; text-align: center;">{{ strtoupper($check->condition) }}</td>
          <td style="border: 1px solid #000;">{{ $check->recommendation }}</td>
       </tr>
