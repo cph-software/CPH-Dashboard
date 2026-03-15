@@ -26,9 +26,9 @@
       }
 
       .rtd-input {
-         height: 45px !important;
-         font-size: 1.1rem !important;
-         font-weight: 700 !important;
+         height: 40px !important;
+         font-size: 0.95rem !important;
+         font-weight: 600 !important;
          text-align: center;
          color: #1a202c;
          border: 2px solid #cbd5e1 !important;
