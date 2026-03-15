@@ -14,14 +14,34 @@ class SessionExport implements WithMultipleSheets
 
     public function __construct($sessionId)
     {
-        $this->session = TyreMonitoringSession::with(['vehicle', 'installations.positionDetail', 'installations.masterTyre.brand', 'installations.masterTyre.pattern', 'checks', 'removal'])
-            ->findOrFail($sessionId);
+        $this->session = TyreMonitoringSession::with([
+            'vehicle', 
+            'installations' => function($q) {
+                $q->leftJoin('tyre_position_details', 'tyre_monitoring_installation.position_id', '=', 'tyre_position_details.id')
+                  ->orderBy('tyre_position_details.display_order')
+                  ->select('tyre_monitoring_installation.*');
+            },
+            'installations.positionDetail',
+            'installations.masterTyre.brand', 
+            'installations.masterTyre.pattern', 
+            'checks.positionDetail',
+            'removal'
+        ])->findOrFail($sessionId);
     }
 
     public function sheets(): array
     {
         $sheets = [];
-        $checksByNumber = $this->session->checks->sortBy('check_number')->groupBy('check_number');
+        
+        // Group checks by check_number and sort each group by position display order
+        $checksByNumber = $this->session->checks->groupBy('check_number')->sortKeys();
+        
+        foreach ($checksByNumber as $cn => $group) {
+            $checksByNumber[$cn] = $group->sortBy(function($check) {
+                // Ensure consistent ordering based on position configuration display order
+                return $check->positionDetail->display_order ?? 99;
+            });
+        }
         $totalChecks = $checksByNumber->count();
         $hasRemoval = !is_null($this->session->removal);
 
