@@ -68,6 +68,29 @@
                </a>
             </div>
             <div class="card-body">
+               {{-- Flash Messages --}}
+               @if ($errors->any())
+                  <div class="alert alert-danger pb-0">
+                     <ul class="list-unstyled">
+                        @foreach ($errors->all() as $error)
+                           <li><i class="ri ri-error-warning-line me-1"></i> {{ $error }}</li>
+                        @endforeach
+                     </ul>
+                  </div>
+               @endif
+
+               @if (session('success'))
+                  <div class="alert alert-success">
+                     <i class="ri ri-checkbox-circle-line me-1"></i> {{ session('success') }}
+                  </div>
+               @endif
+
+               @if (session('error'))
+                  <div class="alert alert-danger">
+                     <i class="ri ri-error-warning-line me-1"></i> {{ session('error') }}
+                  </div>
+               @endif
+
                <form action="{{ route('monitoring.check.store') }}" method="POST">
                   @csrf
                   <input type="hidden" name="session_id" value="{{ $session->session_id }}">
@@ -228,16 +251,16 @@
                                  </td>
                                  <td><input type="number" name="checks[{{ $serial }}][rtd_1]"
                                        class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->current_tread_depth }}"></td>
+                                       value="{{ $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth }}"></td>
                                  <td><input type="number" name="checks[{{ $serial }}][rtd_2]"
                                        class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->current_tread_depth }}"></td>
+                                       value="{{ $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth }}"></td>
                                  <td><input type="number" name="checks[{{ $serial }}][rtd_3]"
                                        class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->current_tread_depth }}"></td>
+                                       value="{{ $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth }}"></td>
                                  <td><input type="number" name="checks[{{ $serial }}][rtd_4]"
                                        class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->current_tread_depth }}"></td>
+                                       value="{{ $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth }}"></td>
                                  <td class="text-center">
                                     <button type="button" class="btn btn-icon btn-outline-info tyre-doc-btn"
                                        data-serial="{{ $serial }}"
