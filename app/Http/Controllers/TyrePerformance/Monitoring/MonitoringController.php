@@ -246,7 +246,7 @@ class MonitoringController extends Controller
         }
 
         $brands = TyreBrand::orderBy('brand_name')->get();
-        $patterns = TyrePattern::orderBy('name')->get();
+        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
             ->with(['brand', 'size', 'pattern'])
@@ -675,8 +675,15 @@ class MonitoringController extends Controller
                 $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
                 $lossRtd = $origRtd - $avgRtd;
                 $wornPct = ($origRtd > 0) ? ($lossRtd / $origRtd * 100) : 0;
-                $kmPerMm = ($lossRtd > 0) ? ($opMileage / $lossRtd) : 0;
-                $projLife = $kmPerMm * ($origRtd - 3);
+                
+                // Only calculate performance if wear >= 0.1mm to avoid unrealistic numbers
+                if ($lossRtd >= 0.1) {
+                    $kmPerMm = $opMileage / $lossRtd;
+                    $projLife = $kmPerMm * ($origRtd - 3);
+                } else {
+                    $kmPerMm = 0;
+                    $projLife = 0;
+                }
 
                 $checkData = [
                     'session_id' => $session->session_id,
