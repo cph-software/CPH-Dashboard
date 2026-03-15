@@ -249,7 +249,9 @@ class MonitoringController extends Controller
         $patterns = TyrePattern::with('brand')->orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
-            ->with(['brand', 'size', 'pattern'])
+            ->with(['brand', 'size', 'pattern', 'monitoringChecks' => function($q) {
+                $q->latest();
+            }])
             ->orderBy('serial_number')
             ->get();
 
@@ -308,7 +310,15 @@ class MonitoringController extends Controller
             ->with(['brand', 'size', 'pattern'])
             ->get();
 
-        // Get latest readings for this session
+        // Attach last check data to each tyre for historical RTD points
+        foreach ($installedTyres as $tyre) {
+            $tyre->last_check = TyreMonitoringCheck::where('session_id', $session_id)
+                ->where('serial_number', $tyre->serial_number)
+                ->orderBy('check_number', 'desc')
+                ->first();
+        }
+        
+        // Get latest global readings
         $lastCheck = TyreMonitoringCheck::where('session_id', $session_id)
             ->orderBy('check_number', 'desc')
             ->first();
@@ -371,7 +381,8 @@ class MonitoringController extends Controller
                     $r2 = (float) ($c['rtd_2'] ?? $request->original_rtd);
                     $r3 = (float) ($c['rtd_3'] ?? $request->original_rtd);
                     $r4 = (float) ($c['rtd_4'] ?? $request->original_rtd);
-                    $avgRtd = ($r1 + $r2 + $r3 + $r4) / 4;
+                    $rtdCount = ($r4 > 0) ? 4 : 3;
+                    $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
 
                     // Analytics for Check 1 (Initial = 0 KM operation)
                     $wornPct = ($request->original_rtd > 0) ? (($request->original_rtd - $avgRtd) / $request->original_rtd * 100) : 0;

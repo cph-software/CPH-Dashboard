@@ -135,6 +135,29 @@
                </a>
             </div>
             <div class="card-body">
+               {{-- Error & Success Messages --}}
+               @if ($errors->any())
+                  <div class="alert alert-danger pb-0">
+                     <ul class="list-unstyled">
+                        @foreach ($errors->all() as $error)
+                           <li><i class="ri ri-error-warning-line me-1"></i> {{ $error }}</li>
+                        @endforeach
+                     </ul>
+                  </div>
+               @endif
+
+               @if (session('success'))
+                  <div class="alert alert-success">
+                     <i class="ri ri-checkbox-circle-line me-1"></i> {{ session('success') }}
+                  </div>
+               @endif
+
+               @if (session('error'))
+                  <div class="alert alert-danger">
+                     <i class="ri ri-error-warning-line me-1"></i> {{ session('error') }}
+                  </div>
+               @endif
+
                <form action="{{ route('monitoring.sessions.store') }}" method="POST">
                   @csrf
                   <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicle_id }}">
@@ -250,11 +273,16 @@
                                              class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
                                              <option value="">-- Pilih Ban Stok --</option>
                                              @foreach ($availableTyres as $at)
+                                                @php $lc = $at->monitoringChecks->first(); @endphp
                                                 <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}"
                                                    data-brand="{{ $at->brand->brand_name ?? '-' }}"
                                                    data-size="{{ $at->size->size ?? '-' }}"
                                                    data-pattern="{{ $at->pattern->name ?? '-' }}"
-                                                   data-rtd="{{ $at->current_tread_depth ?? '' }}">
+                                                   data-rtd="{{ $at->current_tread_depth ?? '' }}"
+                                                   data-rtd1="{{ $lc->rtd_1 ?? $at->current_tread_depth }}"
+                                                   data-rtd2="{{ $lc->rtd_2 ?? $at->current_tread_depth }}"
+                                                   data-rtd3="{{ $lc->rtd_3 ?? $at->current_tread_depth }}"
+                                                   data-rtd4="{{ $lc->rtd_4 ?? $at->current_tread_depth }}">
                                                    {{ $at->brand->brand_name ?? '-' }} | {{ $at->serial_number }} |
                                                    {{ $at->pattern->name ?? '-' }}
                                                 </option>
@@ -401,10 +429,14 @@
                detailBox.removeClass('d-none');
                row.addClass('table-info');
 
-               // Auto-fill RTD if it exists
-               if (rtd) {
-                  row.find('.rtd-input').val(rtd).trigger('input');
+               // Auto-fill individual RTD points if they exist
+               for (let i = 1; i <= 4; i++) {
+                  const val = selected.data('rtd' + i);
+                  if (val) {
+                     row.find('input[name$="[rtd_' + i + ']"]').val(val);
+                  }
                }
+               calculateRow(row);
             } else {
                detailBox.addClass('d-none');
                row.removeClass('table-info');
