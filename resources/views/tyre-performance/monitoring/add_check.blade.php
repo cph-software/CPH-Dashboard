@@ -360,6 +360,7 @@
 
          // --- IMAGE UPLOAD LOGIC ---
          let currentTarget = null; // { type, serial }
+         const uploadedLog = {}; // Track what's uploaded: { serial: { type: url } }
 
          $('.upload-btn, .tyre-upload-btn').on('click', function() {
             const type = $(this).data('type');
@@ -377,7 +378,7 @@
             $('#modalSerial').text(serial);
             $('#modalPos').text(pos);
 
-            // Clean/Refresh previews for this serial
+            // Refresh previews from local log
             $('.tyre-upload-btn').each(function() {
                const type = $(this).data('type');
                refreshTyrePreview(serial, type);
@@ -413,8 +414,19 @@
                processData: false,
                contentType: false,
                success: function(res) {
-                  btn.html(originalText).prop('disabled', false).removeClass('btn-outline-primary')
-                     .addClass('btn-success');
+                  btn.html(originalText).prop('disabled', false).removeClass('btn-primary').addClass(
+                     'btn-success');
+
+                  // Save to local log
+                  if (currentTarget.serial) {
+                     if (!uploadedLog[currentTarget.serial]) uploadedLog[currentTarget.serial] = {};
+                     uploadedLog[currentTarget.serial][currentTarget.type] = res.url;
+
+                     // Feedback on main table: Change button to green
+                     $(`.tyre-doc-btn[data-serial="${currentTarget.serial}"]`).removeClass(
+                        'btn-outline-info').addClass('btn-success');
+                  }
+
                   const previewId = currentTarget.serial ? `preview-tyre-${currentTarget.type}` :
                      `preview-${currentTarget.type}`;
                   $(`#${previewId}`).html(
@@ -428,14 +440,20 @@
          });
 
          function refreshTyrePreview(serial, type) {
-            // This would ideally fetch existing images if re-opening modal
-            // For now, we'll just show placeholders unless it was just uploaded in this session
-            $(`#preview-tyre-${type}`).html(`
-               <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
-                  <i class="ri ri-image-line ri-24px text-muted"></i>
-               </div>
-            `);
-            $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-success').addClass('btn-primary');
+            const existingUrl = uploadedLog[serial] ? uploadedLog[serial][type] : null;
+
+            if (existingUrl) {
+               $(`#preview-tyre-${type}`).html(
+                  `<img src="${existingUrl}" class="img-fluid rounded" style="max-height: 100px;">`);
+               $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-primary').addClass('btn-success');
+            } else {
+               $(`#preview-tyre-${type}`).html(`
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
+                     <i class="ri ri-image-line ri-24px text-muted"></i>
+                  </div>
+               `);
+               $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-success').addClass('btn-primary');
+            }
          }
       });
    </script>
