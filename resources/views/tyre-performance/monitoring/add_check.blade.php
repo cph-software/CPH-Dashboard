@@ -336,14 +336,16 @@
 
          // Auto-calculate Operation Mileage
          odometerInput.on('input', function() {
-            const val = parseInt($(this).val()) || 0;
-            if (val < odometerStart) {
+            const current = parseFloat($(this).val()) || 0;
+            const start = {{ $session->odometer_start ?? 0 }};
+            const diff = current - start;
+            mileageInput.val(diff > 0 ? diff : 0).removeClass('text-danger');
+
+            if (current < odometerStart) {
                $(this).addClass('is-invalid');
-               mileageInput.val(0);
+               mileageInput.addClass('text-danger');
             } else {
                $(this).removeClass('is-invalid');
-               const diff = val - odometerStart;
-               mileageInput.val(diff);
             }
          });
 
