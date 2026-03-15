@@ -165,17 +165,18 @@
    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
-            class="btn btn-icon btn-outline-secondary me-3">
-            <i class="ri ri-arrow-left-line"></i>
+            class="btn btn-icon btn-label-secondary me-3 shadow-sm">
+            <i class="ri ri-arrow-left-line ri-lg"></i>
          </a>
          <div>
-            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session
-               #{{ $session->session_id }}</h4>
-            <p class="text-muted mb-0">{{ $session->vehicle->fleet_name }} · {{ $session->tyre_size }}
-               · {{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}</p>
+            <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session Detail</h4>
+            <p class="text-muted mb-0">
+               <i class="ri ri-truck-line me-1"></i>{{ $session->vehicle->fleet_name }} ·
+               <i class="ri ri-calendar-line me-1"></i>{{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}
+            </p>
          </div>
       </div>
-      <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-outline-success">
+      <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-success shadow-sm">
          <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
       </a>
    </div>
@@ -223,32 +224,34 @@
    {{-- Wear Calculation Summary --}}
    @if ($lastCheck)
       @php $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck); @endphp
-      <div class="card mb-4 bg-primary text-white">
-         <div class="card-body py-3">
-            <div class="row text-center g-3">
+      <div class="card mb-4 bg-primary text-white shadow-sm overflow-hidden">
+         <div class="card-body py-4 position-relative">
+            <i class="ri ri-line-chart-line position-absolute opacity-25"
+               style="font-size: 8rem; right: -20px; top: -20px;"></i>
+            <div class="row text-center g-4 position-relative">
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-0 opacity-75 small">Current Avg RTD</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} mm</h4>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-ruler-2-line me-1"></i>Avg RTD</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} <small>mm</small></h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-0 opacity-75 small">Worn %</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['worn_pct'] }}%</h4>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-focus-3-line me-1"></i>Worn %</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ round($summary['worn_pct']) }}%</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-0 opacity-75 small">KM / mm</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>KM / mm</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-0 opacity-75 small">KM / Day</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>KM / Day</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-0 opacity-75 small">Proj. Life (KM)</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>Proj. KM</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h4>
                </div>
                <div class="col-md-2 col-6">
-                  <p class="mb-0 opacity-75 small">Proj. Remain</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} Mo</h4>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-calendar-check-line me-1"></i>Remaining</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} <small>Mo</small></h4>
                </div>
             </div>
          </div>
@@ -391,11 +394,15 @@
                                  <span class="text-muted fst-italic">Posisi Kosong</span>
                               @endif
                            </td>
-                           <td class="align-middle">
+                           <td class="align-middle text-center">
                               @if ($tyre)
-                                 <span class="badge bg-label-success">Installed</span>
+                                 <span class="badge rounded-pill bg-label-success">
+                                    <i class="ri ri-checkbox-circle-line me-1"></i>Installed
+                                 </span>
                               @else
-                                 <span class="badge bg-label-secondary">Available</span>
+                                 <span class="badge rounded-pill bg-label-secondary">
+                                    <i class="ri ri-subtract-line me-1"></i>Empty
+                                 </span>
                               @endif
                            </td>
                            <td class="align-middle">
@@ -464,10 +471,10 @@
                         </h6>
                         <p class="text-muted small mb-1">{{ $session->installations->count() }} ban terpasang · Odometer:
                            {{ number_format($session->odometer_start) }} KM</p>
-                        <div class="d-flex flex-wrap gap-1">
+                        <div class="d-flex flex-wrap gap-2">
                            @foreach ($session->installations as $inst)
-                              <span class="badge bg-label-dark"
-                                 title="{{ $inst->position }}">{{ $inst->serial_number }}</span>
+                              <span class="badge bg-label-dark p-2" title="{{ $inst->position }}"><i
+                                    class="ri ri-tire-line me-1"></i>{{ $inst->serial_number }}</span>
                            @endforeach
                         </div>
                      </div>

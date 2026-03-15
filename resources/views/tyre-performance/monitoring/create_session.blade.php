@@ -149,7 +149,12 @@
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Odometer Saat Ini</label>
                         <input type="number" name="odometer_start" class="form-control form-control-lg" required
-                           placeholder="KM">
+                           placeholder="KM" value="{{ old('odometer_start') }}">
+                     </div>
+                     <div class="col-md-3">
+                        <label class="form-label fw-bold">Hour Meter Saat Ini</label>
+                        <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM"
+                           value="{{ old('hm_start') }}">
                      </div>
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Standar RTD Awal (Baru)</label>

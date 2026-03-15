@@ -5,6 +5,9 @@ namespace App\Http\Controllers\TyrePerformance\Monitoring;
 use App\Http\Controllers\Controller;
 use App\Models\Tyre;
 use App\Models\TyreMonitoringVehicle;
+use App\Models\TyreMonitoringImage;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Models\TyreMonitoringSession;
 use App\Models\TyreMonitoringInstallation;
 use App\Models\TyreMonitoringCheck;
@@ -304,6 +307,7 @@ class MonitoringController extends Controller
             'tyre_size' => 'required|string',
             'original_rtd' => 'required|numeric',
             'odometer_start' => 'required|integer',
+            'hm_start' => 'nullable|integer',
         ]);
 
         $vehicle = TyreMonitoringVehicle::findOrFail($request->vehicle_id);
@@ -341,6 +345,7 @@ class MonitoringController extends Controller
                         'serial_number' => $serial,
                         'install_date' => $request->install_date,
                         'odometer_reading' => $request->odometer_start,
+                        'hm_reading' => $request->hm_start,
                         'position' => $posName,
                         'position_id' => $posId,
                         'brand' => $c['brand'] ?? '-',
@@ -370,7 +375,9 @@ class MonitoringController extends Controller
                             'position_id' => $posId,
                             'check_date' => $request->install_date,
                             'odometer_reading' => $request->odometer_start,
+                            'hm_reading' => $request->hm_start,
                             'operation_mileage' => 0,
+                            'operation_hm' => 0,
                             'inf_press_recommended' => $c['inf_press_recommended'] ?? null,
                             'inf_press_actual' => $c['inf_press_actual'] ?? null,
                             'date_assembly' => $c['date_assembly'] ?? null,
@@ -399,11 +406,17 @@ class MonitoringController extends Controller
                                 $tyre->last_inspection_date = $request->install_date;
                                 
                                 if ($isNewInstallation) {
-                                    $tyre->status = 'Installed';
-                                    $tyre->current_vehicle_id = $vehicle->master_vehicle_id;
-                                    $tyre->current_position_id = $posId;
+                                    $tyre->update([
+                                        'status' => 'Installed',
+                                        'current_vehicle_id' => $vehicle->master_vehicle_id,
+                                        'current_position_id' => $posId,
+                                        'current_tread_depth' => $avgRtd,
+                                        'last_inspection_date' => $request->install_date,
+                                        'last_hm_reading' => $request->hm_start,
+                                    ]);
+                                } else {
+                                    $tyre->save(); // Save changes if not a new installation
                                 }
-                                $tyre->save();
 
                                 // 2. Record Movement Log
                                 TyreMovement::create([
@@ -412,6 +425,7 @@ class MonitoringController extends Controller
                                     'movement_date' => $request->install_date,
                                     'movement_type' => $isNewInstallation ? 'Installation' : 'Inspection',
                                     'odometer_reading' => $request->odometer_start,
+                                    'hour_meter_reading' => $request->hm_start,
                                     'position_id' => $posId,
                                     'rtd_reading' => $avgRtd,
                                     'notes' => $isNewInstallation ? "Monitoring Sesi Start - New Installation" : "Monitoring Sesi Start - Periodic Check #1",
@@ -494,7 +508,9 @@ class MonitoringController extends Controller
                 $data['position'] = $posDetail->display_order;
             }
 
-            $data['odometer_reading'] = $request->odometer ?? $session->odometer_start;
+             $data['odometer_reading'] = $request->odometer ?? $session->odometer_start;
+            $data['hm_reading'] = $request->hour_meter ?? $session->hm_start;
+            
             TyreMonitoringInstallation::create($data);
 
             // Sync with Master Tyre
@@ -503,7 +519,8 @@ class MonitoringController extends Controller
                 'current_vehicle_id' => $session->master_vehicle_id,
                 'current_position_id' => $request->position_id,
                 'current_tread_depth' => $data['avg_rtd'],
-                'last_inspection_date' => $session->install_date
+                'last_inspection_date' => $session->install_date,
+                'last_hm_reading' => $data['hm_reading']
             ]);
 
             // Record Movement
@@ -513,7 +530,8 @@ class MonitoringController extends Controller
                 'position_id' => $request->position_id,
                 'movement_type' => 'Installation',
                 'movement_date' => $session->install_date,
-                'odometer_reading' => $request->odometer ?? $session->odometer_start,
+                'odometer_reading' => $data['odometer_reading'],
+                'hour_meter_reading' => $data['hm_reading'],
                 'rtd_reading' => $data['avg_rtd'],
                 'work_location_id' => $tyre->work_location_id,
                 'notes' => 'Monitoring Installation Session #' . $session->session_id,
@@ -525,6 +543,12 @@ class MonitoringController extends Controller
             if ($request->position_id) {
                 TyrePositionDetail::where('id', $request->position_id)->update(['tyre_id' => $tyre->id]);
             }
+
+            // Link pending images to this installation event (using check_id as NULL, session_id + serial)
+            TyreMonitoringImage::where('session_id', $session->session_id)
+                ->where('serial_number', $request->serial_number)
+                ->whereNull('check_id')
+                ->update(['uploaded_by' => auth()->id()]);
 
             // Sync stock if applicable
             if ($tyre->wasRecentlyCreated == false && $tyre->work_location_id) {
@@ -546,16 +570,45 @@ class MonitoringController extends Controller
         $request->validate([
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
             'check_date' => 'required|date',
-            'odometer' => 'required|integer',
+            'odometer' => 'required|numeric|min:0',
+            'hour_meter' => 'nullable|numeric|min:0',
+            'driver_name' => 'required|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'retase' => 'required|numeric',
             'checks' => 'required|array',
+            'temp_id' => 'nullable|string', // For image linking
+        ], [
+            'odometer.required' => 'Odometer harus diisi.',
+            'driver_name.required' => 'Nama driver harus diisi.',
         ]);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
-        $lastCheck = TyreMonitoringCheck::where('session_id', $session->session_id)->max('check_number');
-        $newCheckNumber = ($lastCheck ?? 0) + 1;
+        
+        // Human error prevention: Odometer check vs Session Start
+        if ($request->odometer < $session->odometer_start) {
+            return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Awal Sesi ({$session->odometer_start}).")->withInput();
+        }
+
+        // Human error prevention: Odometer check vs Last Check
+        $lastCheckRecord = TyreMonitoringCheck::where('session_id', $session->session_id)
+            ->orderBy('check_number', 'desc')
+            ->first();
+        
+        if ($lastCheckRecord && $request->odometer < $lastCheckRecord->odometer_reading) {
+            return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Check sebelumnya ({$lastCheckRecord->odometer_reading}).")->withInput();
+        }
+
+        if ($request->hour_meter && $session->hm_start && $request->hour_meter < $session->hm_start) {
+            return redirect()->back()->with('error', "Hour Meter Input ({$request->hour_meter}) tidak boleh lebih kecil dari HM Awal Sesi ({$session->hm_start}).")->withInput();
+        }
+
+        $newCheckNumber = ($lastCheckRecord->check_number ?? 0) + 1;
 
         DB::beginTransaction();
         try {
+            // Calculate HM Delta if applicable
+            $opHm = $request->hour_meter ? ($request->hour_meter - ($session->hm_start ?? $request->hour_meter)) : 0;
+
             foreach ($request->checks as $serial => $c) {
                 // Skip if no data
                 if (empty($c['rtd_1']) && empty($c['rtd_2']) && empty($c['rtd_3']) && empty($c['rtd_4']) && empty($c['psi_actual'])) continue;
@@ -570,7 +623,15 @@ class MonitoringController extends Controller
                 $r2 = (float)($c['rtd_2'] ?? 0);
                 $r3 = (float)($c['rtd_3'] ?? 0);
                 $r4 = (float)($c['rtd_4'] ?? 0);
-                $avgRtd = ($r1 + $r2 + $r3 + $r4) / 4;
+
+                // Validation: RTD cannot be greater than original
+                if ($r1 > $origRtd) return redirect()->back()->with('error', "RTD 1 ({$r1}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
+                if ($r2 > $origRtd) return redirect()->back()->with('error', "RTD 2 ({$r2}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
+                if ($r3 > $origRtd) return redirect()->back()->with('error', "RTD 3 ({$r3}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
+                if ($r4 > $origRtd) return redirect()->back()->with('error', "RTD 4 ({$r4}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
+
+                $rtdCount = $r4 > 0 ? 4 : 3;
+                $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
 
                 // Analytics
                 $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
@@ -584,11 +645,15 @@ class MonitoringController extends Controller
                     'check_number' => $newCheckNumber,
                     'check_date' => $request->check_date,
                     'odometer_reading' => $request->odometer,
+                    'hm_reading' => $request->hour_meter,
                     'operation_mileage' => $opMileage,
+                    'operation_hm' => $opHm,
+                    'driver_name' => $request->driver_name,
+                    'phone_number' => $request->phone_number,
                     'position' => $inst ? $inst->position : '?',
                     'position_id' => $inst ? $inst->position_id : null,
                     'serial_number' => $serial,
-                    'inf_press_recommended' => $c['psi_recommended'] ?? null,
+                    'inf_press_recommended' => $c['psi_recommended'] ?? $request->retase,
                     'inf_press_actual' => $c['psi_actual'] ?? null,
                     'date_assembly' => $c['date_assembly'] ?? null,
                     'date_inspection' => $request->check_date,
@@ -599,11 +664,24 @@ class MonitoringController extends Controller
                     'worn_percentage' => $wornPct,
                     'km_per_mm' => $kmPerMm,
                     'projected_life_km' => $projLife,
-                    'condition' => $c['condition'] ?? 'ok',
+                    'condition' => $this->determineCondition($wornPct, $c['psi_actual'], $request->retase),
+                    'recommendation' => $c['recommendation'] ?? null,
                     'notes' => $c['notes'] ?? null,
                 ];
 
-                TyreMonitoringCheck::create($checkData);
+                $check = TyreMonitoringCheck::create($checkData);
+
+                // Link images to this check
+                TyreMonitoringImage::where('session_id', $session->session_id)
+                    ->where(function($q) use ($serial, $request) {
+                        $q->where('serial_number', $serial)
+                          ->orWhere(function($sub) use ($request) {
+                              $sub->whereNull('serial_number')
+                                  ->where('notes', $request->temp_id); // Using notes as temp session identifier
+                          });
+                    })
+                    ->whereNull('check_id')
+                    ->update(['check_id' => $check->check_id, 'uploaded_by' => auth()->id()]);
 
                 // Sync with Master Tyre and Movement
                 $tyre = Tyre::where('serial_number', $serial)->first();
@@ -615,8 +693,12 @@ class MonitoringController extends Controller
                         ->first();
 
                     $kmDiff = 0;
+                    $hmDiff = 0;
                     if ($lastMov) {
                         $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                        if ($request->hour_meter && $lastMov->hour_meter_reading) {
+                            $hmDiff = $request->hour_meter - $lastMov->hour_meter_reading;
+                        }
                     }
 
                     TyreMovement::create([
@@ -626,7 +708,9 @@ class MonitoringController extends Controller
                         'movement_type' => 'Inspection',
                         'movement_date' => $request->check_date,
                         'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
                         'running_km' => $kmDiff,
+                        'running_hm' => $hmDiff,
                         'rtd_reading' => $avgRtd,
                         'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id})",
                         'tyre_company_id' => $tyre->tyre_company_id,
@@ -636,16 +720,22 @@ class MonitoringController extends Controller
                     $tyre->update([
                         'current_tread_depth' => $avgRtd,
                         'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
-                        'last_inspection_date' => $request->check_date
+                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + ($hmDiff > 0 ? $hmDiff : 0),
+                        'last_inspection_date' => $request->check_date,
+                        'last_hm_reading' => $request->hour_meter
                     ]);
                 }
             }
 
+            // Update session global retase
+            $session->update(['retase' => $request->retase]);
+
             DB::commit();
-            return redirect()->back()->with('success', "Periodic Check #{$newCheckNumber} recorded successfully.");
+            return redirect()->route('monitoring.vehicle.show', $session->vehicle_id)
+                ->with('success', "Periodic Check #{$newCheckNumber} recorded successfully.");
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -803,5 +893,40 @@ class MonitoringController extends Controller
         $fileName = 'Monitoring_Session_' . $session->session_id . '_' . $session->install_date . '.xlsx';
         
         return Excel::download(new SessionExport($sessionId), $fileName);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:5120', // 5MB max
+            'type' => 'required|string',
+            'session_id' => 'required',
+            'serial_number' => 'nullable|string',
+            'temp_id' => 'nullable|string'
+        ]);
+
+        try {
+            $file = $request->file('image');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('tyre-monitoring/' . $request->session_id, $fileName, 'public');
+
+            $image = TyreMonitoringImage::create([
+                'session_id' => $request->session_id,
+                'serial_number' => $request->serial_number,
+                'image_type' => $request->type,
+                'image_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'notes' => $request->temp_id, // Store temp_id to link later if check_id is not yet known
+                'uploaded_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'image_id' => $image->image_id,
+                'url' => asset('storage/' . $path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }
