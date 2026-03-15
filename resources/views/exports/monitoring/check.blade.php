@@ -7,11 +7,13 @@
    $checkDateTable = $checkDateObj->format('d/m/Y');
 
    // Ordinal suffix
-   function ordinalCheck($n)
-   {
-       $s = ['th', 'st', 'nd', 'rd'];
-       $v = $n % 100;
-       return $n . ($s[($v - 20) % 10] ?? ($s[$v] ?? $s[0]));
+   if (!function_exists('ordinalCheck')) {
+       function ordinalCheck($n)
+       {
+           $s = ['th', 'st', 'nd', 'rd'];
+           $v = $n % 100;
+           return $n . ($s[($v - 20) % 10] ?? ($s[$v] ?? $s[0]));
+       }
    }
    $ordCheck = ordinalCheck($checkNumber);
 
@@ -68,7 +70,7 @@
    {{-- Row 6: Driver Name / Odometer at Nth Check --}}
    <tr>
       <td style="font-weight: bold;">Driver Name</td>
-      <td colspan="4">{{ $session->vehicle->driver_name }}</td>
+      <td colspan="4">{{ $checks[0]->driver_name ?? $session->vehicle->driver_name }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Odometer at {{ $ordCheck }} Check</td>
       <td colspan="4">{{ number_format($odometerCheck) }}</td>
@@ -76,7 +78,7 @@
    {{-- Row 7: Phone Number / Operation Mileage --}}
    <tr>
       <td style="font-weight: bold;">Phone Number</td>
-      <td colspan="4">{{ $session->vehicle->phone_number ?? '-' }}</td>
+      <td colspan="4">{{ $checks[0]->phone_number ?? ($session->vehicle->phone_number ?? '-') }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Operation Mileage</td>
       <td colspan="4">{{ number_format($opMileage) }} KM</td>
@@ -87,7 +89,7 @@
       <td colspan="4">{{ $session->vehicle->application ?? '-' }}</td>
       <td colspan="{{ $totalCols - 10 }}"></td>
       <td style="font-weight: bold;">Retase (Psi)</td>
-      <td colspan="4">{{ $session->retase ?? '-' }}</td>
+      <td colspan="4">{{ $checks[0]->inf_press_recommended ?? ($session->retase ?? '-') }}</td>
    </tr>
    {{-- Row 9: Load / Check Date --}}
    <tr>

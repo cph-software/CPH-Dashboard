@@ -19,6 +19,7 @@ class TyreMonitoringSession extends Model
         'tyre_size',
         'original_rtd',
         'odometer_start',
+        'hm_start',
         'pattern',
         'retase',
         'status',
