@@ -24,7 +24,8 @@ class TyreMonitoringCalculator
         $checkDate = is_object($checkData) ? $checkData->check_date : $checkData['check_date'];
         $operationMileage = (float) (is_object($checkData) ? $checkData->operation_mileage : $checkData['operation_mileage']);
 
-        $avgRtd = ($r1 + $r2 + $r3 + $r4) / 4;
+        $rtdCount = ($r4 > 0) ? 4 : 3;
+        $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
         
         $wearAmount = $originalRtd - $avgRtd;
         if ($wearAmount <= 0) $wearAmount = 0.001;
