@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class TyreMonitoringVehicle extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToCompany;
 
     protected $table = 'tyre_monitoring_vehicle';
     protected $primaryKey = 'vehicle_id';
@@ -22,6 +24,7 @@ class TyreMonitoringVehicle extends Model
         'tire_positions',
         'status',
         'master_vehicle_id',
+        'tyre_company_id',
     ];
 
     public function masterVehicle()

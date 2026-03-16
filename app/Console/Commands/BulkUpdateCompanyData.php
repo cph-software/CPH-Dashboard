@@ -34,9 +34,15 @@ class BulkUpdateCompanyData extends Command
             'master_import_kendaraan',
             'tyre_movements',
             'tyre_examinations',
-            'tyre_locations',
-            'tyre_segments',
-            'activity_logs'
+            'activity_logs',
+            'tyre_failure_codes',
+            'tyre_monitoring_vehicle',
+            'tyre_monitoring_session',
+            'tyre_monitoring_check',
+            'tyre_monitoring_installation',
+            'tyre_monitoring_removal',
+            'tyre_monitoring_images',
+            'tyre_failure_aliases',
         ];
 
         $companies = \App\Models\TyreCompany::pluck('id')->toArray();

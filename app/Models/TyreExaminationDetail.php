@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class TyreExaminationDetail extends Model
 {
+    use BelongsToCompany;
     protected $table = 'tyre_examination_details';
     protected $guarded = [];
 

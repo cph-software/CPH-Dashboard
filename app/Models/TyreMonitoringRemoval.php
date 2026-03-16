@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class TyreMonitoringRemoval extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToCompany;
 
     protected $table = 'tyre_monitoring_removal';
     protected $primaryKey = 'removal_id';
@@ -24,6 +26,7 @@ class TyreMonitoringRemoval extends Model
         'removal_reason',
         'tyre_condition_after',
         'notes',
+        'tyre_company_id',
     ];
 
     public function session()
