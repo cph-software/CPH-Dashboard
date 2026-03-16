@@ -414,7 +414,11 @@
                            </a>
                            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-success" title="Export Excel">
-                              <i class="ri ri-file-excel-2-line"></i>
+                              <i class="icon-base ri ri-file-excel-2-line"></i>
+                           </a>
+                           <a href="{{ route('monitoring.sessions.export-pdf', $session->session_id) }}"
+                              class="btn btn-sm btn-icon btn-outline-danger" title="Export PDF" target="_blank">
+                              <i class="icon-base ri ri-file-pdf-line"></i>
                            </a>
                            @if ($session->status == 'active')
                               <form action="{{ route('monitoring.sessions.update', $session->session_id) }}"

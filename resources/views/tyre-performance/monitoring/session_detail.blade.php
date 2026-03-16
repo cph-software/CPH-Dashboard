@@ -166,7 +166,7 @@
       <div class="d-flex align-items-center">
          <a href="{{ route('monitoring.vehicle.show', $session->vehicle_id) }}"
             class="btn btn-icon btn-label-secondary me-3 shadow-sm">
-            <i class="ri ri-arrow-left-line ri-lg"></i>
+            <i class="icon-base ri ri-arrow-left-line ri-lg"></i>
          </a>
          <div>
             <h4 class="fw-bold py-1 mb-0"><span class="text-muted fw-light">Monitoring /</span> Session Detail</h4>
@@ -176,9 +176,15 @@
             </p>
          </div>
       </div>
-      <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-success shadow-sm">
-         <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
-      </a>
+      <div class="d-flex gap-2">
+         <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-success shadow-sm">
+            <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
+         </a>
+         <a href="{{ route('monitoring.sessions.export-pdf', $session->session_id) }}" class="btn btn-danger shadow-sm"
+            target="_blank">
+            <i class="icon-base ri ri-file-pdf-line me-1"></i> Export PDF
+         </a>
+      </div>
    </div>
 
    {{-- Session Overview Cards --}}
@@ -496,11 +502,17 @@
                <div class="timeline-item check">
                   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
                      <div class="flex-grow-1">
-                        <h6 class="fw-bold mb-1">
-                           <span class="badge bg-info me-1">Check #{{ $checkNumber }}</span>
-                           {{ $checkDate->format('d M Y') }}
-                           <small class="text-muted ms-1">({{ $days }} days)</small>
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                           <h6 class="fw-bold mb-0">
+                              <span class="badge bg-info me-1">Check #{{ $checkNumber }}</span>
+                              {{ $checkDate->format('d M Y') }}
+                              <small class="text-muted ms-1">({{ $days }} days)</small>
+                           </h6>
+                           <a href="{{ route('monitoring.sessions.export-pdf', [$session->session_id, 'check_number' => $checkNumber]) }}"
+                              class="btn btn-sm btn-outline-danger" target="_blank">
+                              <i class="icon-base ri ri-file-pdf-line me-1"></i> Report
+                           </a>
+                        </div>
                         <p class="text-muted small mb-2">{{ $group->count() }} posisi diperiksa · Op. Mileage:
                            {{ number_format($first->operation_mileage) }} KM · Avg RTD: {{ number_format($avgRtd, 2) }}
                            mm</p>
