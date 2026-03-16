@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class TyreMonitoringImage extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToCompany;
 
     protected $table = 'tyre_monitoring_images';
     protected $primaryKey = 'image_id';
@@ -21,6 +23,7 @@ class TyreMonitoringImage extends Model
         'original_name',
         'notes',
         'uploaded_by',
+        'tyre_company_id',
     ];
 
     public function session()

@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\BelongsToCompany;
+
 class TyreFailureCode extends Model
 {
+    use BelongsToCompany;
     protected $table = 'tyre_failure_codes';
     protected $guarded = [];
     public function movements()

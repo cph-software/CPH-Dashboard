@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\UserTracking;
+
 class TyrePattern extends Model
 {
+    use UserTracking;
     protected $table = 'tyre_patterns';
     protected $guarded = [];
 
