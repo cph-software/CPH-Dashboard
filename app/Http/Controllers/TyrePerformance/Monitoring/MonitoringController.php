@@ -23,6 +23,7 @@ use App\Models\TyrePositionConfiguration;
 use App\Exports\Monitoring\SessionExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use DB;
 
@@ -949,6 +950,56 @@ class MonitoringController extends Controller
         $fileName = 'Monitoring_Session_' . $session->session_id . '_' . $session->install_date . '.xlsx';
         
         return Excel::download(new SessionExport($sessionId), $fileName);
+    }
+
+    public function exportPdf(Request $request, $sessionId)
+    {
+        $session = TyreMonitoringSession::with([
+            'vehicle', 
+            'installations.tyre.brand', 
+            'installations.tyre.size', 
+            'installations.tyre.pattern',
+            'checks', 
+            'masterVehicle'
+        ])->findOrFail($sessionId);
+
+        $checkNumber = $request->check_number ?? $session->checks->max('check_number');
+        if (!$checkNumber) {
+            return redirect()->back()->with('error', 'Tidak ada data pemeriksaan untuk sesi ini.');
+        }
+
+        $checks = TyreMonitoringCheck::where('session_id', $sessionId)
+            ->where('check_number', $checkNumber)
+            ->with(['tyre.brand', 'tyre.size', 'tyre.pattern'])
+            ->get();
+
+        $checkIds = $checks->pluck('check_id')->toArray();
+
+        $images = TyreMonitoringImage::where('session_id', $sessionId)
+            ->whereIn('check_id', $checkIds)
+            ->get()
+            ->groupBy('serial_number');
+
+        // General images are linked to one of the check_ids
+        $generalImages = TyreMonitoringImage::where('session_id', $sessionId)
+            ->whereIn('check_id', $checkIds)
+            ->whereNull('serial_number')
+            ->get()
+            ->keyBy('image_type');
+
+        $data = [
+            'session' => $session,
+            'vehicle' => $session->vehicle,
+            'masterVehicle' => $session->masterVehicle,
+            'checks' => $checks,
+            'checkNumber' => $checkNumber,
+            'images' => $images,
+            'generalImages' => $generalImages,
+            'date' => date('d M Y'),
+        ];
+
+        $pdf = Pdf::loadView('tyre-performance.monitoring.report_pdf', $data)->setPaper('a4', 'landscape');
+        return $pdf->stream('Monitoring_Report_Vehicle_' . $session->vehicle->vehicle_number . '.pdf');
     }
 
     public function uploadImage(Request $request)
