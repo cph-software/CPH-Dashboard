@@ -12,8 +12,32 @@ class TyreSizeController extends Controller
 {
     public function index()
     {
-        $sizes = TyreSize::with(['brand', 'pattern'])->latest()->get();
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id;
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        $query = TyreSize::with(['brand', 'pattern']);
+
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                $query->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+            }
+        }
+
+        $sizes = $query->latest()->get();
         $brands = TyreBrand::where('status', 'Active')->get();
+
+        // Also filter brands in dropdown if company context exists
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                $brands = TyreBrand::whereIn('id', $company->brands()->pluck('tyre_brands.id'))->where('status', 'Active')->get();
+            }
+        }
+
         return view('tyre-performance.master.sizes.index', compact('sizes', 'brands'));
     }
 
