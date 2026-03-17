@@ -26,7 +26,7 @@ class TyreSegmentController extends Controller
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
             'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
-            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $segment = TyreSegment::create($request->all());
@@ -55,7 +55,7 @@ class TyreSegmentController extends Controller
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
             'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
-            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $segment = TyreSegment::findOrFail($id);

@@ -122,7 +122,10 @@
                            <select name="tyre_company_id" class="form-select select2" data-placeholder="Select Company">
                               <option value=""></option>
                               @foreach ($companies as $comp)
-                                 <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
+                                 <option value="{{ $comp->id }}"
+                                    {{ session('active_company_id') == $comp->id ? 'selected' : '' }}>
+                                    {{ $comp->company_name }}
+                                 </option>
                               @endforeach
                            </select>
                         </div>

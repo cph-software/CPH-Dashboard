@@ -80,6 +80,21 @@
                @csrf
                <div class="modal-body">
                   <div class="row">
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col-md-6 mb-3">
+                           <label for="tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
+                           <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
+                              data-placeholder="Pilih Perusahaan">
+                              <option value="">-- Pilih Perusahaan --</option>
+                              @foreach ($companies as $company)
+                                 <option value="{{ $company->id }}"
+                                    {{ session('active_company_id') == $company->id ? 'selected' : '' }}>
+                                    {{ $company->company_name }}
+                                 </option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                      <div class="col mb-3">
                         <label for="serial_number" class="form-label">Serial Number</label>
                         <input type="text" id="serial_number" name="serial_number" class="form-control"
@@ -94,8 +109,8 @@
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
                               <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}" data-pattern-id="{{ $size->tyre_pattern_id }}"
-                                 data-std-otd="{{ $size->std_otd }}">
+                                 data-brand-id="{{ $size->tyre_brand_id }}"
+                                 data-pattern-id="{{ $size->tyre_pattern_id }}" data-std-otd="{{ $size->std_otd }}">
                                  {{ $size->size }}
                               </option>
                            @endforeach
@@ -208,6 +223,18 @@
                @method('PUT')
                <div class="modal-body">
                   <div class="row">
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col-md-6 mb-3">
+                           <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
+                           <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
+                              data-placeholder="Pilih Perusahaan">
+                              <option value="">-- Pilih Perusahaan --</option>
+                              @foreach ($companies as $company)
+                                 <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                      <div class="col mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
                         <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
@@ -487,7 +514,7 @@
                         actions += `
                            <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
                               href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                              data-id="${row.id}" data-serial="${row.serial_number}"
+                              data-id="${row.id}" data-serial="${row.serial_number}" data-company-id="${row.tyre_company_id}"
                               data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
                               data-pattern-id="${row.tyre_pattern_id}"
                               data-segment-id="${row.tyre_segment_id}"
@@ -608,9 +635,11 @@
             const initialTread = $(this).data('initial-tread');
             const currentTread = $(this).data('current-tread');
             const retreadCount = $(this).data('retread-count');
+            const companyId = $(this).data('company-id');
 
             editForm.attr('action', `{{ url('master_tyre') }}/${id}`);
             $('#edit_serial_number').val(serial);
+            $('#edit_tyre_company_id').val(companyId).trigger('change');
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
             $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
