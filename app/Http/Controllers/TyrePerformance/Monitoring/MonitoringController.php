@@ -155,17 +155,12 @@ class MonitoringController extends Controller
 
         if ($companyId) {
             $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                if ($company->brands()->exists()) {
-                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                }
-                if ($company->patterns()->exists()) {
-                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                }
-                if ($company->sizes()->exists()) {
-                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                }
-            }
+        if ($company) {
+            // Strict Whitelist Filtering
+            $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+            $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+            $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+        }
         }
 
         $brands = $brandQuery->get();
@@ -283,17 +278,12 @@ class MonitoringController extends Controller
 
         if ($companyId) {
             $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                if ($company->brands()->exists()) {
-                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                }
-                if ($company->patterns()->exists()) {
-                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                }
-                if ($company->sizes()->exists()) {
-                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                }
-            }
+        if ($company) {
+            // Strict Whitelist Filtering
+            $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+            $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+            $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+        }
         }
 
         $brands = $brandQuery->get();
@@ -364,15 +354,10 @@ class MonitoringController extends Controller
         if ($companyId) {
             $company = \App\Models\TyreCompany::find($companyId);
             if ($company) {
-                if ($company->brands()->exists()) {
-                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                }
-                if ($company->patterns()->exists()) {
-                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                }
-                if ($company->sizes()->exists()) {
-                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                }
+                // Strict Whitelist Filtering
+                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
             }
         }
 

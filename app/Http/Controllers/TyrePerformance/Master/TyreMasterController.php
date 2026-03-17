@@ -31,16 +31,10 @@ class TyreMasterController extends Controller
         if ($companyId) {
             $company = \App\Models\TyreCompany::find($companyId);
             if ($company) {
-                // Check if mapping exists for this company
-                if ($company->brands()->exists()) {
-                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                }
-                if ($company->sizes()->exists()) {
-                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                }
-                if ($company->patterns()->exists()) {
-                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                }
+                // Strict Whitelist Filtering: Only show data mapped to the company
+                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
             }
         }
 
@@ -142,15 +136,10 @@ class TyreMasterController extends Controller
         if ($companyId) {
             $company = \App\Models\TyreCompany::find($companyId);
             if ($company) {
-                if ($company->brands()->exists()) {
-                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                }
-                if ($company->sizes()->exists()) {
-                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                }
-                if ($company->patterns()->exists()) {
-                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                }
+                // Strict Whitelist Filtering
+                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
             }
         }
 
