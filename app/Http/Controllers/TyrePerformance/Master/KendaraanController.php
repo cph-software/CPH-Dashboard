@@ -18,7 +18,9 @@ class KendaraanController extends Controller
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
         $locations = TyreLocation::all();
         $segments = TyreSegment::all();
-        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments'));
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+
+        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments', 'companies'));
     }
 
     public function show($id)
@@ -142,6 +144,7 @@ class KendaraanController extends Controller
             'total_tyre_position' => 'required|integer',
             'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $kendaraan = MasterImportKendaraan::create($request->all());
@@ -186,6 +189,7 @@ class KendaraanController extends Controller
             'total_tyre_position' => 'required|integer',
             'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $kendaraan = MasterImportKendaraan::findOrFail($id);

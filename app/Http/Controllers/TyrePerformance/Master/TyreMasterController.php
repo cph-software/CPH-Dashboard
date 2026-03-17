@@ -44,8 +44,9 @@ class TyreMasterController extends Controller
         
         $segments = TyreSegment::with('location')->where('status', 'Active')->get();
         $locations = TyreLocation::all();
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
 
-        return view('tyre-performance.master.tyres.index', compact('brands', 'sizes', 'segments', 'patterns', 'locations'));
+        return view('tyre-performance.master.tyres.index', compact('brands', 'sizes', 'segments', 'patterns', 'locations', 'companies'));
     }
 
     /**
@@ -166,6 +167,7 @@ class TyreMasterController extends Controller
             'initial_tread_depth' => 'nullable|numeric|min:0',
             'current_tread_depth' => 'nullable|numeric|min:0',
             'retread_count' => 'nullable|integer|min:0',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $tyre = Tyre::create($request->all());
@@ -202,6 +204,7 @@ class TyreMasterController extends Controller
             'initial_tread_depth' => 'nullable|numeric|min:0',
             'current_tread_depth' => 'nullable|numeric|min:0',
             'retread_count' => 'nullable|integer|min:0',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $tyre = Tyre::findOrFail($id);

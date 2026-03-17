@@ -38,7 +38,11 @@ trait BelongsToCompany
                 
                 // Isi company_id otomatis jika belum diisi manual
                 if (!$model->tyre_company_id) {
-                    $model->tyre_company_id = $user->tyre_company_id;
+                    if ($user->role_id == 1 && session()->has('active_company_id')) {
+                        $model->tyre_company_id = session('active_company_id');
+                    } else {
+                        $model->tyre_company_id = $user->tyre_company_id;
+                    }
                 }
                 
                 // Isi created_by otomatis

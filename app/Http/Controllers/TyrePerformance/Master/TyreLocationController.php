@@ -22,7 +22,7 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
-            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         TyreLocation::create($request->all());
@@ -42,7 +42,7 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
-            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $location = TyreLocation::findOrFail($id);

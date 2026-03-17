@@ -86,6 +86,21 @@
 
                <div class="modal-body pt-4">
                   <div class="row g-2">
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col-md-12 mb-3">
+                           <label for="tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
+                           <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
+                              data-placeholder="Pilih Perusahaan">
+                              <option value="">-- Pilih Perusahaan --</option>
+                              @foreach ($companies as $company)
+                                 <option value="{{ $company->id }}"
+                                    {{ session('active_company_id') == $company->id ? 'selected' : '' }}>
+                                    {{ $company->company_name }}
+                                 </option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                      <div class="col-md-6 mb-3">
                         <label for="kode_kendaraan" class="form-label fw-bold">Unit Code</label>
                         <input type="text" id="kode_kendaraan" name="kode_kendaraan" class="form-control"
@@ -201,6 +216,18 @@
 
                <div class="modal-body pt-4">
                   <div class="row g-2">
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col-md-12 mb-3">
+                           <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
+                           <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
+                              data-placeholder="Pilih Perusahaan">
+                              <option value="">-- Pilih Perusahaan --</option>
+                              @foreach ($companies as $company)
+                                 <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                      <div class="col-md-6 mb-3">
                         <label for="edit_kode_kendaraan" class="form-label fw-bold">Unit Code</label>
                         <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control"
@@ -359,7 +386,8 @@
                   </div>
                   <div class="mb-3">
                      <label class="form-label">Update Segment</label>
-                     <select name="operational_segment_id" class="form-select select2-bulk" data-placeholder="Select Segment">
+                     <select name="operational_segment_id" class="form-select select2-bulk"
+                        data-placeholder="Select Segment">
                         <option value=""></option>
                         @foreach ($segments as $segment)
                            <option value="{{ $segment->id }}">{{ $segment->segment_name }}</option>
@@ -481,7 +509,7 @@
                         actions += `
                                                             <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-vehicle"
                                                                href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
-                                                               data-id="${row.id}" data-kode="${row.kode_kendaraan}"
+                                                               data-id="${row.id}" data-kode="${row.kode_kendaraan}" data-company-id="${row.tyre_company_id}"
                                                                data-nopol="${row.no_polisi}" data-area="${row.area}"
                                                                data-segment-id="${row.operational_segment_id}"
                                                                data-brand="${row.vehicle_brand}"
@@ -603,8 +631,10 @@
             const positions = $(this).data('positions');
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
+            const companyId = $(this).data('company-id');
 
             editForm.attr('action', `{{ url('master_kendaraan') }}/${id}`);
+            $('#edit_tyre_company_id').val(companyId).trigger('change');
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_no_polisi').val(nopol);
             $('#edit_area').val(area).trigger('change');
