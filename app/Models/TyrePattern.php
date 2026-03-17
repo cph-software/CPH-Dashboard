@@ -26,4 +26,14 @@ class TyrePattern extends Model
     {
         return $this->hasMany(Tyre::class, 'tyre_pattern_id');
     }
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper($value);
+    }
+
+    public function companies()
+    {
+        return $this->belongsToMany(TyreCompany::class, 'tyre_company_patterns', 'tyre_pattern_id', 'tyre_company_id');
+    }
 }

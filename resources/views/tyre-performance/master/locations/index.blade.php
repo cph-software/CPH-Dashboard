@@ -40,6 +40,7 @@
                <thead>
                   <tr>
                      <th>Location Name</th>
+                     <th>Company</th>
                      <th>Type</th>
                      <th>Capacity</th>
                      <th>Current Stock</th>
@@ -50,6 +51,13 @@
                   @foreach ($locations as $loc)
                      <tr>
                         <td><strong>{{ $loc->location_name }}</strong></td>
+                        <td>
+                           @if ($loc->company)
+                              <span class="badge bg-label-info">{{ $loc->company->company_name }}</span>
+                           @else
+                              <span class="badge bg-label-secondary">Global</span>
+                           @endif
+                        </td>
                         <td>
                            <span
                               class="badge bg-label-{{ $loc->location_type == 'Warehouse' ? 'primary' : ($loc->location_type == 'Service' ? 'warning' : 'danger') }}">
@@ -70,7 +78,7 @@
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editLocationModal"
                                     data-id="{{ $loc->id }}" data-name="{{ $loc->location_name }}"
                                     data-type="{{ $loc->location_type }}" data-capacity="{{ $loc->capacity }}"
-                                    title="Edit">
+                                    data-company-id="{{ $loc->tyre_company_id }}" title="Edit">
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
@@ -102,12 +110,23 @@
             <form action="{{ route('tyre-locations.store') }}" method="POST">
                @csrf
                <div class="modal-body">
-                  <div class="row">
+                  <div class="row g-2">
                      <div class="col mb-3">
                         <label for="location_name" class="form-label">Location Name</label>
                         <input type="text" id="location_name" name="location_name" class="form-control"
                            placeholder="e.g. Workshop Store" required>
                      </div>
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col mb-3">
+                           <label for="tyre_company_id" class="form-label">Company</label>
+                           <select name="tyre_company_id" class="form-select select2" data-placeholder="Select Company">
+                              <option value=""></option>
+                              @foreach ($companies as $comp)
+                                 <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
@@ -146,12 +165,24 @@
                @csrf
                @method('PUT')
                <div class="modal-body">
-                  <div class="row">
+                  <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_location_name" class="form-label">Location Name</label>
                         <input type="text" id="edit_location_name" name="location_name" class="form-control"
                            required>
                      </div>
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col mb-3">
+                           <label for="edit_tyre_company_id" class="form-label">Company</label>
+                           <select id="edit_tyre_company_id" name="tyre_company_id" class="form-select select2"
+                              data-placeholder="Select Company">
+                              <option value=""></option>
+                              @foreach ($companies as $comp)
+                                 <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
@@ -206,11 +237,13 @@
             const name = $(this).data('name');
             const type = $(this).data('type');
             const capacity = $(this).data('capacity');
+            const companyId = $(this).data('company-id');
 
             editForm.attr('action', `{{ url('master_location') }}/${id}`);
             $('#edit_location_name').val(name);
             $('#edit_location_type').val(type).trigger('change');
             $('#edit_location_capacity').val(capacity === 'null' ? '' : capacity);
+            $('#edit_tyre_company_id').val(companyId).trigger('change');
          });
 
          $(document).on('click', '.delete-location', function() {

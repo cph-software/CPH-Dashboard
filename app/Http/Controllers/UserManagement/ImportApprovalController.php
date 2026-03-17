@@ -116,7 +116,7 @@ class ImportApprovalController extends Controller
         $batch->update(['processed_rows' => $successCount]);
     }
 
-    private function processFailureCodes($data)
+    private function processFailureCodes($data, $uploaderCompanyId = null)
     {
         // Headers: failure_code, failure_name, default_category
         $code = $data['failure_code'] ?? null;
@@ -131,29 +131,36 @@ class ImportApprovalController extends Controller
         );
     }
 
-    private function processTyreBrand($data)
+    private function processTyreBrand($data, $uploaderCompanyId = null)
     {
         // Headers: brand_name
         $name = $data['brand_name'] ?? $data['brand'] ?? null;
         if (!$name) throw new \Exception("Nama Brand kosong");
 
-        \App\Models\TyreBrand::firstOrCreate(['brand_name' => $name]);
+        $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => $name]);
+
+        if ($uploaderCompanyId) {
+            $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+        }
     }
 
-    private function processTyreSize($data)
+    private function processTyreSize($data, $uploaderCompanyId = null)
     {
         // Headers: size, brand_name, type, std_otd, ply_rating
-        $size = $data['size'] ?? null;
-        if (!$size) throw new \Exception("Size kosong");
+        $sizeStr = $data['size'] ?? null;
+        if (!$sizeStr) throw new \Exception("Size kosong");
 
         $brandId = null;
         if (!empty($data['brand_name'])) {
             $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => trim($data['brand_name'])]);
             $brandId = $brand->id;
+            if ($uploaderCompanyId) {
+                $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
-        \App\Models\TyreSize::updateOrCreate(
-            ['size' => $size],
+        $size = \App\Models\TyreSize::updateOrCreate(
+            ['size' => $sizeStr],
             [
                 'tyre_brand_id' => $brandId,
                 'type' => $data['type'] ?? 'Radial', // Default to Radial if not specified
@@ -161,9 +168,13 @@ class ImportApprovalController extends Controller
                 'ply_rating' => $data['ply_rating'] ?? 0
             ]
         );
+
+        if ($uploaderCompanyId) {
+            $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+        }
     }
 
-    private function processTyrePattern($data)
+    private function processTyrePattern($data, $uploaderCompanyId = null)
     {
         // Headers: pattern_name, brand
         $name = $data['pattern_name'] ?? $data['pattern'] ?? null;
@@ -173,12 +184,19 @@ class ImportApprovalController extends Controller
         if (!empty($data['brand'])) {
             $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => $data['brand']]);
             $brandId = $brand->id;
+            if ($uploaderCompanyId) {
+                $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
-        \App\Models\TyrePattern::updateOrCreate(
+        $pattern = \App\Models\TyrePattern::updateOrCreate(
             ['name' => $name],
             ['tyre_brand_id' => $brandId]
         );
+
+        if ($uploaderCompanyId) {
+            $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+        }
     }
 
     private function processTyreMaster($data, $uploaderCompanyId)
@@ -193,19 +211,20 @@ class ImportApprovalController extends Controller
         if (!empty($brandName)) {
             $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => trim($brandName)]);
             $brandId = $brand->id;
+            if ($uploaderCompanyId) {
+                $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
-        // 2. Resolve Size (Mandatory in DB, so we auto-create if missing)
+        // 2. Resolve Size
         $sizeId = null;
         $sizeName = $data['size_name'] ?? $data['size'] ?? null;
         if (!empty($sizeName)) {
-            // Find size that matches both the name and the brand
             $size = \App\Models\TyreSize::where('size', $sizeName)
                 ->where('tyre_brand_id', $brandId)
                 ->first();
                 
             if (!$size) {
-                // Auto-create size with basic defaults to satisfy DB constraints
                 $size = \App\Models\TyreSize::create([
                     'size' => $sizeName,
                     'tyre_brand_id' => $brandId,
@@ -215,6 +234,9 @@ class ImportApprovalController extends Controller
                 ]);
             }
             $sizeId = $size->id;
+            if ($uploaderCompanyId) {
+                $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
         // 3. Resolve Pattern
@@ -226,6 +248,9 @@ class ImportApprovalController extends Controller
                 ['tyre_brand_id' => $brandId]
             );
             $patternId = $pattern->id;
+            if ($uploaderCompanyId) {
+                $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
         // 4. Resolve Location (Mandatory in DB)
@@ -430,7 +455,7 @@ class ImportApprovalController extends Controller
         ]);
     }
 
-    private function processTyreExamination($data)
+    private function processTyreExamination($data, $uploaderCompanyId = null)
     {
         // Import Examination Headers only as per current export structure
         $date = $data['tanggal'] ?? null;
@@ -450,7 +475,7 @@ class ImportApprovalController extends Controller
         // Details are not imported in this simple version
     }
 
-    private function processLocations($data)
+    private function processLocations($data, $uploaderCompanyId = null)
     {
         // Headers: location_name, location_type, capacity
         $name = $data['location_name'] ?? null;
@@ -471,11 +496,12 @@ class ImportApprovalController extends Controller
             [
                 'location_type' => $type,
                 'capacity' => $capacity,
+                'tyre_company_id' => $uploaderCompanyId,
             ]
         );
     }
 
-    private function processSegments($data)
+    private function processSegments($data, $uploaderCompanyId = null)
     {
         // Headers: segment_id, segment_name, location_name, terrain_type, status
         $segmentId = trim($data['segment_id'] ?? null);
@@ -513,6 +539,7 @@ class ImportApprovalController extends Controller
                 'tyre_location_id' => $locationId,
                 'terrain_type' => $terrain,
                 'status' => $status,
+                'tyre_company_id' => $uploaderCompanyId,
             ]
         );
     }

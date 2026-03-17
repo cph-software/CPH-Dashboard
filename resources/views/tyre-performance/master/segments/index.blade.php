@@ -48,6 +48,7 @@
                   <tr>
                      <th>Segment ID</th>
                      <th>Name</th>
+                     <th>Company</th>
                      <th>Work Location</th>
                      <th>Terrain</th>
                      <th>Status</th>
@@ -59,6 +60,13 @@
                      <tr>
                         <td><strong>{{ $segment->segment_id }}</strong></td>
                         <td>{{ $segment->segment_name }}</td>
+                        <td>
+                           @if ($segment->company)
+                              <span class="badge bg-label-info">{{ $segment->company->company_name }}</span>
+                           @else
+                              <span class="badge bg-label-secondary">Global</span>
+                           @endif
+                        </td>
                         <td>{{ $segment->location->location_name ?? '-' }}</td>
                         <td>
                            <span class="badge bg-label-info">{{ $segment->terrain_type }}</span>
@@ -77,7 +85,7 @@
                                     data-name="{{ $segment->segment_name }}"
                                     data-location-id="{{ $segment->tyre_location_id }}"
                                     data-terrain="{{ $segment->terrain_type }}" data-status="{{ $segment->status }}"
-                                    title="Edit">
+                                    data-company-id="{{ $segment->tyre_company_id }}" title="Edit">
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
@@ -127,7 +135,7 @@
                            placeholder="e.g. Coal Hauling" required>
                      </div>
                   </div>
-                  <div class="row">
+                  <div class="row g-2">
                      <div class="col mb-3">
                         <label for="tyre_location_id" class="form-label">Work Location</label>
                         <select name="tyre_location_id" class="form-select select2" data-placeholder="Select Location">
@@ -137,6 +145,17 @@
                            @endforeach
                         </select>
                      </div>
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col mb-3">
+                           <label for="tyre_company_id" class="form-label">Company</label>
+                           <select name="tyre_company_id" class="form-select select2" data-placeholder="Select Company">
+                              <option value=""></option>
+                              @foreach ($companies as $comp)
+                                 <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
@@ -188,7 +207,7 @@
                         <input type="text" id="edit_segment_name" name="segment_name" class="form-control" required>
                      </div>
                   </div>
-                  <div class="row">
+                  <div class="row g-2">
                      <div class="col mb-3">
                         <label for="edit_location_id" class="form-label">Work Location</label>
                         <select id="edit_location_id" name="tyre_location_id" class="form-select select2">
@@ -198,6 +217,18 @@
                            @endforeach
                         </select>
                      </div>
+                     @if (auth()->user()->role_id == 1)
+                        <div class="col mb-3">
+                           <label for="edit_tyre_company_id" class="form-label">Company</label>
+                           <select id="edit_tyre_company_id" name="tyre_company_id" class="form-select select2"
+                              data-placeholder="Select Company">
+                              <option value=""></option>
+                              @foreach ($companies as $comp)
+                                 <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                     @endif
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
@@ -251,6 +282,7 @@
             const locationId = $(this).data('location-id');
             const terrain = $(this).data('terrain');
             const status = $(this).data('status');
+            const companyId = $(this).data('company-id');
 
             editForm.attr('action', `{{ url('master_segment') }}/${id}`);
             $('#edit_segment_id').val(segmentId);
@@ -258,6 +290,7 @@
             $('#edit_location_id').val(locationId === 'null' ? '' : (locationId || '')).trigger('change');
             $('#edit_terrain').val(terrain).trigger('change');
             $('#edit_segment_status').val(status);
+            $('#edit_tyre_company_id').val(companyId).trigger('change');
          });
 
          $(document).on('click', '.delete-segment', function() {

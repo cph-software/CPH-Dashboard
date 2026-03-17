@@ -44,6 +44,10 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
+                              <a href="{{ route('tyre-companies.mapping', $company->id) }}"
+                                 class="btn btn-sm btn-icon btn-text-secondary rounded-pill" title="Mapping Data">
+                                 <i class="icon-base ri ri-shield-user-line"></i>
+                              </a>
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill edit-company"
                                  data-id="{{ $company->id }}">

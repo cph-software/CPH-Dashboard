@@ -4,6 +4,9 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\TyreCompany;
+use App\Models\TyreBrand;
+use App\Models\TyrePattern;
+use App\Models\TyreSize;
 use Illuminate\Http\Request;
 
 class TyreCompanyController extends Controller
@@ -78,5 +81,32 @@ class TyreCompanyController extends Controller
     public function show($id)
     {
         return response()->json(TyreCompany::findOrFail($id));
+    }
+
+    public function mapping($id)
+    {
+        $company = TyreCompany::with(['brands', 'patterns', 'sizes'])->findOrFail($id);
+        $allBrands = TyreBrand::orderBy('brand_name')->get();
+        $allPatterns = TyrePattern::with('brand')->orderBy('name')->get();
+        $allSizes = TyreSize::with('brand')->orderBy('size')->get();
+
+        return view('tyre-performance.master.companies.mapping', compact('company', 'allBrands', 'allPatterns', 'allSizes'));
+    }
+
+    public function updateMapping(Request $request, $id)
+    {
+        $company = TyreCompany::findOrFail($id);
+
+        $company->brands()->sync($request->input('brands', []));
+        $company->patterns()->sync($request->input('patterns', []));
+        $company->sizes()->sync($request->input('sizes', []));
+
+        setLogActivity(auth()->id(), 'Memperbarui mapping data untuk: ' . $company->company_name, [
+            'action_type' => 'update_mapping',
+            'module' => 'Tyre Companies',
+            'company_id' => $id
+        ]);
+
+        return redirect()->route('tyre-companies.index')->with('success', 'Mapping updated successfully');
     }
 }
