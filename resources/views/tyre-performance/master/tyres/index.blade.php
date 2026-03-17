@@ -110,6 +110,13 @@
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
                            @endforeach
                         </select>
+                        <div class="mt-1">
+                           <small class="text-muted">
+                              <i class="ri-information-line"></i> Data tidak ada?
+                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20(Brand/Size/Pattern)"
+                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
+                           </small>
+                        </div>
                      </div>
 
                   </div>
@@ -229,6 +236,13 @@
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
                            @endforeach
                         </select>
+                        <div class="mt-1">
+                           <small class="text-muted">
+                              <i class="ri-information-line"></i> Data tidak ada?
+                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20(Brand/Size/Pattern)"
+                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
+                           </small>
+                        </div>
                      </div>
 
                   </div>
@@ -339,7 +353,8 @@
                   </div>
                   <div class="mb-3">
                      <label class="form-label">Update Lokasi</label>
-                     <select name="work_location_id" class="form-select select2-bulk" data-placeholder="Select Location">
+                     <select name="work_location_id" class="form-select select2-bulk"
+                        data-placeholder="Select Location">
                         <option value=""></option>
                         @foreach ($locations as $loc)
                            <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
@@ -426,7 +441,8 @@
                   data: 'segment.segment_name',
                   render: function(data, type, row) {
                      if (!data) return '-';
-                     const loc = row.segment && row.segment.location ? row.segment.location.location_name : 'Global';
+                     const loc = row.segment && row.segment.location ? row.segment.location
+                        .location_name : 'Global';
                      return `${data} (${loc})`;
                   }
                },

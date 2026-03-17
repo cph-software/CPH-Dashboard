@@ -25,11 +25,8 @@ trait BelongsToCompany
                         $builder->where($table . '.tyre_company_id', session('active_company_id'));
                     }
                 } else if ($user->tyre_company_id) {
-                    // Regular user: Sees their company data + shared/global data (where ID is NULL)
-                    $builder->where(function ($query) use ($user, $table) {
-                        $query->where($table . '.tyre_company_id', $user->tyre_company_id)
-                              ->orWhereNull($table . '.tyre_company_id');
-                    });
+                    // Regular user: Sees only their company data (Strict Isolation)
+                    $builder->where($table . '.tyre_company_id', $user->tyre_company_id);
                 }
             }
         });

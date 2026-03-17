@@ -192,183 +192,194 @@
                               <option value="{{ $s->size }}">{{ $s->size }}</option>
                            @endforeach
                         </select>
+                        <div class="col-md-3">
+                           <label class="form-label fw-bold">Pattern Umum</label>
+                           <select name="pattern" class="form-select select2">
+                              <option value="">-- Pilih Pattern --</option>
+                              @foreach ($patterns as $p)
+                                 <option value="{{ $p->name }}">{{ $p->brand->brand_name ?? '-' }} -
+                                    {{ $p->name }}
+                                 </option>
+                              @endforeach
+                           </select>
+                           <div class="mt-1">
+                              <small class="text-muted">
+                                 <i class="ri-information-line"></i> Data tidak ada?
+                                 <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20Monitoring%20(Brand/Size/Pattern)"
+                                    target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
+                              </small>
+                           </div>
+                        </div>
                      </div>
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold">Pattern Umum</label>
-                        <select name="pattern" class="form-select select2">
-                           <option value="">-- Pilih Pattern --</option>
-                           @foreach ($patterns as $p)
-                              <option value="{{ $p->name }}">{{ $p->brand->brand_name ?? '-' }} -
-                                 {{ $p->name }}
-                              </option>
-                           @endforeach
-                        </select>
+
+                     <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
+                        <h6 class="fw-bold mb-0 text-primary"><i class="ri ri-list-check-2 me-1"></i> Data Ban Terpasang
+                           (Bulk
+                           Snapshot)</h6>
+                        <small class="text-muted"><i class="ri ri-information-line me-1"></i>Gunakan scroll horizontal
+                           untuk
+                           melihat semua kolom</small>
                      </div>
-                  </div>
 
-                  <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
-                     <h6 class="fw-bold mb-0 text-primary"><i class="ri ri-list-check-2 me-1"></i> Data Ban Terpasang (Bulk
-                        Snapshot)</h6>
-                     <small class="text-muted"><i class="ri ri-information-line me-1"></i>Gunakan scroll horizontal untuk
-                        melihat semua kolom</small>
-                  </div>
-
-                  <div class="table-responsive">
-                     <table class="table table-bordered align-middle" id="bulk-install-table">
-                        <thead>
-                           <tr class="text-nowrap">
-                              <th class="col-pos text-center">Pos</th>
-                              <th class="col-info">Informasi Ban</th>
-                              <th class="col-psi">
-                                 Psi (Rec/Act)<br>
-                                 <button type="button" class="btn btn-xxs btn-primary mt-1" id="btn-apply-all-psi"
-                                    title="Copy Rec to Act for all rows">
-                                    <i class="ri ri-arrow-down-line"></i> All Act
-                                 </button>
-                              </th>
-                              <th class="col-date">
-                                 Tgl Assembly<br>
-                                 <button type="button" class="btn btn-xxs btn-info mt-1" id="btn-today-assembly"
-                                    title="Set all to today">
-                                    Today
-                                 </button>
-                              </th>
-                              <th class="col-rtd">RTD 1</th>
-                              <th class="col-rtd">RTD 2</th>
-                              <th class="col-rtd">RTD 3</th>
-                              <th class="col-rtd">RTD 4</th>
-                              <th class="col-avg">Avg RTD</th>
-                              <th class="col-worn">Worn %</th>
-                              <th class="col-cond">Kondisi / Rekomendasi</th>
-                              <th class="col-notes">Catatan (Notes)</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           @foreach ($masterPositions as $pos)
-                              @php
-                                 $tyre = $assignedTyres->get($pos->id) ?? null;
-                                 $rowId = $tyre ? $tyre->serial_number : 'pos_' . $pos->id;
-                              @endphp
-                              <tr class="tyre-row" data-serial="{{ $tyre ? $tyre->serial_number : '' }}">
-                                 <td class="text-center fw-bold bg-light" style="font-size: 1.2rem;">
-                                    {{ $pos->position_code }}</td>
-                                 <td>
-                                    @if ($tyre)
-                                       <div class="d-flex flex-column tyre-info-box">
-                                          <span class="fw-bold text-primary"
-                                             style="font-size: 1rem;">{{ $tyre->serial_number }}</span>
-                                          <small
-                                             class="text-dark fw-semibold">{{ $tyre->brand->brand_name ?? '-' }}</small>
-                                          <small class="text-muted">{{ $tyre->size->size ?? '-' }}</small>
-                                          <input type="hidden" name="checks[{{ $rowId }}][tyre_id]"
-                                             value="{{ $tyre->id }}">
-                                          <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
-                                             value="{{ $tyre->serial_number }}">
-                                          <input type="hidden" name="checks[{{ $rowId }}][position_id]"
-                                             value="{{ $pos->id }}">
-                                       </div>
-                                    @else
-                                       <div class="d-flex flex-column gap-1">
-                                          <select name="checks[{{ $rowId }}][tyre_id]"
-                                             class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
-                                             <option value="">-- Pilih Ban Stok --</option>
-                                             @foreach ($availableTyres as $at)
-                                                @php $lc = $at->monitoringChecks->first(); @endphp
-                                                <option value="{{ $at->id }}" data-sn="{{ $at->serial_number }}"
-                                                   data-brand="{{ $at->brand->brand_name ?? '-' }}"
-                                                   data-size="{{ $at->size->size ?? '-' }}"
-                                                   data-pattern="{{ $at->pattern->name ?? '-' }}"
-                                                   data-rtd="{{ $at->current_tread_depth ?? '' }}"
-                                                   data-rtd1="{{ $lc->rtd_1 ?? $at->current_tread_depth }}"
-                                                   data-rtd2="{{ $lc->rtd_2 ?? $at->current_tread_depth }}"
-                                                   data-rtd3="{{ $lc->rtd_3 ?? $at->current_tread_depth }}"
-                                                   data-rtd4="{{ $lc->rtd_4 ?? $at->current_tread_depth }}">
-                                                   {{ $at->brand->brand_name ?? '-' }} | {{ $at->serial_number }} |
-                                                   {{ $at->pattern->name ?? '-' }}
-                                                </option>
-                                             @endforeach
-                                          </select>
-                                          <div class="tyre-detail-info-{{ $rowId }} mt-1 d-none">
-                                             <div class="p-2 border rounded bg-white shadow-sm"
-                                                style="font-size: 0.75rem;">
-                                                <div class="text-primary fw-bold"><i
-                                                      class="ri ri-settings-line me-1"></i>Detail Ban:</div>
-                                                <div class="row g-0">
-                                                   <div class="col-12"><span class="text-muted">Brand:</span> <span
-                                                         class="tyre-brand fw-semibold"></span></div>
-                                                   <div class="col-12"><span class="text-muted">Specs:</span> <span
-                                                         class="tyre-specs fw-semibold"></span></div>
+                     <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="bulk-install-table">
+                           <thead>
+                              <tr class="text-nowrap">
+                                 <th class="col-pos text-center">Pos</th>
+                                 <th class="col-info">Informasi Ban</th>
+                                 <th class="col-psi">
+                                    Psi (Rec/Act)<br>
+                                    <button type="button" class="btn btn-xxs btn-primary mt-1" id="btn-apply-all-psi"
+                                       title="Copy Rec to Act for all rows">
+                                       <i class="ri ri-arrow-down-line"></i> All Act
+                                    </button>
+                                 </th>
+                                 <th class="col-date">
+                                    Tgl Assembly<br>
+                                    <button type="button" class="btn btn-xxs btn-info mt-1" id="btn-today-assembly"
+                                       title="Set all to today">
+                                       Today
+                                    </button>
+                                 </th>
+                                 <th class="col-rtd">RTD 1</th>
+                                 <th class="col-rtd">RTD 2</th>
+                                 <th class="col-rtd">RTD 3</th>
+                                 <th class="col-rtd">RTD 4</th>
+                                 <th class="col-avg">Avg RTD</th>
+                                 <th class="col-worn">Worn %</th>
+                                 <th class="col-cond">Kondisi / Rekomendasi</th>
+                                 <th class="col-notes">Catatan (Notes)</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              @foreach ($masterPositions as $pos)
+                                 @php
+                                    $tyre = $assignedTyres->get($pos->id) ?? null;
+                                    $rowId = $tyre ? $tyre->serial_number : 'pos_' . $pos->id;
+                                 @endphp
+                                 <tr class="tyre-row" data-serial="{{ $tyre ? $tyre->serial_number : '' }}">
+                                    <td class="text-center fw-bold bg-light" style="font-size: 1.2rem;">
+                                       {{ $pos->position_code }}</td>
+                                    <td>
+                                       @if ($tyre)
+                                          <div class="d-flex flex-column tyre-info-box">
+                                             <span class="fw-bold text-primary"
+                                                style="font-size: 1rem;">{{ $tyre->serial_number }}</span>
+                                             <small
+                                                class="text-dark fw-semibold">{{ $tyre->brand->brand_name ?? '-' }}</small>
+                                             <small class="text-muted">{{ $tyre->size->size ?? '-' }}</small>
+                                             <input type="hidden" name="checks[{{ $rowId }}][tyre_id]"
+                                                value="{{ $tyre->id }}">
+                                             <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
+                                                value="{{ $tyre->serial_number }}">
+                                             <input type="hidden" name="checks[{{ $rowId }}][position_id]"
+                                                value="{{ $pos->id }}">
+                                          </div>
+                                       @else
+                                          <div class="d-flex flex-column gap-1">
+                                             <select name="checks[{{ $rowId }}][tyre_id]"
+                                                class="form-select select2 select2-tyre" data-row="{{ $rowId }}">
+                                                <option value="">-- Pilih Ban Stok --</option>
+                                                @foreach ($availableTyres as $at)
+                                                   @php $lc = $at->monitoringChecks->first(); @endphp
+                                                   <option value="{{ $at->id }}"
+                                                      data-sn="{{ $at->serial_number }}"
+                                                      data-brand="{{ $at->brand->brand_name ?? '-' }}"
+                                                      data-size="{{ $at->size->size ?? '-' }}"
+                                                      data-pattern="{{ $at->pattern->name ?? '-' }}"
+                                                      data-rtd="{{ $at->current_tread_depth ?? '' }}"
+                                                      data-rtd1="{{ $lc->rtd_1 ?? $at->current_tread_depth }}"
+                                                      data-rtd2="{{ $lc->rtd_2 ?? $at->current_tread_depth }}"
+                                                      data-rtd3="{{ $lc->rtd_3 ?? $at->current_tread_depth }}"
+                                                      data-rtd4="{{ $lc->rtd_4 ?? $at->current_tread_depth }}">
+                                                      {{ $at->brand->brand_name ?? '-' }} | {{ $at->serial_number }} |
+                                                      {{ $at->pattern->name ?? '-' }}
+                                                   </option>
+                                                @endforeach
+                                             </select>
+                                             <div class="tyre-detail-info-{{ $rowId }} mt-1 d-none">
+                                                <div class="p-2 border rounded bg-white shadow-sm"
+                                                   style="font-size: 0.75rem;">
+                                                   <div class="text-primary fw-bold"><i
+                                                         class="ri ri-settings-line me-1"></i>Detail
+                                                      Ban:</div>
+                                                   <div class="row g-0">
+                                                      <div class="col-12"><span class="text-muted">Brand:</span> <span
+                                                            class="tyre-brand fw-semibold"></span></div>
+                                                      <div class="col-12"><span class="text-muted">Specs:</span> <span
+                                                            class="tyre-specs fw-semibold"></span></div>
+                                                   </div>
                                                 </div>
                                              </div>
+                                             <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
+                                                class="row-sn-{{ $rowId }}">
+                                             <input type="hidden" name="checks[{{ $rowId }}][position_id]"
+                                                value="{{ $pos->id }}">
                                           </div>
-                                          <input type="hidden" name="checks[{{ $rowId }}][serial_number]"
-                                             class="row-sn-{{ $rowId }}">
-                                          <input type="hidden" name="checks[{{ $rowId }}][position_id]"
-                                             value="{{ $pos->id }}">
+                                       @endif
+                                    </td>
+                                    <td>
+                                       <div class="input-group mb-1">
+                                          <span class="input-group-text p-1" style="font-size: 0.75rem">Rec</span>
+                                          <input type="number"
+                                             name="checks[{{ $rowId }}][inf_press_recommended]"
+                                             class="form-control" placeholder="0">
                                        </div>
-                                    @endif
-                                 </td>
-                                 <td>
-                                    <div class="input-group mb-1">
-                                       <span class="input-group-text p-1" style="font-size: 0.75rem">Rec</span>
-                                       <input type="number" name="checks[{{ $rowId }}][inf_press_recommended]"
-                                          class="form-control" placeholder="0">
-                                    </div>
-                                    <div class="input-group">
-                                       <span class="input-group-text p-1 text-primary fw-bold"
-                                          style="font-size: 0.75rem">Act</span>
-                                       <input type="number" name="checks[{{ $rowId }}][inf_press_actual]"
-                                          class="form-control border-primary" placeholder="0">
-                                    </div>
-                                 </td>
-                                 <td>
-                                    <input type="date" name="checks[{{ $rowId }}][date_assembly]"
-                                       class="form-control">
-                                 </td>
-                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_1]"
-                                       class="form-control rtd-input" data-idx="1" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
-                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_2]"
-                                       class="form-control rtd-input" data-idx="2" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
-                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_3]"
-                                       class="form-control rtd-input" data-idx="3" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
-                                 <td><input type="number" name="checks[{{ $rowId }}][rtd_4]"
-                                       class="form-control rtd-input" data-idx="4" step="0.1"
-                                       value="{{ $tyre->current_tread_depth ?? '' }}"></td>
-                                 <td class="text-center bg-light">
-                                    <span class="avg-rtd">0.00</span>
-                                    <small class="text-muted" style="font-size: 0.7rem">mm</small>
-                                 </td>
-                                 <td class="text-center">
-                                    <span class="worn-pct fw-bold">0%</span>
-                                 </td>
-                                 <td>
-                                    <select name="checks[{{ $rowId }}][condition]"
-                                       class="form-select mb-2 fw-bold">
-                                       <option value="ok" class="text-success">OK</option>
-                                       <option value="warning" class="text-warning">Warning</option>
-                                       <option value="critical" class="text-danger">Critical</option>
-                                    </select>
-                                    <input type="text" name="checks[{{ $rowId }}][recommendation]"
-                                       class="form-control" placeholder="Tulis saran/rekomendasi...">
-                                 </td>
-                                 <td>
-                                    <textarea name="checks[{{ $rowId }}][notes]" class="form-control" rows="3"
-                                       placeholder="Tambahkan catatan khusus ban ini..."></textarea>
-                                 </td>
-                              </tr>
-                           @endforeach
-                        </tbody>
-                     </table>
-                  </div>
+                                       <div class="input-group">
+                                          <span class="input-group-text p-1 text-primary fw-bold"
+                                             style="font-size: 0.75rem">Act</span>
+                                          <input type="number" name="checks[{{ $rowId }}][inf_press_actual]"
+                                             class="form-control border-primary" placeholder="0">
+                                       </div>
+                                    </td>
+                                    <td>
+                                       <input type="date" name="checks[{{ $rowId }}][date_assembly]"
+                                          class="form-control">
+                                    </td>
+                                    <td><input type="number" name="checks[{{ $rowId }}][rtd_1]"
+                                          class="form-control rtd-input" data-idx="1" step="0.1"
+                                          value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                    <td><input type="number" name="checks[{{ $rowId }}][rtd_2]"
+                                          class="form-control rtd-input" data-idx="2" step="0.1"
+                                          value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                    <td><input type="number" name="checks[{{ $rowId }}][rtd_3]"
+                                          class="form-control rtd-input" data-idx="3" step="0.1"
+                                          value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                    <td><input type="number" name="checks[{{ $rowId }}][rtd_4]"
+                                          class="form-control rtd-input" data-idx="4" step="0.1"
+                                          value="{{ $tyre->current_tread_depth ?? '' }}"></td>
+                                    <td class="text-center bg-light">
+                                       <span class="avg-rtd">0.00</span>
+                                       <small class="text-muted" style="font-size: 0.7rem">mm</small>
+                                    </td>
+                                    <td class="text-center">
+                                       <span class="worn-pct fw-bold">0%</span>
+                                    </td>
+                                    <td>
+                                       <select name="checks[{{ $rowId }}][condition]"
+                                          class="form-select mb-2 fw-bold">
+                                          <option value="ok" class="text-success">OK</option>
+                                          <option value="warning" class="text-warning">Warning</option>
+                                          <option value="critical" class="text-danger">Critical</option>
+                                       </select>
+                                       <input type="text" name="checks[{{ $rowId }}][recommendation]"
+                                          class="form-control" placeholder="Tulis saran/rekomendasi...">
+                                    </td>
+                                    <td>
+                                       <textarea name="checks[{{ $rowId }}][notes]" class="form-control" rows="3"
+                                          placeholder="Tambahkan catatan khusus ban ini..."></textarea>
+                                    </td>
+                                 </tr>
+                              @endforeach
+                           </tbody>
+                        </table>
+                     </div>
 
-                  <div class="mt-4 text-end">
-                     <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="ri ri-checkbox-circle-line me-1"></i> Confirm Installation & Start Period
-                     </button>
-                  </div>
+                     <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                           <i class="ri ri-checkbox-circle-line me-1"></i> Confirm Installation & Start Period
+                        </button>
+                     </div>
                </form>
             </div>
          </div>
