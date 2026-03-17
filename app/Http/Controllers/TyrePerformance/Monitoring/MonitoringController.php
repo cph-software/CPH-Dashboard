@@ -143,9 +143,34 @@ class MonitoringController extends Controller
             }
         }
 
-        $brands = TyreBrand::orderBy('brand_name')->get();
-        $patterns = TyrePattern::orderBy('name')->get();
-        $sizes = TyreSize::orderBy('size')->get();
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id;
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        $brandQuery = TyreBrand::orderBy('brand_name');
+        $patternQuery = TyrePattern::orderBy('name');
+        $sizeQuery = TyreSize::orderBy('size');
+
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                if ($company->brands()->exists()) {
+                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                }
+                if ($company->patterns()->exists()) {
+                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                }
+                if ($company->sizes()->exists()) {
+                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                }
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $patterns = $patternQuery->get();
+        $sizes = $sizeQuery->get();
 
         return view('tyre-performance.monitoring.vehicle_sessions', compact(
             'vehicle', 
@@ -246,9 +271,34 @@ class MonitoringController extends Controller
             }
         }
 
-        $brands = TyreBrand::orderBy('brand_name')->get();
-        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
-        $sizes = TyreSize::orderBy('size')->get();
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id;
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        $brandQuery = TyreBrand::orderBy('brand_name');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+        $sizeQuery = TyreSize::orderBy('size');
+
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                if ($company->brands()->exists()) {
+                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                }
+                if ($company->patterns()->exists()) {
+                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                }
+                if ($company->sizes()->exists()) {
+                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                }
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $patterns = $patternQuery->get();
+        $sizes = $sizeQuery->get();
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
             ->with(['brand', 'size', 'pattern', 'monitoringChecks' => function($q) {
                 $q->latest();
@@ -301,9 +351,34 @@ class MonitoringController extends Controller
             }
         }
 
-        $brands = TyreBrand::orderBy('brand_name')->get();
-        $patterns = TyrePattern::orderBy('name')->get();
-        $sizes = TyreSize::orderBy('size')->get();
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id;
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        $brandQuery = TyreBrand::orderBy('brand_name');
+        $patternQuery = TyrePattern::orderBy('name');
+        $sizeQuery = TyreSize::orderBy('size');
+
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                if ($company->brands()->exists()) {
+                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                }
+                if ($company->patterns()->exists()) {
+                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                }
+                if ($company->sizes()->exists()) {
+                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                }
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $patterns = $patternQuery->get();
+        $sizes = $sizeQuery->get();
         
         // Only check tyres that were installed for this session
         $installedTyres = Tyre::whereIn('serial_number', $session->installations->pluck('serial_number'))
