@@ -32,4 +32,14 @@ class MasterImportKendaraan extends Model
     {
         return $this->hasMany(TyreMonitoringSession::class, 'master_vehicle_id');
     }
+
+    public function setKodeKendaraanAttribute($value)
+    {
+        $this->attributes['kode_kendaraan'] = strtoupper($value);
+    }
+
+    public function setNoPolisiAttribute($value)
+    {
+        $this->attributes['no_polisi'] = strtoupper($value);
+    }
 }

@@ -5,15 +5,17 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 use App\Http\Controllers\Controller;
 use App\Models\TyreSegment;
 use App\Models\TyreLocation;
+use App\Models\TyreCompany;
 use Illuminate\Http\Request;
 
 class TyreSegmentController extends Controller
 {
     public function index()
     {
-        $segments = TyreSegment::with('location')->latest()->get();
+        $segments = TyreSegment::with(['location', 'company'])->latest()->get();
         $locations = TyreLocation::all();
-        return view('tyre-performance.master.segments.index', compact('segments', 'locations'));
+        $companies = TyreCompany::where('status', 'Active')->get();
+        return view('tyre-performance.master.segments.index', compact('segments', 'locations', 'companies'));
     }
 
     public function store(Request $request)
@@ -24,6 +26,7 @@ class TyreSegmentController extends Controller
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
             'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
         $segment = TyreSegment::create($request->all());
@@ -52,6 +55,7 @@ class TyreSegmentController extends Controller
             'tyre_location_id' => 'nullable|exists:tyre_locations,id',
             'terrain_type' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
         $segment = TyreSegment::findOrFail($id);

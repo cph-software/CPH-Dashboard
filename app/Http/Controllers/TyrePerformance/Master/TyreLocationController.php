@@ -4,14 +4,16 @@ namespace App\Http\Controllers\TyrePerformance\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\TyreLocation;
+use App\Models\TyreCompany;
 use Illuminate\Http\Request;
 
 class TyreLocationController extends Controller
 {
     public function index()
     {
-        $locations = TyreLocation::latest()->get();
-        return view('tyre-performance.master.locations.index', compact('locations'));
+        $locations = TyreLocation::with('company')->latest()->get();
+        $companies = TyreCompany::where('status', 'Active')->get();
+        return view('tyre-performance.master.locations.index', compact('locations', 'companies'));
     }
 
     public function store(Request $request)
@@ -20,6 +22,7 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
         TyreLocation::create($request->all());
@@ -39,6 +42,7 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
         $location = TyreLocation::findOrFail($id);

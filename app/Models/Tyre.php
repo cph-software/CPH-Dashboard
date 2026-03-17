@@ -75,4 +75,9 @@ class Tyre extends Model
     {
         return $this->hasMany(TyreMonitoringRemoval::class, 'serial_number', 'serial_number');
     }
+
+    public function setSerialNumberAttribute($value)
+    {
+        $this->attributes['serial_number'] = strtoupper($value);
+    }
 }

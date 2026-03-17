@@ -15,12 +15,40 @@ class TyreMasterController extends Controller
 {
     public function index()
     {
-        // Removed eager loading of ALL tyres to improve performance
-        // Data will be loaded via AJAX for the DataTable
-        $brands = TyreBrand::where('status', 'Active')->get();
-        $sizes = TyreSize::with('pattern')->get();
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id;
+        // If superadmin (role 1) and in a specific session company context:
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        // Default queries
+        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
+        $sizeQuery = TyreSize::with('brand')->orderBy('size');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+
+        // Apply filtering if company context exists
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                // Check if mapping exists for this company
+                if ($company->brands()->exists()) {
+                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                }
+                if ($company->sizes()->exists()) {
+                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                }
+                if ($company->patterns()->exists()) {
+                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                }
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $sizes = $sizeQuery->get();
+        $patterns = $patternQuery->get();
+        
         $segments = TyreSegment::with('location')->where('status', 'Active')->get();
-        $patterns = TyrePattern::all();
         $locations = TyreLocation::all();
 
         return view('tyre-performance.master.tyres.index', compact('brands', 'sizes', 'segments', 'patterns', 'locations'));
@@ -97,10 +125,40 @@ class TyreMasterController extends Controller
     public function edit($id)
     {
         $tyre = Tyre::findOrFail($id);
-        $brands = TyreBrand::where('status', 'Active')->get();
-        $sizes = TyreSize::with('pattern')->get();
+        $user = auth()->user();
+        
+        // Determination of company context
+        $companyId = $user->tyre_company_id;
+        if ($user->role_id == 1 && session('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
+        // Default queries
+        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
+        $sizeQuery = TyreSize::with('brand')->orderBy('size');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+
+        // Apply filtering if company context exists
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::find($companyId);
+            if ($company) {
+                if ($company->brands()->exists()) {
+                    $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
+                }
+                if ($company->sizes()->exists()) {
+                    $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
+                }
+                if ($company->patterns()->exists()) {
+                    $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
+                }
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $sizes = $sizeQuery->get();
+        $patterns = $patternQuery->get();
+        
         $segments = TyreSegment::where('status', 'Active')->get();
-        $patterns = TyrePattern::all();
         $locations = TyreLocation::all();
 
         return view('tyre-performance.master.tyres.edit', compact('tyre', 'brands', 'sizes', 'segments', 'patterns', 'locations'));

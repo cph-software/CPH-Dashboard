@@ -26,4 +26,14 @@ class TyreSize extends Model
     {
         return $this->hasMany(Tyre::class, 'tyre_size_id');
     }
+
+    public function setSizeAttribute($value)
+    {
+        $this->attributes['size'] = strtoupper($value);
+    }
+
+    public function companies()
+    {
+        return $this->belongsToMany(TyreCompany::class, 'tyre_company_sizes', 'tyre_size_id', 'tyre_company_id');
+    }
 }
