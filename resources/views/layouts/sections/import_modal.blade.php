@@ -95,7 +95,7 @@
                - kode_kendaraan (Unit Truk)<br>
                - movement_type (Installation/Removal)<br>
                - movement_date (YYYY-MM-DD)<br>
-               - position_code (Posisi Ban)<br>
+               - position_code (Konfigurasi Ban)<br>
                - odometer (KM/HM Kendaraan)`,
          'Failure Codes': `<strong>Kolom Wajib:</strong><br>
                - failure_code (Kode Kerusakan)<br>

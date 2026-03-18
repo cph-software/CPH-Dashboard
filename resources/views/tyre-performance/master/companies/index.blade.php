@@ -26,6 +26,7 @@
                   <tr>
                      <th>Nama Instansi</th>
                      <th>Keterangan</th>
+                     <th>Total Ban</th>
                      <th>Total User</th>
                      <th>Status</th>
                      <th>Aksi</th>
@@ -36,6 +37,7 @@
                      <tr>
                         <td><strong>{{ $company->company_name }}</strong></td>
                         <td>{{ $company->description ?: '-' }}</td>
+                        <td><strong>{{ number_format($company->total_tyre_capacity) }}</strong></td>
                         <td><span class="badge bg-label-info">{{ $company->users_count }} Users</span></td>
                         <td>
                            <span class="badge bg-label-{{ $company->status == 'Active' ? 'success' : 'secondary' }}">
@@ -52,7 +54,10 @@
                               @endif
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill edit-company"
-                                 data-id="{{ $company->id }}">
+                                 data-id="{{ $company->id }}" data-name="{{ $company->company_name }}"
+                                 data-desc="{{ $company->description }}"
+                                 data-capacity="{{ $company->total_tyre_capacity }}"
+                                 data-status="{{ $company->status }}">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </button>
                               <button type="button"
@@ -91,6 +96,10 @@
                      <textarea name="description" class="form-control" rows="2"></textarea>
                   </div>
                   <div class="mb-3">
+                     <label class="form-label fw-bold">Total Ban <span class="text-danger">*</span></label>
+                     <input type="number" name="total_tyre_capacity" class="form-control" required value="0">
+                  </div>
+                  <div class="mb-3">
                      <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
                      <select name="status" class="form-select">
                         <option value="Active">Active</option>
@@ -126,6 +135,11 @@
                   <div class="mb-3">
                      <label class="form-label fw-bold">Keterangan (Opsional)</label>
                      <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold">Total Ban <span class="text-danger">*</span></label>
+                     <input type="number" name="total_tyre_capacity" id="edit_total_tyre_capacity"
+                        class="form-control" required>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status</label>
@@ -172,6 +186,7 @@
             $.get(baseUrl + '/' + id, function(data) {
                $('#edit_company_name').val(data.company_name);
                $('#edit_description').val(data.description);
+               $('#edit_total_tyre_capacity').val(data.total_tyre_capacity);
                $('#edit_status').val(data.status);
                $('#editCompanyForm').attr('action', baseUrl + '/' + id);
 

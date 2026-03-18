@@ -131,6 +131,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('monitoring/check', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeBatchCheck'])->name('monitoring.check.store')->middleware('tyre.permission:Tyre Monitoring');
     Route::post('monitoring/removal', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'storeRemoval'])->name('monitoring.removal.store')->middleware('tyre.permission:Tyre Monitoring');
     Route::post('monitoring/upload-image', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'uploadImage'])->name('monitoring.upload-image')->middleware('tyre.permission:Tyre Monitoring');
+    Route::post('monitoring/sessions/{id}/approve/{check_number}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'approve'])->name('monitoring.sessions.approve')->middleware('tyre.permission:Tyre Monitoring');
+    Route::post('monitoring/sessions/{id}/reject/{check_number}', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'reject'])->name('monitoring.sessions.reject')->middleware('tyre.permission:Tyre Monitoring');
 
     Route::resource('monitoring', \App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class)->only(['index'])->middleware('tyre.permission:Tyre Monitoring');
 

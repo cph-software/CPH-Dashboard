@@ -158,6 +158,7 @@ class TyreMasterController extends Controller
     {
         $request->validate([
             'serial_number' => 'required|string|max:255|unique:tyres',
+            'custom_serial_number' => 'nullable|string|max:255|unique:tyres',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
@@ -166,6 +167,8 @@ class TyreMasterController extends Controller
             'price' => 'nullable|numeric|min:0',
             'initial_tread_depth' => 'nullable|numeric|min:0',
             'current_tread_depth' => 'nullable|numeric|min:0',
+            'current_km' => 'nullable|numeric|min:0',
+            'current_hm' => 'nullable|numeric|min:0',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
@@ -195,6 +198,7 @@ class TyreMasterController extends Controller
     {
         $request->validate([
             'serial_number' => 'required|string|max:255|unique:tyres,serial_number,' . $id,
+            'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id,
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'tyre_size_id' => 'required|exists:tyre_sizes,id',
             'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
@@ -203,6 +207,8 @@ class TyreMasterController extends Controller
             'price' => 'nullable|numeric|min:0',
             'initial_tread_depth' => 'nullable|numeric|min:0',
             'current_tread_depth' => 'nullable|numeric|min:0',
+            'current_km' => 'nullable|numeric|min:0',
+            'current_hm' => 'nullable|numeric|min:0',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);

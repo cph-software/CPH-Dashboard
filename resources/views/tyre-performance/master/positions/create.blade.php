@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Buat Konfigurasi Posisi Ban')
+@section('title', 'Buat Konfigurasi Konfigurasi Ban')
 
 @section('page-style')
    <style>
@@ -85,7 +85,7 @@
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
-         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master / Posisi Ban /</span> Buat Konfigurasi</h4>
+         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master / Konfigurasi Ban /</span> Buat Konfigurasi</h4>
          <a href="{{ route('tyre-positions.index') }}" class="btn btn-outline-secondary">
             <i class="ri-arrow-left-line me-1"></i> Kembali
          </a>
@@ -131,6 +131,27 @@
                            @error('description')
                               <div class="invalid-feedback">{{ $message }}</div>
                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mt-3">
+                           <label class="form-label fw-bold">Tipe Unit <span class="text-danger">*</span></label>
+                           <div class="d-flex gap-3 mt-1">
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_rigid"
+                                    value="Rigid" checked required>
+                                 <label class="form-check-input-label" for="type_rigid">Rigid (Tunggal)</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_head"
+                                    value="Head Unit">
+                                 <label class="form-check-input-label" for="type_head">Head Unit</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_trailer"
+                                    value="Trailer">
+                                 <label class="form-check-input-label" for="type_trailer">Trailer (Gandengan)</label>
+                              </div>
+                           </div>
                         </div>
                      </div>
 
@@ -215,7 +236,7 @@
                   </h5>
 
                   <div class="mb-3">
-                     <small class="text-white d-block mb-1" style="opacity: 0.8;">Total Posisi Ban</small>
+                     <small class="text-white d-block mb-1" style="opacity: 0.8;">Total Konfigurasi Ban</small>
                      <h3 class="text-white mb-0" id="totalPositions">10</h3>
                   </div>
 

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Master Posisi Ban')
+@section('title', 'Master Konfigurasi Ban')
 
 @section('vendor-style')
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
@@ -9,7 +9,7 @@
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
-         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Posisi Ban</h4>
+         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Konfigurasi Ban</h4>
          @if (hasPermission('Position Layouts', 'create'))
             <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
                <i class="icon-base ri ri-add-line me-1"></i> Buat Konfigurasi Baru
@@ -34,6 +34,12 @@
 
                      @if ($config->description)
                         <p class="card-text text-muted small mb-3">{{ $config->description }}</p>
+                     @endif
+
+                     @if ($config->config_type)
+                        <div class="mb-3">
+                           <span class="badge bg-label-info">{{ $config->config_type }}</span>
+                        </div>
                      @endif
 
                      <div class="row g-2 mb-3">

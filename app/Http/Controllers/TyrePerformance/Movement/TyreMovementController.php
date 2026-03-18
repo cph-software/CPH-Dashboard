@@ -262,6 +262,7 @@ class TyreMovementController extends Controller
                     'Installation' => 'Pasang',
                     'Removal' => 'Lepas',
                     'Rotation' => 'Rotasi',
+                    'Inspection' => 'Inspeksi',
                 ];
                 return [
                     'id' => $m->id,
@@ -362,7 +363,17 @@ class TyreMovementController extends Controller
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
             'work_location_id' => 'nullable|exists:tyre_locations,id',
             'psi_reading' => 'nullable|numeric',
+            'target_psi_reading' => 'nullable|numeric',
             'rtd_reading' => 'nullable|numeric',
+            'rtd_1' => 'nullable|numeric',
+            'rtd_2' => 'nullable|numeric',
+            'rtd_3' => 'nullable|numeric',
+            'rtd_4' => 'nullable|numeric',
+            'target_rtd_reading' => 'nullable|numeric',
+            'target_rtd_1' => 'nullable|numeric',
+            'target_rtd_2' => 'nullable|numeric',
+            'target_rtd_3' => 'nullable|numeric',
+            'target_rtd_4' => 'nullable|numeric',
             'start_time' => 'nullable',
             'end_time' => 'nullable',
             'failure_code_id' => 'nullable|exists:tyre_failure_codes,id',
@@ -490,6 +501,10 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
                         'rtd_reading' => $request->rtd_reading,
+                        'rtd_1' => $request->rtd_1,
+                        'rtd_2' => $request->rtd_2,
+                        'rtd_3' => $request->rtd_3,
+                        'rtd_4' => $request->rtd_4,
                         'work_location_id' => $request->work_location_id,
                         'operational_segment_id' => $request->operational_segment_id,
                         'tyreman_1' => $request->tyreman_1,
@@ -513,6 +528,10 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffTgt,
                         'psi_reading' => $request->target_psi_reading,
                         'rtd_reading' => $request->target_rtd_reading,
+                        'rtd_1' => $request->target_rtd_1,
+                        'rtd_2' => $request->target_rtd_2,
+                        'rtd_3' => $request->target_rtd_3,
+                        'rtd_4' => $request->target_rtd_4,
                         'work_location_id' => $request->work_location_id,
                         'operational_segment_id' => $request->operational_segment_id,
                         'tyreman_1' => $request->tyreman_1,
@@ -528,14 +547,18 @@ class TyreMovementController extends Controller
                         'current_position_id' => $request->target_position_id,
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
-                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth
+                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
+                        'current_km' => $request->odometer,
+                        'current_hm' => $request->hour_meter,
                     ]);
 
                     $targetTyre->update([
                         'current_position_id' => $request->position_id,
                         'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
                         'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
-                        'current_tread_depth' => $request->target_rtd_reading ?? $targetTyre->current_tread_depth
+                        'current_tread_depth' => $request->target_rtd_reading ?? $targetTyre->current_tread_depth,
+                        'current_km' => $request->odometer,
+                        'current_hm' => $request->hour_meter,
                     ]);
 
                     // 4. Update Position Details
@@ -557,6 +580,10 @@ class TyreMovementController extends Controller
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
                         'rtd_reading' => $request->rtd_reading,
+                        'rtd_1' => $request->rtd_1,
+                        'rtd_2' => $request->rtd_2,
+                        'rtd_3' => $request->rtd_3,
+                        'rtd_4' => $request->rtd_4,
                         'work_location_id' => $request->work_location_id,
                         'operational_segment_id' => $request->operational_segment_id,
                         'tyreman_1' => $request->tyreman_1,
@@ -572,7 +599,9 @@ class TyreMovementController extends Controller
                         'current_position_id' => $request->target_position_id,
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
-                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth
+                        'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
+                        'current_km' => $request->odometer,
+                        'current_hm' => $request->hour_meter,
                     ]);
 
                     // 3. Update Position Details
@@ -652,6 +681,8 @@ class TyreMovementController extends Controller
                             'work_location_id' => $request->work_location_id, // Masuk ke gudang pengerjaan
                             'total_lifetime_km' => ($oldTyre->total_lifetime_km ?? 0) + $kmDiff,
                             'total_lifetime_hm' => ($oldTyre->total_lifetime_hm ?? 0) + $hmDiff,
+                            'current_km' => $request->odometer,
+                            'current_hm' => $request->hour_meter,
                         ]);
 
                         // 4. Increase stock at working location (Old tyre enters warehouse)
@@ -675,8 +706,9 @@ class TyreMovementController extends Controller
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
                     'status' => 'Installed',
-                    // Optional: Update RTD if provided during install (e.g. used tyre)
-                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
+                    'current_km' => $request->odometer,
+                    'current_hm' => $request->hour_meter,
                 ]);
 
                 // 2. Update Position Detail (Secondary sync)
@@ -704,9 +736,12 @@ class TyreMovementController extends Controller
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
                     'rtd_reading' => $request->rtd_reading,
+                    'rtd_1' => $request->rtd_1,
+                    'rtd_2' => $request->rtd_2,
+                    'rtd_3' => $request->rtd_3,
+                    'rtd_4' => $request->rtd_4,
                     'new_bolts_used' => $request->has('new_bolts_used'),
                     'new_bolts_quantity' => $request->new_bolts_quantity,
-                    'rim_size' => $request->rim_size,
                     'movement_type' => 'Installation',
                     'movement_date' => $request->movement_date,
                     'odometer_reading' => $request->odometer,
@@ -775,9 +810,12 @@ class TyreMovementController extends Controller
                     'tyreman_2' => $request->tyreman_2,
                     'psi_reading' => $request->psi_reading,
                     'rtd_reading' => $request->rtd_reading,
+                    'rtd_1' => $request->rtd_1,
+                    'rtd_2' => $request->rtd_2,
+                    'rtd_3' => $request->rtd_3,
+                    'rtd_4' => $request->rtd_4,
                     'new_bolts_used' => $request->has('new_bolts_used'),
                     'new_bolts_quantity' => $request->new_bolts_quantity,
-                    'rim_size' => $request->rim_size,
                     'movement_type' => 'Removal',
                     'target_status' => $request->target_status,
                     'failure_code_id' => $request->failure_code_id,
@@ -932,7 +970,9 @@ class TyreMovementController extends Controller
                 'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
                 'failure_info' => $failureInfo,
-                'action' => '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
+                'action' => (auth()->user()->tyre_company_id) 
+                    ? '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
+                    : '<span class="text-muted small">No Action</span>'
             ];
         });
 

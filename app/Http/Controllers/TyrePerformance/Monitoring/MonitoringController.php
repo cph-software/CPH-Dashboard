@@ -784,6 +784,7 @@ class MonitoringController extends Controller
                     'condition' => $this->determineCondition($wornPct, $c['psi_actual'], $request->retase),
                     'recommendation' => $c['recommendation'] ?? null,
                     'notes' => $c['notes'] ?? null,
+                    'is_sales_input' => $request->has('is_sales_input'),
                 ];
 
                 $check = TyreMonitoringCheck::create($checkData);
@@ -1095,6 +1096,33 @@ class MonitoringController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function approve(Request $request, $sessionId, $checkNumber)
+    {
+        TyreMonitoringCheck::where('session_id', $sessionId)
+            ->where('check_number', $checkNumber)
+            ->update([
+                'approval_status' => 'Approved',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+            ]);
+
+        return redirect()->back()->with('success', "Pemeriksaan #{$checkNumber} berhasil disetujui.");
+    }
+
+    public function reject(Request $request, $sessionId, $checkNumber)
+    {
+        $request->validate(['reason' => 'required|string']);
+
+        TyreMonitoringCheck::where('session_id', $sessionId)
+            ->where('check_number', $checkNumber)
+            ->update([
+                'approval_status' => 'Rejected',
+                'reject_reason' => $request->reason,
+            ]);
+
+        return redirect()->back()->with('warning', "Pemeriksaan #{$checkNumber} telah ditolak.");
     }
 
     private function determineCondition($wornPct, $psiActual, $psiRec)

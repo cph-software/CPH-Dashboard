@@ -215,7 +215,8 @@
                      </div>
 
                      <div class="mb-4">
-                        <label class="form-label fw-bold text-danger" for="position_id">1. Pilih Posisi Pelepasan</label>
+                        <label class="form-label fw-bold text-danger" for="position_id">1. Pilih Konfigurasi
+                           Pelepasan</label>
                         <select name="position_id" id="position_id" class="form-select select2" required disabled>
                            <option value="">-- Pilih melalui visual layout atau list ini --</option>
                         </select>
@@ -283,24 +284,53 @@
                         <h5 class="form-section-title">Hasil Pemeriksaan Akhir</h5>
                      </div>
                      <div class="row g-3">
-                        <div class="col-md-4">
-                           <label class="form-label fw-bold">Sisa RTD (mm)</label>
+                        <div class="col-md-12">
+                           <label class="form-label fw-bold">Remaining Tread Depth (4 Titik)</label>
+                           <div class="row g-2">
+                              <div class="col-3">
+                                 <div class="input-group input-group-sm">
+                                    <input type="number" name="rtd_1" id="rtd_1" class="form-control rtd-input"
+                                       step="0.01" placeholder="P1">
+                                    <span class="input-group-text px-1">mm</span>
+                                 </div>
+                              </div>
+                              <div class="col-3">
+                                 <div class="input-group input-group-sm">
+                                    <input type="number" name="rtd_2" id="rtd_2" class="form-control rtd-input"
+                                       step="0.01" placeholder="P2">
+                                    <span class="input-group-text px-1">mm</span>
+                                 </div>
+                              </div>
+                              <div class="col-3">
+                                 <div class="input-group input-group-sm">
+                                    <input type="number" name="rtd_3" id="rtd_3" class="form-control rtd-input"
+                                       step="0.01" placeholder="P3">
+                                    <span class="input-group-text px-1">mm</span>
+                                 </div>
+                              </div>
+                              <div class="col-3">
+                                 <div class="input-group input-group-sm">
+                                    <input type="number" name="rtd_4" id="rtd_4" class="form-control rtd-input"
+                                       step="0.01" placeholder="P4">
+                                    <span class="input-group-text px-1">mm</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                           <label class="form-label fw-bold">Sisa RTD (Avg)</label>
                            <div class="input-group">
                               <input type="number" name="rtd_reading" id="rtd_reading"
-                                 class="form-control border-danger" step="0.01" required>
+                                 class="form-control border-danger bg-light" step="0.01" required readonly>
                               <span class="input-group-text bg-danger text-white border-danger">mm</span>
                            </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6 mt-3">
                            <label class="form-label fw-bold">Pressure (PSI)</label>
                            <div class="input-group">
                               <input type="number" name="psi_reading" class="form-control" required>
                               <span class="input-group-text">PSI</span>
                            </div>
-                        </div>
-                        <div class="col-md-4">
-                           <label class="form-label fw-bold">Rim Size</label>
-                           <input type="text" name="rim_size" class="form-control">
                         </div>
                      </div>
                   </div>
@@ -583,11 +613,6 @@
 
                // --- AUTO-FILL LOGIC FROM LATEST INSTALLATION ---
                if (tyre.latest_installation) {
-                  // 1. Rim Size
-                  if (tyre.latest_installation.rim_size) {
-                     $('input[name="rim_size"]').val(tyre.latest_installation.rim_size);
-                  }
-
                   // 2. Work Location (Auto-fill from latest installation)
                   if (tyre.latest_installation.work_location_id) {
                      $('#work_location_id').val(tyre.latest_installation.work_location_id).trigger('change');
@@ -602,10 +627,10 @@
                   // 4. Update Info Display
                   $('#info_install_date').text(tyre.latest_installation.movement_date);
                   $('#info_install_odo').text(Number(tyre.latest_installation.odometer_reading)
-                  .toLocaleString());
+                     .toLocaleString());
                } else {
                   // Clear if no history
-                  $('input[name="rim_size"]').val('');
+                  $('.rtd-input').val('');
                   $('#work_location_id').val('').trigger('change');
                   suggestedSegmentId = null;
                   $('#info_install_date').text('-');
@@ -615,6 +640,24 @@
             } else {
                infoArea.style.display = 'none';
                selectionInfo.style.display = 'none';
+            }
+         });
+
+         // Calculate RTD average automatically
+         $(document).on('input', '.rtd-input', function() {
+            let total = 0;
+            let count = 0;
+            $('.rtd-input').each(function() {
+               let val = parseFloat($(this).val());
+               if (!isNaN(val)) {
+                  total += val;
+                  count++;
+               }
+            });
+            if (count > 0) {
+               $('#rtd_reading').val((total / count).toFixed(2));
+            } else {
+               $('#rtd_reading').val('');
             }
          });
 

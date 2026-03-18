@@ -95,10 +95,15 @@
                            </select>
                         </div>
                      @endif
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
                         <label for="serial_number" class="form-label">Serial Number</label>
                         <input type="text" id="serial_number" name="serial_number" class="form-control"
                            placeholder="Enter Serial Number" required>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="custom_serial_number" class="form-label">Custom Serial Number (Opsional)</label>
+                        <input type="text" id="custom_serial_number" name="custom_serial_number" class="form-control"
+                           placeholder="Enter Custom Code">
                      </div>
                   </div>
                   <div class="row g-2">
@@ -190,6 +195,18 @@
                   </div>
                   <div class="row g-2">
                      <div class="col mb-3">
+                        <label for="current_km" class="form-label">Current KM</label>
+                        <input type="number" id="current_km" name="current_km" class="form-control" placeholder="0"
+                           step="1">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="current_hm" class="form-label">Current HM</label>
+                        <input type="number" id="current_hm" name="current_hm" class="form-control" placeholder="0"
+                           step="1">
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select name="status" class="form-select" required>
                            <option value="New">New</option>
@@ -235,10 +252,15 @@
                            </select>
                         </div>
                      @endif
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
                         <label for="edit_serial_number" class="form-label">Serial Number</label>
                         <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
                            required>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_custom_serial_number" class="form-label">Custom Serial Number (Opsional)</label>
+                        <input type="text" id="edit_custom_serial_number" name="custom_serial_number"
+                           class="form-control">
                      </div>
                   </div>
                   <div class="row g-2">
@@ -322,6 +344,18 @@
                         <label for="edit_current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
                         <input type="number" id="edit_current_tread_depth" name="current_tread_depth"
                            class="form-control" step="0.01">
+                     </div>
+                  </div>
+                  <div class="row g-2">
+                     <div class="col mb-3">
+                        <label for="edit_current_km" class="form-label">Current KM</label>
+                        <input type="number" id="edit_current_km" name="current_km" class="form-control"
+                           placeholder="0" step="1">
+                     </div>
+                     <div class="col mb-3">
+                        <label for="edit_current_hm" class="form-label">Current HM</label>
+                        <input type="number" id="edit_current_hm" name="current_hm" class="form-control"
+                           placeholder="0" step="1">
                      </div>
                   </div>
                   <div class="row">
@@ -512,9 +546,10 @@
 
                      if (canUpdate) {
                         actions += `
-                           <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
+                            <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
                               href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                              data-id="${row.id}" data-serial="${row.serial_number}" data-company-id="${row.tyre_company_id}"
+                              data-id="${row.id}" data-serial="${row.serial_number}" data-custom-serial="${row.custom_serial_number || ''}" 
+                              data-company-id="${row.tyre_company_id}"
                               data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
                               data-pattern-id="${row.tyre_pattern_id}"
                               data-segment-id="${row.tyre_segment_id}"
@@ -523,6 +558,8 @@
                               data-initial-tread="${row.initial_tread_depth || ''}"
                               data-current-tread="${row.current_tread_depth || ''}"
                               data-retread-count="${row.retread_count || 0}"
+                              data-current-km="${row.current_km || 0}"
+                              data-current-hm="${row.current_hm || 0}"
                               title="Edit">
                               <i class="icon-base ri ri-pencil-line"></i>
                            </a>`;
@@ -636,6 +673,8 @@
             const currentTread = $(this).data('current-tread');
             const retreadCount = $(this).data('retread-count');
             const companyId = $(this).data('company-id');
+            const currentKm = $(this).data('current-km');
+            const currentHm = $(this).data('current-hm');
 
             editForm.attr('action', `{{ url('master_tyre') }}/${id}`);
             $('#edit_serial_number').val(serial);
@@ -656,6 +695,8 @@
             $('#edit_initial_tread_depth').val(initialTread);
             $('#edit_current_tread_depth').val(currentTread);
             $('#edit_retread_count').val(retreadCount);
+            $('#edit_current_km').val(currentKm);
+            $('#edit_current_hm').val(currentHm);
          });
 
          // Auto-fill logic when selecting Size
