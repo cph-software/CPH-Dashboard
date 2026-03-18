@@ -98,7 +98,8 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Examination /</span> Input Baru</h4>
-         <a href="{{ route('examination.index') }}" class="btn btn-label-secondary"><i class="ri-arrow-left-line me-1"></i>
+         <a href="{{ route('examination.index') }}" class="btn btn-label-secondary"><i
+               class="ri ri-arrow-left-line me-1"></i>
             Kembali</a>
       </div>
 
@@ -168,7 +169,8 @@
                      <div
                         class="bg-light p-2 rounded border border-dashed d-flex align-items-center justify-content-between px-3">
                         <div>
-                           <h6 class="mb-0 small fw-bold text-dark"><i class="ri-refresh-line me-1 text-warning"></i> Reset
+                           <h6 class="mb-0 small fw-bold text-dark"><i class="ri ri-refresh-line me-1 text-warning"></i>
+                              Reset
                               Meteran Unit (Odo/HM)?</h6>
                            <small class="text-muted extra-small">Centang jika angka meteran kembali ke nol</small>
                         </div>
@@ -197,7 +199,7 @@
          <!-- TABLE SECTION -->
          <div class="card shadow-sm mb-4">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-               <h5 class="mb-0"><i class="ri-list-check me-2"></i>Tyre Check List</h5>
+               <h5 class="mb-0"><i class="ri ri-list-check me-2"></i>Tyre Check List</h5>
                <span class="badge bg-label-info d-none d-md-inline-block">RTD 1-4: Tread Depth Measurements</span>
             </div>
             <div class="table-responsive">
@@ -223,7 +225,7 @@
          <!-- UNIT PHOTOS SECTION -->
          <div class="card shadow-sm mb-4">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-               <h5 class="mb-0"><i class="ri-camera-lens-line me-2"></i>Unit Photos (Lampiran Foto Unit)</h5>
+               <h5 class="mb-0"><i class="ri ri-camera-lens-line me-2"></i>Unit Photos (Lampiran Foto Unit)</h5>
             </div>
             <div class="card-body">
                <div class="row">
@@ -253,7 +255,7 @@
                <hr>
                <div class="d-flex justify-content-end gap-2">
                   <button type="submit" class="btn btn-primary btn-lg px-5">
-                     <i class="ri-save-line me-1"></i> SIMPAN PEMERIKSAAN
+                     <i class="ri ri-save-line me-1"></i> SIMPAN PEMERIKSAAN
                   </button>
                </div>
             </div>
@@ -290,7 +292,7 @@
                            <div class="preview-container mb-2" id="preview-tyre-{{ $type }}">
                               <div class="bg-light rounded d-flex align-items-center justify-content-center"
                                  style="height: 100px;">
-                                 <i class="ri ri-image-line ri-24px text-muted"></i>
+                                 <i class="ri ri-image-line text-muted" style="font-size: 24px;"></i>
                               </div>
                            </div>
                            <button type="button" class="btn btn-sm btn-primary tyre-upload-btn"
@@ -484,7 +486,7 @@
             } else {
                $(`#preview-tyre-${type}`).html(`
                   <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
-                     <i class="ri ri-image-line ri-24px text-muted"></i>
+                     <i class="ri ri-image-line text-muted" style="font-size: 24px;"></i>
                   </div>
                `);
                $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-success').addClass('btn-primary');

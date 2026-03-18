@@ -100,7 +100,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold mb-0 text-primary"><span class="text-muted fw-light">Transaksi /</span> Rotasi Ban</h4>
          <a href="{{ route('tyre-movement.index') }}" class="btn btn-outline-secondary">
-            <i class="ri-arrow-left-line me-1"></i> Kembali
+            <i class="ri ri-arrow-left-line me-1"></i> Kembali
          </a>
       </div>
 
@@ -115,7 +115,7 @@
                   <div class="visual-layout-card shadow-sm mb-4">
                      <div
                         class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                        <h6 class="mb-0 fw-bold"><i class="ri-mouse-line me-2 text-primary"></i>Visual Axle Layout</h6>
+                        <h6 class="mb-0 fw-bold"><i class="ri ri-mouse-line me-2 text-primary"></i>Visual Axle Layout</h6>
                         <span class="badge bg-label-secondary" id="unit_code_display">-</span>
                      </div>
                      <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center"
@@ -123,7 +123,7 @@
                         <div id="layout_container"
                            class="w-100 h-100 d-flex align-items-center justify-content-center p-4">
                            <div class="text-center text-muted p-5 w-100">
-                              <i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
+                              <i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
                               <p class="mb-0">Pilih Unit Kendaraan untuk memuat posisi ban.</p>
                            </div>
                         </div>
@@ -142,7 +142,7 @@
                <div class="card premium-card mb-4">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-truck-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-steering-line"></i></div>
                         <h5 class="form-section-title">Identifikasi Unit & Tanggal</h5>
                      </div>
                      <div class="row">
@@ -220,7 +220,7 @@
                   <div class="card-body">
                      <div class="form-section-header">
                         <div class="form-section-icon" style="background: rgba(115, 103, 240, 0.1); color: #7367f0;"><i
-                              class="ri-arrow-left-right-line"></i></div>
+                              class="ri ri-arrow-left-right-line"></i></div>
                         <h5 class="form-section-title">Konfigurasi Rotasi</h5>
                      </div>
 
@@ -279,7 +279,7 @@
                <div class="card premium-card mb-4" id="inspection_section" style="display:none;">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-ruler-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-ruler-line"></i></div>
                         <h5 class="form-section-title">Hasil Pemeriksaan</h5>
                      </div>
 
@@ -365,7 +365,7 @@
                <div class="card premium-card mb-4">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-group-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-group-line"></i></div>
                         <h5 class="form-section-title">Petugas & Catatan</h5>
                      </div>
                      <div class="row g-3 mb-4">
@@ -387,14 +387,16 @@
                         </div>
 
                         <div class="col-md-6">
-                           <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Ban A</label>
+                           <label class="form-label fw-bold"><i class="ri ri-camera-line me-1"></i>Foto Instalasi Ban
+                              A</label>
                            <div class="p-2 border rounded bg-light">
                               <input type="file" name="photo" class="form-control form-control-sm"
                                  accept="image/*">
                            </div>
                         </div>
                         <div class="col-md-6" id="photo_target_container">
-                           <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Ban B (Swap)</label>
+                           <label class="form-label fw-bold"><i class="ri ri-camera-line me-1"></i>Foto Instalasi Ban B
+                              (Swap)</label>
                            <div class="p-2 border rounded bg-light">
                               <input type="file" name="photo_target" class="form-control form-control-sm"
                                  accept="image/*">
@@ -403,18 +405,16 @@
                         <div class="col-md-12">
                            <label class="form-label fw-bold">Catatan (Notes)</label>
                            <textarea name="notes" class="form-control" rows="2" placeholder="Masukkan alasan rotasi..."></textarea>
-                        </div>
-                     </div>
 
-                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg shadow" id="btn_submit">
-                           <i class="ri-save-line me-1"></i> Simpan Rotasi
-                        </button>
+                           <div class="d-grid gap-2">
+                              <button type="submit" class="btn btn-primary btn-lg shadow" id="btn_submit">
+                                 <i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban
+                              </button>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
-            </div>
-         </div>
       </form>
    </div>
 @endsection
@@ -453,7 +453,7 @@
 
             if (!vehicleId) {
                layoutContainer.innerHTML =
-                  '<div class="text-center text-muted p-5 w-100"><i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Unit Kendaraan.</p></div>';
+                  '<div class="text-center text-muted p-5 bg-white rounded-4 shadow-sm border w-100"><i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Kendaraan untuk memuat posisi ban.</p></div>';
                statusText.textContent = "PILIH UNIT TERLEBIH DAHULU";
                $('#vehicle_type_display').val('');
                return;
@@ -729,13 +729,14 @@
                         } else {
                            Swal.fire('Gagal', data.message, 'error');
                            btn.prop('disabled', false).html(
-                              '<i class="ri-save-line me-1"></i> Simpan Rotasi');
+                              '<i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban'
+                              );
                         }
                      })
                      .catch(err => {
                         Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
                         btn.prop('disabled', false).html(
-                           '<i class="ri-save-line me-1"></i> Simpan Rotasi');
+                           '<i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban');
                      });
                }
             });

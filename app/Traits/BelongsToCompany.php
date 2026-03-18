@@ -39,7 +39,7 @@ trait BelongsToCompany
                 
                 // Isi company_id otomatis jika belum diisi manual
                 if (!$model->tyre_company_id) {
-                    $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 4);
+                    $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 1);
                     if ($isInternal && session()->has('active_company_id')) {
                         $model->tyre_company_id = session('active_company_id');
                     } else {

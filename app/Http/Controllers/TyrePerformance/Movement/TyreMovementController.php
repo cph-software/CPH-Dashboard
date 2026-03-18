@@ -991,9 +991,10 @@ class TyreMovementController extends Controller
                 'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
                 'failure_info' => $failureInfo,
-                'action' => (auth()->user()->tyre_company_id) 
-                    ? '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
-                    : '<span class="text-muted small">No Action</span>'
+                'action' => '<button type="button" class="btn btn-sm btn-info me-1" onclick="viewMovementDetail(' . $row->id . ')" title="Lihat Detail & Foto"><i class="ri-eye-line"></i> Detail</button>' . 
+                    ((auth()->user()->tyre_company_id && auth()->user()->tyre_company_id != 1) 
+                    ? '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')" title="Rollback Transaksi"><i class="ri-history-line"></i></button>'
+                    : '')
             ];
         });
 
@@ -1002,6 +1003,17 @@ class TyreMovementController extends Controller
             "recordsTotal" => intval($totalRecords),
             "recordsFiltered" => intval($filteredRecords),
             "data" => $data
+        ]);
+    }
+
+    public function show($id)
+    {
+        $movement = TyreMovement::with(['tyre.brand', 'tyre.pattern', 'tyre.size', 'vehicle', 'position', 'failureCode'])->findOrFail($id);
+        $html = view('tyre-performance.movement.partials._movement_detail', compact('movement'))->render();
+
+        return response()->json([
+            'success' => true,
+            'html' => $html
         ]);
     }
 
