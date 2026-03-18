@@ -561,7 +561,7 @@
             const modal = new bootstrap.Modal(document.getElementById('movementDetailModal'));
             modal.show();
 
-            fetch(`/movement-detail/${id}`, {
+            fetch(`{{ url('movement-detail') }}/${id}`, {
                   headers: {
                      'X-Requested-With': 'XMLHttpRequest',
                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
@@ -573,12 +573,13 @@
                      $('#movementDetailBody').html(data.html);
                   } else {
                      $('#movementDetailBody').html(
-                        '<div class="alert alert-danger">Gagal memuat data detail.</div>');
+                        `<div class="alert alert-danger">${data.message || 'Gagal memuat data detail.'}</div>`
+                        );
                   }
                })
                .catch(() => {
                   $('#movementDetailBody').html(
-                     '<div class="alert alert-danger">Terjadi kesalahan, silakan coba lagi.</div>');
+                     '<div class="alert alert-danger">Terjadi kesalahan teknis, silakan coba lagi.</div>');
                });
          };
 
@@ -596,9 +597,10 @@
                buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  fetch(`/rollback/${id}`, {
+                  fetch(`{{ url('rollback') }}/${id}`, {
                         method: 'DELETE',
                         headers: {
+                           'X-Requested-With': 'XMLHttpRequest',
                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         }
                      })

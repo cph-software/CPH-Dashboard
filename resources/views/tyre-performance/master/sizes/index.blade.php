@@ -18,12 +18,12 @@
          <div class="d-flex gap-2">
             <a href="{{ route('master_data.export', ['type' => 'sizes', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
-               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+               <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
             @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
-                  <i class="ri-upload-2-line me-1"></i> Import
+                  <i class="icon-base ri ri-upload-2-line me-1"></i> Import
                </button>
             @endif
             @if (hasPermission('Sizes', 'create'))
@@ -79,13 +79,13 @@
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}"
                                     data-brand-id="{{ $size->tyre_brand_id }}" data-otd="{{ $size->std_otd }}"
                                     data-ply="{{ $size->ply_rating }}" title="Edit">
-                                    <i class="ri-pencil-line"></i>
+                                    <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                                  @if ($hasBoth)
                                     <button class="btn btn-sm btn-warning me-1 standardize-size"
                                        data-id="{{ $size->id }}" data-size="{{ $size->size }}"
                                        title="Standardize Tyre Type">
-                                       <i class="ri-tools-line"></i> Fix
+                                       <i class="icon-base ri ri-tools-line"></i> Fix
                                     </button>
                                  @endif
                               @endif
@@ -93,7 +93,7 @@
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">
-                                    <i class="ri-delete-bin-line"></i>
+                                    <i class="icon-base ri ri-delete-bin-line"></i>
                                  </button>
                               @endif
                            </div>
