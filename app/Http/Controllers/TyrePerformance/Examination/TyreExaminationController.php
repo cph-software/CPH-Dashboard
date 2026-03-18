@@ -261,12 +261,21 @@ class TyreExaminationController extends Controller
                 $hasRemarks = !empty($detail['remarks']);
                 $hasPhoto = $request->hasFile("details.{$key}.photo");
 
-                // ONLY save if at least one field is filled
-                if (!$hasPsi && !$hasRtd && !$hasRemarks && !$hasPhoto) {
+                // Get Tyre first before checking its serial number!
+                $tyre = Tyre::find($detail['tyre_id']);
+                if (!$tyre) continue;
+
+                // Check if any AJAX photo was uploaded for this tyre
+                $hasAjaxPhoto = TyreExaminationImage::where('notes', $request->temp_id)
+                    ->where('serial_number', $tyre->serial_number)
+                    ->exists();
+
+                // ONLY save if at least one field is filled (PSI, RTD, Remarks, standard Photo, or AJAX Photo)
+                if (!$hasPsi && !$hasRtd && !$hasRemarks && !$hasPhoto && !$hasAjaxPhoto) {
                     continue;
                 }
 
-                // Handle Photo Upload
+                // Handle standard Photo Upload
                 $photoPath = null;
                 if ($hasPhoto) {
                     $photoPath = $request->file("details.{$key}.photo")->store('examinations/' . date('Y-m'), 'public');
@@ -293,7 +302,6 @@ class TyreExaminationController extends Controller
                 $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : null;
 
                 // Update current RTD of the tyre if measured
-                $tyre = Tyre::find($detail['tyre_id']);
                 if ($tyre) {
                     // --- Calculate Lifetime since last recorded event (Date-Aware) ---
                     $lastMov = TyreMovement::where('tyre_id', $tyre->id)
