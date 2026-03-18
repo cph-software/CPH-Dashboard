@@ -382,6 +382,8 @@ class TyreMovementController extends Controller
             'remarks' => 'nullable|string',
             'notes' => 'nullable|string',
             'is_meter_reset' => 'nullable|boolean',
+            'photo' => 'nullable|image|max:5120',
+            'photo_target' => 'nullable|image|max:5120',
         ]);
 
         DB::beginTransaction();
@@ -426,6 +428,20 @@ class TyreMovementController extends Controller
                         $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastVehicleMov->hour_meter_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
                     }
                 }
+            }
+
+            // --- HANDLE PHOTO UPLOADS ---
+            $photoPath = null;
+            $photoTargetPath = null;
+
+            if ($request->hasFile('photo')) {
+                $file = $request->file('photo');
+                $photoPath = $file->store('movements/' . $request->vehicle_id . '/' . date('Y-m'), 'public');
+            }
+
+            if ($request->hasFile('photo_target')) {
+                $file = $request->file('photo_target');
+                $photoTargetPath = $file->store('movements/' . $request->vehicle_id . '/' . date('Y-m'), 'public');
             }
 
             $position = TyrePositionDetail::findOrFail($request->position_id);
@@ -512,7 +528,8 @@ class TyreMovementController extends Controller
                         'start_time' => $request->start_time,
                         'end_time' => $request->end_time,
                         'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . ' (Asal dari ' . $position->position_code . '). ' . ($request->notes ?? ''),
-                        'created_by' => Auth::id()
+                        'created_by' => Auth::id(),
+                        'photo' => $photoPath,
                     ]);
 
                     // 2. Log Rotation for Target Tyre (moving to Source Position)
@@ -539,7 +556,8 @@ class TyreMovementController extends Controller
                         'start_time' => $request->start_time,
                         'end_time' => $request->end_time,
                         'notes' => 'Rotation Swap ke ' . $position->position_code . ' (Asal dari ' . $targetPosition->position_code . ').',
-                        'created_by' => Auth::id()
+                        'created_by' => Auth::id(),
+                        'photo' => $photoTargetPath,
                     ]);
 
                     // 3. Update Master Tyres
@@ -591,7 +609,8 @@ class TyreMovementController extends Controller
                         'start_time' => $request->start_time,
                         'end_time' => $request->end_time,
                         'notes' => 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($request->notes ?? ''),
-                        'created_by' => Auth::id()
+                        'created_by' => Auth::id(),
+                        'photo' => $photoPath,
                     ]);
 
                     // 2. Update Master Tyre
@@ -748,7 +767,8 @@ class TyreMovementController extends Controller
                     'hour_meter_reading' => $request->hour_meter,
                     'remarks' => $request->remarks,
                     'notes' => $request->notes,
-                    'created_by' => Auth::id()
+                    'created_by' => Auth::id(),
+                    'photo' => $photoPath,
                 ]);
             } else {
                 // Removal
@@ -826,7 +846,8 @@ class TyreMovementController extends Controller
                     'running_hm' => $hmDiff,
                     'remarks' => $request->remarks,
                     'notes' => $request->notes,
-                    'created_by' => Auth::id()
+                    'created_by' => Auth::id(),
+                    'photo' => $photoPath,
                 ]);
 
                 // Fetch failure code for descriptive logging

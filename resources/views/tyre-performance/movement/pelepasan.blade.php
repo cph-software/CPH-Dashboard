@@ -98,7 +98,7 @@
          </a>
       </div>
 
-      <form id="pelepasan_form">
+      <form id="pelepasan_form" enctype="multipart/form-data">
          @csrf
          <input type="hidden" name="movement_type" value="Removal">
 
@@ -409,6 +409,17 @@
                            <option value="Pindah">Pindah</option>
                            <option value="Scrap">Scrap</option>
                         </select>
+                     </div>
+
+                     <div class="mb-4">
+                        <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Bukti Pelepasan
+                           (Wajib)</label>
+                        <div class="p-3 border rounded bg-lighter text-center">
+                           <input type="file" name="photo" id="photo" class="form-control mb-2"
+                              accept="image/*" required>
+                           <small class="text-muted italic">Format: JPG, PNG, WEBP (Maks. 5MB). Pastikan SN Ban &
+                              kondisinya terlihat.</small>
+                        </div>
                      </div>
 
                      <div class="mb-4">
