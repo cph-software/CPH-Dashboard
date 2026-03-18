@@ -89,6 +89,12 @@ class DashboardController extends Controller
             ->whereBetween('movement_date', [$startDate, $endDate])->count();
         $inspectionsThisMonth = TyreMovement::where('movement_type', 'Inspection')
             ->whereBetween('movement_date', [$startDate, $endDate])->count();
+        $rotationsThisMonth = TyreMovement::where('movement_type', 'Rotation')
+            ->whereBetween('movement_date', [$startDate, $endDate])->count();
+        
+        // Count examinations from checks where is_sales_input is true
+        $examinationsThisMonth = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
+            ->whereBetween('check_date', [$startDate, $endDate])->count();
 
         // ========================================
         // ROW 2: Charts Data
@@ -131,12 +137,18 @@ class DashboardController extends Controller
                 ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
             $inspections = TyreMovement::where('movement_type', 'Inspection')
                 ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
+            $rotations = TyreMovement::where('movement_type', 'Rotation')
+                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
+            $examinations = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
+                ->whereBetween('check_date', [$monthStart, $monthEnd])->count();
 
             $monthlyMovements[] = [
                 'month' => $monthLabel,
                 'installations' => $installs,
                 'removals' => $removals,
                 'inspections' => $inspections,
+                'rotations' => $rotations,
+                'examinations' => $examinations,
             ];
         }
 
@@ -234,6 +246,8 @@ class DashboardController extends Controller
             'installationsThisMonth',
             'removalsThisMonth',
             'inspectionsThisMonth',
+            'rotationsThisMonth',
+            'examinationsThisMonth',
             // Charts
             'statusDistribution',
             'monthlyMovements',
@@ -724,27 +738,50 @@ class DashboardController extends Controller
                     return response()->json(['data' => [], 'total' => 0]);
                 }
 
-                $movements = TyreMovement::where('movement_type', $movType)
-                    ->whereBetween('movement_date', [$monthStart, $monthEnd])
-                    ->with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'vehicle'])
-                    ->orderBy('movement_date', 'desc')
-                    ->get()
-                    ->map(function ($m) {
-                        return [
-                            'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
-                            'serial' => $m->tyre->serial_number ?? '-',
-                            'size' => $m->tyre->size->size ?? '-',
-                            'pattern' => $m->tyre->pattern->name ?? '-',
-                            'brand' => $m->tyre->brand->brand_name ?? '-',
-                            'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                            'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
-                            'psi' => $m->psi_reading ?? '-',
-                            'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
-                        ];
-                    });
+                if ($movType === 'Examination') {
+                    $movements = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
+                        ->whereBetween('check_date', [$monthStart, $monthEnd])
+                        ->with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'session.masterVehicle'])
+                        ->orderBy('check_date', 'desc')
+                        ->get()
+                        ->map(function ($m) {
+                            return [
+                                'date' => Carbon::parse($m->check_date)->format('d/m/Y'),
+                                'serial' => $m->tyre->serial_number ?? '-',
+                                'size' => $m->tyre->size->size ?? '-',
+                                'pattern' => $m->tyre->pattern->name ?? '-',
+                                'brand' => $m->tyre->brand->brand_name ?? '-',
+                                'vehicle' => $m->session->masterVehicle->kode_kendaraan ?? '-',
+                                'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                                'hm' => $m->hm_reading ? number_format($m->hm_reading, 0) : '-',
+                                'psi' => $m->psi_actual ?? '-',
+                                'rtd' => $m->avg_rtd ? $m->avg_rtd . ' mm' : '-',
+                            ];
+                        });
+                    $typeLabel = 'Examination';
+                } else {
+                    $movements = TyreMovement::where('movement_type', $movType)
+                        ->whereBetween('movement_date', [$monthStart, $monthEnd])
+                        ->with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'vehicle'])
+                        ->orderBy('movement_date', 'desc')
+                        ->get()
+                        ->map(function ($m) {
+                            return [
+                                'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
+                                'serial' => $m->tyre->serial_number ?? '-',
+                                'size' => $m->tyre->size->size ?? '-',
+                                'pattern' => $m->tyre->pattern->name ?? '-',
+                                'brand' => $m->tyre->brand->brand_name ?? '-',
+                                'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
+                                'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
+                                'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
+                                'psi' => $m->psi_reading ?? '-',
+                                'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
+                            ];
+                        });
 
-                $typeLabel = $movType === 'Installation' ? 'Pemasangan' : ($movType === 'Removal' ? 'Pelepasan' : 'Inspeksi');
+                    $typeLabel = $movType === 'Installation' ? 'Pemasangan' : ($movType === 'Removal' ? 'Pelepasan' : ($movType === 'Rotation' ? 'Rotasi' : 'Inspeksi'));
+                }
 
                 return response()->json([
                     'title' => "{$typeLabel} - {$monthStr}",

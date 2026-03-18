@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Visualisasi Konfigurasi Posisi Ban')
+@section('title', 'Visualisasi Konfigurasi Konfigurasi Ban')
 
 @section('vendor-style')
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
@@ -385,7 +385,7 @@
                   <div class="d-flex align-items-center mb-3 p-3 bg-label-primary rounded">
                      <i class="ri-steering-2-line ri-2x me-3"></i>
                      <div>
-                        <small class="d-block text-muted">Total Posisi Ban</small>
+                        <small class="d-block text-muted">Total Konfigurasi Ban</small>
                         <h4 class="mb-0 fw-bold">{{ $configuration->total_positions }} Titik</h4>
                      </div>
                   </div>

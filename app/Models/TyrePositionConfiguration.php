@@ -53,33 +53,78 @@ class TyrePositionConfiguration extends Model
 
         // 1. Front Axles
         $frontCount = $axleConfig['front'] ?? 0;
+        $frontIsDual = ($this->config_type === 'Trailer'); // Trailers front axles are usually duals
+
         for ($i = 1; $i <= $frontCount; $i++) {
-            $prefix = $frontCount > 1 ? "$i" : "";
+            if ($frontIsDual) {
+                // Same 4-tyre pattern as Middle/Rear
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "LFO/" . ($seq + 1),
+                    'position_name' => "Left Front ${i} Outer",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Left',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "LFI/" . ($seq),
+                    'position_name' => "Left Front ${i} Inner",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Left',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "RFI/" . ($seq + 2),
+                    'position_name' => "Right Front ${i} Inner",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Right',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "RFO/" . ($seq + 3),
+                    'position_name' => "Right Front ${i} Outer",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Right',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $seq += 4;
+            } else {
+                // Left (1)
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "LF/" . ($seq),
+                    'position_name' => "Left Front $i",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Left',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
 
-            // Left (1)
-            $positions[] = [
-                'configuration_id' => $this->id,
-                'position_code' => "LF/" . ($seq),
-                'position_name' => "Left Front $i",
-                'axle_type' => 'Front',
-                'axle_number' => $i,
-                'side' => 'Left',
-                'is_spare' => false,
-                'display_order' => $order++,
-            ];
-
-            // Right (2)
-            $positions[] = [
-                'configuration_id' => $this->id,
-                'position_code' => "RF/" . ($seq + 1),
-                'position_name' => "Right Front $i",
-                'axle_type' => 'Front',
-                'axle_number' => $i,
-                'side' => 'Right',
-                'is_spare' => false,
-                'display_order' => $order++,
-            ];
-            $seq += 2;
+                // Right (2)
+                $positions[] = [
+                    'configuration_id' => $this->id,
+                    'position_code' => "RF/" . ($seq + 1),
+                    'position_name' => "Right Front $i",
+                    'axle_type' => 'Front',
+                    'axle_number' => $i,
+                    'side' => 'Right',
+                    'is_spare' => false,
+                    'display_order' => $order++,
+                ];
+                $seq += 2;
+            }
         }
 
         // 2. Middle Axles

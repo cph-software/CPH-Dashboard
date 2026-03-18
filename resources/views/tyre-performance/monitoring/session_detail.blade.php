@@ -507,12 +507,76 @@
                               <span class="badge bg-info me-1">Check #{{ $checkNumber }}</span>
                               {{ $checkDate->format('d M Y') }}
                               <small class="text-muted ms-1">({{ $days }} days)</small>
+
+                              @php
+                                 $approvalStatus = $group->first()->approval_status ?? 'Pending';
+                                 $rejectReason = $group->first()->reject_reason;
+                                 $isApproved = $approvalStatus === 'Approved';
+                                 $isRejected = $approvalStatus === 'Rejected';
+                              @endphp
+
+                              <span
+                                 class="badge bg-label-{{ $isApproved ? 'success' : ($isRejected ? 'danger' : 'warning') }} ms-2">
+                                 {{ $approvalStatus }}
+                              </span>
                            </h6>
-                           <a href="{{ route('monitoring.sessions.export-pdf', [$session->session_id, 'check_number' => $checkNumber]) }}"
-                              class="btn btn-sm btn-outline-danger" target="_blank">
-                              <i class="icon-base ri ri-file-pdf-line me-1"></i> Report
-                           </a>
+                           <div class="d-flex gap-1">
+                              @if (!$isApproved && !$isRejected)
+                                 <form
+                                    action="{{ route('monitoring.sessions.approve', [$session->session_id, $checkNumber]) }}"
+                                    method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success"
+                                       onclick="return confirm('Setujui pemeriksaan ini?')">
+                                       <i class="ri ri-check-line me-1"></i> Approve
+                                    </button>
+                                 </form>
+                                 <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                    data-bs-target="#rejectModal{{ $checkNumber }}">
+                                    <i class="ri ri-close-line me-1"></i> Reject
+                                 </button>
+
+                                 {{-- Reject Modal --}}
+                                 <div class="modal fade" id="rejectModal{{ $checkNumber }}" tabindex="-1"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                       <div class="modal-content text-dark">
+                                          <div class="modal-header">
+                                             <h5 class="modal-title">Tolak Pemeriksaan #{{ $checkNumber }}</h5>
+                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                          </div>
+                                          <form
+                                             action="{{ route('monitoring.sessions.reject', [$session->session_id, $checkNumber]) }}"
+                                             method="POST">
+                                             @csrf
+                                             <div class="modal-body">
+                                                <label class="form-label">Alasan Penolakan</label>
+                                                <textarea name="reason" class="form-control" rows="3" required
+                                                   placeholder="Contoh: Foto tidak jelas, data odo salah, dll"></textarea>
+                                             </div>
+                                             <div class="modal-footer">
+                                                <button type="button" class="btn btn-label-secondary"
+                                                   data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" class="btn btn-danger">Tolak Sekarang</button>
+                                             </div>
+                                          </form>
+                                       </div>
+                                    </div>
+                                 </div>
+                              @endif
+
+                              <a href="{{ route('monitoring.sessions.export-pdf', [$session->session_id, 'check_number' => $checkNumber]) }}"
+                                 class="btn btn-sm btn-outline-danger" target="_blank">
+                                 <i class="icon-base ri ri-file-pdf-line me-1"></i> Report
+                              </a>
+                           </div>
                         </div>
+                        @if ($isRejected && $rejectReason)
+                           <div class="alert alert-danger py-2 mb-2 small">
+                              <strong>Alasan Penolakan:</strong> {{ $rejectReason }}
+                           </div>
+                        @endif
                         <p class="text-muted small mb-2">{{ $group->count() }} posisi diperiksa · Op. Mileage:
                            {{ number_format($first->operation_mileage) }} KM · Avg RTD: {{ number_format($avgRtd, 2) }}
                            mm</p>

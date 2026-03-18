@@ -41,6 +41,11 @@ class TyreMonitoringCheck extends Model
         'condition',
         'recommendation',
         'notes',
+        'is_sales_input',
+        'approval_status',
+        'approved_by',
+        'approved_at',
+        'reject_reason',
         'tyre_company_id',
     ];
 

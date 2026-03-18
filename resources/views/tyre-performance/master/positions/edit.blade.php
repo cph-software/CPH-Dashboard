@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Konfigurasi Posisi Ban')
+@section('title', 'Edit Konfigurasi Konfigurasi Ban')
 
 @section('page-style')
    <style>
@@ -85,7 +85,7 @@
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
-         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master / Posisi Ban /</span> Edit Konfigurasi</h4>
+         <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master / Konfigurasi Ban /</span> Edit Konfigurasi</h4>
          <a href="{{ route('tyre-positions.show', $configuration->id) }}" class="btn btn-outline-secondary">
             <i class="ri-arrow-left-line me-1"></i> Kembali
          </a>
@@ -145,6 +145,31 @@
                            @error('status')
                               <div class="invalid-feedback">{{ $message }}</div>
                            @enderror
+                        </div>
+
+                        <div class="col-12 mt-3">
+                           <label class="form-label fw-bold">Tipe Unit <span class="text-danger">*</span></label>
+                           <div class="d-flex gap-3 mt-1">
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_rigid"
+                                    value="Rigid"
+                                    {{ old('config_type', $configuration->config_type) == 'Rigid' ? 'checked' : '' }}
+                                    required>
+                                 <label class="form-check-input-label" for="type_rigid">Rigid (Tunggal)</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_head"
+                                    value="Head Unit"
+                                    {{ old('config_type', $configuration->config_type) == 'Head Unit' ? 'checked' : '' }}>
+                                 <label class="form-check-input-label" for="type_head">Head Unit</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="config_type" id="type_trailer"
+                                    value="Trailer"
+                                    {{ old('config_type', $configuration->config_type) == 'Trailer' ? 'checked' : '' }}>
+                                 <label class="form-check-input-label" for="type_trailer">Trailer (Gandengan)</label>
+                              </div>
+                           </div>
                         </div>
                      </div>
 
@@ -216,7 +241,7 @@
                   </h5>
 
                   <div class="mb-3">
-                     <small class="text-white d-block mb-1" style="opacity: 0.8;">Total Posisi Ban</small>
+                     <small class="text-white d-block mb-1" style="opacity: 0.8;">Total Konfigurasi Ban</small>
                      <h3 class="text-white mb-0" id="totalPositions">{{ $configuration->total_positions }}</h3>
                   </div>
 

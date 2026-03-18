@@ -22,6 +22,7 @@ class TyreCompanyController extends Controller
         $request->validate([
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'total_tyre_capacity' => 'required|integer|min:0',
             'status' => 'required|in:Active,Inactive',
         ]);
 
@@ -41,6 +42,7 @@ class TyreCompanyController extends Controller
         $request->validate([
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'total_tyre_capacity' => 'required|integer|min:0',
             'status' => 'required|in:Active,Inactive',
         ]);
 

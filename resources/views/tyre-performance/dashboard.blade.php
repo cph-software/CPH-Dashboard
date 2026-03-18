@@ -354,6 +354,12 @@
                      <span class="badge bg-label-info rounded-pill">
                         <i class="icon-base ri ri-search-line"></i> {{ $inspectionsThisMonth }} Inspeksi
                      </span>
+                     <span class="badge bg-label-warning rounded-pill ms-1">
+                        <i class="icon-base ri ri-repeat-line"></i> {{ $rotationsThisMonth }} Rotasi
+                     </span>
+                     <span class="badge bg-label-secondary rounded-pill ms-1">
+                        <i class="icon-base ri ri-file-list-3-line"></i> {{ $examinationsThisMonth }} Exam
+                     </span>
                   </div>
                </div>
                <div class="card-body">
@@ -744,9 +750,9 @@
                                     </td>
                                     <td>
                                        <span
-                                          class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : ($m->movement_type === 'Removal' ? 'danger' : 'info') }} rounded-pill"
+                                          class="badge bg-label-{{ $m->movement_type === 'Installation' ? 'success' : ($m->movement_type === 'Removal' ? 'danger' : ($m->movement_type === 'Rotation' ? 'warning' : 'info')) }} rounded-pill"
                                           style="font-size:.65rem">
-                                          {{ $m->movement_type === 'Installation' ? 'Pasang' : ($m->movement_type === 'Removal' ? 'Lepas' : 'Inspeksi') }}
+                                          {{ $m->movement_type === 'Installation' ? 'Pasang' : ($m->movement_type === 'Removal' ? 'Lepas' : ($m->movement_type === 'Rotation' ? 'Rotasi' : 'Inspeksi')) }}
                                        </span>
                                     </td>
                                     <td class="small fw-medium">{{ $m->tyre->serial_number ?? '-' }}</td>
@@ -1006,6 +1012,8 @@
                      var s = 'Installation';
                      if (cfg.seriesIndex === 1) s = 'Removal';
                      if (cfg.seriesIndex === 2) s = 'Inspection';
+                     if (cfg.seriesIndex === 3) s = 'Rotation';
+                     if (cfg.seriesIndex === 4) s = 'Examination';
                      openDrillDown('movement', m + '|' + s);
                   }
                }
@@ -1027,6 +1035,18 @@
                   data: monthlyData.map(function(m) {
                      return m.inspections || 0;
                   })
+               },
+               {
+                  name: 'Rotasi',
+                  data: monthlyData.map(function(m) {
+                     return m.rotations || 0;
+                  })
+               },
+               {
+                  name: 'Exam',
+                  data: monthlyData.map(function(m) {
+                     return m.examinations || 0;
+                  })
                }
             ],
             xaxis: {
@@ -1034,7 +1054,7 @@
                   return m.month;
                })
             },
-            colors: [colors.success, colors.danger, colors.info],
+            colors: [colors.success, colors.danger, colors.info, colors.warning, colors.secondary],
             plotOptions: {
                bar: {
                   columnWidth: '40%',

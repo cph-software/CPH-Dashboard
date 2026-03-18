@@ -159,6 +159,14 @@
                         <input type="text" name="load" class="form-control form-control-lg"
                            value="{{ $vehicle->load_capacity }}">
                      </div>
+                     <div class="col-md-3 d-flex align-items-center">
+                        <div class="form-check form-switch mt-3">
+                           <input class="form-check-input" type="checkbox" name="is_sales_input" id="is_sales_input"
+                              value="1">
+                           <label class="form-check-label fw-bold" for="is_sales_input">Sales Examination Audit</label>
+                           <div class="form-text small">Tandai jika ini audit pemeriksaan dari sales.</div>
+                        </div>
+                     </div>
                   </div>
 
                   <div class="card bg-lighter mb-4 border-0 shadow-none">
@@ -200,8 +208,8 @@
                      <table class="table table-bordered align-middle" id="check-table">
                         <thead>
                            <tr>
-                              <th style="width: 80px;">Pos</th>
-                              <th style="width: 280px;">Informasi Ban</th>
+                              <th style="width: 80px;">Config</th>
+                              <th style="width: 280px;">Tyre Configuration</th>
                               <th style="width: 150px;">Psi (Rec/Act)</th>
                               <th style="width: 100px;">RTD 1</th>
                               <th style="width: 100px;">RTD 2</th>
@@ -317,6 +325,7 @@
                          'tyre_rtd_2' => 'RTD point 2',
                          'tyre_rtd_3' => 'RTD point 3',
                          'tyre_rtd_4' => 'RTD point 4',
+                         'tyre_tread' => 'Foto Telapak',
                      ];
                   @endphp
                   @foreach ($tyrePhotos as $type => $label)
@@ -480,6 +489,53 @@
                $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-success').addClass('btn-primary');
             }
          }
+
+         // --- FORM SUBMIT VALIDATION ---
+         const generalPhotosMandatory = ['fleet', 'vehicle', 'map', 'odometer_km', 'hm'];
+         const tyrePhotosMandatory = ['tyre_serial', 'tyre_psi', 'tyre_rtd_1', 'tyre_rtd_2', 'tyre_rtd_3',
+            'tyre_tread'
+         ];
+         const generalUploaded = {};
+
+         $('.upload-btn').on('click', function() {
+            const type = $(this).data('type');
+            generalUploaded[type] = true;
+         });
+
+         $('form').on('submit', function(e) {
+            // 1. Check General Photos
+            for (const type of generalPhotosMandatory) {
+               const preview = $(`#preview-${type} img`);
+               if (preview.length === 0) {
+                  alert(`Silakan upload foto: ${type.replace('_', ' ').toUpperCase()} terlebih dahulu.`);
+                  e.preventDefault();
+                  return false;
+               }
+            }
+
+            // 2. Check Tyre Photos
+            let missingTyreDocs = false;
+            $('.tyre-doc-btn').each(function() {
+               const serial = $(this).data('serial');
+               const pos = $(this).data('pos');
+
+               for (const type of tyrePhotosMandatory) {
+                  if (!uploadedLog[serial] || !uploadedLog[serial][type]) {
+                     alert(
+                        `Ban ${serial} (Pos ${pos}) belum lengkap dokumentasinya. Harap upload semua foto (Serial, PSI, RTD 1-3, Telapak).`
+                     );
+                     missingTyreDocs = true;
+                     return false; // break inner loop
+                  }
+               }
+               if (missingTyreDocs) return false; // break outer loop
+            });
+
+            if (missingTyreDocs) {
+               e.preventDefault();
+               return false;
+            }
+         });
       });
    </script>
 @endsection
