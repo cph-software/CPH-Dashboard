@@ -16,10 +16,11 @@
          <div class="d-flex gap-2">
             <a href="{{ route('master_data.export', ['type' => 'examinations', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
-               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+               <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
             @if (hasPermission('Examination', 'create'))
-               <a href="{{ route('examination.create') }}" class="btn btn-primary shadow-sm"><i class="ri-add-line me-1"></i>
+               <a href="{{ route('examination.create') }}" class="btn btn-primary shadow-sm"><i
+                     class="ri ri-add-line me-1"></i>
                   Input Pemeriksaan Baru</a>
             @endif
          </div>
@@ -50,41 +51,41 @@
 
 @section('page-script')
    <script>
-      $(function () {
+      $(function() {
          var table = $('#exam-table').DataTable({
             processing: true,
             serverSide: true,
             ajax: "{{ route('examination.data') }}",
             columns: [{
-               data: 'date',
-               name: 'examination_date'
-            },
-            {
-               data: 'vehicle',
-               name: 'vehicle_id'
-            },
-            {
-               data: 'odometer',
-               name: 'odometer'
-            },
-            {
-               data: 'tyre_man',
-               name: 'tyre_man'
-            },
-            {
-               data: 'status',
-               render: function (data) {
-                  let badge = 'bg-label-secondary';
-                  if (data === 'Verified') badge = 'bg-label-info';
-                  if (data === 'Approved') badge = 'bg-label-success';
-                  return '<span class="badge ' + badge + '">' + data + '</span>';
+                  data: 'date',
+                  name: 'examination_date'
+               },
+               {
+                  data: 'vehicle',
+                  name: 'vehicle_id'
+               },
+               {
+                  data: 'odometer',
+                  name: 'odometer'
+               },
+               {
+                  data: 'tyre_man',
+                  name: 'tyre_man'
+               },
+               {
+                  data: 'status',
+                  render: function(data) {
+                     let badge = 'bg-label-secondary';
+                     if (data === 'Verified') badge = 'bg-label-info';
+                     if (data === 'Approved') badge = 'bg-label-success';
+                     return '<span class="badge ' + badge + '">' + data + '</span>';
+                  }
+               },
+               {
+                  data: 'action',
+                  orderable: false,
+                  searchable: false
                }
-            },
-            {
-               data: 'action',
-               orderable: false,
-               searchable: false
-            }
             ],
             order: [
                [0, 'desc']
@@ -93,8 +94,8 @@
             lengthMenu: [10, 25, 50, 75, 100],
             language: {
                paginate: {
-                  next: '<i class="ri-arrow-right-s-line"></i>',
-                  previous: '<i class="ri-arrow-left-s-line"></i>'
+                  next: '<i class="ri ri-arrow-right-s-line"></i>',
+                  previous: '<i class="ri ri-arrow-left-s-line"></i>'
                }
             }
          });

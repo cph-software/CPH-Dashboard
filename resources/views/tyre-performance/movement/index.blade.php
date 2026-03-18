@@ -66,22 +66,22 @@
          <div class="d-flex gap-2">
             <a href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel']) }}"
                class="btn btn-outline-primary btn-sm">
-               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+               <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
 
             @if (hasPermission('Pemasangan (Install)', 'create'))
                <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
-                  <i class="ri-add-line me-1"></i> Form Pasang Baru
+                  <i class="ri ri-add-line me-1"></i> Form Pasang Baru
                </a>
             @endif
             @if (hasPermission('Rotasi (Rotate)', 'create'))
                <a href="{{ route('tyre-movement.rotasi') }}" class="btn btn-info btn-sm">
-                  <i class="ri-arrow-left-right-line me-1"></i> Form Rotasi
+                  <i class="ri ri-camera-off-line" style="font-size: 2rem;"></i> Form Rotasi
                </a>
             @endif
             @if (hasPermission('Pelepasan (Remove)', 'create'))
                <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
-                  <i class="ri-delete-bin-line me-1"></i> Form Lepas Ban
+                  <i class="ri ri-delete-bin-line me-1"></i> Form Lepas Ban
                </a>
             @endif
          </div>
@@ -115,9 +115,9 @@
                            </div>
                            <div class="ms-auto align-self-center text-end">
                               <small class="text-muted d-block mb-1">Legenda Status:</small>
-                              <span class="badge bg-label-success me-2"><i class="ri-checkbox-circle-line me-1"></i>
+                              <span class="badge bg-label-success me-2"><i class="ri ri-checkbox-circle-line me-1"></i>
                                  Terpasang</span>
-                              <span class="badge bg-label-secondary"><i class="ri-checkbox-blank-circle-line me-1"></i>
+                              <span class="badge bg-label-secondary"><i class="ri ri-checkbox-blank-circle-line me-1"></i>
                                  Kosong</span>
                            </div>
                         </div>
@@ -136,7 +136,7 @@
                <div class="card-body d-flex align-items-center justify-content-center bg-light" style="min-height: 400px;">
                   <div id="layout_container" class="text-center w-100 py-3">
                      <div class="text-muted">
-                        <i class="ri-truck-line ri-4x mb-3 d-block" style="opacity: 0.3"></i>
+                        <i class="ri ri-truck-line ri-4x mb-3 d-block" style="opacity: 0.3"></i>
                         <p class="fs-5">Silakan pilih kendaraan di atas untuk melihat posisi ban.</p>
                      </div>
                   </div>
@@ -170,11 +170,34 @@
       </div>
    </div>
 
-   <!-- TYRE DETAIL OFFCANVAS -->
+   <!-- MOVEMENT DETAIL MODAL -->
+   <div class="modal fade" id="movementDetailModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+         <div class="modal-content">
+            <div class="modal-header bg-light border-bottom">
+               <h6 class="fw-bold mb-3"><i class="ri ri-image-2-line me-1 text-primary"></i> Foto Dokumentasi</h6>
+               <h5 class="modal-title fw-bold"><i class="ri ri-file-search-line me-2 text-primary"></i>Detail Transaksi Ban
+               </h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="movementDetailBody" style="max-height: 70vh; overflow-y: auto;">
+               <div class="text-center py-5">
+                  <div class="spinner-border text-primary"></div>
+                  <p class="mt-2 text-muted">Memuat detail...</p>
+               </div>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+         </div>
+      </div>
+   </div>
+
+
    <div class="offcanvas offcanvas-end" tabindex="-1" id="tyreDetailPanel" style="width: 480px;">
       <div class="offcanvas-header border-bottom bg-light py-3">
          <h5 class="offcanvas-title fw-bold mb-0">
-            <i class="ri-circle-fill text-success me-2" style="font-size: 10px;"></i>
+            <i class="ri ri-circle-fill text-success me-2" style="font-size: 10px;"></i>
             <span id="td_title">Detail Ban</span>
          </h5>
          <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
@@ -368,7 +391,7 @@
                               <h5 class="mb-1 fw-bold">${t.serial_number}</h5>
                               <span class="badge bg-${statusColor} mb-2">${t.status}</span>
                               <div class="text-muted small">
-                                 <i class="ri-price-tag-3-line me-1"></i>${t.brand} · ${t.pattern} · ${t.size}
+                                 <i class="ri ri-price-tag-3-line me-1"></i>${t.brand} · ${t.pattern} · ${t.size}
                               </div>
                            </div>
                            <div class="text-end">
@@ -383,28 +406,28 @@
                         <div class="row g-2">
                            <div class="col-6">
                               <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri-road-map-line text-primary d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <i class="ri ri-road-map-line text-primary d-block mb-1" style="font-size: 1.3rem;"></i>
                                  <div class="fw-bold">${t.total_lifetime_km.toLocaleString()}</div>
                                  <small class="text-muted">Total KM</small>
                               </div>
                            </div>
                            <div class="col-6">
                               <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri-time-line text-warning d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <i class="ri ri-time-line text-warning d-block mb-1" style="font-size: 1.3rem;"></i>
                                  <div class="fw-bold">${t.total_lifetime_hm.toLocaleString()}</div>
                                  <small class="text-muted">Total HM</small>
                               </div>
                            </div>
                            <div class="col-6">
                               <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri-money-dollar-circle-line text-success d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <i class="ri ri-money-dollar-circle-line text-success d-block mb-1" style="font-size: 1.3rem;"></i>
                                  <div class="fw-bold">${cpkText}</div>
                                  <small class="text-muted">Cost/KM</small>
                               </div>
                            </div>
                            <div class="col-6">
                               <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri-calendar-check-line text-info d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <i class="ri ri-calendar-check-line text-info d-block mb-1" style="font-size: 1.3rem;"></i>
                                  <div class="fw-bold">${t.days_since_install !== null ? t.days_since_install + ' hari' : '-'}</div>
                                  <small class="text-muted">Sejak Pasang</small>
                               </div>
@@ -416,7 +439,7 @@
                      <!-- Installation Info -->
                      <div class="p-3 border-bottom">
                         <h6 class="fw-bold text-uppercase small text-muted mb-2">
-                           <i class="ri-pushpin-line me-1"></i>Info Pemasangan Terakhir
+                           <i class="ri ri-pushpin-line me-1"></i>Info Pemasangan Terakhir
                         </h6>
                         <div class="d-flex gap-4">
                            <div>
@@ -437,7 +460,7 @@
                      <!-- Movement History -->
                      <div class="p-3">
                         <h6 class="fw-bold text-uppercase small text-muted mb-2">
-                           <i class="ri-history-line me-1"></i>Riwayat Pergerakan (Last 10)
+                           <i class="ri ri-history-line me-1"></i>Riwayat Pergerakan (Last 10)
                         </h6>
                         <div class="table-responsive">
                            <table class="table table-sm table-borderless mb-0">
@@ -529,6 +552,35 @@
                [0, 'desc']
             ]
          });
+
+         window.viewMovementDetail = function(id) {
+            // Reset and show modal
+            $('#movementDetailBody').html(
+               '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Memuat detail...</p></div>'
+            );
+            const modal = new bootstrap.Modal(document.getElementById('movementDetailModal'));
+            modal.show();
+
+            fetch(`/movement-detail/${id}`, {
+                  headers: {
+                     'X-Requested-With': 'XMLHttpRequest',
+                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                  }
+               })
+               .then(res => res.json())
+               .then(data => {
+                  if (data.success) {
+                     $('#movementDetailBody').html(data.html);
+                  } else {
+                     $('#movementDetailBody').html(
+                        '<div class="alert alert-danger">Gagal memuat data detail.</div>');
+                  }
+               })
+               .catch(() => {
+                  $('#movementDetailBody').html(
+                     '<div class="alert alert-danger">Terjadi kesalahan, silakan coba lagi.</div>');
+               });
+         };
 
          window.rollbackMovement = function(id) {
             Swal.fire({

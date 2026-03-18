@@ -48,8 +48,26 @@
                </thead>
                <tbody class="table-border-bottom-0">
                   @foreach ($sizes as $size)
+                     @php
+                        // Determine tyre type from size string
+                        $sizeStr = $size->size ?? '';
+                        $isRadial = strpos($sizeStr, 'R') !== false;
+                        $isBias = strpos($sizeStr, '-') !== false;
+                        $hasBoth = $isRadial && $isBias;
+                        $tyreType = $hasBoth ? 'conflict' : ($isRadial ? 'Radial' : ($isBias ? 'Bias' : 'Unknown'));
+                        $typeBadge = [
+                            'Radial' => 'primary',
+                            'Bias' => 'warning',
+                            'conflict' => 'danger',
+                            'Unknown' => 'secondary',
+                        ][$tyreType];
+                     @endphp
                      <tr>
-                        <td><strong>{{ $size->size }}</strong></td>
+                        <td>
+                           <strong>{{ $size->size }}</strong>
+                           <span
+                              class="badge bg-label-{{ $typeBadge }} ms-1">{{ $tyreType === 'conflict' ? '⚠ Conflict' : $tyreType }}</span>
+                        </td>
                         <td>{{ $size->brand->brand_name ?? '-' }}</td>
                         <td>{{ $size->std_otd ?? '-' }}</td>
                         <td>{{ $size->ply_rating ?? '-' }}</td>
@@ -59,16 +77,23 @@
                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}"
-                                    data-brand-id="{{ $size->tyre_brand_id }}"
-                                    data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" title="Edit">
-                                    <i class="icon-base ri ri-pencil-line"></i>
+                                    data-brand-id="{{ $size->tyre_brand_id }}" data-otd="{{ $size->std_otd }}"
+                                    data-ply="{{ $size->ply_rating }}" title="Edit">
+                                    <i class="ri-pencil-line"></i>
                                  </a>
+                                 @if ($hasBoth)
+                                    <button class="btn btn-sm btn-warning me-1 standardize-size"
+                                       data-id="{{ $size->id }}" data-size="{{ $size->size }}"
+                                       title="Standardize Tyre Type">
+                                       <i class="ri-tools-line"></i> Fix
+                                    </button>
+                                 @endif
                               @endif
                               @if (hasPermission('Sizes', 'delete'))
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">
-                                    <i class="icon-base ri ri-delete-bin-line"></i>
+                                    <i class="ri-delete-bin-line"></i>
                                  </button>
                               @endif
                            </div>
@@ -112,14 +137,7 @@
                   </div>
                   <div class="row">
                      <div class="col mb-3">
-                        <label for="std_otd" class="form-label">Std OTD</label>
-                        <input type="number" step="0.01" id="std_otd" name="std_otd" class="form-control"
-                           placeholder="e.g. 16.5">
-                     </div>
-                  </div>
-                  <div class="row">
-                     <div class="col mb-3">
-                        <label for="std_otd" class="form-label">Std OTD</label>
+                        <label for="std_otd" class="form-label">Std OTD (mm)</label>
                         <input type="number" step="0.01" id="std_otd" name="std_otd" class="form-control"
                            placeholder="e.g. 16.5">
                      </div>
@@ -196,6 +214,32 @@
       @csrf
       @method('DELETE')
    </form>
+
+   <!-- Standardize Size Modal -->
+   <div class="modal fade" id="standardizeModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+               <h5 class="modal-title"><i class="ri-tools-line me-2"></i>Perbaiki Tipe Ban</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+               <p>Size <strong id="std_size_display"></strong> mengandung <strong>KEDUA</strong> karakter <code>R</code>
+                  dan <code>-</code>, yang menyebabkan ambiguitas Radial/Bias.</p>
+               <p class="text-muted small">Pilih tipe yang benar, maka sistem akan memperbaiki string ukuran secara
+                  otomatis:</p>
+               <div class="d-flex gap-3 mt-3">
+                  <button type="button" class="btn btn-primary w-50" id="setRadial">
+                     <i class="ri-radio-button-line me-1"></i> Jadikan <strong>Radial</strong>
+                  </button>
+                  <button type="button" class="btn btn-warning w-50" id="setBias">
+                     <i class="ri-radio-button-off-line me-1"></i> Jadikan <strong>Bias</strong>
+                  </button>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
 @endsection
 
 @section('vendor-script')
@@ -229,6 +273,34 @@
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_otd').val(otd === 'null' || otd === null ? '' : otd);
             $('#edit_ply').val(ply === 'null' || ply === null ? '' : ply);
+         });
+
+         $(document).on('click', '.standardize-size', function() {
+            const id = $(this).data('id');
+            const sizeStr = $(this).data('size');
+            $('#std_size_display').text(sizeStr);
+            $('#standardizeModal').modal('show');
+
+            // Remove R to make Bias-style (replace first R with -)
+            $('#setRadial').off('click').on('click', function() {
+               // Remove any '-' left of 'R', keep R notation
+               const cleaned = sizeStr.replace(/-/g, '').replace(/R/, 'R');
+               const form = document.getElementById('editSizeForm');
+               form.action = `{{ url('master_size') }}/${id}`;
+               $('#edit_size').val(cleaned);
+               $('#standardizeModal').modal('hide');
+               $('#editSizeModal').modal('show');
+            });
+
+            $('#setBias').off('click').on('click', function() {
+               // Remove any R, replace with '-' to make Bias
+               const cleaned = sizeStr.replace('R', '-').replace(/R/g, '');
+               const form = document.getElementById('editSizeForm');
+               form.action = `{{ url('master_size') }}/${id}`;
+               $('#edit_size').val(cleaned);
+               $('#standardizeModal').modal('hide');
+               $('#editSizeModal').modal('show');
+            });
          });
 
          $(document).on('click', '.delete-size', function() {

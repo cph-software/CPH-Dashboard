@@ -106,6 +106,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('rollback/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'rollback'])->name('tyre-movement.rollback')->middleware('tyre.permission:Movement History,delete');
     Route::post('tyre-store', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'store'])->name('tyre-movement.store')->middleware('tyre.permission:Tyre Operations,create');
     Route::post('set-active-company', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'setActiveCompany'])->name('tyre-movement.set-active-company')->middleware('tyre.permission:Tyre Operations');
+    Route::get('movement-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'show'])->name('tyre-movement.show')->middleware('tyre.permission:Movement History');
 
     // ======================================================================
     // TYRE PERFORMANCE — Monitoring

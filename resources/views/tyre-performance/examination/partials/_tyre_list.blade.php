@@ -39,7 +39,7 @@
             <div class="col-12 col-md-2 p-2 border-end-md measurement-group psi-group">
                <label class="d-md-none small fw-bold text-muted d-block mb-1">PSI</label>
                <div class="input-group input-group-sm">
-                  <span class="input-group-text d-md-none"><i class="ri-dashboard-3-line"></i></span>
+                  <span class="input-group-text d-md-none"><i class="ri ri-dashboard-3-line"></i></span>
                   <input type="number" step="0.1" name="details[{{ $index }}][psi]"
                      class="form-control text-center fw-bold" placeholder="PSI"
                      @if (!$tyre) disabled @endif>
@@ -83,7 +83,7 @@
                      data-serial="{{ $tyre ? $tyre->serial_number : '' }}" data-pos="{{ $pos->position_code }}"
                      data-index="{{ $index }}" @if (!$tyre) disabled @endif
                      title="Dokumentasi Ban">
-                     <i class="ri-camera-lens-line"></i>
+                     <i class="ri ri-camera-lens-line"></i>
                   </button>
                </div>
                <div class="small text-muted mt-1 d-none file-name-label" id="label_{{ $index }}"></div>
@@ -94,7 +94,7 @@
 @empty
    <tr>
       <td colspan="3" class="text-center py-5 text-warning">
-         <i class="ri-error-warning-line ri-2x mb-2"></i>
+         <i class="ri ri-error-warning-line ri-2x mb-2"></i>
          <p>Konfigurasi axle untuk unit ini tidak ditemukan.</p>
       </td>
    </tr>

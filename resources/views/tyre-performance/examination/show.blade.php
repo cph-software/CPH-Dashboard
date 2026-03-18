@@ -114,11 +114,11 @@
          </h4>
          <div class="d-flex gap-2">
             <a href="{{ route('examination.index') }}" class="btn btn-label-secondary">
-               <i class="ri-arrow-left-line me-1"></i> Kembali
+               <i class="ri ri-arrow-left-line me-1"></i> Kembali
             </a>
             <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
                class="btn btn-primary" target="_blank">
-               <i class="ri-printer-line me-1"></i> Cetak Form (PDF)
+               <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
             </a>
          </div>
       </div>

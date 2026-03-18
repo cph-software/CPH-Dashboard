@@ -94,7 +94,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold mb-0 text-danger"><span class="text-muted fw-light">Transaksi /</span> Pelepasan Ban</h4>
          <a href="{{ route('tyre-movement.index') }}" class="btn btn-outline-secondary">
-            <i class="ri-arrow-left-line me-1"></i> Kembali
+            <i class="ri ri-arrow-left-line me-1"></i> Kembali
          </a>
       </div>
 
@@ -109,7 +109,7 @@
                   <div class="visual-layout-card shadow-sm mb-4">
                      <div
                         class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                        <h6 class="mb-0 fw-bold"><i class="ri-mouse-line me-2 text-danger"></i>Visual Axle Layout</h6>
+                        <h6 class="mb-0 fw-bold"><i class="ri ri-mouse-line me-2 text-danger"></i>Visual Axle Layout</h6>
                         <span class="badge bg-label-secondary" id="unit_code_display">-</span>
                      </div>
                      <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center"
@@ -117,7 +117,7 @@
                         <div id="layout_container"
                            class="w-100 h-100 d-flex align-items-center justify-content-center p-4">
                            <div class="text-center text-muted p-5 w-100">
-                              <i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
+                              <i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i>
                               <p class="mb-0">Pilih Unit Kendaraan untuk memuat posisi ban.</p>
                            </div>
                         </div>
@@ -129,7 +129,7 @@
                            <div
                               class="avatar avatar-md bg-white-transparent me-3 d-flex align-items-center justify-content-center"
                               style="background: rgba(255,255,255,0.2); border-radius: 8px;">
-                              <i class="ri-focus-3-line text-white ri-xl"></i>
+                              <i class="ri ri-focus-3-line text-white ri-xl"></i>
                            </div>
                            <div>
                               <h6 class="mb-0 text-white" id="info_pos_name">Posisi -</h6>
@@ -147,7 +147,7 @@
                <div class="card premium-card mb-4">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-truck-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-truck-line"></i></div>
                         <h5 class="form-section-title">Identifikasi Unit & Tanggal</h5>
                      </div>
                      <div class="row">
@@ -190,7 +190,8 @@
                            <div
                               class="bg-light p-3 rounded border border-dashed d-flex align-items-center justify-content-between">
                               <div>
-                                 <h6 class="mb-0 small fw-bold text-dark"><i class="ri-refresh-line me-1 text-warning"></i>
+                                 <h6 class="mb-0 small fw-bold text-dark"><i
+                                       class="ri ri-refresh-line me-1 text-warning"></i>
                                     Reset Meteran Unit?</h6>
                                  <small class="text-muted extra-small">Centang jika Odo/HM kembali ke 0 (Ganti
                                     unit/panel)</small>
@@ -210,7 +211,7 @@
                   <div class="card-body">
                      <div class="form-section-header">
                         <div class="form-section-icon" style="background: rgba(234, 84, 85, 0.1); color: #ea5455;"><i
-                              class="ri-list-settings-line"></i></div>
+                              class="ri ri-list-settings-line"></i></div>
                         <h5 class="form-section-title">Detail Ban Terpasang</h5>
                      </div>
 
@@ -223,7 +224,8 @@
                      </div>
 
                      <div id="current_tyre_info" class="mb-4 removal-info-box shadow-sm" style="display: none;">
-                        <h6 class="mb-3 fw-bold text-muted text-uppercase small"><i class="ri-information-line me-1"></i>
+                        <h6 class="mb-3 fw-bold text-muted text-uppercase small"><i
+                              class="ri ri-information-line me-1"></i>
                            Data Ban di Unit Ini</h6>
                         <div class="row g-3">
                            <div class="col-md-4">
@@ -280,7 +282,7 @@
                <div class="card premium-card mb-4">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-ruler-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-ruler-line"></i></div>
                         <h5 class="form-section-title">Hasil Pemeriksaan Akhir</h5>
                      </div>
                      <div class="row g-3">
@@ -340,7 +342,7 @@
                <div class="card premium-card mb-4">
                   <div class="card-body">
                      <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri-group-line"></i></div>
+                        <div class="form-section-icon"><i class="ri ri-group-line"></i></div>
                         <h5 class="form-section-title">Administrasi & Petugas</h5>
                      </div>
                      <div class="row g-3 mb-4">
@@ -412,7 +414,7 @@
                      </div>
 
                      <div class="mb-4">
-                        <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Bukti Pelepasan
+                        <label class="form-label fw-bold"><i class="ri ri-camera-line me-1"></i>Foto Bukti Pelepasan
                            (Wajib)</label>
                         <div class="p-3 border rounded bg-lighter text-center">
                            <input type="file" name="photo" id="photo" class="form-control mb-2"
@@ -429,7 +431,7 @@
 
                      <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-danger btn-lg shadow" id="btn_submit">
-                           <i class="ri-delete-bin-line me-1"></i> Proses Pelepasan
+                           <i class="ri ri-delete-bin-line me-1"></i> Proses Pelepasan
                         </button>
                      </div>
                   </div>
@@ -490,7 +492,7 @@
 
             if (!vehicleId) {
                layoutContainer.innerHTML =
-                  '<div class="text-center text-muted p-5 bg-white rounded-4 shadow-sm border w-100"><i class="ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Kendaraan untuk memuat layout ban.</p></div>';
+                  '<div class="text-center text-muted p-5 bg-white rounded-4 shadow-sm border w-100"><i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Kendaraan untuk memuat layout ban.</p></div>';
                positionSelect.empty().append('<option value="">-- Pilih Posisi --</option>').prop('disabled',
                   true);
                selectionInfo.style.display = 'none';
@@ -726,13 +728,14 @@
                         } else {
                            Swal.fire('Gagal', data.message || 'Terjadi kesalahan sistem', 'error');
                            btn.disabled = false;
-                           btn.innerHTML = '<i class="ri-delete-bin-line me-1"></i> Proses Pelepasan';
+                           btn.innerHTML =
+                              '<i class="ri ri-delete-bin-line me-1"></i> Proses Pelepasan';
                         }
                      })
                      .catch(err => {
                         Swal.fire('Error', 'Terjadi kesalahan koneksi', 'error');
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="ri-delete-bin-line me-1"></i> Proses Pelepasan';
+                        btn.innerHTML = '<i class="ri ri-delete-bin-line me-1"></i> Proses Pelepasan';
                      });
                }
             });
