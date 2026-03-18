@@ -14,9 +14,10 @@ trait BelongsToCompany
             if (Auth::check()) {
                 $user = Auth::user();
                 
-                // Pengecualian untuk Superadmin (Role ID 1 atau sesuai logika Anda)
-                // Jika ingin filter semua, hapus kondisi bypass ini
-                $isInternal = in_array($user->role_id, [1]); // Misal 1 adalah Super Admin
+                // Pengecualian untuk Superadmin atau Internal Staff (CPH)
+                // Role 1 = Administrator
+                // Company ID 4 = Catur Putra Bahagia (CPH)
+                $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 1);
                 $table = $builder->getModel()->getTable();
 
                 if ($isInternal) {
@@ -38,7 +39,8 @@ trait BelongsToCompany
                 
                 // Isi company_id otomatis jika belum diisi manual
                 if (!$model->tyre_company_id) {
-                    if ($user->role_id == 1 && session()->has('active_company_id')) {
+                    $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 4);
+                    if ($isInternal && session()->has('active_company_id')) {
                         $model->tyre_company_id = session('active_company_id');
                     } else {
                         $model->tyre_company_id = $user->tyre_company_id;

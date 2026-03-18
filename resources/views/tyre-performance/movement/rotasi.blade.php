@@ -104,7 +104,7 @@
          </a>
       </div>
 
-      <form id="rotasi_form">
+      <form id="rotasi_form" enctype="multipart/form-data">
          @csrf
          <input type="hidden" name="movement_type" value="Rotation">
 
@@ -384,6 +384,21 @@
                         <div class="col-md-6">
                            <label class="form-label fw-bold">Waktu Selesai</label>
                            <input type="time" name="end_time" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                           <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Ban A</label>
+                           <div class="p-2 border rounded bg-light">
+                              <input type="file" name="photo" class="form-control form-control-sm"
+                                 accept="image/*">
+                           </div>
+                        </div>
+                        <div class="col-md-6" id="photo_target_container">
+                           <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Ban B (Swap)</label>
+                           <div class="p-2 border rounded bg-light">
+                              <input type="file" name="photo_target" class="form-control form-control-sm"
+                                 accept="image/*">
+                           </div>
                         </div>
                         <div class="col-md-12">
                            <label class="form-label fw-bold">Catatan (Notes)</label>

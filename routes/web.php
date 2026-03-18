@@ -142,6 +142,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('examination/data', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'data'])->name('examination.data')->middleware('tyre.permission:Examination');
     Route::get('examination/vehicle-tyres/{vehicleId}', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'getVehicleTyres'])->name('examination.get-vehicle-tyres')->middleware('tyre.permission:Examination');
     Route::get('examination/{id}/export-pdf', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'exportPdf'])->name('examination.export-pdf')->middleware('tyre.permission:Examination');
+    Route::post('examination/upload-image', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'uploadImage'])->name('examination.upload-image')->middleware('tyre.permission:Examination');
     Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class)->middleware('tyre.permission:Examination');
 
     // ======================================================================

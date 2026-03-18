@@ -97,7 +97,7 @@
          </a>
       </div>
 
-      <form id="pemasangan_form">
+      <form id="pemasangan_form" enctype="multipart/form-data">
          @csrf
          <input type="hidden" name="movement_type" value="Installation">
 
@@ -410,6 +410,17 @@
                            <option value="Tertusuk">Tertusuk</option>
                            <option value="Telapak Lepas">Telapak Lepas</option>
                         </select>
+                     </div>
+
+                     <div class="mb-4">
+                        <label class="form-label fw-bold"><i class="ri-camera-line me-1"></i>Foto Bukti
+                           Pemasangan</label>
+                        <div class="p-3 border rounded bg-lighter text-center">
+                           <input type="file" name="photo" id="photo" class="form-control mb-2"
+                              accept="image/*">
+                           <small class="text-muted italic">Format: JPG, PNG, WEBP (Maks. 5MB). Pastikan SN Ban terlihat
+                              jelas.</small>
+                        </div>
                      </div>
 
                      <div class="mb-4">

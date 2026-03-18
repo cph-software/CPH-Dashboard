@@ -104,6 +104,7 @@
 
       <form id="examination_form" enctype="multipart/form-data">
          @csrf
+         <input type="hidden" name="temp_id" id="temp_id" value="{{ Str::random(16) }}">
          <!-- HEADER SECTION -->
          <div class="card mb-4 shadow-sm form-header-card">
             <div class="card-body pt-3">
@@ -259,6 +260,57 @@
          </div>
       </form>
    </div>
+
+   <!-- Modal Documentation Per Tyre -->
+   <div class="modal fade" id="tyreDocsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title">Dokumentasi Ban - Posisi <span id="modalPos"></span> (<span
+                     id="modalSerial"></span>)</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <div class="row g-3">
+                  @php
+                     $tyrePhotos = [
+                         'tyre_serial' => 'Serial Number',
+                         'tyre_psi' => 'PSI Measurement',
+                         'tyre_rtd_1' => 'RTD point 1',
+                         'tyre_rtd_2' => 'RTD point 2',
+                         'tyre_rtd_3' => 'RTD point 3',
+                         'tyre_rtd_4' => 'RTD point 4',
+                         'tyre_tread' => 'Foto Telapak',
+                     ];
+                  @endphp
+                  @foreach ($tyrePhotos as $type => $label)
+                     <div class="col-md-4">
+                        <div class="card border shadow-none text-center p-3">
+                           <span class="small fw-bold mb-2">{{ $label }}</span>
+                           <div class="preview-container mb-2" id="preview-tyre-{{ $type }}">
+                              <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                 style="height: 100px;">
+                                 <i class="ri ri-image-line ri-24px text-muted"></i>
+                              </div>
+                           </div>
+                           <button type="button" class="btn btn-sm btn-primary tyre-upload-btn"
+                              data-type="{{ $type }}">
+                              <i class="ri ri-camera-line me-1"></i> Capture
+                           </button>
+                        </div>
+                     </div>
+                  @endforeach
+               </div>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Selesai</button>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- Hidden Input File for triggering -->
+   <input type="file" id="imageInput" accept="image/*" style="display: none;">
 @endsection
 
 @section('vendor-script')
@@ -347,6 +399,97 @@
                }
             });
          });
+
+         // --- IMAGE UPLOAD LOGIC ---
+         let currentTarget = null; // { type, serial }
+         const uploadedLog = {}; // Track what's uploaded: { serial: { type: url } }
+
+         $(document).on('click', '.tyre-doc-btn', function() {
+            const serial = $(this).data('serial');
+            const pos = $(this).data('pos');
+            $('#modalSerial').text(serial);
+            $('#modalPos').text(pos);
+
+            // Refresh previews from local log
+            $('.tyre-upload-btn').each(function() {
+               const type = $(this).data('type');
+               refreshTyrePreview(serial, type);
+            });
+
+            $('#tyreDocsModal').modal('show');
+         });
+
+         $(document).on('click', '.tyre-upload-btn', function() {
+            const type = $(this).data('type');
+            const serial = $('#modalSerial').text();
+            currentTarget = {
+               type,
+               serial
+            };
+            $('#imageInput').click();
+         });
+
+         $('#imageInput').on('change', function() {
+            const file = this.files[0];
+            if (!file || !currentTarget) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', currentTarget.type);
+            formData.append('serial_number', currentTarget.serial);
+            formData.append('temp_id', $('#temp_id').val());
+            formData.append('_token', '{{ csrf_token() }}');
+
+            const btn = $(`.tyre-upload-btn[data-type="${currentTarget.type}"]`);
+            const originalText = btn.html();
+            btn.html('<span class="spinner-border spinner-border-sm" role="status"></span>').prop('disabled',
+               true);
+
+            $.ajax({
+               url: '{{ route('examination.upload-image') }}',
+               type: 'POST',
+               data: formData,
+               processData: false,
+               contentType: false,
+               success: function(res) {
+                  btn.html(originalText).prop('disabled', false).removeClass('btn-primary').addClass(
+                     'btn-success');
+
+                  // Save to local log
+                  if (!uploadedLog[currentTarget.serial]) uploadedLog[currentTarget.serial] = {};
+                  uploadedLog[currentTarget.serial][currentTarget.type] = res.url;
+
+                  // Feedback on main table: Change button to green
+                  $(`.tyre-doc-btn[data-serial="${currentTarget.serial}"]`).removeClass(
+                     'btn-outline-info').addClass('btn-success');
+
+                  const previewId = `preview-tyre-${currentTarget.type}`;
+                  $(`#${previewId}`).html(
+                     `<img src="${res.url}" class="img-fluid rounded" style="max-height: 100px;">`);
+               },
+               error: function(err) {
+                  btn.html(originalText).prop('disabled', false);
+                  alert('Gagal upload gambar: ' + (err.responseJSON?.message || 'Error server'));
+               }
+            });
+         });
+
+         function refreshTyrePreview(serial, type) {
+            const existingUrl = uploadedLog[serial] ? uploadedLog[serial][type] : null;
+
+            if (existingUrl) {
+               $(`#preview-tyre-${type}`).html(
+                  `<img src="${existingUrl}" class="img-fluid rounded" style="max-height: 100px;">`);
+               $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-primary').addClass('btn-success');
+            } else {
+               $(`#preview-tyre-${type}`).html(`
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
+                     <i class="ri ri-image-line ri-24px text-muted"></i>
+                  </div>
+               `);
+               $(`.tyre-upload-btn[data-type="${type}"]`).removeClass('btn-success').addClass('btn-primary');
+            }
+         }
 
          $('#examination_form').on('submit', function(e) {
             e.preventDefault();

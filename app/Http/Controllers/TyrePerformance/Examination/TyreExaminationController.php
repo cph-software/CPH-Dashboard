@@ -9,6 +9,8 @@ use App\Models\TyrePositionDetail;
 use App\Models\TyreExamination;
 use App\Models\TyreExaminationDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Models\TyreExaminationImage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\TyreMovement;
@@ -134,6 +136,7 @@ class TyreExaminationController extends Controller
             'details.*.rtd_4' => 'nullable|numeric',
             'details.*.remarks' => 'nullable|string|max:255',
             'is_meter_reset' => 'nullable|boolean',
+            'temp_id' => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -281,6 +284,11 @@ class TyreExaminationController extends Controller
                     'remarks' => $detail['remarks'] ?? null,
                     'photo' => $photoPath,
                 ]);
+
+                // Link AJAX Uploaded images to this examination detail
+                TyreExaminationImage::where('notes', $request->temp_id)
+                    ->where('serial_number', $tyre->serial_number)
+                    ->update(['examination_id' => $exam->id]);
 
                 $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : null;
 
@@ -474,5 +482,38 @@ class TyreExaminationController extends Controller
         }
 
         return view('tyre-performance.examination.pdf', compact('exam'));
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:5120',
+            'type' => 'required|string',
+            'serial_number' => 'required|string',
+            'temp_id' => 'required|string'
+        ]);
+
+        try {
+            $file = $request->file('image');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('tyre-examinations/' . date('Y-m'), $fileName, 'public');
+
+            $image = TyreExaminationImage::create([
+                'serial_number' => $request->serial_number,
+                'image_type' => $request->type,
+                'image_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'notes' => $request->temp_id,
+                'uploaded_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'image_id' => $image->image_id,
+                'url' => asset('storage/' . $path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

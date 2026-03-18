@@ -73,19 +73,18 @@
                </div>
             </div>
 
-            <!-- Remarks Section -->
             <div class="col-12 col-md-3 p-2 bg-light-remarks">
                <label class="d-md-none small fw-bold text-muted d-block mb-1">Remarks & Photo</label>
                <div class="input-group input-group-sm">
                   <input type="text" name="details[{{ $index }}][remarks]"
                      class="form-control form-control-sm" placeholder="Catatan..."
                      @if (!$tyre) disabled @endif>
-                  <label class="input-group-text cursor-pointer" for="photo_{{ $index }}" title="Upload Foto"
-                     @if (!$tyre) disabled @endif>
-                     <i class="ri-camera-line"></i>
-                  </label>
-                  <input type="file" name="details[{{ $index }}][photo]" id="photo_{{ $index }}"
-                     class="d-none photo-input" accept="image/*" @if (!$tyre) disabled @endif>
+                  <button type="button" class="btn btn-outline-info tyre-doc-btn"
+                     data-serial="{{ $tyre ? $tyre->serial_number : '' }}" data-pos="{{ $pos->position_code }}"
+                     data-index="{{ $index }}" @if (!$tyre) disabled @endif
+                     title="Dokumentasi Ban">
+                     <i class="ri-camera-lens-line"></i>
+                  </button>
                </div>
                <div class="small text-muted mt-1 d-none file-name-label" id="label_{{ $index }}"></div>
             </div>
