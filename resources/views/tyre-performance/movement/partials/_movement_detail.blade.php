@@ -4,18 +4,25 @@
    $vehicle = $m->vehicle;
    $position = $m->position;
 
-   $typeBadge = match ($m->movement_type) {
+   // Badges color mapping
+   $badges = [
        'Installation' => 'success',
        'Removal' => 'danger',
        'Rotation' => 'warning',
-       default => 'secondary',
-   };
-   $typeLabel = match ($m->movement_type) {
+   ];
+   $typeBadge =
+       isset($m->movement_type) && isset($badges[$m->movement_type]) ? $badges[$m->movement_type] : 'secondary';
+
+   // Label mapping
+   $labels = [
        'Installation' => 'Pemasangan',
        'Removal' => 'Pelepasan',
        'Rotation' => 'Rotasi',
-       default => $m->movement_type,
-   };
+   ];
+   $typeLabel =
+       isset($m->movement_type) && isset($labels[$m->movement_type])
+           ? $labels[$m->movement_type]
+           : $m->movement_type ?? '-';
 @endphp
 
 <div class="detail-movement-wrap">
@@ -23,7 +30,7 @@
    <div class="d-flex align-items-center mb-3 gap-2">
       <span class="badge bg-{{ $typeBadge }} fs-6">{{ $typeLabel }}</span>
       <span class="text-muted small">ID #{{ $m->id }} &bull;
-         {{ \Carbon\Carbon::parse($m->movement_date)->format('d M Y') }}</span>
+         {{ $m->movement_date ? \Carbon\Carbon::parse($m->movement_date)->format('d M Y') : '-' }}</span>
    </div>
 
    {{-- INFO GRID --}}
@@ -36,19 +43,19 @@
             </tr>
             <tr>
                <td class="fw-bold text-muted">Brand</td>
-               <td>{{ $tyre?->brand?->brand_name ?? '-' }}</td>
+               <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Ukuran</td>
-               <td>{{ $tyre?->size?->size ?? '-' }}</td>
+               <td>{{ $tyre->size->size ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Pattern</td>
-               <td>{{ $tyre?->pattern?->name ?? '-' }}</td>
+               <td>{{ $tyre->pattern->name ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Unit</td>
-               <td>{{ $vehicle?->kode_kendaraan ?? '-' }}</td>
+               <td>{{ $vehicle->kode_kendaraan ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Posisi</td>
@@ -77,7 +84,11 @@
             <tr>
                <td class="fw-bold text-muted">RTD 1-4</td>
                <td>
-                  @php $rtdParts = array_filter([$m->rtd_1, $m->rtd_2, $m->rtd_3, $m->rtd_4], fn($v) => $v !== null); @endphp
+                  @php
+                     $rtdParts = array_filter([$m->rtd_1, $m->rtd_2, $m->rtd_3, $m->rtd_4], function ($v) {
+                         return $v !== null;
+                     });
+                  @endphp
                   {{ count($rtdParts) > 0 ? implode(' / ', $rtdParts) . ' mm' : '-' }}
                </td>
             </tr>
