@@ -36,19 +36,19 @@
             </tr>
             <tr>
                <td class="fw-bold text-muted">Brand</td>
-               <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
+               <td>{{ $tyre?->brand?->brand_name ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Ukuran</td>
-               <td>{{ $tyre->size->size ?? '-' }}</td>
+               <td>{{ $tyre?->size?->size ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Pattern</td>
-               <td>{{ $tyre->pattern->name ?? '-' }}</td>
+               <td>{{ $tyre?->pattern?->name ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Unit</td>
-               <td>{{ $vehicle->kode_kendaraan ?? '-' }}</td>
+               <td>{{ $vehicle?->kode_kendaraan ?? '-' }}</td>
             </tr>
             <tr>
                <td class="fw-bold text-muted">Posisi</td>
