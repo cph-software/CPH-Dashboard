@@ -13,7 +13,17 @@ class TyreCompanyController extends Controller
 {
     public function index()
     {
-        $companies = TyreCompany::withCount('users')->latest()->get();
+        // Use withCount to get actual tyre counts from the database.
+        // We explicitly disable the 'company' global scope on the tyres subquery
+        // so that it shows the true total for each company, regardless of 
+        // current session filters or admin view context.
+        $companies = TyreCompany::withCount([
+            'users',
+            'tyres' => function ($query) {
+                $query->withoutGlobalScope('company');
+            }
+        ])->latest()->get();
+
         return view('tyre-performance.master.companies.index', compact('companies'));
     }
 

@@ -66,22 +66,22 @@
          <div class="d-flex gap-2">
             <a href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel']) }}"
                class="btn btn-outline-primary btn-sm">
-               <i class="ri ri-file-excel-2-line me-1"></i> Export Excel
+               <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
 
             @if (hasPermission('Pemasangan (Install)', 'create'))
                <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">
-                  <i class="ri ri-add-line me-1"></i> Form Pasang Baru
+                  <i class="icon-base ri ri-add-line me-1"></i> Form Pasang Baru
                </a>
             @endif
             @if (hasPermission('Rotasi (Rotate)', 'create'))
                <a href="{{ route('tyre-movement.rotasi') }}" class="btn btn-info btn-sm">
-                  <i class="ri ri-camera-off-line" style="font-size: 2rem;"></i> Form Rotasi
+                  <i class="icon-base ri ri-repeat-line me-1"></i> Form Rotasi
                </a>
             @endif
             @if (hasPermission('Pelepasan (Remove)', 'create'))
                <a href="{{ route('tyre-movement.pelepasan') }}" class="btn btn-danger btn-sm">
-                  <i class="ri ri-delete-bin-line me-1"></i> Form Lepas Ban
+                  <i class="icon-base ri ri-delete-bin-line me-1"></i> Form Lepas Ban
                </a>
             @endif
          </div>
@@ -574,7 +574,7 @@
                   } else {
                      $('#movementDetailBody').html(
                         `<div class="alert alert-danger">${data.message || 'Gagal memuat data detail.'}</div>`
-                        );
+                     );
                   }
                })
                .catch(() => {

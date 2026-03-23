@@ -19,27 +19,27 @@
             <div id="bulk-actions-container" style="display: none;">
                <div class="btn-group me-2">
                   <button type="button" class="btn btn-outline-danger" id="btn-bulk-delete">
-                     <i class="ri-delete-bin-line me-1"></i> Hapus
+                     <i class="icon-base ri ri-delete-bin-line me-1"></i> Hapus
                   </button>
                   <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                      data-bs-target="#bulkUpdateModal">
-                     <i class="ri-edit-line me-1"></i> Update
+                     <i class="icon-base ri ri-edit-line me-1"></i> Update
                   </button>
                </div>
             </div>
             <a href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
-               <i class="ri-file-excel-2-line me-1"></i> Export Excel
+               <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
             @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
-                  <i class="ri-upload-2-line me-1"></i> Import
+                  <i class="icon-base ri ri-upload-2-line me-1"></i> Import
                </button>
             @endif
             @if (hasPermission('Master Tyre', 'create'))
                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTyreModal">
-                  <i class="ri-add-line me-1"></i> Add Tyre
+                  <i class="icon-base ri ri-add-line me-1"></i> Add Tyre
                </button>
             @endif
          </div>

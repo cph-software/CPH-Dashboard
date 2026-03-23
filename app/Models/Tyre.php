@@ -80,4 +80,30 @@ class Tyre extends Model
     {
         $this->attributes['serial_number'] = strtoupper($value);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function ($tyre) {
+            $tyre->syncCompanyCount();
+        });
+
+        static::deleted(function ($tyre) {
+            $tyre->syncCompanyCount();
+        });
+    }
+
+    public function syncCompanyCount()
+    {
+        if ($this->tyre_company_id) {
+            $company = TyreCompany::find($this->tyre_company_id);
+            if ($company) {
+                // Synchronize total_tyre_capacity column with real count from tyres table
+                $count = Tyre::where('tyre_company_id', $this->tyre_company_id)->count();
+                $company->update(['total_tyre_capacity' => $count]);
+            }
+        }
+    }
 }
+

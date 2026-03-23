@@ -164,19 +164,19 @@
                   </div>
                   <button type="submit" class="btn btn-primary btn-sm px-3 ms-1 py-2" style="border-radius: 6px;"
                      title="Terapkan Filter">
-                     <i class="ri-filter-3-line me-1"></i> Filter
+                     <i class="icon-base ri ri-filter-3-line me-1"></i> Filter
                   </button>
                   @if (request()->filled('start_date') || request()->filled('end_date'))
                      <a href="{{ route('master_data.dashboard') }}" class="btn btn-label-secondary btn-sm px-3 ms-1 py-2"
                         style="border-radius: 6px;" title="Reset Filter">
-                        <i class="ri-refresh-line me-1"></i> Reset
+                        <i class="icon-base ri ri-refresh-line me-1"></i> Reset
                      </a>
                   @endif
                </div>
                <div class="btn-group ms-2">
                   <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
                      style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
-                     <i class="ri-download-2-line me-1"></i> Export
+                     <i class="icon-base ri ri-download-2-line me-1"></i> Export
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                      <li>
@@ -196,11 +196,11 @@
                      </li>
                      @if (hasPermission('Import Approval', 'create'))
                         <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
-                              data-bs-target="#importModal"><i class="ri-upload-2-line me-1"></i>
+                              data-bs-target="#importModal"><i class="icon-base ri ri-upload-2-line me-1"></i>
                               Admin: Import Data</a></li>
                      @endif
                      <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
-                           <i class="ri-check-double-line me-1"></i>
+                           <i class="icon-base ri ri-check-double-line me-1"></i>
                            Approval & Riwayat Import</a></li>
                   </ul>
                </div>
@@ -454,7 +454,8 @@
                <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3">
                   <div class="d-flex align-items-center">
                      <div class="avatar avatar-sm me-2">
-                        <span class="avatar-initial rounded bg-label-primary"><i class="ri-search-eye-line"></i></span>
+                        <span class="avatar-initial rounded bg-label-primary"><i
+                              class="icon-base ri ri-search-eye-line"></i></span>
                      </div>
                      <div>
                         <h6 class="mb-0">Perbandingan Internal Brand</h6>
@@ -472,18 +473,20 @@
                </div>
                <div class="card-body pt-4">
                   <div id="brandDetailPlaceholder" class="text-center py-5">
-                     <i class="ri-information-line ri-3x text-light mb-2 d-block"></i>
+                     <i class="icon-base ri ri-information-line ri-3x text-light mb-2 d-block"></i>
                      <p class="text-muted mb-0">Silakan pilih brand untuk melihat perbandingan pattern dan size.</p>
                   </div>
                   <div id="brandDetailContent" style="display: none;">
                      <div class="row g-4">
                         <div class="col-xl-6 col-lg-6">
-                           <h6 class="text-center mb-3 fw-bold"><i class="ri-road-map-line me-1 text-primary"></i> Avg
+                           <h6 class="text-center mb-3 fw-bold"><i
+                                 class="icon-base ri ri-road-map-line me-1 text-primary"></i> Avg
                               Lifetime per Pattern</h6>
                            <div id="brandPatternChart" style="min-height: 300px;"></div>
                         </div>
                         <div class="col-xl-6 col-lg-6">
-                           <h6 class="text-center mb-3 fw-bold"><i class="ri-ruler-2-line me-1 text-primary"></i> Avg
+                           <h6 class="text-center mb-3 fw-bold"><i
+                                 class="icon-base ri ri-ruler-2-line me-1 text-primary"></i> Avg
                               Lifetime per Size</h6>
                            <div id="brandSizeChart" style="min-height: 300px;"></div>
                         </div>
@@ -697,7 +700,8 @@
 
             <div class="card border-primary shadow-none bg-label-primary">
                <div class="card-body">
-                  <h6 class="fw-bold mb-3"><i class="ri-lightbulb-flash-line me-2"></i> Panduan Tindakan Admin</h6>
+                  <h6 class="fw-bold mb-3"><i class="icon-base ri ri-lightbulb-flash-line me-2"></i> Panduan Tindakan
+                     Admin</h6>
                   <div class="d-flex flex-column gap-3">
                      <div class="d-flex align-items-start">
                         <div class="badge bg-primary rounded p-1 me-2"><i class="ri-tools-line"></i></div>

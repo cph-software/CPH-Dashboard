@@ -90,7 +90,7 @@
                               </button>
                               <div class="dropdown-menu">
                                  <a class="dropdown-item" href="{{ route('import-approval.show', $batch->id) }}">
-                                    <i class="ri-eye-line me-1"></i> Detail & Review
+                                    <i class="icon-base ri ri-eye-line me-1"></i> Detail & Review
                                  </a>
                                  @if ($batch->status === 'Pending' && auth()->user()->hasPermission('Import Approval', 'update'))
                                     <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST"
@@ -98,12 +98,12 @@
                                        @csrf
                                        <button type="submit" class="dropdown-item text-success"
                                           onclick="return confirm('Setujui import data ini? Data akan segera dimasukkan ke database.')">
-                                          <i class="ri-check-line me-1"></i> Approve
+                                          <i class="icon-base ri ri-check-line me-1"></i> Approve
                                        </button>
                                     </form>
                                     <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
                                        data-bs-target="#rejectModal{{ $batch->id }}">
-                                       <i class="ri-close-line me-1"></i> Reject
+                                       <i class="icon-base ri ri-close-line me-1"></i> Reject
                                     </button>
                                  @endif
                               </div>

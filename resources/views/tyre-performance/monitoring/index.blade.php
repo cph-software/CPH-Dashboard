@@ -116,7 +116,7 @@
    <div class="d-flex justify-content-between align-items-center mb-4">
       <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Operations /</span> Tyre Monitoring</h4>
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
-         <i class="ri ri-add-line me-1"></i> Add Vehicle for Monitoring
+         <i class="icon-base ri ri-add-line me-1"></i> Add Vehicle for Monitoring
       </button>
    </div>
 
@@ -157,7 +157,7 @@
                         <div class="d-flex gap-2">
                            <a href="{{ route('monitoring.vehicle.show', $vehicle->vehicle_id) }}"
                               class="btn btn-sm btn-icon btn-outline-primary" title="View Sessions">
-                              <i class="ri ri-eye-line"></i>
+                              <i class="icon-base ri ri-eye-line"></i>
                            </a>
                            <button type="button" class="btn btn-sm btn-icon btn-outline-warning edit-vehicle-btn"
                               title="Edit Vehicle" data-bs-toggle="modal" data-bs-target="#editVehicleModal"
@@ -166,7 +166,7 @@
                               data-phone="{{ $vehicle->phone_number }}" data-app="{{ $vehicle->application }}"
                               data-capacity="{{ $vehicle->load_capacity }}" data-pos="{{ $vehicle->tire_positions }}"
                               data-master="{{ $vehicle->master_vehicle_id }}">
-                              <i class="ri ri-edit-line"></i>
+                              <i class="icon-base ri ri-edit-line"></i>
                            </button>
                            <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}" method="POST"
                               class="d-inline" onsubmit="return confirm('Hapus monitoring kendaraan ini?')">@csrf
@@ -249,7 +249,8 @@
                         class="col-md-5 text-center bg-light rounded d-flex flex-column align-items-center justify-content-center p-3">
                         <small class="fw-bold mb-3 text-primary">LAYOUT PREVIEW</small>
                         <div id="LayoutPreview" class="w-100">
-                           <span class="text-muted italic small"><i class="ri ri-information-line me-1"></i>Select master
+                           <span class="text-muted italic small"><i
+                                 class="icon-base ri ri-information-line me-1"></i>Select master
                               vehicle to preview layout and installed tyres</span>
                         </div>
                      </div>
@@ -330,7 +331,8 @@
                         class="col-md-5 text-center bg-light rounded d-flex flex-column align-items-center justify-content-center p-3">
                         <small class="fw-bold mb-3 text-primary">LAYOUT PREVIEW</small>
                         <div id="editLayoutPreview" class="w-100">
-                           <span class="text-muted italic small"><i class="ri ri-information-line me-1"></i>Vehicle
+                           <span class="text-muted italic small"><i
+                                 class="icon-base ri ri-information-line me-1"></i>Vehicle
                               layout
                               preview</span>
                         </div>

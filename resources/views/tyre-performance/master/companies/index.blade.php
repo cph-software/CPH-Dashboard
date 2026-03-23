@@ -26,7 +26,7 @@
                   <tr>
                      <th>Nama Instansi</th>
                      <th>Keterangan</th>
-                     <th>Total Ban</th>
+                     <th class="text-center">Total Ban / Jatah</th>
                      <th>Total User</th>
                      <th>Status</th>
                      <th>Aksi</th>
@@ -37,7 +37,16 @@
                      <tr>
                         <td><strong>{{ $company->company_name }}</strong></td>
                         <td>{{ $company->description ?: '-' }}</td>
-                        <td><strong>{{ number_format($company->total_tyre_capacity) }}</strong></td>
+                        <td class="text-center">
+                           <div class="d-flex flex-column align-items-center">
+                              <span class="fw-bold fs-5 text-primary">{{ number_format($company->tyres_count) }}</span>
+                              <small class="text-muted" style="font-size: 0.7rem;">Limit:
+                                 {{ number_format($company->total_tyre_capacity) }}</small>
+                              @if ($company->tyres_count > $company->total_tyre_capacity && $company->total_tyre_capacity > 0)
+                                 <span class="badge bg-label-danger mt-1" style="font-size: 0.6rem;">Over Limit</span>
+                              @endif
+                           </div>
+                        </td>
                         <td><span class="badge bg-label-info">{{ $company->users_count }} Users</span></td>
                         <td>
                            <span class="badge bg-label-{{ $company->status == 'Active' ? 'success' : 'secondary' }}">
@@ -96,8 +105,10 @@
                      <textarea name="description" class="form-control" rows="2"></textarea>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label fw-bold">Total Ban <span class="text-danger">*</span></label>
+                     <label class="form-label fw-bold">Jatah Ban (Quota) <span class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" class="form-control" required value="0">
+                     <small class="text-muted d-block mt-1 small">Batas maksimal ban yang diperbolehkan untuk instansi
+                        ini.</small>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
@@ -137,9 +148,11 @@
                      <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label fw-bold">Total Ban <span class="text-danger">*</span></label>
+                     <label class="form-label fw-bold">Jatah Ban (Quota) <span class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" id="edit_total_tyre_capacity"
                         class="form-control" required>
+                     <small class="text-muted d-block mt-1 small">Batas maksimal ban yang diperbolehkan untuk instansi
+                        ini.</small>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status</label>
