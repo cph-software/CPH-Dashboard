@@ -55,7 +55,7 @@
                      <th>Brand</th>
                      <th>Size</th>
                      <th>Segment</th>
-                     <th>Location</th>
+                     <th>Warehouse / Stock Status</th>
                      <th>Status</th>
                      <th>Actions</th>
                   </tr>
@@ -150,26 +150,36 @@
                            placeholder="Ex: Mining, Logging, etc.">
                      </div>
                      <div class="col-md-6 mb-3">
-                        <label for="ply_rating" class="form-label">Ply Rating</label>
-                        <input type="text" id="ply_rating" name="ply_rating" class="form-control"
-                           placeholder="Ex: 16PR, 18PR">
+                        <label for="current_location_id" class="form-label">Warehouse / Lokasi</label>
+                        <select name="current_location_id" id="current_location_id" class="form-select select2"
+                           data-placeholder="Pilih Lokasi">
+                           <option value=""></option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
                   </div>
 
                   <div class="row g-2">
+                     <div class="col-md-6 mb-3">
+                        <label for="ply_rating" class="form-label">Ply Rating</label>
+                        <input type="text" id="ply_rating" name="ply_rating" class="form-control"
+                           placeholder="Ex: 16PR, 18PR">
+                     </div>
                      <div class="col-md-6 mb-3">
                         <label for="original_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
                         <input type="number" id="original_tread_depth" name="original_tread_depth"
                            class="form-control" placeholder="18.5" step="0.01">
                      </div>
+                  </div>
+
+                  <div class="row g-2">
                      <div class="col-md-6 mb-3">
                         <label for="price" class="form-label">Harga Beli (IDR)</label>
                         <input type="text" id="price" name="price" class="form-control currency-input"
                            placeholder="3.500.000">
                      </div>
-                  </div>
-
-                  <div class="row g-2">
                      <div class="col-md-6 mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select name="status" class="form-select" required>
@@ -180,8 +190,11 @@
                            <option value="Scrap">Scrap</option>
                         </select>
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label class="form-label d-block">Location Status</label>
+                  </div>
+
+                  <div class="row g-2">
+                     <div class="col-md-12 mb-3">
+                        <label class="form-label d-block">Location Context</label>
                         <div class="form-check form-switch mt-2">
                            <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
                               id="is_in_warehouse" checked>
@@ -304,11 +317,21 @@
                         </select>
                      </div>
                      <div class="col-md-6 mb-3">
-                        <label class="form-label d-block">Location Status</label>
+                        <label for="edit_current_location_id" class="form-label">Warehouse / Lokasi</label>
+                        <select id="edit_current_location_id" name="current_location_id" class="form-select select2"
+                           data-placeholder="Pilih Lokasi">
+                           <option value=""></option>
+                           @foreach ($locations as $loc)
+                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col-md-12 mb-3">
+                        <label class="form-label d-block">Inventory Tracking</label>
                         <div class="form-check form-switch mt-2">
                            <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
                               id="edit_is_in_warehouse">
-                           <label class="form-check-label" for="edit_is_in_warehouse">In Warehouse (Stock)</label>
+                           <label class="form-check-label" for="edit_is_in_warehouse">In Warehouse (Set as Stock)</label>
                         </div>
                      </div>
                   </div>
@@ -355,8 +378,8 @@
                      </select>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label">Update Lokasi</label>
-                     <select name="work_location_id" class="form-select select2-bulk"
+                     <label class="form-label">Update Lokasi (Gudang)</label>
+                     <select name="current_location_id" class="form-select select2-bulk"
                         data-placeholder="Select Location">
                         <option value=""></option>
                         @foreach ($locations as $loc)
@@ -366,14 +389,15 @@
                   </div>
                   <div class="mb-3">
                      <label class="form-label">Update Segment</label>
-                     <select name="tyre_segment_id" class="form-select select2-bulk" data-placeholder="Select Segment">
-                        <option value=""></option>
-                        @foreach ($segments as $segment)
-                           <option value="{{ $segment->id }}">
-                              {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
-                           </option>
-                        @endforeach
-                     </select>
+                     <input type="text" name="segment_name" class="form-control" placeholder="Update Segment Name">
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label d-block">Update Stock Status</label>
+                     <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
+                           id="bulk_warehouse">
+                        <label class="form-check-label" for="bulk_warehouse">Set as Stock (In Warehouse)</label>
+                     </div>
                   </div>
                   <div class="mb-3">
                      <label class="form-label">Update Retread Count</label>
@@ -446,9 +470,12 @@
                },
                {
                   data: 'is_in_warehouse',
-                  render: function(data) {
-                     return data ? '<span class="badge bg-label-info">Gudang</span>' :
-                        '<span class="badge bg-label-warning">Terpasang</span>';
+                  render: function(data, type, row) {
+                     if (data) {
+                        const locName = row.location ? row.location.location_name : 'Gudang';
+                        return `<span class="badge bg-label-info"><i class="ri-home-4-line me-1"></i>${locName}</span>`;
+                     }
+                     return '<span class="badge bg-label-warning"><i class="ri-truck-line me-1"></i>Terpasang</span>';
                   }
                },
                {
@@ -493,7 +520,9 @@
                                data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
                                data-pattern-id="${row.tyre_pattern_id}"
                                data-segment-name="${row.segment_name || ''}"
-                               data-warehouse="${row.is_in_warehouse ? 1 : 0}" data-status="${row.status}"
+                               data-warehouse="${row.is_in_warehouse ? 1 : 0}"
+                               data-location-id="${row.current_location_id || ''}"
+                               data-status="${row.status}"
                                data-price="${row.price || ''}"
                                data-original-tread="${row.original_tread_depth || ''}"
                                data-ply-rating="${row.ply_rating || ''}"
@@ -600,27 +629,30 @@
          $(document).on('click', '.edit-tyre', function() {
             const id = $(this).data('id');
             const serial = $(this).data('serial');
+            const customSerial = $(this).data('custom-serial');
             const brandId = $(this).data('brand-id');
             const sizeId = $(this).data('size-id');
             const patternId = $(this).data('pattern-id');
-            const segmentId = $(this).data('segment-id');
+            const segmentName = $(this).data('segment-name');
             const locationId = $(this).data('location-id');
             const status = $(this).data('status');
+            const warehouse = $(this).data('warehouse');
             const price = $(this).data('price');
-            const initialTread = $(this).data('initial-tread');
-            const currentTread = $(this).data('current-tread');
+            const originalTread = $(this).data('original-tread');
+            const plyRating = $(this).data('ply-rating');
             const retreadCount = $(this).data('retread-count');
             const companyId = $(this).data('company-id');
-            const currentKm = $(this).data('current-km');
-            const currentHm = $(this).data('current-hm');
 
             editForm.attr('action', `{{ url('master_tyre') }}/${id}`);
             $('#edit_serial_number').val(serial);
+            $('#edit_custom_serial_number').val(customSerial);
             $('#edit_tyre_company_id').val(companyId).trigger('change');
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
-            $('#edit_segment_id').val(segmentId === 'null' ? '' : segmentId).trigger('change');
-            $('#edit_work_location_id').val(locationId).trigger('change');
+            $('#edit_pattern_id').val(patternId).trigger('change');
+            $('#edit_segment_name').val(segmentName);
+            $('#edit_current_location_id').val(locationId).trigger('change');
+            $('#edit_is_in_warehouse').prop('checked', warehouse == 1);
             $('#edit_status').val(status);
 
             // Format existing price
@@ -630,11 +662,8 @@
                $('#edit_price').val('');
             }
 
-            $('#edit_initial_tread_depth').val(initialTread);
-            $('#edit_current_tread_depth').val(currentTread);
-            $('#edit_retread_count').val(retreadCount);
-            $('#edit_current_km').val(currentKm);
-            $('#edit_current_hm').val(currentHm);
+            $('#edit_original_tread_depth').val(originalTread);
+            $('#edit_ply_rating').val(plyRating);
          });
 
          // Hierarchical Dropdowns (Brand > Size > Pattern)
@@ -705,40 +734,6 @@
             });
          });
 
-         $(document).on('click', '.edit-tyre', function() {
-            const id = $(this).data('id');
-            const serial = $(this).data('serial');
-            const brandId = $(this).data('brand-id');
-            const sizeId = $(this).data('size-id');
-            const patternId = $(this).data('pattern-id');
-            const segmentName = $(this).data('segment-name');
-            const status = $(this).data('status');
-            const price = $(this).data('price');
-            const originalTread = $(this).data('original-tread');
-            const plyRating = $(this).data('ply-rating');
-            const companyId = $(this).data('company-id');
-            const isInWarehouse = $(this).data('warehouse');
-
-            editForm.attr('action', `{{ url('master_tyre') }}/${id}`);
-            $('#edit_serial_number').val(serial);
-            $('#edit_tyre_company_id').val(companyId).trigger('change');
-            $('#edit_brand_id').val(brandId).trigger('change');
-            $('#edit_size_id').val(sizeId).trigger('change');
-            $('#edit_pattern_id').val(patternId).trigger('change');
-            $('#edit_segment_name').val(segmentName);
-            $('#edit_ply_rating').val(plyRating);
-            $('#edit_status').val(status);
-            $('#edit_is_in_warehouse').prop('checked', isInWarehouse == 1);
-
-            // Format existing price
-            if (price) {
-               $('#edit_price').val(parseInt(price, 10).toLocaleString('id-ID'));
-            } else {
-               $('#edit_price').val('');
-            }
-
-            $('#edit_original_tread_depth').val(originalTread);
-         });
 
          // Currency Formatting Logic
          function formatCurrency(input) {
@@ -807,7 +802,4 @@
          @endif
       });
    </script>
-@endsection
-});
-</script>
 @endsection

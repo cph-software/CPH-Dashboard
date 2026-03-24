@@ -10,22 +10,8 @@ class TyreBrandController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
+        $brands = TyreBrand::latest()->get();
 
-        $query = TyreBrand::query();
-
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                $query->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-            }
-        }
-
-        $brands = $query->latest()->get();
         return view('tyre-performance.master.brands.index', compact('brands'));
     }
 

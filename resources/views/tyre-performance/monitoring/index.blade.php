@@ -128,7 +128,8 @@
                   <th>Fleet Name</th>
                   <th>Vehicle Number</th>
                   <th>Driver</th>
-                  <th>Pos</th>
+                  <th>Unit Type</th>
+                  <th>Jumlah Posisi</th>
                   <th>Active Sessions</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -140,6 +141,13 @@
                      <td>{{ $vehicle->fleet_name }}</td>
                      <td>{{ $vehicle->vehicle_number }}</td>
                      <td>{{ $vehicle->driver_name }}</td>
+                     <td>
+                        @if ($vehicle->is_trail)
+                           <span class="badge bg-label-info"><i class="ri-truck-line me-1"></i> Trailer</span>
+                        @else
+                           <span class="badge bg-label-primary"><i class="ri-steering-2-line me-1"></i> Head Unit</span>
+                        @endif
+                     </td>
                      <td>{{ $vehicle->tire_positions }}</td>
                      <td>
                         @if ($vehicle->sessions_count > 0)
@@ -165,7 +173,8 @@
                               data-no="{{ $vehicle->vehicle_number }}" data-driver="{{ $vehicle->driver_name }}"
                               data-phone="{{ $vehicle->phone_number }}" data-app="{{ $vehicle->application }}"
                               data-capacity="{{ $vehicle->load_capacity }}" data-pos="{{ $vehicle->tire_positions }}"
-                              data-master="{{ $vehicle->master_vehicle_id }}">
+                              data-master="{{ $vehicle->master_vehicle_id }}"
+                              data-trail="{{ $vehicle->is_trail ? '1' : '0' }}">
                               <i class="icon-base ri ri-edit-line"></i>
                            </button>
                            <form action="{{ route('monitoring.vehicle.destroy', $vehicle->vehicle_id) }}" method="POST"
@@ -239,9 +248,18 @@
                                  placeholder="e.g. 30 Ton">
                            </div>
                            <div class="col-md-6">
-                              <label class="form-label">Tire Positions</label>
+                              <label class="form-label">Jumlah Posisi Ban</label>
                               <input type="number" name="tire_positions" id="TirePositionsField" class="form-control"
                                  value="6" required min="1">
+                           </div>
+                           <div class="col-md-6 mt-4">
+                              <div class="form-check form-switch mt-2">
+                                 <input class="form-check-input" type="checkbox" name="is_trail" id="isTrailCheckAdd"
+                                    value="1">
+                                 <label class="form-check-label fw-bold" for="isTrailCheckAdd">Satu Unit Trailer</label>
+                                 <div class="form-text text-muted small">Aktifkan jika unit monitoring ini adalah
+                                    gandengan / trailer.</div>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -321,9 +339,16 @@
                                  class="form-control">
                            </div>
                            <div class="col-md-6">
-                              <label class="form-label">Tire Positions</label>
+                              <label class="form-label">Jumlah Posisi Ban</label>
                               <input type="number" name="tire_positions" id="editTirePositionsField"
                                  class="form-control" required min="1">
+                           </div>
+                           <div class="col-md-6 mt-4">
+                              <div class="form-check form-switch mt-2">
+                                 <input class="form-check-input" type="checkbox" name="is_trail" id="editIsTrailCheck"
+                                    value="1">
+                                 <label class="form-check-label fw-bold" for="editIsTrailCheck">Satu Unit Trailer</label>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -452,6 +477,10 @@
                } else {
                   $('#editSelectMasterVehicle').val('').trigger('change');
                }
+
+               // Set is_trail checkbox
+               const isTrail = btn.data('trail');
+               $('#editIsTrailCheck').prop('checked', isTrail == '1');
             });
          });
       </script>

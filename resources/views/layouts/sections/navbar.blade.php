@@ -17,7 +17,7 @@
       </div>
       <!-- /Search -->
 
-      @if (Auth::user() && (Auth::user()->role_id == 1 || Auth::user()->tyre_company_id == 1))
+      @if (Auth::user() && Auth::user()->role_id == 1)
          @php
             $activeCompanies = \App\Models\TyreCompany::orderBy('company_name', 'asc')->get();
             $currentActiveCompany = session('active_company_id');

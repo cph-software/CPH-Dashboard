@@ -10,22 +10,28 @@ class ImportController extends Controller
     public function storeCSV(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv,txt,xlsx,xls',
+            'file' => 'required|mimes:xlsx,xls',
             'module' => 'required'
+        ], [
+            'file.mimes' => 'Format file harus Excel (.xlsx atau .xls).'
         ]);
 
         $file = $request->file('file');
         $module = $request->module;
-        
-        // Handle Excel vs CSV
-        if ($file->getClientOriginalExtension() === 'csv' || $file->getClientOriginalExtension() === 'txt') {
-            $data = array_map('str_getcsv', file($file->getRealPath()));
-        } else {
-            $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
-        }
+
+        // Parse Excel file
+        $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
+
+        // Filter baris kosong
+        $data = array_filter($data, function($row) {
+            return count(array_filter($row, function($cell) {
+                return $cell !== null && trim($cell) !== '';
+            })) > 0;
+        });
+        $data = array_values($data);
 
         if (count($data) < 2) {
-            return redirect()->back()->with('error', 'File kosong atau format tidak valid.');
+            return redirect()->back()->with('error', 'File kosong atau format tidak valid. Pastikan baris pertama adalah header.');
         }
 
         $header = array_shift($data);
@@ -43,21 +49,37 @@ class ImportController extends Controller
                 'total_rows' => count($data)
             ]);
 
+            $imported = 0;
             foreach ($data as $row) {
-                if (count($header) !== count($row)) continue;
-                
-                $row = array_map('trim', $row);
+                // Pastikan jumlah kolom sesuai header
+                if (count($row) < count($header)) {
+                    $row = array_pad($row, count($header), null);
+                } elseif (count($row) > count($header)) {
+                    $row = array_slice($row, 0, count($header));
+                }
+
+                $row = array_map(function($v) {
+                    return $v !== null ? trim($v) : '';
+                }, $row);
                 $rowData = array_combine($header, $row);
-                
+
                 \App\Models\ImportItem::create([
                     'batch_id' => $batch->id,
                     'data' => $rowData,
                     'status' => 'Pending'
                 ]);
+                $imported++;
             }
 
             \DB::commit();
-            return redirect()->back()->with('success', 'Data berhasil diupload dan menunggu persetujuan (ID: #' . $batch->id . ').');
+
+            setLogActivity(auth()->id(), "Import Excel ({$module}): {$imported} baris", [
+                'module' => 'Import',
+                'batch_id' => $batch->id,
+                'filename' => $batch->filename
+            ]);
+
+            return redirect()->back()->with('success', "Data berhasil diupload ({$imported} baris) dan menunggu persetujuan (ID: #{$batch->id}).");
         } catch (\Exception $e) {
             \DB::rollback();
             return redirect()->back()->with('error', 'Gagal memproses file: ' . $e->getMessage());

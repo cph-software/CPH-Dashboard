@@ -98,8 +98,8 @@ mysql -u root -p -e "CREATE DATABASE cph_dashboard CHARACTER SET utf8mb4 COLLATE
 # 5. Jalankan migration
 php artisan migrate
 
-# 6. (Opsional) Seed data awal
-php artisan db:seed
+# 6. Jalankan demo seeder (PENTING untuk presentasi/testing)
+php artisan db:seed --class=DemoDataSeeder
 
 # 7. Buat symbolic link untuk storage
 php artisan storage:link
@@ -182,6 +182,11 @@ app/
 │   │   │   ├── Monitoring/MonitoringController.php
 │   │   │   └── Movement/TyreMovementController.php
 │   │   └── UserManagement/    # Role, User, Menu, Permission, Import
+├── Exports/                   # ★ Excel Export & Template Logic
+│   └── ImportTemplateSheets/  # Lembar kerja .xlsx per modul
+│   └── ImportTemplateExport.php
+│   └── SimpleArrayExport.php
+│   └── Monitoring/SessionExport.php
 │   └── Middleware/
 │       ├── CheckTyrePermission.php  # ★ Permission checker utama
 │       └── CheckPermission.php      # Legacy permission
@@ -265,11 +270,17 @@ routes/
 - **Human Error Detection:** Deteksi anomali odometer, HM, RTD
 - **PDF Export:** Cetak form pemeriksaan (A5 landscape)
 
-### F. Import/Export (`/import-approval`)
+### F. Warehouse & Inventory Tracking (`/master_tyre`, `/master_location`)
 
-- **Import:** Upload CSV/Excel → masuk sebagai Pending → Admin approve
-- **Export:** Download data ke Excel dari berbagai modul
-- **Approval:** Review data import sebelum masuk ke master
+- **Stock Syncing:** Otomatis update `current_stock` di lokasi saat ban dipasang/dilepas.
+- **Warehouse Status:** Flag `is_in_warehouse` untuk membedakan ban stok vs ban terpasang.
+- **Location Tracking:** Kolom `current_location_id` di tabel tyres untuk melacak posisi fisik ban di gudang.
+
+### G. Import/Export & Template System (`/import-approval`)
+
+- **Professional Templates:** 9 modul template `.xlsx` dengan header berwarna, data contoh, dan panduan pengisian terintegrasi.
+- **Import Approval:** Upload XLSX → Antrean Approval → Sync ke Database.
+- **Export Data:** Download data ban, kendaraan, dan transaksi ke Excel.
 
 ---
 
@@ -296,7 +307,7 @@ routes/
 | Tabel                          | Fungsi                                            |
 | ------------------------------ | ------------------------------------------------- |
 | `tyre_movements`               | Riwayat pergerakan ban (install, remove, inspect) |
-| `tyre_monitoring_vehicle`      | Kendaraan yang terdaftar monitoring               |
+| `tyre_monitoring_vehicle`      | Kendaraan monitoring (`is_trail` flag)            |
 | `tyre_monitoring_session`      | Sesi monitoring periodik                          |
 | `tyre_monitoring_installation` | Ban terpasang saat sesi                           |
 | `tyre_monitoring_check`        | Data pengecekan (RTD, PSI) + approval_status      |
@@ -558,4 +569,4 @@ Jika mengalami kesulitan saat development, periksa:
 
 ---
 
-_Terakhir diperbarui: 24 Maret 2026_
+_Terakhir diperbarui: 25 Maret 2026_

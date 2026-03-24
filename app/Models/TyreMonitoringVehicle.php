@@ -22,9 +22,14 @@ class TyreMonitoringVehicle extends Model
         'application',
         'load_capacity',
         'tire_positions',
+        'is_trail',
         'status',
         'master_vehicle_id',
         'tyre_company_id',
+    ];
+
+    protected $casts = [
+        'is_trail' => 'boolean'
     ];
 
     public function masterVehicle()

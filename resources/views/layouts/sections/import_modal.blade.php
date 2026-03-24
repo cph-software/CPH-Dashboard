@@ -37,19 +37,21 @@
                      </select>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label fw-bold">2. Pilih File CSV</label>
-                     <input type="file" name="file" class="form-control" accept=".csv" required>
-                     <div class="form-text small">Gunakan format <strong>.csv</strong> (Comma Separated Values).</div>
+                     <label class="form-label fw-bold">2. Pilih File Excel (xlsx)</label>
+                     <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                     <div class="form-text small">Gunakan format <strong>.xlsx</strong> (Microsoft Excel). Pastikan
+                        format kolom sesuai panduan.</div>
                   </div>
                </div>
                <div class="col-md-5 bg-light p-3">
                   <h6 class="fw-bold mb-2"><i class="ri-guide-line me-1"></i> Panduan Upload:</h6>
                   <div id="importGuideContent" class="small text-muted">
-                     <p>Pilih modul terlebih dahulu untuk melihat format kolom yang dibutuhkan.</p>
+                     <p>Pilih modul terlebih dahulu untuk melihat format kolom yang dibutuhkan. <strong>Jangan mengubah
+                           header pada template.</strong></p>
                   </div>
                   <div id="templateDownloadArea" class="mt-3 d-none">
                      <a href="#" id="btnDownloadTemplate" class="btn btn-xs btn-outline-primary w-100">
-                        <i class="ri-file-download-line me-1"></i> Download Template CSV
+                        <i class="ri-file-download-line me-1"></i> Download Template Excel
                      </a>
                   </div>
                </div>
@@ -134,10 +136,13 @@
 
             if (selected) {
                downloadArea.classList.remove('d-none');
-               downloadBtn.href =
-                  `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}&format=csv`;
+               const templateUrl =
+                  `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}`;
+               downloadBtn.setAttribute('href', templateUrl);
+               downloadBtn.setAttribute('target', '_blank');
             } else {
                downloadArea.classList.add('d-none');
+               downloadBtn.setAttribute('href', '#');
             }
          });
       }

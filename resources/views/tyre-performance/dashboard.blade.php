@@ -173,36 +173,39 @@
                      </a>
                   @endif
                </div>
-               <div class="btn-group ms-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
-                     style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
-                     <i class="icon-base ri ri-download-2-line me-1"></i> Export
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                     <li>
-                        <h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6>
-                     </li>
-                     <li><a class="dropdown-item"
-                           href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
-                              class="ri-history-line me-1"></i> Movements Raw Data</a></li>
-                     <li><a class="dropdown-item"
-                           href="{{ route('master_data.export', ['type' => 'failures', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
-                              class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
-                     <li><a class="dropdown-item"
-                           href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
-                              class="ri-disc-line me-1"></i> Tyre Master List</a></li>
-                     <li>
-                        <hr class="dropdown-divider">
-                     </li>
-                     @if (hasPermission('Import Approval', 'create'))
-                        <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0);" data-bs-toggle="modal"
-                              data-bs-target="#importModal"><i class="icon-base ri ri-upload-2-line me-1"></i>
-                              Admin: Import Data</a></li>
-                     @endif
-                     <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
-                           <i class="icon-base ri ri-check-double-line me-1"></i>
-                           Approval & Riwayat Import</a></li>
-                  </ul>
+               <div class="d-flex gap-2 ms-2">
+                  @if (hasPermission('Import Approval', 'create'))
+                     <button type="button" class="btn btn-primary btn-sm py-2 px-3 shadow-sm" style="border-radius: 6px;"
+                        data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="icon-base ri ri-upload-2-line me-1"></i> Import Data
+                     </button>
+                  @endif
+                  <div class="btn-group">
+                     <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
+                        style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="icon-base ri ri-download-2-line me-1"></i> Export
+                     </button>
+                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                        <li>
+                           <h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6>
+                        </li>
+                        <li><a class="dropdown-item"
+                              href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                                 class="ri-history-line me-1"></i> Movements Raw Data</a></li>
+                        <li><a class="dropdown-item"
+                              href="{{ route('master_data.export', ['type' => 'failures', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                                 class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
+                        <li><a class="dropdown-item"
+                              href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
+                                 class="ri-disc-line me-1"></i> Tyre Master List</a></li>
+                        <li>
+                           <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
+                              <i class="icon-base ri ri-check-double-line me-1"></i>
+                              Log Approval Import</a></li>
+                     </ul>
+                  </div>
                </div>
             </form>
          </div>

@@ -15,32 +15,10 @@ class TyreMasterController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        // If superadmin (role 1) and in a specific session company context:
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-
-        // Default queries
-        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
-        $sizeQuery = TyreSize::with('brand')->orderBy('size');
-        $patternQuery = TyrePattern::with('brand')->orderBy('name');
-
-        // Apply filtering if company context exists
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                // Strict Whitelist Filtering: Only show data mapped to the company
-                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-            }
-        }
-
-        $brands = $brandQuery->get();
-        $sizes = $sizeQuery->get();
-        $patterns = $patternQuery->get();
+        // Master data: Global dropdown (no company whitelist restriction)
+        $brands = TyreBrand::where('status', 'Active')->orderBy('brand_name')->get();
+        $sizes = TyreSize::with('brand')->orderBy('size')->get();
+        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
         
         $segments = TyreSegment::with('location')->where('status', 'Active')->get();
         $locations = TyreLocation::all();
@@ -54,7 +32,7 @@ class TyreMasterController extends Controller
      */
     public function data(Request $request)
     {
-        $query = Tyre::with(['brand', 'size', 'segment.location', 'pattern', 'location']);
+        $query = Tyre::with(['brand', 'size', 'pattern', 'location']);
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
@@ -111,7 +89,7 @@ class TyreMasterController extends Controller
 
     public function show($id)
     {
-        $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location', 'currentVehicle', 'currentPosition', 'movements.vehicle', 'movements.position'])
+        $tyre = Tyre::with(['brand', 'size', 'pattern', 'location', 'currentVehicle', 'currentPosition', 'movements.vehicle', 'movements.position'])
             ->findOrFail($id);
 
         return view('tyre-performance.master.tyres.show', compact('tyre'));
@@ -120,33 +98,11 @@ class TyreMasterController extends Controller
     public function edit($id)
     {
         $tyre = Tyre::findOrFail($id);
-        $user = auth()->user();
-        
-        // Determination of company context
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
 
-        // Default queries
-        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
-        $sizeQuery = TyreSize::with('brand')->orderBy('size');
-        $patternQuery = TyrePattern::with('brand')->orderBy('name');
-
-        // Apply filtering if company context exists
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                // Strict Whitelist Filtering
-                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-            }
-        }
-
-        $brands = $brandQuery->get();
-        $sizes = $sizeQuery->get();
-        $patterns = $patternQuery->get();
+        // Master data: Global dropdown (no company whitelist restriction)
+        $brands = TyreBrand::where('status', 'Active')->orderBy('brand_name')->get();
+        $sizes = TyreSize::with('brand')->orderBy('size')->get();
+        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
         
         $segments = TyreSegment::where('status', 'Active')->get();
         $locations = TyreLocation::all();
@@ -195,7 +151,7 @@ class TyreMasterController extends Controller
         }
 
         $tyre = Tyre::create($data);
-        $tyre->load(['brand', 'size', 'pattern']);
+        $tyre->load(['brand', 'size', 'pattern', 'location']);
 
         setLogActivity(auth()->id(), 'Menambah ban baru: ' . $request->serial_number, [
             'action_type' => 'create',
@@ -204,11 +160,11 @@ class TyreMasterController extends Controller
                 'Serial Number' => $tyre->serial_number,
                 'Brand' => $tyre->brand->brand_name ?? '-',
                 'Size' => $tyre->size->size ?? '-',
-                'Segment' => $tyre->segment->segment_name ?? '-',
+                'Segment' => $tyre->segment_name ?? '-',
                 'Work Location' => $tyre->location->location_name ?? '-',
                 'Status' => $tyre->status,
                 'Price' => $tyre->price,
-                'Initial Tread Depth' => $tyre->initial_tread_depth,
+                'Initial Tread Depth' => $tyre->initial_tread_depth ?? '-',
             ]
         ]);
 
@@ -254,7 +210,7 @@ class TyreMasterController extends Controller
         }
 
         $tyre->update($data);
-        $tyre->load(['brand', 'size', 'pattern']);
+        $tyre->load(['brand', 'size', 'pattern', 'location']);
 
         setLogActivity(auth()->id(), 'Memperbarui ban: ' . $request->serial_number, [
             'action_type' => 'update',
@@ -264,7 +220,7 @@ class TyreMasterController extends Controller
                 'Serial Number' => $tyre->serial_number,
                 'Brand' => $tyre->brand->brand_name ?? '-',
                 'Size' => $tyre->size->size ?? '-',
-                'Segment' => $tyre->segment->segment_name ?? '-',
+                'Segment' => $tyre->segment_name ?? '-',
                 'Work Location' => $tyre->location->location_name ?? '-',
                 'Status' => $tyre->status,
             ]
@@ -334,8 +290,8 @@ class TyreMasterController extends Controller
         if ($action === 'update') {
             $data = [];
             if ($request->filled('status')) $data['status'] = $request->status;
-            if ($request->filled('work_location_id')) $data['work_location_id'] = $request->work_location_id;
-            if ($request->filled('tyre_segment_id')) $data['tyre_segment_id'] = $request->tyre_segment_id;
+            if ($request->filled('current_location_id')) $data['current_location_id'] = $request->current_location_id;
+            if ($request->filled('segment_name')) $data['segment_name'] = $request->segment_name;
             if ($request->filled('retread_count')) $data['retread_count'] = $request->retread_count;
 
             if (empty($data)) {

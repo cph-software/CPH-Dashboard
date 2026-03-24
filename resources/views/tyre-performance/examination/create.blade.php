@@ -387,6 +387,14 @@
                      $('#odometer').attr('placeholder', 'Previous: ' + res.last_odometer);
                      $('#hour_meter').attr('placeholder', 'Previous: ' + res.last_hour_meter);
 
+                     // Auto-select Input Mode (Type) based on company
+                     const companyName = (res.company_name || '').toLowerCase();
+                     if (companyName.includes('cph') || companyName.includes('catur')) {
+                        $('select[name="exam_type"]').val('Sales').trigger('change');
+                     } else {
+                        $('select[name="exam_type"]').val('Customer').trigger('change');
+                     }
+
                      // Add photo name display handler
                      $('.photo-input').on('change', function() {
                         const fileName = $(this).val().split('\\').pop();

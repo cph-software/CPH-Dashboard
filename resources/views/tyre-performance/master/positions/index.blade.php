@@ -10,7 +10,7 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Konfigurasi Ban</h4>
-         @if (hasPermission('Position Layouts', 'create'))
+         @if (hasPermission('Axle Layouts', 'create'))
             <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
                <i class="icon-base ri ri-add-line me-1"></i> Buat Konfigurasi Baru
             </a>
@@ -74,13 +74,13 @@
                            class="btn btn-sm btn-outline-primary flex-fill">
                            <i class="icon-base ri ri-eye-line me-1"></i> Lihat Detail
                         </a>
-                        @if (hasPermission('Position Layouts', 'update'))
+                        @if (hasPermission('Axle Layouts', 'update'))
                            <a href="{{ route('tyre-positions.edit', $config->id) }}"
                               class="btn btn-sm btn-icon btn-outline-secondary" title="Edit">
                               <i class="icon-base ri ri-pencil-line"></i>
                            </a>
                         @endif
-                        @if (hasPermission('Position Layouts', 'delete'))
+                        @if (hasPermission('Axle Layouts', 'delete'))
                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger delete-config"
                               data-id="{{ $config->id }}" data-name="{{ $config->name }}" title="Hapus">
                               <i class="icon-base ri ri-delete-bin-line"></i>
@@ -96,7 +96,7 @@
                   <div class="card-body text-center py-5">
                      <i class="ri-inbox-line" style="font-size: 3rem; color: #ddd;"></i>
                      <p class="text-muted mt-3">Belum ada konfigurasi posisi ban.</p>
-                     @if (hasPermission('Position Layouts', 'create'))
+                     @if (hasPermission('Axle Layouts', 'create'))
                         <a href="{{ route('tyre-positions.create') }}" class="btn btn-primary">
                            <i class="ri-add-line me-1"></i> Buat Konfigurasi Pertama
                         </a>

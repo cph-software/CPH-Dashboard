@@ -60,7 +60,7 @@ class TyreMovementController extends Controller
         $search = $request->input('q');
 
         $query = Tyre::whereIn('status', ['New', 'Repaired'])
-            ->whereNull('current_vehicle_id');
+            ->where('is_in_warehouse', true);
 
         if ($search) {
             $query->where('serial_number', 'like', "%$search%");
@@ -80,7 +80,7 @@ class TyreMovementController extends Controller
                 'sn' => $tyre->serial_number,
                 'otd' => $tyre->initial_tread_depth,
                 'rtd' => $tyre->current_tread_depth,
-                'location_id' => $tyre->work_location_id,
+                'location_id' => $tyre->current_location_id,
                 'status' => $tyre->status,
                 'latest_rim_size' => $tyre->latestInstallation->rim_size ?? null,
                 'latest_segment_id' => $tyre->latestInstallation->operational_segment_id ?? null,
@@ -239,9 +239,9 @@ class TyreMovementController extends Controller
 
         // Find tyre either by ID or by position+vehicle
         if ($tyreId) {
-            $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location'])->find($tyreId);
+            $tyre = Tyre::with(['brand', 'size', 'pattern', 'location'])->find($tyreId);
         } elseif ($positionId && $vehicleId) {
-            $tyre = Tyre::with(['brand', 'size', 'pattern', 'segment', 'location'])
+            $tyre = Tyre::with(['brand', 'size', 'pattern', 'location'])
                 ->where('current_vehicle_id', $vehicleId)
                 ->where('current_position_id', $positionId)
                 ->first();
@@ -312,7 +312,7 @@ class TyreMovementController extends Controller
                 'brand' => $tyre->brand->brand_name ?? '-',
                 'size' => $tyre->size->size ?? '-',
                 'pattern' => $tyre->pattern->name ?? '-',
-                'segment' => $tyre->segment->segment_name ?? '-',
+                'segment' => $tyre->segment_name ?? '-',
                 'location' => $tyre->location->location_name ?? '-',
                 'price' => $tyre->price,
                 'initial_rtd' => $tyre->initial_tread_depth,
@@ -632,7 +632,7 @@ class TyreMovementController extends Controller
 
             } elseif ($request->movement_type === 'Installation') {
                 $tyre = Tyre::findOrFail($request->tyre_id);
-                $oldLocationId = $tyre->work_location_id; // Store old location before update
+                $oldLocationId = $tyre->current_location_id; // Store old location before update
 
                 // Determine actual condition from master status for new tyre
                 $actualCondition = 'Repair';
@@ -696,8 +696,9 @@ class TyreMovementController extends Controller
                         $oldTyre->update([
                             'current_vehicle_id' => null,
                             'current_position_id' => null,
+                            'is_in_warehouse' => true,
+                            'current_location_id' => $request->work_location_id,
                             'status' => 'Repaired',
-                            'work_location_id' => $request->work_location_id, // Masuk ke gudang pengerjaan
                             'total_lifetime_km' => ($oldTyre->total_lifetime_km ?? 0) + $kmDiff,
                             'total_lifetime_hm' => ($oldTyre->total_lifetime_hm ?? 0) + $hmDiff,
                             'current_km' => $request->odometer,
@@ -724,6 +725,8 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
+                    'is_in_warehouse' => false,
+                    'current_location_id' => null,
                     'status' => 'Installed',
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
                     'current_km' => $request->odometer,
@@ -866,8 +869,9 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
+                    'is_in_warehouse' => true,
+                    'current_location_id' => $request->work_location_id, // Update lokasi fisik ban
                     'status' => $request->target_status ?? 'Repaired',
-                    'work_location_id' => $request->work_location_id, // Update lokasi fisik ban
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
@@ -1045,9 +1049,9 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
+                    'is_in_warehouse' => true,
+                    'current_location_id' => $movement->work_location_id,
                     'status' => 'New',
-                    // Return tracking to the location where the installation happened
-                    'work_location_id' => $movement->work_location_id
                 ]);
 
                 // 2. Increment Stock at that location (assuming it goes back to inventory)
@@ -1134,6 +1138,8 @@ class TyreMovementController extends Controller
                 $tyre->update([
                     'current_vehicle_id' => $movement->vehicle_id,
                     'current_position_id' => $movement->position_id,
+                    'is_in_warehouse' => false,
+                    'current_location_id' => null,
                     'status' => 'Installed',
                     'total_lifetime_km' => max(0, ($tyre->total_lifetime_km ?? 0) - ($movement->running_km ?? 0)),
                     'total_lifetime_hm' => max(0, ($tyre->total_lifetime_hm ?? 0) - ($movement->running_hm ?? 0)),

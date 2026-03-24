@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\UserTracking;
-use App\Traits\BelongsToCompany;
 
 class TyreSegment extends Model
 {
-    use UserTracking, BelongsToCompany;
+    use UserTracking;
 
     protected $table = 'tyre_segments';
     protected $guarded = [];

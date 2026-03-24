@@ -10,22 +10,8 @@ class TyrePatternController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
+        $patterns = TyrePattern::with('brand')->latest()->get();
 
-        $query = TyrePattern::with('brand');
-
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                $query->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-            }
-        }
-
-        $patterns = $query->latest()->get();
         return view('tyre-performance.master.patterns.index', compact('patterns'));
     }
 

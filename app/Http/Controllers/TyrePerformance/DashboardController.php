@@ -1246,61 +1246,26 @@ class DashboardController extends Controller
     public function downloadTemplate(Request $request)
     {
         $module = $request->input('module');
-        $filename = "Template_" . str_replace(' ', '_', $module) . ".csv";
 
-        $headers = [
-            "Content-type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
+        if (!$module) {
+            return redirect()->back()->with('error', 'Modul tidak dipilih.');
+        }
+
+        $allowedModules = [
+            'Tyre Master', 'Vehicle Master', 'Movement History',
+            'Tyre Brand', 'Tyre Size', 'Tyre Pattern',
+            'Failure Codes', 'Locations', 'Segments',
         ];
 
-        $callback = function () use ($module) {
-            $file = fopen('php://output', 'w');
+        if (!in_array($module, $allowedModules)) {
+            return redirect()->back()->with('error', 'Modul tidak valid.');
+        }
 
-            switch ($module) {
-                case 'Tyre Master':
-                    fputcsv($file, ['serial_number', 'brand_name', 'size_name', 'pattern_name', 'initial_rtd', 'location_name', 'segment_name', 'price', 'status']);
-                    fputcsv($file, ['SN-TEST-001', 'BRIDGESTONE', '11.00-20', 'G580', '16.5', 'SITE-A-GUDANG', 'Coal Hauling', '5500000', 'New']);
-                    break;
-                case 'Vehicle Master':
-                    fputcsv($file, ['kode_kendaraan', 'no_polisi', 'model_kendaraan', 'brand_kendaraan', 'site_location', 'curb_weight', 'payload_capacity', 'segment']);
-                    fputcsv($file, ['DT-101', 'B 1234 ABC', 'DUMP TRUCK', 'HINO', 'SITE-A', '5500', '20', 'Coal Hauling']);
-                    break;
-                case 'Movement History':
-                    fputcsv($file, ['serial_number', 'kode_kendaraan', 'movement_type', 'movement_date', 'position_code', 'odometer']);
-                    fputcsv($file, ['SN-TEST-001', 'DT-101', 'Installation', date('Y-m-d'), 'LF', '50000']);
-                    break;
-                case 'Failure Codes':
-                    fputcsv($file, ['failure_code', 'failure_name', 'default_category']);
-                    fputcsv($file, ['CUT', 'Cut Separation', 'Major Damage']);
-                    break;
-                case 'Tyre Brand':
-                    fputcsv($file, ['brand_name', 'brand_type', 'status']);
-                    fputcsv($file, ['BRIDGESTONE', 'Premium', 'Active']);
-                    break;
-                case 'Tyre Size':
-                    fputcsv($file, ['size', 'brand_name', 'type', 'std_otd', 'ply_rating']);
-                    fputcsv($file, ['11.00-20', 'BRIDGESTONE', 'Radial', '16.5', '16']);
-                    break;
-                case 'Tyre Pattern':
-                    fputcsv($file, ['pattern_name', 'brand', 'status']);
-                    fputcsv($file, ['G580', 'BRIDGESTONE', 'Active']);
-                    break;
-                case 'Locations':
-                    fputcsv($file, ['location_name', 'location_type', 'capacity']);
-                    fputcsv($file, ['SITE-A-GUDANG', 'Warehouse', '100']);
-                    break;
-                case 'Segments':
-                    fputcsv($file, ['segment_id', 'segment_name', 'location_name', 'terrain_type', 'status']);
-                    fputcsv($file, ['SEG/HAUL/01', 'Coal Hauling', 'SITE-A-GUDANG', 'Muddy', 'Active']);
-                    break;
-            }
+        $filename = 'TEMPLATE_IMPORT_' . strtoupper(str_replace(' ', '_', $module)) . '_' . date('Ymd') . '.xlsx';
 
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ImportTemplateExport($module),
+            $filename
+        );
     }
 }

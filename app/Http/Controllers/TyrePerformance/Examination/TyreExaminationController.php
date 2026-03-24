@@ -107,7 +107,9 @@ class TyreExaminationController extends Controller
             'success' => true,
             'html' => $html,
             'last_odometer' => $lastOdo,
-            'last_hour_meter' => $lastHm
+            'last_hour_meter' => $lastHm,
+            'company_id' => $vehicle->tyre_company_id,
+            'company_name' => $vehicle->company->company_name ?? 'Unknown'
         ]);
     }
 
@@ -200,6 +202,41 @@ class TyreExaminationController extends Controller
             if ($request->hasFile('photo_unit_front')) {
                 $examination->photo_unit_front = $request->file('photo_unit_front')->store($subFolder, 'public');
                 $examination->save();
+            }
+
+            // Pre-process details to check if at least one tyre is actually filled
+            $hasDetails = false;
+            if ($request->filled('details')) {
+                foreach ($request->details as $detail) {
+                    $rtds = array_filter([
+                        $detail['rtd_1'] ?? null,
+                        $detail['rtd_2'] ?? null,
+                        $detail['rtd_3'] ?? null,
+                        $detail['rtd_4'] ?? null
+                    ], function ($v) {
+                        return $v !== null && $v !== '';
+                    });
+
+                    $hasPsi = !empty($detail['psi']);
+                    $hasRtd = count($rtds) > 0;
+                    $hasRemarks = !empty($detail['remarks']);
+
+                    // We also check for ajax photos later, but for now we look for measurements
+                    if (!empty($detail['tyre_id']) && ($hasPsi || $hasRtd || $hasRemarks)) {
+                        $hasDetails = true;
+                        break;
+                    }
+                }
+            }
+
+            // Check if any ajax photos exist for this session
+            if (!$hasDetails) {
+                $hasDetails = TyreExaminationImage::where('notes', $request->temp_id)->exists();
+            }
+
+            if (!$hasDetails) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Lakukan minimal pemeriksaan 1 ban (isi PSI, RTD, Catatan, atau Foto).'], 422);
             }
 
             if ($request->filled('details')) {

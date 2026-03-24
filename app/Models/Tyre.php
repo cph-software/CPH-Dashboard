@@ -32,6 +32,11 @@ class Tyre extends Model
         return $this->belongsTo(TyrePattern::class, 'tyre_pattern_id');
     }
 
+    public function location()
+    {
+        return $this->belongsTo(TyreLocation::class, 'current_location_id');
+    }
+
     public function currentVehicle()
     {
         return $this->belongsTo(MasterImportKendaraan::class, 'current_vehicle_id');

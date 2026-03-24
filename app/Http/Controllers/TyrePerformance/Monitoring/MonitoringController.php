@@ -143,29 +143,10 @@ class MonitoringController extends Controller
             }
         }
 
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-
-        $brandQuery = TyreBrand::orderBy('brand_name');
-        $patternQuery = TyrePattern::orderBy('name');
-        $sizeQuery = TyreSize::orderBy('size');
-
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-        if ($company) {
-            // Strict Whitelist Filtering
-            $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-            $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-            $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-        }
-        }
-
-        $brands = $brandQuery->get();
-        $patterns = $patternQuery->get();
-        $sizes = $sizeQuery->get();
+        // Master data: Global dropdown (no company whitelist restriction)
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
 
         return view('tyre-performance.monitoring.vehicle_sessions', compact(
             'vehicle', 
@@ -222,10 +203,14 @@ class MonitoringController extends Controller
             'vehicle_number' => 'required|string',
             'driver_name' => 'required|string',
             'tire_positions' => 'required|integer|min:1',
+            'is_trail' => 'nullable|boolean',
             'master_vehicle_id' => 'nullable|exists:master_import_kendaraan,id',
         ]);
 
-        TyreMonitoringVehicle::create($request->all());
+        $data = $request->all();
+        $data['is_trail'] = $request->has('is_trail');
+
+        TyreMonitoringVehicle::create($data);
         return redirect()->back()->with('success', 'Monitoring Vehicle created and linked to Master Data');
     }
 
@@ -236,12 +221,15 @@ class MonitoringController extends Controller
             'vehicle_number' => 'required|string',
             'driver_name' => 'required|string',
             'tire_positions' => 'required|integer|min:1',
+            'is_trail' => 'nullable|boolean',
             'master_vehicle_id' => 'nullable|exists:master_import_kendaraan,id',
         ]);
 
         $vehicle = TyreMonitoringVehicle::findOrFail($id);
-        $vehicle->fill($request->all());
-        $vehicle->save();
+        $data = $request->all();
+        $data['is_trail'] = $request->has('is_trail');
+        
+        $vehicle->update($data);
         
         return redirect()->back()->with('success', 'Monitoring Vehicle updated');
     }
@@ -266,29 +254,11 @@ class MonitoringController extends Controller
             }
         }
 
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
+        // Master data: Global dropdown (no company whitelist restriction)
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
 
-        $brandQuery = TyreBrand::orderBy('brand_name');
-        $patternQuery = TyrePattern::with('brand')->orderBy('name');
-        $sizeQuery = TyreSize::orderBy('size');
-
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-        if ($company) {
-            // Strict Whitelist Filtering
-            $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-            $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-            $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-        }
-        }
-
-        $brands = $brandQuery->get();
-        $patterns = $patternQuery->get();
-        $sizes = $sizeQuery->get();
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
             ->with(['brand', 'size', 'pattern', 'monitoringChecks' => function($q) {
                 $q->latest();
@@ -341,29 +311,10 @@ class MonitoringController extends Controller
             }
         }
 
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id;
-        if ($user->role_id == 1 && session('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-
-        $brandQuery = TyreBrand::orderBy('brand_name');
-        $patternQuery = TyrePattern::orderBy('name');
-        $sizeQuery = TyreSize::orderBy('size');
-
-        if ($companyId) {
-            $company = \App\Models\TyreCompany::find($companyId);
-            if ($company) {
-                // Strict Whitelist Filtering
-                $brandQuery->whereIn('id', $company->brands()->pluck('tyre_brands.id'));
-                $patternQuery->whereIn('id', $company->patterns()->pluck('tyre_patterns.id'));
-                $sizeQuery->whereIn('id', $company->sizes()->pluck('tyre_sizes.id'));
-            }
-        }
-
-        $brands = $brandQuery->get();
-        $patterns = $patternQuery->get();
-        $sizes = $sizeQuery->get();
+        // Master data: Global dropdown (no company whitelist restriction)
+        $brands = TyreBrand::orderBy('brand_name')->get();
+        $patterns = TyrePattern::orderBy('name')->get();
+        $sizes = TyreSize::orderBy('size')->get();
         
         // Only check tyres that were installed for this session
         $installedTyres = Tyre::whereIn('serial_number', $session->installations->pluck('serial_number'))

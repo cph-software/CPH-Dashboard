@@ -235,6 +235,17 @@ class ImportApprovalController extends Controller
 
         $initialRtd = (float)($data['initial_rtd'] ?? $data['otd'] ?? 0);
         $inWarehouse = ($data['in_warehouse'] ?? $data['warehouse'] ?? 'Yes') == 'Yes' ? 1 : 0;
+        
+        // 4. Resolve Location/Warehouse ID
+        $locationId = null;
+        $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse_name'] ?? null;
+        if (!empty($locationName)) {
+            $location = \App\Models\TyreLocation::firstOrCreate(
+                ['location_name' => strtoupper(trim($locationName))],
+                ['location_type' => 'Warehouse', 'capacity' => 0]
+            );
+            $locationId = $location->id;
+        }
 
         \App\Models\Tyre::updateOrCreate(
             ['serial_number' => $sn],
@@ -244,6 +255,7 @@ class ImportApprovalController extends Controller
                 'tyre_pattern_id' => $patternId,
                 'segment_name' => $data['segment'] ?? $data['segment_name'] ?? null,
                 'is_in_warehouse' => $inWarehouse,
+                'current_location_id' => $locationId,
                 'status' => $data['status'] ?? 'New',
                 'initial_tread_depth' => $initialRtd,
                 'current_tread_depth' => (float)($data['current_rtd'] ?? $initialRtd),
@@ -253,6 +265,11 @@ class ImportApprovalController extends Controller
                 'tyre_company_id' => $uploaderCompanyId
             ]
         );
+        
+        // 5. Update Stock Count if in warehouse
+        if ($inWarehouse && $locationId) {
+            \App\Models\TyreLocation::where('id', $locationId)->increment('current_stock');
+        }
     }
 
     private function processVehicleMaster($data, $uploaderCompanyId)
@@ -356,9 +373,16 @@ class ImportApprovalController extends Controller
             if (!$vehicle) throw new \Exception("Pemasangan memerlukan Unit Code.");
             if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit $unitCode.");
 
+            // Decrement stock from old location if it was in warehouse
+            if ($tyre->is_in_warehouse && $tyre->current_location_id) {
+                \App\Models\TyreLocation::where('id', $tyre->current_location_id)->decrement('current_stock');
+            }
+
             $tyre->update([
                 'current_vehicle_id' => $vehicle->id,
                 'current_position_id' => $posDetail->id,
+                'is_in_warehouse' => 0,
+                'current_location_id' => null,
                 'status' => 'Installed',
                 'current_tread_depth' => $data['rtd'] ?? $tyre->current_tread_depth
             ]);
@@ -378,9 +402,20 @@ class ImportApprovalController extends Controller
                 if ($hmDiff < 0) $hmDiff = 0;
             }
 
+            // Resolve new location for removal
+            $locationId = null;
+            $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse'] ?? null;
+            if ($locationName) {
+                $loc = \App\Models\TyreLocation::firstOrCreate(['location_name' => strtoupper(trim($locationName))]);
+                $locationId = $loc->id;
+                $loc->increment('current_stock');
+            }
+
             $tyre->update([
                 'current_vehicle_id' => null,
                 'current_position_id' => null,
+                'is_in_warehouse' => 1,
+                'current_location_id' => $locationId,
                 'status' => $data['target_status'] ?? 'Repaired',
                 'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                 'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,

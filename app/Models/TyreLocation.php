@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\UserTracking;
-use App\Traits\BelongsToCompany;
 
 class TyreLocation extends Model
 {
-    use UserTracking, BelongsToCompany;
+    use UserTracking;
 
     protected $table = 'tyre_locations';
     protected $guarded = [];
@@ -21,7 +20,7 @@ class TyreLocation extends Model
 
     public function tyres()
     {
-        return $this->hasMany(Tyre::class, 'work_location_id');
+        return $this->hasMany(Tyre::class, 'current_location_id');
     }
 
     public function company()

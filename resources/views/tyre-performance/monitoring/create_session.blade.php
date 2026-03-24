@@ -184,33 +184,45 @@
                         <input type="number" name="original_rtd" class="form-control form-control-lg" step="0.1"
                            required placeholder="Contoh: 14.5">
                      </div>
-                     <div class="col-md-3">
-                        <label class="form-label fw-bold">Ukuran Ban Umum</label>
-                        <select name="tyre_size" class="form-select select2" required>
-                           <option value="">-- Pilih Ukuran --</option>
-                           @foreach ($sizes as $s)
-                              <option value="{{ $s->size }}">{{ $s->size }}</option>
+                     <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Brand Ban Umum</label>
+                        <select name="tyre_brand" id="tyre_brand" class="form-select select2-tags">
+                           <option value="">-- Pilih Brand --</option>
+                           @foreach ($brands as $b)
+                              <option value="{{ $b->brand_name }}" data-id="{{ $b->id }}">{{ $b->brand_name }}
+                              </option>
                            @endforeach
                         </select>
-                        <div class="col-md-3">
-                           <label class="form-label fw-bold">Pattern Umum</label>
-                           <select name="pattern" class="form-select select2">
-                              <option value="">-- Pilih Pattern --</option>
-                              @foreach ($patterns as $p)
-                                 <option value="{{ $p->name }}">{{ $p->brand->brand_name ?? '-' }} -
-                                    {{ $p->name }}
-                                 </option>
-                              @endforeach
-                           </select>
-                           <div class="mt-1">
-                              <small class="text-muted">
-                                 <i class="ri-information-line"></i> Data tidak ada?
-                                 <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20Monitoring%20(Brand/Size/Pattern)"
-                                    target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
-                              </small>
-                           </div>
+                     </div>
+                     <div class="col-md-4">
+                        <label class="form-label fw-bold">Ukuran Ban Umum</label>
+                        <select name="tyre_size" id="tyre_size" class="form-select select2-tags" required>
+                           <option value="">-- Pilih Ukuran --</option>
+                           @foreach ($sizes as $s)
+                              <option value="{{ $s->size }}" data-brand-id="{{ $s->tyre_brand_id }}">
+                                 {{ $s->size }}</option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col-md-4">
+                        <label class="form-label fw-bold">Pattern Umum</label>
+                        <select name="pattern" id="pattern" class="form-select select2-tags">
+                           <option value="">-- Pilih Pattern --</option>
+                           @foreach ($patterns as $p)
+                              <option value="{{ $p->name }}" data-brand-id="{{ $p->tyre_brand_id }}">
+                                 {{ $p->brand->brand_name ?? '-' }} - {{ $p->name }}
+                              </option>
+                           @endforeach
+                        </select>
+                        <div class="mt-1">
+                           <small class="text-muted">
+                              <i class="ri-information-line"></i> Data tidak ada?
+                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20Monitoring%20(Brand/Size/Pattern)"
+                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
+                           </small>
                         </div>
                      </div>
+
 
                      <div class="d-flex justify-content-between align-items-end mb-3 mt-4">
                         <h6 class="fw-bold mb-0 text-primary"><i class="ri ri-list-check-2 me-1"></i> Data Ban Terpasang
@@ -394,7 +406,69 @@
 @section('page-script')
    <script>
       $(function() {
-         $('.select2').select2();
+         const isAdmin = {{ auth()->user()->role_id == 1 ? 'true' : 'false' }};
+
+         // Initialize Select2 Tags for Brand/Size/Pattern
+         $('.select2-tags').each(function() {
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent(),
+               tags: isAdmin,
+               allowClear: true,
+               width: '100%'
+            });
+         });
+
+         $('.select2:not(.select2-tags)').each(function() {
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent()
+            });
+         });
+
+         // Cascading logic: Brand > Size > Pattern
+         function filterDropdowns(brandId) {
+            const sizeSelector = '#tyre_size';
+            const patternSelector = '#pattern';
+
+            if (!brandId) {
+               $(`${sizeSelector} option`).show();
+               $(`${patternSelector} option`).show();
+               return;
+            }
+
+            // Filter sizes
+            $(`${sizeSelector} option`).each(function() {
+               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
+                  $(this).show();
+               } else {
+                  $(this).hide();
+               }
+            });
+
+            // Filter patterns
+            $(`${patternSelector} option`).each(function() {
+               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
+                  $(this).show();
+               } else {
+                  $(this).hide();
+               }
+            });
+
+            // If current selection is hidden, reset it
+            if ($(`${sizeSelector} option:selected`).css('display') === 'none') {
+               $(`${sizeSelector}`).val('').trigger('change');
+            }
+            if ($(`${patternSelector} option:selected`).css('display') === 'none') {
+               $(`${patternSelector}`).val('').trigger('change');
+            }
+         }
+
+         $('#tyre_brand').on('change', function() {
+            const selectedOption = $(this).find(':selected');
+            const brandId = selectedOption.data('id');
+            filterDropdowns(brandId);
+         });
 
          const syncTyreSelections = () => {
             let selectedTyres = [];
