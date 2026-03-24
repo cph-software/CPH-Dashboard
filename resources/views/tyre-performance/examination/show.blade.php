@@ -120,8 +120,28 @@
                class="btn btn-primary" target="_blank">
                <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
             </a>
+            @if ($exam->approval_status === 'Pending' && auth()->user()->role_id == 1)
+               <button type="button" class="btn btn-success" id="btnApprove">
+                  <i class="ri ri-check-line me-1"></i> Approve
+               </button>
+               <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                  <i class="ri ri-close-line me-1"></i> Reject
+               </button>
+            @endif
          </div>
       </div>
+
+      @if ($exam->approval_status === 'Rejected')
+         <div class="alert alert-danger mb-4 shadow-sm border-2">
+            <div class="d-flex align-items-center">
+               <i class="ri ri-error-warning-line fs-3 me-2"></i>
+               <div>
+                  <h6 class="alert-heading mb-1 fw-bold">PEMERIKSAAN DITOLAK</h6>
+                  <span>Alasan: <strong>{{ $exam->reject_reason }}</strong></span>
+               </div>
+            </div>
+         </div>
+      @endif
 
       <!-- HEADER INFO -->
       <div class="card mb-4">
@@ -262,4 +282,71 @@
          </div>
       @endif
    </div>
+
+   <!-- Reject Modal -->
+   <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title">Tolak Pemeriksaan</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <textarea id="rejectReason" class="form-control" placeholder="Alasan penolakan..." rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+               <button type="button" class="btn btn-danger" id="btnConfirmReject">Reject</button>
+            </div>
+         </div>
+      </div>
+   </div>
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
+@section('page-script')
+   <script>
+      $(function() {
+         $('#btnApprove').on('click', function() {
+            Swal.fire({
+               title: 'Setujui Pemeriksaan?',
+               text: "Data ban akan diupdate dan pergerakan akan dicatat.",
+               icon: 'question',
+               showCancelButton: true,
+               confirmButtonText: 'Ya, Approve!',
+               customClass: {
+                  confirmButton: 'btn btn-success me-3',
+                  cancelButton: 'btn btn-label-secondary'
+               },
+               buttonsStyling: false
+            }).then((result) => {
+               if (result.isConfirmed) {
+                  $.post('{{ route('examination.approve', $exam->id) }}', {
+                     _token: '{{ csrf_token() }}'
+                  }, function(res) {
+                     if (res.success) Swal.fire('Berhasil', res.message, 'success').then(() =>
+                        location.reload());
+                     else Swal.fire('Gagal', res.message, 'error');
+                  });
+               }
+            });
+         });
+
+         $('#btnConfirmReject').on('click', function() {
+            const reason = $('#rejectReason').val();
+            if (!reason) return alert('Silakan isi alasan penolakan.');
+
+            $.post('{{ route('examination.reject', $exam->id) }}', {
+               _token: '{{ csrf_token() }}',
+               reason: reason
+            }, function(res) {
+               if (res.success) location.reload();
+               else alert(res.message);
+            });
+         });
+      });
+   </script>
 @endsection

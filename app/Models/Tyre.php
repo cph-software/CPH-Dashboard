@@ -13,6 +13,10 @@ class Tyre extends Model
     protected $table = 'tyres';
     protected $guarded = [];
 
+    protected $casts = [
+        'is_in_warehouse' => 'boolean',
+    ];
+
     public function brand()
     {
         return $this->belongsTo(TyreBrand::class, 'tyre_brand_id');
@@ -23,19 +27,9 @@ class Tyre extends Model
         return $this->belongsTo(TyreSize::class, 'tyre_size_id');
     }
 
-    public function segment()
-    {
-        return $this->belongsTo(TyreSegment::class, 'tyre_segment_id');
-    }
-
     public function pattern()
     {
         return $this->belongsTo(TyrePattern::class, 'tyre_pattern_id');
-    }
-
-    public function location()
-    {
-        return $this->belongsTo(TyreLocation::class, 'work_location_id');
     }
 
     public function currentVehicle()

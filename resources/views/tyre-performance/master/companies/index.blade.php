@@ -39,9 +39,11 @@
                         <td>{{ $company->description ?: '-' }}</td>
                         <td class="text-center">
                            <div class="d-flex flex-column align-items-center">
-                              <span class="fw-bold fs-5 text-primary">{{ number_format($company->tyres_count) }}</span>
-                              <small class="text-muted" style="font-size: 0.7rem;">Limit:
-                                 {{ number_format($company->total_tyre_capacity) }}</small>
+                              <span class="fw-bold fs-5 text-dark">{{ number_format($company->total_tyres) }}</span>
+                              <small class="text-muted" style="font-size: 0.7rem;">Currently:
+                                 <span class="text-primary fw-bold">{{ number_format($company->tyres_count) }}</span> /
+                                 Limit: {{ number_format($company->total_tyre_capacity) }}
+                              </small>
                               @if ($company->tyres_count > $company->total_tyre_capacity && $company->total_tyre_capacity > 0)
                                  <span class="badge bg-label-danger mt-1" style="font-size: 0.6rem;">Over Limit</span>
                               @endif
@@ -105,10 +107,15 @@
                      <textarea name="description" class="form-control" rows="2"></textarea>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label fw-bold">Jatah Ban (Quota) <span class="text-danger">*</span></label>
+                     <label class="form-label fw-bold small">TOTAL BAN (Asset) <span class="text-danger">*</span></label>
+                     <input type="number" name="total_tyres" class="form-control" required value="0">
+                     <small class="text-muted d-block mt-1 small">Jumlah fisik total ban yang dimiliki instansi.</small>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold small">JATAH BAN (Quota / Limit) <span
+                           class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" class="form-control" required value="0">
-                     <small class="text-muted d-block mt-1 small">Batas maksimal ban yang diperbolehkan untuk instansi
-                        ini.</small>
+                     <small class="text-muted d-block mt-1 small">Batas maksimal penginputan ban di sistem.</small>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
@@ -148,11 +155,14 @@
                      <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
                   </div>
                   <div class="mb-3">
-                     <label class="form-label fw-bold">Jatah Ban (Quota) <span class="text-danger">*</span></label>
+                     <label class="form-label fw-bold small">TOTAL BAN (Asset) <span class="text-danger">*</span></label>
+                     <input type="number" name="total_tyres" id="edit_total_tyres" class="form-control" required>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold small">JATAH BAN (Quota / Limit) <span
+                           class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" id="edit_total_tyre_capacity"
                         class="form-control" required>
-                     <small class="text-muted d-block mt-1 small">Batas maksimal ban yang diperbolehkan untuk instansi
-                        ini.</small>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status</label>
@@ -199,11 +209,11 @@
             $.get(baseUrl + '/' + id, function(data) {
                $('#edit_company_name').val(data.company_name);
                $('#edit_description').val(data.description);
+               $('#edit_total_tyres').val(data.total_tyres);
                $('#edit_total_tyre_capacity').val(data.total_tyre_capacity);
                $('#edit_status').val(data.status);
                $('#editCompanyForm').attr('action', baseUrl + '/' + id);
 
-               // Use jQuery modal if available (matches Users page pattern)
                $('#editCompanyModal').modal('show');
                btn.prop('disabled', false);
             }).fail(function() {

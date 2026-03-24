@@ -48,7 +48,7 @@ Data operasional harus tetap akurat dan sinkron dengan Master Data.
 
 Dashboard ini menggunakan tema premium berbasis **Vuexy/Remix Design**.
 
-- **Icon**: Gunakan Remix Icon (`ri-line-name`). Contoh: `<i class="ri-settings-line"></i>`.
+- **Icon**: Gunakan Remix Icon (`icon-base ri ri-line-name`). Contoh: `<i class="icon-base ri ri-settings-line"></i>`.
 - **Alert/Konfirmasi**: Gunakan **SweetAlert2 (Swal)**. Jangan gunakan `window.confirm`.
 - **DataTables**: Semua tabel di Index harus menggunakan DataTables dengan styling Bootstrap 5 yang sudah dikonfigurasi.
 - **Warna Standar**:

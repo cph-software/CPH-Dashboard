@@ -165,6 +165,13 @@
                      <small class="text-muted extra-small d-block mt-1">Last HM: <span id="last_hm_display"
                            class="fw-bold">-</span></small>
                   </div>
+                  <div class="col-md-3 mb-3">
+                     <label class="form-label fw-bold small">INPUT MODE (TYPE)</label>
+                     <select name="exam_type" class="form-select shadow-sm border-primary">
+                        <option value="Customer">CUSTOMER (Standard)</option>
+                        <option value="Sales">SALES (Pending Approval)</option>
+                     </select>
+                  </div>
                   <div class="col-12 mt-2 mb-3">
                      <div
                         class="bg-light p-2 rounded border border-dashed d-flex align-items-center justify-content-between px-3">

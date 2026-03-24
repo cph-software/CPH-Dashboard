@@ -713,6 +713,42 @@ class MonitoringController extends Controller
         }
 
         $newCheckNumber = ($lastCheckRecord->check_number ?? 0) + 1;
+        $user = auth()->user();
+        $isAdmin = ($user->role_id == 1);
+
+        // Validation Rule: 1 Axle = Must check all wheels in that axle (if it's a dual axle)
+        $checksForAxles = [];
+        foreach ($request->checks as $serial => $c) {
+            // Check if this tyre actually has data
+            if (empty($c['rtd_1']) && empty($c['rtd_2']) && empty($c['rtd_3']) && empty($c['rtd_4']) && empty($c['psi_actual'])) continue;
+
+            $inst = TyreMonitoringInstallation::where('session_id', $session->session_id)
+                ->where('serial_number', $serial)
+                ->first();
+            
+            if ($inst && $inst->position_id) {
+                $posDetail = TyrePositionDetail::find($inst->position_id);
+                if ($posDetail) {
+                    $axleKey = $posDetail->axle_type . '_' . $posDetail->axle_number;
+                    $checksForAxles[$axleKey][] = $serial;
+                }
+            }
+        }
+
+        // Validate each axle involved
+        foreach ($checksForAxles as $axleKey => $checkedSerials) {
+            [$axleType, $axleNumber] = explode('_', $axleKey);
+            // Get all positions in this axle for this vehicle's configuration
+            $totalPositionsInAxle = TyrePositionDetail::where('configuration_id', $session->vehicle->tyre_position_configuration_id)
+                ->where('axle_type', $axleType)
+                ->where('axle_number', $axleNumber)
+                ->count();
+            
+            if (count($checkedSerials) < $totalPositionsInAxle) {
+                return redirect()->back()->with('error', "Sumbat/Axle {$axleType} #{$axleNumber} memiliki {$totalPositionsInAxle} ban, tetapi Anda hanya mengisi " . count($checkedSerials) . " ban. Harap isi semua ban dalam satu sumbu.")
+                    ->withInput();
+            }
+        }
 
         DB::beginTransaction();
         try {
@@ -785,6 +821,8 @@ class MonitoringController extends Controller
                     'recommendation' => $c['recommendation'] ?? null,
                     'notes' => $c['notes'] ?? null,
                     'is_sales_input' => $request->has('is_sales_input'),
+                    'approval_status' => $isAdmin ? 'Approved' : 'Pending',
+                    'approved_by' => $isAdmin ? $user->id : null,
                 ];
 
                 $check = TyreMonitoringCheck::create($checkData);
@@ -819,29 +857,31 @@ class MonitoringController extends Controller
                         }
                     }
 
-                    TyreMovement::create([
-                        'tyre_id' => $tyre->id,
-                        'vehicle_id' => $session->master_vehicle_id,
-                        'position_id' => $inst ? $inst->position_id : null,
-                        'movement_type' => 'Inspection',
-                        'movement_date' => $request->check_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
-                        'running_km' => $kmDiff,
-                        'running_hm' => $hmDiff,
-                        'rtd_reading' => $avgRtd,
-                        'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id})",
-                        'tyre_company_id' => $tyre->tyre_company_id,
-                        'created_by' => \Auth::id()
-                    ]);
+                    if ($isAdmin) {
+                        TyreMovement::create([
+                            'tyre_id' => $tyre->id,
+                            'vehicle_id' => $session->master_vehicle_id,
+                            'position_id' => $inst ? $inst->position_id : null,
+                            'movement_type' => 'Inspection',
+                            'movement_date' => $request->check_date,
+                            'odometer_reading' => $request->odometer,
+                            'hour_meter_reading' => $request->hour_meter,
+                            'running_km' => $kmDiff,
+                            'running_hm' => $hmDiff,
+                            'rtd_reading' => $avgRtd,
+                            'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id}) - ADMIN",
+                            'tyre_company_id' => $tyre->tyre_company_id,
+                            'created_by' => \Auth::id()
+                        ]);
 
-                    $tyre->update([
-                        'current_tread_depth' => $avgRtd,
-                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
-                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + ($hmDiff > 0 ? $hmDiff : 0),
-                        'last_inspection_date' => $request->check_date,
-                        'last_hm_reading' => $request->hour_meter
-                    ]);
+                        $tyre->update([
+                            'current_tread_depth' => $avgRtd,
+                            'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                            'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + ($hmDiff > 0 ? $hmDiff : 0),
+                            'last_inspection_date' => $request->check_date,
+                            'last_hm_reading' => $request->hour_meter
+                        ]);
+                    }
                 }
             }
 
@@ -1100,15 +1140,32 @@ class MonitoringController extends Controller
 
     public function approve(Request $request, $sessionId, $checkNumber)
     {
-        TyreMonitoringCheck::where('session_id', $sessionId)
+        $checks = TyreMonitoringCheck::where('session_id', $sessionId)
             ->where('check_number', $checkNumber)
-            ->update([
+            ->get();
+
+        foreach ($checks as $c) {
+            $c->update([
                 'approval_status' => 'Approved',
                 'approved_by' => auth()->id(),
-                'approved_at' => now(),
+                'approved_at' => now()
             ]);
 
-        return redirect()->back()->with('success', "Pemeriksaan #{$checkNumber} berhasil disetujui.");
+            // Sync with Tyre Master if not already synced (e.g. from User input)
+            $tyre = Tyre::where('serial_number', $c->serial_number)->first();
+            if ($tyre) {
+                // Calculate average of RTD 1-4
+                $rtds = array_filter([$c->rtd_1, $c->rtd_2, $c->rtd_3, $c->rtd_4], function($v) { return $v > 0; });
+                $avgRtd = count($rtds) > 0 ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
+
+                $tyre->update([
+                    'current_tread_depth' => $avgRtd,
+                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + ($c->operation_mileage ?? 0)
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' telah disetujui.');
     }
 
     public function reject(Request $request, $sessionId, $checkNumber)
@@ -1119,10 +1176,10 @@ class MonitoringController extends Controller
             ->where('check_number', $checkNumber)
             ->update([
                 'approval_status' => 'Rejected',
-                'reject_reason' => $request->reason,
+                'reject_reason' => $request->reason
             ]);
 
-        return redirect()->back()->with('warning', "Pemeriksaan #{$checkNumber} telah ditolak.");
+        return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' telah ditolak.');
     }
 
     private function determineCondition($wornPct, $psiActual, $psiRec)

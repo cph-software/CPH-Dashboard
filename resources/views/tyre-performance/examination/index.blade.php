@@ -35,6 +35,7 @@
                      <th>Unit/Kendaraan</th>
                      <th>Odometer (KM)</th>
                      <th>Pemeriksa (Tyre Man)</th>
+                     <th>Tipe Input</th>
                      <th>Status</th>
                      <th>Aksi</th>
                   </tr>
@@ -73,11 +74,20 @@
                   name: 'tyre_man'
                },
                {
+                  data: 'type',
+                  render: function(data) {
+                     let badge = 'bg-label-primary';
+                     if (data === 'Sales') badge = 'bg-label-warning';
+                     return '<span class="badge ' + badge + '">' + data + '</span>';
+                  }
+               },
+               {
                   data: 'status',
                   render: function(data) {
                      let badge = 'bg-label-secondary';
-                     if (data === 'Verified') badge = 'bg-label-info';
+                     if (data === 'Pending') badge = 'bg-label-warning';
                      if (data === 'Approved') badge = 'bg-label-success';
+                     if (data === 'Rejected') badge = 'bg-label-danger';
                      return '<span class="badge ' + badge + '">' + data + '</span>';
                   }
                },

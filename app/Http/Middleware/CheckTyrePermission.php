@@ -38,7 +38,12 @@ class CheckTyrePermission
             abort(403, 'User tidak memiliki role.');
         }
 
-        // 1. Cek apakah user punya akses ke menu ini sama sekali
+        // 1. Administrator (role_id 1) bypass
+        if ($user->role_id == 1) {
+            return $next($request);
+        }
+
+        // 2. Cek apakah user punya akses ke menu ini sama sekali
         if (!$user->hasPermission($menuName)) {
             abort(403, 'Anda tidak memiliki akses ke menu ini.');
         }

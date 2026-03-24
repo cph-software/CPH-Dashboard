@@ -107,106 +107,70 @@
                      </div>
                   </div>
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="tyre_size_id" class="form-label">Size</label>
-                        <select name="tyre_size_id" id="tyre_size_id" class="form-select select2"
-                           data-placeholder="Select Size" required>
-                           <option value="">Select Size</option>
-                           @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}"
-                                 data-pattern-id="{{ $size->tyre_pattern_id }}" data-std-otd="{{ $size->std_otd }}">
-                                 {{ $size->size }}
-                              </option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col mb-3">
+                     <div class="col-md-4 mb-3">
                         <label for="tyre_brand_id" class="form-label">Brand</label>
-                        <select id="tyre_brand_id" name="tyre_brand_id" class="form-select select2"
+                        <select id="tyre_brand_id" name="tyre_brand_id" class="form-select select2-tags"
                            data-placeholder="Select Brand" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
                            @endforeach
                         </select>
-                        <div class="mt-1">
-                           <small class="text-muted">
-                              <i class="ri-information-line"></i> Data tidak ada?
-                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20(Brand/Size/Pattern)"
-                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
-                           </small>
-                        </div>
                      </div>
-
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="tyre_segment_id" class="form-label">Segment</label>
-                        <select name="tyre_segment_id" class="form-select select2" data-placeholder="Select Segment">
-                           <option value="">Select Segment</option>
-                           @foreach ($segments as $segment)
-                              <option value="{{ $segment->id }}">
-                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
+                     <div class="col-md-4 mb-3">
+                        <label for="tyre_size_id" class="form-label">Size</label>
+                        <select name="tyre_size_id" id="tyre_size_id" class="form-select select2-tags"
+                           data-placeholder="Select Size" required>
+                           <option value="">Select Size</option>
+                           @foreach ($sizes as $size)
+                              <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}">
+                                 {{ $size->size }}
+                              </option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col-md-4 mb-3">
+                        <label for="tyre_pattern_id" class="form-label">Pattern</label>
+                        <select name="tyre_pattern_id" id="tyre_pattern_id" class="form-select select2-tags"
+                           data-placeholder="Select Pattern">
+                           <option value="">Select Pattern</option>
+                           @foreach ($patterns as $pattern)
+                              <option value="{{ $pattern->id }}" data-brand-id="{{ $pattern->tyre_brand_id }}">
+                                 {{ $pattern->name }}
                               </option>
                            @endforeach
                         </select>
                      </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="work_location_id" class="form-label">Location</label>
-                        <select name="work_location_id" class="form-select select2" data-placeholder="Select Location"
-                           required>
-                           <option value="">Select Location</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
+                     <div class="col-md-6 mb-3">
+                        <label for="segment_name" class="form-label">Segment Name</label>
+                        <input type="text" id="segment_name" name="segment_name" class="form-control"
+                           placeholder="Ex: Mining, Logging, etc.">
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="ply_rating" class="form-label">Ply Rating</label>
+                        <input type="text" id="ply_rating" name="ply_rating" class="form-control"
+                           placeholder="Ex: 16PR, 18PR">
                      </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
+                        <label for="original_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
+                        <input type="number" id="original_tread_depth" name="original_tread_depth"
+                           class="form-control" placeholder="18.5" step="0.01">
+                     </div>
+                     <div class="col-md-6 mb-3">
                         <label for="price" class="form-label">Harga Beli (IDR)</label>
                         <input type="text" id="price" name="price" class="form-control currency-input"
                            placeholder="3.500.000">
                      </div>
-                     <div class="col mb-3">
-                        <label for="retread_count" class="form-label">Retread Count</label>
-                        <select name="retread_count" class="form-select">
-                           <option value="0">New (R0)</option>
-                           <option value="1">R1</option>
-                           <option value="2">R2</option>
-                           <option value="3">R3</option>
-                        </select>
-                     </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
-                        <input type="number" id="initial_tread_depth" name="initial_tread_depth" class="form-control"
-                           placeholder="18.5" step="0.01">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
-                        <input type="number" id="current_tread_depth" name="current_tread_depth" class="form-control"
-                           placeholder="18.5" step="0.01">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="current_km" class="form-label">Current KM</label>
-                        <input type="number" id="current_km" name="current_km" class="form-control" placeholder="0"
-                           step="1">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="current_hm" class="form-label">Current HM</label>
-                        <input type="number" id="current_hm" name="current_hm" class="form-control" placeholder="0"
-                           step="1">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select name="status" class="form-select" required>
                            <option value="New">New</option>
@@ -215,6 +179,14 @@
                            <option value="Retread">Retread</option>
                            <option value="Scrap">Scrap</option>
                         </select>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label class="form-label d-block">Location Status</label>
+                        <div class="form-check form-switch mt-2">
+                           <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
+                              id="is_in_warehouse" checked>
+                           <label class="form-check-label" for="is_in_warehouse">In Warehouse (Stock)</label>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -264,102 +236,64 @@
                      </div>
                   </div>
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_size_id" class="form-label">Size</label>
-                        <select id="edit_size_id" name="tyre_size_id" class="form-select select2" required>
-                           <option value="">Select Size</option>
-                           @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}" data-type="{{ $size->type }}"
-                                 data-brand-id="{{ $size->tyre_brand_id }}"
-                                 data-pattern-id="{{ $size->tyre_pattern_id }}" data-std-otd="{{ $size->std_otd }}">
-                                 {{ $size->size }}
-                              </option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col mb-3">
+                     <div class="col-md-4 mb-3">
                         <label for="edit_brand_id" class="form-label">Brand</label>
-                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2" required>
+                        <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2-tags" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
                               <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
                            @endforeach
                         </select>
-                        <div class="mt-1">
-                           <small class="text-muted">
-                              <i class="ri-information-line"></i> Data tidak ada?
-                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20(Brand/Size/Pattern)"
-                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
-                           </small>
-                        </div>
                      </div>
-
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_segment_id" class="form-label">Segment</label>
-                        <select id="edit_segment_id" name="tyre_segment_id" class="form-select select2">
-                           <option value="">Select Segment</option>
-                           @foreach ($segments as $segment)
-                              <option value="{{ $segment->id }}">
-                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? 'Global' }})
+                     <div class="col-md-4 mb-3">
+                        <label for="edit_size_id" class="form-label">Size</label>
+                        <select id="edit_size_id" name="tyre_size_id" class="form-select select2-tags" required>
+                           <option value="">Select Size</option>
+                           @foreach ($sizes as $size)
+                              <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}">
+                                 {{ $size->size }}
+                              </option>
+                           @endforeach
+                        </select>
+                     </div>
+                     <div class="col-md-4 mb-3">
+                        <label for="edit_pattern_id" class="form-label">Pattern</label>
+                        <select id="edit_pattern_id" name="tyre_pattern_id" class="form-select select2-tags">
+                           <option value="">Select Pattern</option>
+                           @foreach ($patterns as $pattern)
+                              <option value="{{ $pattern->id }}" data-brand-id="{{ $pattern->tyre_brand_id }}">
+                                 {{ $pattern->name }}
                               </option>
                            @endforeach
                         </select>
                      </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_work_location_id" class="form-label">Location</label>
-                        <select id="edit_work_location_id" name="work_location_id" class="form-select select2" required>
-                           <option value="">Select Location</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_segment_name" class="form-label">Segment Name</label>
+                        <input type="text" id="edit_segment_name" name="segment_name" class="form-control">
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_ply_rating" class="form-label">Ply Rating</label>
+                        <input type="text" id="edit_ply_rating" name="ply_rating" class="form-control">
                      </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_original_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
+                        <input type="number" id="edit_original_tread_depth" name="original_tread_depth"
+                           class="form-control" step="0.01">
+                     </div>
+                     <div class="col-md-6 mb-3">
                         <label for="edit_price" class="form-label">Harga Beli (IDR)</label>
                         <input type="text" id="edit_price" name="price" class="form-control currency-input">
                      </div>
-                     <div class="col mb-3">
-                        <label for="edit_retread_count" class="form-label">Retread Count</label>
-                        <select id="edit_retread_count" name="retread_count" class="form-select">
-                           <option value="0">New (R0)</option>
-                           <option value="1">R1</option>
-                           <option value="2">R2</option>
-                           <option value="3">R3</option>
-                        </select>
-                     </div>
                   </div>
+
                   <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_initial_tread_depth" class="form-label">OTD - Ketebalan Awal (mm)</label>
-                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
-                           class="form-control" step="0.01">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_current_tread_depth" class="form-label">RTD - Sisa Kembang (mm)</label>
-                        <input type="number" id="edit_current_tread_depth" name="current_tread_depth"
-                           class="form-control" step="0.01">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col mb-3">
-                        <label for="edit_current_km" class="form-label">Current KM</label>
-                        <input type="number" id="edit_current_km" name="current_km" class="form-control"
-                           placeholder="0" step="1">
-                     </div>
-                     <div class="col mb-3">
-                        <label for="edit_current_hm" class="form-label">Current HM</label>
-                        <input type="number" id="edit_current_hm" name="current_hm" class="form-control"
-                           placeholder="0" step="1">
-                     </div>
-                  </div>
-                  <div class="row">
-                     <div class="col mb-3">
+                     <div class="col-md-6 mb-3">
                         <label for="edit_status" class="form-label">Status</label>
                         <select id="edit_status" name="status" class="form-select" required>
                            <option value="New">New</option>
@@ -368,6 +302,14 @@
                            <option value="Retread">Retread</option>
                            <option value="Scrap">Scrap</option>
                         </select>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label class="form-label d-block">Location Status</label>
+                        <div class="form-check form-switch mt-2">
+                           <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
+                              id="edit_is_in_warehouse">
+                           <label class="form-check-label" for="edit_is_in_warehouse">In Warehouse (Stock)</label>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -499,17 +441,15 @@
                   defaultContent: '-'
                },
                {
-                  data: 'segment.segment_name',
-                  render: function(data, type, row) {
-                     if (!data) return '-';
-                     const loc = row.segment && row.segment.location ? row.segment.location
-                        .location_name : 'Global';
-                     return `${data} (${loc})`;
-                  }
+                  data: 'segment_name',
+                  defaultContent: '-'
                },
                {
-                  data: 'location.location_name',
-                  defaultContent: '-'
+                  data: 'is_in_warehouse',
+                  render: function(data) {
+                     return data ? '<span class="badge bg-label-info">Gudang</span>' :
+                        '<span class="badge bg-label-warning">Terpasang</span>';
+                  }
                },
                {
                   data: 'status',
@@ -547,22 +487,20 @@
                      if (canUpdate) {
                         actions += `
                             <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-tyre"
-                              href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
-                              data-id="${row.id}" data-serial="${row.serial_number}" data-custom-serial="${row.custom_serial_number || ''}" 
-                              data-company-id="${row.tyre_company_id}"
-                              data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
-                              data-pattern-id="${row.tyre_pattern_id}"
-                              data-segment-id="${row.tyre_segment_id}"
-                              data-location-id="${row.work_location_id}" data-status="${row.status}"
-                              data-price="${row.price || ''}"
-                              data-initial-tread="${row.initial_tread_depth || ''}"
-                              data-current-tread="${row.current_tread_depth || ''}"
-                              data-retread-count="${row.retread_count || 0}"
-                              data-current-km="${row.current_km || 0}"
-                              data-current-hm="${row.current_hm || 0}"
-                              title="Edit">
-                              <i class="icon-base ri ri-pencil-line"></i>
-                           </a>`;
+                               href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editTyreModal"
+                               data-id="${row.id}" data-serial="${row.serial_number}" data-custom-serial="${row.custom_serial_number || ''}" 
+                               data-company-id="${row.tyre_company_id}"
+                               data-brand-id="${row.tyre_brand_id}" data-size-id="${row.tyre_size_id}"
+                               data-pattern-id="${row.tyre_pattern_id}"
+                               data-segment-name="${row.segment_name || ''}"
+                               data-warehouse="${row.is_in_warehouse ? 1 : 0}" data-status="${row.status}"
+                               data-price="${row.price || ''}"
+                               data-original-tread="${row.original_tread_depth || ''}"
+                               data-ply-rating="${row.ply_rating || ''}"
+                               data-retread-count="${row.retread_count || 0}"
+                               title="Edit">
+                               <i class="icon-base ri ri-pencil-line"></i>
+                            </a>`;
                      }
 
                      if (canDelete) {
@@ -699,36 +637,107 @@
             $('#edit_current_hm').val(currentHm);
          });
 
-         // Auto-fill logic when selecting Size
-         function autoFillBySize(sizeId, targetPrefix = '') {
-            const sizeSelector = targetPrefix ? `#${targetPrefix}size_id` : '#tyre_size_id';
-            const brandSelector = targetPrefix ? `#${targetPrefix}brand_id` : '#tyre_brand_id';
-            const patternSelector = targetPrefix ? `#${targetPrefix}pattern_id` : '#tyre_pattern_id';
-            const initialTreadSelector = targetPrefix ? `#${targetPrefix}initial_tread_depth` :
-               '#initial_tread_depth';
+         // Hierarchical Dropdowns (Brand > Size > Pattern)
+         function filterDropdowns(brandId, targetPrefix = '') {
+            const sizeSelector = `#${targetPrefix}tyre_size_id`;
+            const patternSelector = `#${targetPrefix}tyre_pattern_id`;
 
-            const selectedOption = $(`${sizeSelector} option:selected`);
-            if (!selectedOption.val()) return;
-
-            const brandId = selectedOption.data('brand-id');
-            const patternId = selectedOption.data('pattern-id');
-            const stdOtd = selectedOption.data('std-otd');
-
-            if (brandId) {
-               $(brandSelector).val(brandId).trigger('change');
+            // Reset and show all if no brand selected
+            if (!brandId) {
+               $(`${sizeSelector} option`).show();
+               $(`${patternSelector} option`).show();
+               return;
             }
 
-            if (stdOtd) {
-               $(initialTreadSelector).val(stdOtd);
+            // Filter sizes
+            $(`${sizeSelector} option`).each(function() {
+               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
+                  $(this).show();
+               } else {
+                  $(this).hide();
+               }
+            });
+
+            // Filter patterns
+            $(`${patternSelector} option`).each(function() {
+               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
+                  $(this).show();
+               } else {
+                  $(this).hide();
+               }
+            });
+
+            // If current selection is hidden, reset it
+            if ($(`${sizeSelector} option:selected`).css('display') === 'none') {
+               $(`${sizeSelector}`).val('').trigger('change');
+            }
+            if ($(`${patternSelector} option:selected`).css('display') === 'none') {
+               $(`${patternSelector}`).val('').trigger('change');
             }
          }
 
-         $('#tyre_size_id').on('change', function() {
-            autoFillBySize($(this).val());
+         $('#tyre_brand_id').on('change', function() {
+            filterDropdowns($(this).val());
          });
 
-         $(document).on('change', '#edit_size_id', function() {
-            autoFillBySize($(this).val(), 'edit_');
+         $('#edit_brand_id').on('change', function() {
+            filterDropdowns($(this).val(), 'edit_');
+         });
+
+         // Role-based Select2 tags
+         const isAdmin = {{ auth()->user()->role_id == 1 ? 'true' : 'false' }};
+
+         $('.select2-tags').each(function() {
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent(),
+               tags: isAdmin,
+               allowClear: true,
+               width: '100%'
+            });
+         });
+
+         // Initialize standard select2
+         $('.select2').each(function() {
+            $(this).wrap('<div class="position-relative"></div>').select2({
+               placeholder: $(this).data('placeholder'),
+               dropdownParent: $(this).parent()
+            });
+         });
+
+         $(document).on('click', '.edit-tyre', function() {
+            const id = $(this).data('id');
+            const serial = $(this).data('serial');
+            const brandId = $(this).data('brand-id');
+            const sizeId = $(this).data('size-id');
+            const patternId = $(this).data('pattern-id');
+            const segmentName = $(this).data('segment-name');
+            const status = $(this).data('status');
+            const price = $(this).data('price');
+            const originalTread = $(this).data('original-tread');
+            const plyRating = $(this).data('ply-rating');
+            const companyId = $(this).data('company-id');
+            const isInWarehouse = $(this).data('warehouse');
+
+            editForm.attr('action', `{{ url('master_tyre') }}/${id}`);
+            $('#edit_serial_number').val(serial);
+            $('#edit_tyre_company_id').val(companyId).trigger('change');
+            $('#edit_brand_id').val(brandId).trigger('change');
+            $('#edit_size_id').val(sizeId).trigger('change');
+            $('#edit_pattern_id').val(patternId).trigger('change');
+            $('#edit_segment_name').val(segmentName);
+            $('#edit_ply_rating').val(plyRating);
+            $('#edit_status').val(status);
+            $('#edit_is_in_warehouse').prop('checked', isInWarehouse == 1);
+
+            // Format existing price
+            if (price) {
+               $('#edit_price').val(parseInt(price, 10).toLocaleString('id-ID'));
+            } else {
+               $('#edit_price').val('');
+            }
+
+            $('#edit_original_tread_depth').val(originalTread);
          });
 
          // Currency Formatting Logic
@@ -796,30 +805,9 @@
                text: '{{ session('error') }}',
             });
          @endif
-
-         // Initialize Select2
-         $('.select2').each(function() {
-            $(this).wrap('<div class="position-relative"></div>').select2({
-               placeholder: $(this).data('placeholder'),
-               dropdownParent: $(this).parent()
-            });
-         });
-
-         // --- RETREAD AUTO-STATUS LOGIC ---
-         $(document).on('change', 'select[name="retread_count"]', function() {
-            const retreadVal = parseInt($(this).val()) || 0;
-            const form = $(this).closest('form');
-            const statusSelect = form.find('select[name="status"]');
-
-            if (retreadVal > 0) {
-               statusSelect.val('Retread');
-            } else {
-               // If count is 0 and status is currently Retread, revert to New
-               if (statusSelect.val() === 'Retread') {
-                  statusSelect.val('New');
-               }
-            }
-         });
       });
    </script>
+@endsection
+});
+</script>
 @endsection

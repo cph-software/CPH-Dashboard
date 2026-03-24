@@ -126,18 +126,15 @@ class TyreExaminationController extends Controller
             'driver_2' => 'nullable|string|max:255',
             'tyre_man' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
-            'details' => 'required|array',
-            'details.*.position_id' => 'required|exists:tyre_position_details,id',
-            'details.*.tyre_id' => 'required|exists:tyres,id',
-            'details.*.psi' => 'nullable|numeric',
-            'details.*.rtd_1' => 'nullable|numeric',
-            'details.*.rtd_2' => 'nullable|numeric',
-            'details.*.rtd_3' => 'nullable|numeric',
-            'details.*.rtd_4' => 'nullable|numeric',
-            'details.*.remarks' => 'nullable|string|max:255',
+            'details' => 'nullable|array',
             'is_meter_reset' => 'nullable|boolean',
             'temp_id' => 'required|string',
+            'exam_type' => 'nullable|in:Sales,Customer',
         ]);
+
+        $examType = $request->input('exam_type', 'Customer');
+        $approvalStatus = ($examType === 'Sales') ? 'Pending' : 'Approved';
+        $user = auth()->user();
 
         DB::beginTransaction();
         try {
@@ -146,256 +143,119 @@ class TyreExaminationController extends Controller
             $warnings = [];
 
             // --- 1. PRE-VALIDATION: DETEKSI ANOMALI ODO/HM (Human Error Check) ---
-            // Cari data terakhir dari kedua tabel (Movement & Examination)
             $lastM = TyreMovement::where('vehicle_id', $request->vehicle_id)
                 ->orderBy('movement_date', 'desc')
                 ->orderBy('id', 'desc')
                 ->first();
-
             $lastE = TyreExamination::where('vehicle_id', $request->vehicle_id)
                 ->orderBy('examination_date', 'desc')
                 ->orderBy('id', 'desc')
                 ->first();
 
-            $prevOdo = 0;
-            $prevHm = 0;
-
+            $lastOdo = 0;
+            $lastHm = 0;
             if ($lastM && $lastE) {
-                $mDate = Carbon::parse($lastM->movement_date);
-                $eDate = Carbon::parse($lastE->examination_date);
-                
-                if ($mDate->gt($eDate)) {
-                    $prevOdo = $lastM->odometer_reading;
-                    $prevHm = $lastM->hour_meter_reading;
-                } elseif ($eDate->gt($mDate)) {
-                    $prevOdo = $lastE->odometer;
-                    $prevHm = $lastE->hour_meter;
-                } else {
-                    // Jika tanggal sama, bandingkan created_at atau id
-                    $prevOdo = ($lastM->id > $lastE->id) ? $lastM->odometer_reading : $lastE->odometer;
-                    $prevHm = ($lastM->id > $lastE->id) ? $lastM->hour_meter_reading : $lastE->hour_meter;
-                }
+                $lastOdo = Carbon::parse($lastM->movement_date)->gt(Carbon::parse($lastE->examination_date)) ? $lastM->odometer_reading : $lastE->odometer;
+                $lastHm = Carbon::parse($lastM->movement_date)->gt(Carbon::parse($lastE->examination_date)) ? $lastM->hour_meter_reading : $lastE->hour_meter;
             } elseif ($lastM) {
-                $prevOdo = $lastM->odometer_reading;
-                $prevHm = $lastM->hour_meter_reading;
+                $lastOdo = $lastM->odometer_reading; $lastHm = $lastM->hour_meter_reading;
             } elseif ($lastE) {
-                $prevOdo = $lastE->odometer;
-                $prevHm = $lastE->hour_meter;
+                $lastOdo = $lastE->odometer; $lastHm = $lastE->hour_meter;
             }
 
-            // Validasi ODO/HM menurun jika TIDAK reset
-            if (!$request->is_meter_reset) {
-                if ($request->odometer !== null && $request->odometer < $prevOdo) {
-                    $warnings[] = "KM/Odometer ({$request->odometer}) menurun dari data terakhir ({$prevOdo}). Centang 'Reset Meter' jika ini benar, atau perbaiki angka KM.";
-                }
-                if ($request->hour_meter !== null && $request->hour_meter < $prevHm) {
-                    $warnings[] = "HM/Hour Meter ({$request->hour_meter}) menurun dari data terakhir ({$prevHm}). Centang 'Reset Meter' jika ini benar, atau perbaiki angka HM.";
-                }
+            if ($request->odometer < $lastOdo && !$request->has('is_meter_reset')) {
+                $warnings[] = "Nilai ODOMETER ({$request->odometer}) LEBIH RENDAH dari catatan terakhir ({$lastOdo}). Cek kembali apakah ada penggantian speedometer atau salah input.";
             }
 
-            // 2. Future date detection
             if (Carbon::parse($request->examination_date)->isFuture()) {
                 $warnings[] = "Tanggal Pemeriksaan tidak boleh di masa mendatang.";
             }
 
-            // 3. Time anomaly
-            if ($request->start_time && $request->end_time) {
-                if (strtotime($request->start_time) > strtotime($request->end_time)) {
-                    $warnings[] = "Waktu Mulai tidak boleh lebih besar dari Waktu Selesai.";
-                }
-            }
-
-            // ABORT jika ada human error
             if (!empty($warnings)) {
                 DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => "Deteksi Human Error:\n" . implode("\n", $warnings)
-                ], 422);
+                return response()->json(['success' => false, 'message' => "Deteksi Human Error:\n" . implode("\n", $warnings)], 422);
             }
 
             // --- 2. LANJUT KE PROSES PENYIMPANAN ---
-            // 1. Create Header
-            $exam = new TyreExamination([
+            $examination = TyreExamination::create([
                 'examination_date' => $request->examination_date,
                 'location_id' => $request->location_id,
                 'operational_segment_id' => $request->operational_segment_id,
+                'vehicle_id' => $request->vehicle_id,
                 'odometer' => $request->odometer,
                 'hour_meter' => $request->hour_meter,
-                'vehicle_id' => $request->vehicle_id,
-                'driver_1' => $request->driver_1,
-                'driver_2' => $request->driver_2,
                 'start_time' => $request->start_time,
                 'end_time' => $request->end_time,
+                'driver_1' => $request->driver_1,
+                'driver_2' => $request->driver_2,
                 'tyre_man' => $request->tyre_man,
-                'status' => 'Draft',
                 'notes' => $request->notes,
+                'exam_type' => $examType,
+                'approval_status' => $approvalStatus,
+                'approved_by' => ($approvalStatus === 'Approved') ? $user->id : null,
             ]);
 
             // Handle General Unit Photo
             $subFolder = 'examinations/' . date('Y-m');
             if ($request->hasFile('photo_unit_front')) {
-                $exam->photo_unit_front = $request->file('photo_unit_front')->store($subFolder, 'public');
+                $examination->photo_unit_front = $request->file('photo_unit_front')->store($subFolder, 'public');
+                $examination->save();
             }
 
-            $exam->save();
+            if ($request->filled('details')) {
+                foreach ($request->details as $key => $detail) {
+                    if (empty($detail['tyre_id'])) continue;
 
-            // 2. Create Details, Update Tyre RTD & Create Movement History
-            foreach ($request->details as $key => $detail) {
-                // Skip if position doesn't have a tyre
-                if (empty($detail['tyre_id']))
-                    continue;
+                    $rtds = array_filter([
+                        $detail['rtd_1'] ?? null,
+                        $detail['rtd_2'] ?? null,
+                        $detail['rtd_3'] ?? null,
+                        $detail['rtd_4'] ?? null
+                    ], function ($v) {
+                        return $v !== null && $v !== '';
+                    });
 
-                // Calculate average RTD and check if any data is filled
-                $rtds = array_filter([
-                    $detail['rtd_1'] ?? null,
-                    $detail['rtd_2'] ?? null,
-                    $detail['rtd_3'] ?? null,
-                    $detail['rtd_4'] ?? null
-                ], function ($v) {
-                    return $v !== null && $v !== '';
-                });
+                    $tyre = Tyre::find($detail['tyre_id']);
+                    if (!$tyre) continue;
 
-                $hasPsi = !empty($detail['psi']);
-                $hasRtd = count($rtds) > 0;
-                $hasRemarks = !empty($detail['remarks']);
-                $hasPhoto = $request->hasFile("details.{$key}.photo");
+                    $hasPsi = !empty($detail['psi']);
+                    $hasRtd = count($rtds) > 0;
+                    $hasRemarks = !empty($detail['remarks']);
+                    $hasAjaxPhoto = TyreExaminationImage::where('notes', $request->temp_id)
+                        ->where('serial_number', $tyre->serial_number)
+                        ->exists();
 
-                // Get Tyre first before checking its serial number!
-                $tyre = Tyre::find($detail['tyre_id']);
-                if (!$tyre) continue;
+                    if (!$hasPsi && !$hasRtd && !$hasRemarks && !$hasAjaxPhoto) continue;
 
-                // Check if any AJAX photo was uploaded for this tyre
-                $hasAjaxPhoto = TyreExaminationImage::where('notes', $request->temp_id)
-                    ->where('serial_number', $tyre->serial_number)
-                    ->exists();
-
-                // ONLY save if at least one field is filled (PSI, RTD, Remarks, standard Photo, or AJAX Photo)
-                if (!$hasPsi && !$hasRtd && !$hasRemarks && !$hasPhoto && !$hasAjaxPhoto) {
-                    continue;
-                }
-
-                // Handle standard Photo Upload
-                $photoPath = null;
-                if ($hasPhoto) {
-                    $photoPath = $request->file("details.{$key}.photo")->store('examinations/' . date('Y-m'), 'public');
-                }
-
-                TyreExaminationDetail::create([
-                    'examination_id' => $exam->id,
-                    'position_id' => $detail['position_id'],
-                    'tyre_id' => $detail['tyre_id'],
-                    'psi_reading' => $detail['psi'] ?? null,
-                    'rtd_1' => $detail['rtd_1'] ?? null,
-                    'rtd_2' => $detail['rtd_2'] ?? null,
-                    'rtd_3' => $detail['rtd_3'] ?? null,
-                    'rtd_4' => $detail['rtd_4'] ?? null,
-                    'remarks' => $detail['remarks'] ?? null,
-                    'photo' => $photoPath,
-                ]);
-
-                // Link AJAX Uploaded images to this examination detail
-                TyreExaminationImage::where('notes', $request->temp_id)
-                    ->where('serial_number', $tyre->serial_number)
-                    ->update(['examination_id' => $exam->id]);
-
-                $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : null;
-
-                // Update current RTD of the tyre if measured
-                if ($tyre) {
-                    // --- Calculate Lifetime since last recorded event (Date-Aware) ---
-                    $lastMov = TyreMovement::where('tyre_id', $tyre->id)
-                        ->where('movement_date', '<=', $request->examination_date)
-                        ->orderBy('movement_date', 'desc')
-                        ->orderBy('id', 'desc')
-                        ->first();
-
-                    $kmDiff = 0;
-                    $hmDiff = 0;
-                    if ($lastMov) {
-                        $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
-                        $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
-                    }
-
-                    // 3. PSI anomaly
-                    if ($detail['psi'] !== null && ($detail['psi'] < 0 || $detail['psi'] > 200)) {
-                        $warnings[] = "PSI Ban SN {$tyre->serial_number} ({$detail['psi']}) tidak wajar.";
-                    }
-
-                    if ($avgRtd !== null) {
-                        // 4. Physical possibility check (RTD > Initial)
-                        if ($tyre->initial_tread_depth > 0 && $avgRtd > $tyre->initial_tread_depth) {
-                            $warnings[] = "RTD Ban SN {$tyre->serial_number} ({$avgRtd}mm) melebihi batas RTD awal/baru ({$tyre->initial_tread_depth}mm).";
-                        }
-
-                        // 5. Logical check (RTD increase)
-                        if ($avgRtd > $tyre->current_tread_depth && $tyre->current_tread_depth > 0) {
-                            $warnings[] = "RTD Ban SN " . $tyre->serial_number . " ({$avgRtd}mm) meningkat dari catatan sebelumnya ({$tyre->current_tread_depth}mm).";
-                        }
-                    }
-
-                    // Update Tyre Master
-                    $tyre->update([
-                        'current_tread_depth' => $avgRtd ?? $tyre->current_tread_depth,
-                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
-                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                    $detailModel = $examination->details()->create([
+                        'position_id' => $detail['position_id'],
+                        'tyre_id' => $detail['tyre_id'],
+                        'psi_reading' => $detail['psi'] ?? null,
+                        'rtd_1' => $detail['rtd_1'] ?? null,
+                        'rtd_2' => $detail['rtd_2'] ?? null,
+                        'rtd_3' => $detail['rtd_3'] ?? null,
+                        'rtd_4' => $detail['rtd_4'] ?? null,
+                        'remarks' => $detail['remarks'] ?? null,
+                        'serial_number' => $tyre->serial_number,
                     ]);
+
+                    TyreExaminationImage::where('notes', $request->temp_id)
+                        ->where('serial_number', $tyre->serial_number)
+                        ->update(['examination_id' => $examination->id, 'detail_id' => $detailModel->id]);
+
+                    if ($approvalStatus === 'Approved') {
+                        $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
+                        $this->recordMovement($examination, $tyre, $detail['position_id'], $avgRtd, $detail['psi'] ?? null);
+                    }
                 }
-
-                // IMPORTANT: Record this inspection in movement history with calculated diffs
-                TyreMovement::create([
-                    'tyre_id' => $detail['tyre_id'],
-                    'vehicle_id' => $request->vehicle_id,
-                    'position_id' => $detail['position_id'],
-                    'movement_type' => 'Inspection',
-                    'movement_date' => $request->examination_date,
-                    'odometer_reading' => $request->odometer,
-                    'hour_meter_reading' => $request->hour_meter,
-                    'running_km' => $kmDiff ?? 0,
-                    'running_hm' => $hmDiff ?? 0,
-                    'psi_reading' => $detail['psi'] ?? null,
-                    'rtd_reading' => $avgRtd,
-                    'notes' => 'Pemeriksaan rutin: ' . ($detail['remarks'] ?? '-'),
-                    'created_by' => Auth::id(),
-                ]);
-            }
-
-            // 3. Final Check for Anomalies (Human Error)
-            if (!empty($warnings)) {
-                DB::rollBack();
-                
-                setLogActivity(Auth::id(), 'Deteksi Human Error: Pemeriksaan Ban pada unit ' . $vehicleCode, [
-                    'action_type' => 'error',
-                    'module' => 'Human Error',
-                    'data_after' => [
-                        'Kendaraan' => $vehicleCode,
-                        'Pesan Error' => $warnings,
-                        'Data Yang Diinput' => [
-                            'Tanggal' => $request->examination_date,
-                            'Odometer' => $request->odometer,
-                            'Hour Meter' => $request->hour_meter,
-                        ]
-                    ]
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => "Pemeriksaan GAGAL DISIMPAN (Deteksi Human Error):\n\n" . implode("\n", $warnings)
-                ], 422);
             }
 
             DB::commit();
 
-            setLogActivity(Auth::id(), 'Membuat pemeriksaan ban untuk kendaraan: ' . $vehicleCode, [
+            setLogActivity($user->id, 'Membuat pemeriksaan ban: ' . $vehicleCode, [
                 'action_type' => 'create',
                 'module' => 'Examination',
-                'data_after' => [
-                    'Kendaraan' => $vehicleCode,
-                    'Tanggal' => $request->examination_date,
-                    'Odometer' => $request->odometer,
-                    'Hour Meter' => $request->hour_meter,
-                    'Total Ban Diinspeksi' => count($request->details)
-                ]
+                'data_after' => ['Kendaraan' => $vehicleCode, 'Tanggal' => $request->examination_date]
             ]);
 
             return response()->json([
@@ -405,8 +265,94 @@ class TyreExaminationController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'GAGAL: ' . $e->getMessage()], 500);
         }
+    }
+
+    private function recordMovement(TyreExamination $examination, Tyre $tyre, $positionId, $avgRtd, $psiReading)
+    {
+        // --- Calculate Lifetime since last recorded event (Date-Aware) ---
+        $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+            ->where('movement_date', '<=', $examination->examination_date)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $kmDiff = 0;
+        $hmDiff = 0;
+        if ($lastMov) {
+            $kmDiff = $this->calculateLifetimeDiff($examination->odometer, $lastMov->odometer_reading);
+            $hmDiff = $this->calculateLifetimeDiff($examination->hour_meter, $lastMov->hour_meter_reading);
+        }
+
+        // Update Tyre Master
+        $tyre->update([
+            'current_tread_depth' => $avgRtd ?? $tyre->current_tread_depth,
+            'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+            'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+        ]);
+
+        // IMPORTANT: Record this inspection in movement history with calculated diffs
+        TyreMovement::create([
+            'tyre_id' => $tyre->id,
+            'vehicle_id' => $examination->vehicle_id,
+            'position_id' => $positionId,
+            'movement_type' => 'Inspection',
+            'movement_date' => $examination->examination_date,
+            'odometer_reading' => $examination->odometer,
+            'hour_meter_reading' => $examination->hour_meter,
+            'running_km' => $kmDiff ?? 0,
+            'running_hm' => $hmDiff ?? 0,
+            'psi_reading' => $psiReading,
+            'rtd_reading' => $avgRtd,
+            'notes' => 'Pemeriksaan rutin',
+            'created_by' => Auth::id(),
+        ]);
+    }
+
+    public function approve($id)
+    {
+        $examination = TyreExamination::with(['details.tyre'])->findOrFail($id);
+        $user = auth()->user();
+
+        DB::beginTransaction();
+        try {
+            $examination->update([
+                'approval_status' => 'Approved',
+                'approved_by' => $user->id,
+            ]);
+
+            foreach ($examination->details as $detail) {
+                $tyre = $detail->tyre;
+                if (!$tyre) continue;
+
+                $rtds = array_filter([$detail->rtd_1, $detail->rtd_2, $detail->rtd_3, $detail->rtd_4], function($v) {
+                    return $v !== null && $v !== '';
+                });
+
+                $avgRtd = count($rtds) > 0 ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
+                $this->recordMovement($examination, $tyre, $detail->position_id, $avgRtd, $detail->psi_reading);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Pemeriksaan telah disetujui.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'GAGAL: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $request->validate(['reason' => 'required|string']);
+        $examination = TyreExamination::findOrFail($id);
+        
+        $examination->update([
+            'approval_status' => 'Rejected',
+            'reject_reason' => $request->reason,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Pemeriksaan telah ditolak.']);
     }
 
     public function data(Request $request)
@@ -437,7 +383,8 @@ class TyreExaminationController extends Controller
                 'vehicle' => $row->vehicle->kode_kendaraan ?? '-',
                 'odometer' => number_format($row->odometer, 0),
                 'tyre_man' => $row->tyre_man ?? '-',
-                'status' => $row->status,
+                'status' => $row->approval_status ?? 'Pending',
+                'type' => $row->exam_type ?? 'Customer',
                 'action' => '<a href="' . route('examination.show', $row->id) . '" class="btn btn-sm btn-info"><i class="ri-eye-line"></i> Detail</a>'
             ];
         });

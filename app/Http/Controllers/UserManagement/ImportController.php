@@ -10,14 +10,20 @@ class ImportController extends Controller
     public function storeCSV(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv,txt',
+            'file' => 'required|mimes:csv,txt,xlsx,xls',
             'module' => 'required'
         ]);
 
         $file = $request->file('file');
-        $path = $file->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        $module = $request->module;
         
+        // Handle Excel vs CSV
+        if ($file->getClientOriginalExtension() === 'csv' || $file->getClientOriginalExtension() === 'txt') {
+            $data = array_map('str_getcsv', file($file->getRealPath()));
+        } else {
+            $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
+        }
+
         if (count($data) < 2) {
             return redirect()->back()->with('error', 'File kosong atau format tidak valid.');
         }
@@ -31,7 +37,7 @@ class ImportController extends Controller
         try {
             $batch = \App\Models\ImportBatch::create([
                 'user_id' => auth()->id(),
-                'module' => $request->module,
+                'module' => $module,
                 'filename' => $file->getClientOriginalName(),
                 'status' => 'Pending',
                 'total_rows' => count($data)
@@ -40,7 +46,6 @@ class ImportController extends Controller
             foreach ($data as $row) {
                 if (count($header) !== count($row)) continue;
                 
-                // Trim all values to prevent issues with trailing spaces/newlines
                 $row = array_map('trim', $row);
                 $rowData = array_combine($header, $row);
                 
@@ -52,14 +57,7 @@ class ImportController extends Controller
             }
 
             \DB::commit();
-            
-            setLogActivity(auth()->id(), "Mengupload file import untuk modul {$request->module}", [
-                'module' => 'Import',
-                'batch_id' => $batch->id,
-                'filename' => $batch->filename
-            ]);
-
-            return redirect()->back()->with('success', 'Data berhasil diupload dan menunggu persetujuan (Request ID: #' . $batch->id . ').');
+            return redirect()->back()->with('success', 'Data berhasil diupload dan menunggu persetujuan (ID: #' . $batch->id . ').');
         } catch (\Exception $e) {
             \DB::rollback();
             return redirect()->back()->with('error', 'Gagal memproses file: ' . $e->getMessage());

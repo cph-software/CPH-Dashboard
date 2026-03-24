@@ -84,8 +84,8 @@ class TyreMasterController extends Controller
                 1 => 'serial_number',
                 2 => 'tyre_brand_id',
                 3 => 'tyre_size_id',
-                4 => 'tyre_segment_id',
-                5 => 'work_location_id',
+                4 => 'segment_name',
+                5 => 'is_in_warehouse',
                 6 => 'status'
             ];
 
@@ -159,22 +159,43 @@ class TyreMasterController extends Controller
         $request->validate([
             'serial_number' => 'required|string|max:255|unique:tyres',
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres',
-            'tyre_brand_id' => 'required|exists:tyre_brands,id',
-            'tyre_size_id' => 'required|exists:tyre_sizes,id',
-            'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'work_location_id' => 'required|exists:tyre_locations,id',
+            'tyre_brand_id' => 'required', // Can be ID or String for Admin
+            'tyre_size_id' => 'required',
+            'tyre_pattern_id' => 'nullable',
+            'segment_name' => 'nullable|string|max:255',
+            'is_in_warehouse' => 'nullable|boolean',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'price' => 'nullable|numeric|min:0',
-            'initial_tread_depth' => 'nullable|numeric|min:0',
-            'current_tread_depth' => 'nullable|numeric|min:0',
-            'current_km' => 'nullable|numeric|min:0',
-            'current_hm' => 'nullable|numeric|min:0',
+            'original_tread_depth' => 'nullable|numeric|min:0',
+            'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
-        $tyre = Tyre::create($request->all());
-        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']);
+        $data = $request->all();
+        $user = auth()->user();
+
+        // Handle Admin "Type Manual" Logic
+        if ($user->role_id == 1) {
+            // Brand
+            if (!is_numeric($request->tyre_brand_id)) {
+                $brand = TyreBrand::firstOrCreate(['brand_name' => strtoupper($request->tyre_brand_id)], ['status' => 'Active']);
+                $data['tyre_brand_id'] = $brand->id;
+            }
+            // Size
+            if (!is_numeric($request->tyre_size_id)) {
+                $size = TyreSize::firstOrCreate(['size' => strtoupper($request->tyre_size_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $data['tyre_size_id'] = $size->id;
+            }
+            // Pattern
+            if ($request->filled('tyre_pattern_id') && !is_numeric($request->tyre_pattern_id)) {
+                $pattern = TyrePattern::firstOrCreate(['name' => strtoupper($request->tyre_pattern_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $data['tyre_pattern_id'] = $pattern->id;
+            }
+        }
+
+        $tyre = Tyre::create($data);
+        $tyre->load(['brand', 'size', 'pattern']);
 
         setLogActivity(auth()->id(), 'Menambah ban baru: ' . $request->serial_number, [
             'action_type' => 'create',
@@ -199,34 +220,41 @@ class TyreMasterController extends Controller
         $request->validate([
             'serial_number' => 'required|string|max:255|unique:tyres,serial_number,' . $id,
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id,
-            'tyre_brand_id' => 'required|exists:tyre_brands,id',
-            'tyre_size_id' => 'required|exists:tyre_sizes,id',
-            'tyre_segment_id' => 'nullable|exists:tyre_segments,id',
-            'work_location_id' => 'required|exists:tyre_locations,id',
+            'tyre_brand_id' => 'required',
+            'tyre_size_id' => 'required',
+            'tyre_pattern_id' => 'nullable',
+            'segment_name' => 'nullable|string|max:255',
+            'is_in_warehouse' => 'nullable|boolean',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'price' => 'nullable|numeric|min:0',
-            'initial_tread_depth' => 'nullable|numeric|min:0',
-            'current_tread_depth' => 'nullable|numeric|min:0',
-            'current_km' => 'nullable|numeric|min:0',
-            'current_hm' => 'nullable|numeric|min:0',
+            'original_tread_depth' => 'nullable|numeric|min:0',
+            'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $tyre = Tyre::findOrFail($id);
-        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']);
-        
-        $dataBefore = [
-            'Serial Number' => $tyre->serial_number,
-            'Brand' => $tyre->brand->brand_name ?? '-',
-            'Size' => $tyre->size->size ?? '-',
-            'Segment' => $tyre->segment->segment_name ?? '-',
-            'Work Location' => $tyre->location->location_name ?? '-',
-            'Status' => $tyre->status,
-        ];
+        $data = $request->all();
+        $user = auth()->user();
 
-        $tyre->update($request->all());
-        $tyre->load(['brand', 'size', 'pattern', 'segment', 'location']); // Reload to get updated names
+        // Handle Admin "Type Manual" Logic
+        if ($user->role_id == 1) {
+            if (!is_numeric($request->tyre_brand_id)) {
+                $brand = TyreBrand::firstOrCreate(['brand_name' => strtoupper($request->tyre_brand_id)], ['status' => 'Active']);
+                $data['tyre_brand_id'] = $brand->id;
+            }
+            if (!is_numeric($request->tyre_size_id)) {
+                $size = TyreSize::firstOrCreate(['size' => strtoupper($request->tyre_size_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $data['tyre_size_id'] = $size->id;
+            }
+            if ($request->filled('tyre_pattern_id') && !is_numeric($request->tyre_pattern_id)) {
+                $pattern = TyrePattern::firstOrCreate(['name' => strtoupper($request->tyre_pattern_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $data['tyre_pattern_id'] = $pattern->id;
+            }
+        }
+
+        $tyre->update($data);
+        $tyre->load(['brand', 'size', 'pattern']);
 
         setLogActivity(auth()->id(), 'Memperbarui ban: ' . $request->serial_number, [
             'action_type' => 'update',

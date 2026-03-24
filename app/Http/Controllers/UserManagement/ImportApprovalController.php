@@ -201,78 +201,40 @@ class ImportApprovalController extends Controller
 
     private function processTyreMaster($data, $uploaderCompanyId)
     {
-        // Headers: serial_number, brand_name, size_name, pattern_name, initial_rtd, location_name, segment_name, price, status
-        $sn = $data['sn_ban'] ?? $data['serial_number'] ?? null;
+        // New Headers support: serial_number, brand, size, pattern, segment, initial_rtd, status, price, in_warehouse
+        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
         if (!$sn) throw new \Exception("Serial Number kosong.");
 
         // 1. Resolve Brand
         $brandId = null;
-        $brandName = $data['brand_name'] ?? $data['brand'] ?? null;
+        $brandName = $data['brand'] ?? $data['brand_name'] ?? null;
         if (!empty($brandName)) {
-            $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => trim($brandName)]);
+            $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => strtoupper(trim($brandName))], ['status' => 'Active']);
             $brandId = $brand->id;
-            if ($uploaderCompanyId) {
-                $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
-            }
         }
 
         // 2. Resolve Size
         $sizeId = null;
-        $sizeName = $data['size_name'] ?? $data['size'] ?? null;
+        $sizeName = $data['size'] ?? $data['size_name'] ?? null;
         if (!empty($sizeName)) {
-            $size = \App\Models\TyreSize::where('size', $sizeName)
-                ->where('tyre_brand_id', $brandId)
-                ->first();
-                
-            if (!$size) {
-                $size = \App\Models\TyreSize::create([
-                    'size' => $sizeName,
-                    'tyre_brand_id' => $brandId,
-                    'type' => 'Radial',
-                    'std_otd' => (float)($data['initial_rtd'] ?? 0),
-                    'ply_rating' => 0
-                ]);
-            }
+            $size = \App\Models\TyreSize::firstOrCreate(
+                ['size' => strtoupper(trim($sizeName)), 'tyre_brand_id' => $brandId]
+            );
             $sizeId = $size->id;
-            if ($uploaderCompanyId) {
-                $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
-            }
         }
 
         // 3. Resolve Pattern
         $patternId = null;
-        $patternName = $data['pattern_name'] ?? $data['pattern'] ?? null;
+        $patternName = $data['pattern'] ?? $data['pattern_name'] ?? null;
         if (!empty($patternName)) {
             $pattern = \App\Models\TyrePattern::firstOrCreate(
-                ['name' => trim($patternName)],
-                ['tyre_brand_id' => $brandId]
+                ['name' => strtoupper(trim($patternName)), 'tyre_brand_id' => $brandId]
             );
             $patternId = $pattern->id;
-            if ($uploaderCompanyId) {
-                $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
-            }
         }
 
-        // 4. Resolve Location (Mandatory in DB)
-        $locationId = null;
-        $locationName = $data['location_name'] ?? $data['location'] ?? null;
-        if (!empty($locationName)) {
-            $location = \App\Models\TyreLocation::firstOrCreate(
-                ['location_name' => trim($locationName)],
-                ['location_type' => 'Warehouse']
-            );
-            $locationId = $location->id;
-        }
-
-        // 5. Resolve Segment (Nullable in DB)
-        $segmentId = null;
-        $segmentName = $data['segment_name'] ?? $data['segment'] ?? null;
-        if (!empty($segmentName)) {
-            $segment = \App\Models\TyreSegment::where('segment_name', trim($segmentName))->first();
-            $segmentId = $segment ? $segment->id : null;
-        }
-
-        $initialRtd = $data['initial_rtd'] ?? $data['otd'] ?? $data['initial_tread_depth'] ?? 0;
+        $initialRtd = (float)($data['initial_rtd'] ?? $data['otd'] ?? 0);
+        $inWarehouse = ($data['in_warehouse'] ?? $data['warehouse'] ?? 'Yes') == 'Yes' ? 1 : 0;
 
         \App\Models\Tyre::updateOrCreate(
             ['serial_number' => $sn],
@@ -280,12 +242,14 @@ class ImportApprovalController extends Controller
                 'tyre_brand_id' => $brandId,
                 'tyre_size_id' => $sizeId,
                 'tyre_pattern_id' => $patternId,
-                'work_location_id' => $locationId,
-                'tyre_segment_id' => $segmentId,
+                'segment_name' => $data['segment'] ?? $data['segment_name'] ?? null,
+                'is_in_warehouse' => $inWarehouse,
                 'status' => $data['status'] ?? 'New',
                 'initial_tread_depth' => $initialRtd,
-                'current_tread_depth' => $data['current_tread_depth'] ?? $initialRtd,
-                'price' => $data['price'] ?? 0,
+                'current_tread_depth' => (float)($data['current_rtd'] ?? $initialRtd),
+                'price' => (float)($data['price'] ?? 0),
+                'ply_rating' => (int)($data['ply_rating'] ?? 0),
+                'original_tread_depth' => $initialRtd,
                 'tyre_company_id' => $uploaderCompanyId
             ]
         );
