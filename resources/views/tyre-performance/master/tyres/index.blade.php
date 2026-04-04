@@ -52,6 +52,9 @@
                   <tr>
                      <th width="10"><input type="checkbox" class="form-check-input" id="check-all"></th>
                      <th>Serial Number</th>
+                     @if (auth()->user()->role_id == 1)
+                        <th>Instansi</th>
+                     @endif
                      <th>Brand</th>
                      <th>Size</th>
                      <th>Segment</th>
@@ -113,8 +116,11 @@
                            data-placeholder="Select Brand" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
-                              <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
+                              <option value="{{ $brand->id }}" {{ old('tyre_brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->brand_name }}</option>
                            @endforeach
+                           @if(old('tyre_brand_id') && !$brands->contains('id', old('tyre_brand_id')))
+                              <option value="{{ old('tyre_brand_id') }}" selected>{{ old('tyre_brand_id') }}</option>
+                           @endif
                         </select>
                      </div>
                      <div class="col-md-4 mb-3">
@@ -123,10 +129,13 @@
                            data-placeholder="Select Size" required>
                            <option value="">Select Size</option>
                            @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}">
+                              <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}" {{ old('tyre_size_id') == $size->id ? 'selected' : '' }}>
                                  {{ $size->size }}
                               </option>
                            @endforeach
+                           @if(old('tyre_size_id') && !$sizes->contains('id', old('tyre_size_id')))
+                              <option value="{{ old('tyre_size_id') }}" selected>{{ old('tyre_size_id') }}</option>
+                           @endif
                         </select>
                      </div>
                      <div class="col-md-4 mb-3">
@@ -135,10 +144,13 @@
                            data-placeholder="Select Pattern">
                            <option value="">Select Pattern</option>
                            @foreach ($patterns as $pattern)
-                              <option value="{{ $pattern->id }}" data-brand-id="{{ $pattern->tyre_brand_id }}">
+                              <option value="{{ $pattern->id }}" data-brand-id="{{ $pattern->tyre_brand_id }}" {{ old('tyre_pattern_id') == $pattern->id ? 'selected' : '' }}>
                                  {{ $pattern->name }}
                               </option>
                            @endforeach
+                           @if(old('tyre_pattern_id') && !$patterns->contains('id', old('tyre_pattern_id')))
+                              <option value="{{ old('tyre_pattern_id') }}" selected>{{ old('tyre_pattern_id') }}</option>
+                           @endif
                         </select>
                      </div>
                   </div>
@@ -456,6 +468,14 @@
                      return `<strong>${data}</strong>`;
                   }
                },
+               @if (auth()->user()->role_id == 1)
+               {
+                  data: 'company',
+                  render: function(data) {
+                     return data ? `<span class="badge bg-label-primary shadow-sm"><i class="ri-building-4-line me-1"></i>${data.company_name}</span>` : '<span class="text-muted">-</span>';
+                  }
+               },
+               @endif
                {
                   data: 'brand.brand_name',
                   defaultContent: '-'
@@ -666,72 +686,112 @@
             $('#edit_ply_rating').val(plyRating);
          });
 
-         // Hierarchical Dropdowns (Brand > Size > Pattern)
-         function filterDropdowns(brandId, targetPrefix = '') {
-            const sizeSelector = `#${targetPrefix}tyre_size_id`;
-            const patternSelector = `#${targetPrefix}tyre_pattern_id`;
-
-            // Reset and show all if no brand selected
-            if (!brandId) {
-               $(`${sizeSelector} option`).show();
-               $(`${patternSelector} option`).show();
-               return;
-            }
-
-            // Filter sizes
-            $(`${sizeSelector} option`).each(function() {
-               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
-                  $(this).show();
-               } else {
-                  $(this).hide();
-               }
-            });
-
-            // Filter patterns
-            $(`${patternSelector} option`).each(function() {
-               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
-                  $(this).show();
-               } else {
-                  $(this).hide();
-               }
-            });
-
-            // If current selection is hidden, reset it
-            if ($(`${sizeSelector} option:selected`).css('display') === 'none') {
-               $(`${sizeSelector}`).val('').trigger('change');
-            }
-            if ($(`${patternSelector} option:selected`).css('display') === 'none') {
-               $(`${patternSelector}`).val('').trigger('change');
-            }
-         }
-
-         $('#tyre_brand_id').on('change', function() {
-            filterDropdowns($(this).val());
+         // Hierarchical Dropdowns (Brand > Size > Pattern) using Array backing to prevent Select2 glitches
+         const sizeOptions = [];
+         $('#tyre_size_id option').each(function() {
+            if ($(this).val() !== "") sizeOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
          });
 
-         $('#edit_brand_id').on('change', function() {
-            filterDropdowns($(this).val(), 'edit_');
+         const patternOptions = [];
+         $('#tyre_pattern_id option').each(function() {
+            if ($(this).val() !== "") patternOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
+         });
+
+         const editSizeOptions = [];
+         $('#edit_size_id option').each(function() {
+            if ($(this).val() !== "") editSizeOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
+         });
+
+         const editPatternOptions = [];
+         $('#edit_pattern_id option').each(function() {
+            if ($(this).val() !== "") editPatternOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
          });
 
          // Role-based Select2 tags
          const isAdmin = {{ auth()->user()->role_id == 1 ? 'true' : 'false' }};
 
-         $('.select2-tags').each(function() {
-            $(this).wrap('<div class="position-relative"></div>').select2({
-               placeholder: $(this).data('placeholder'),
-               dropdownParent: $(this).parent(),
-               tags: isAdmin,
-               allowClear: true,
-               width: '100%'
+         function initSelect2Tags(selector, modalId) {
+            $(selector).each(function() {
+               var $this = $(this);
+               if ($this.data('select2')) {
+                  $this.select2('destroy');
+               }
+               
+               $this.select2({
+                  placeholder: $this.data('placeholder'),
+                  dropdownParent: $this.parent(),
+                  tags: isAdmin,
+                  width: '100%'
+               });
             });
+         }
+
+         function initStandardSelect2() {
+            $('.select2').each(function() {
+               var $this = $(this);
+               if ($this.data('select2')) {
+                  $this.select2('destroy');
+               }
+               
+               $this.select2({
+                  placeholder: $this.data('placeholder'),
+                  dropdownParent: $this.parent(),
+                  width: '100%'
+               });
+            });
+         }
+
+         function filterDropdownsDOM(brandId, targetPrefix = '') {
+            const sizeSelector = `#${targetPrefix}size_id`;
+            const patternSelector = `#${targetPrefix}pattern_id`;
+            const sOpts = targetPrefix === 'edit_' ? editSizeOptions : sizeOptions;
+            const pOpts = targetPrefix === 'edit_' ? editPatternOptions : patternOptions;
+
+            const currentSize = $(sizeSelector).val();
+            const currentPattern = $(patternSelector).val();
+
+            if ($(sizeSelector).data('select2')) $(sizeSelector).select2('destroy');
+            if ($(patternSelector).data('select2')) $(patternSelector).select2('destroy');
+
+            $(sizeSelector).find('option:not(:first)').remove();
+            $(patternSelector).find('option:not(:first)').remove();
+
+            sOpts.forEach(opt => {
+               if (!brandId || String(opt.brandId) === String(brandId)) {
+                  $(sizeSelector).append(new Option(opt.text, opt.val, false, opt.val === currentSize));
+               }
+            });
+
+            pOpts.forEach(opt => {
+               if (!brandId || String(opt.brandId) === String(brandId)) {
+                  $(patternSelector).append(new Option(opt.text, opt.val, false, opt.val === currentPattern));
+               }
+            });
+
+            // Re-init completely so Select2 tags engine doesn't crash on manipulated DOM
+            $(sizeSelector).select2({ placeholder: $(sizeSelector).data('placeholder'), dropdownParent: $(sizeSelector).parent(), tags: isAdmin, width: '100%' });
+            $(patternSelector).select2({ placeholder: $(patternSelector).data('placeholder'), dropdownParent: $(patternSelector).parent(), tags: isAdmin, width: '100%' });
+         }
+         $('#addTyreModal').on('shown.bs.modal', function () {
+            if (!$('#tyre_brand_id').data('select2')) initSelect2Tags('#tyre_brand_id');
+            if (!$('#tyre_size_id').data('select2')) initSelect2Tags('#tyre_size_id');
+            if (!$('#tyre_pattern_id').data('select2')) initSelect2Tags('#tyre_pattern_id');
          });
 
-         // Initialize standard select2
-         $('.select2').each(function() {
-            $(this).wrap('<div class="position-relative"></div>').select2({
-               placeholder: $(this).data('placeholder'),
-               dropdownParent: $(this).parent()
-            });
+         $('#editTyreModal').on('shown.bs.modal', function () {
+            if (!$('#edit_brand_id').data('select2')) initSelect2Tags('#edit_brand_id');
+            if (!$('#edit_size_id').data('select2')) initSelect2Tags('#edit_size_id');
+            if (!$('#edit_pattern_id').data('select2')) initSelect2Tags('#edit_pattern_id');
+         });
+
+         initStandardSelect2();
+
+         $('#tyre_brand_id').on('change', function() {
+            filterDropdownsDOM($(this).val(), 'tyre_');
+         });
+
+         $('#edit_brand_id').on('change', function() {
+            filterDropdownsDOM($(this).val(), 'edit_');
          });
 
 

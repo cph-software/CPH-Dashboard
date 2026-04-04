@@ -17,6 +17,9 @@ class TyreExaminationMenuSeeder extends Seeder
     public function run()
     {
         $app = Aplikasi::where('name', 'Master Data Tyre')->first();
+        if (!$app) {
+            $app = Aplikasi::where('name', 'Tyre Performance')->first();
+        }
         if (!$app)
             return;
 

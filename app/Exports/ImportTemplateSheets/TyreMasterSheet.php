@@ -41,7 +41,7 @@ class TyreMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvent
             ],
             // Row 6: Guide
             [], // blank
-            ['=== PANDUAN PENGISIAN ==='],
+            ['*** PANDUAN PENGISIAN ***'],
             ['Kolom', 'Keterangan', 'Wajib?', 'Contoh Nilai'],
             ['serial_number', 'Nomor seri unik dari ban (SN)', 'YA', 'SN-BS-001'],
             ['brand', 'Nama merek ban (akan dibuat otomatis jika belum ada)', 'YA', 'BRIDGESTONE'],

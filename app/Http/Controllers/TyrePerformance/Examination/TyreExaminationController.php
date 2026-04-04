@@ -267,18 +267,17 @@ class TyreExaminationController extends Controller
                     $detailModel = $examination->details()->create([
                         'position_id' => $detail['position_id'],
                         'tyre_id' => $detail['tyre_id'],
-                        'psi_reading' => $detail['psi'] ?? null,
-                        'rtd_1' => $detail['rtd_1'] ?? null,
-                        'rtd_2' => $detail['rtd_2'] ?? null,
-                        'rtd_3' => $detail['rtd_3'] ?? null,
-                        'rtd_4' => $detail['rtd_4'] ?? null,
+                        'psi_reading' => $detail['psi'] ?? 0,
+                        'rtd_1' => $detail['rtd_1'] ?? 0,
+                        'rtd_2' => $detail['rtd_2'] ?? 0,
+                        'rtd_3' => $detail['rtd_3'] ?? 0,
+                        'rtd_4' => $detail['rtd_4'] ?? 0,
                         'remarks' => $detail['remarks'] ?? null,
-                        'serial_number' => $tyre->serial_number,
                     ]);
 
                     TyreExaminationImage::where('notes', $request->temp_id)
                         ->where('serial_number', $tyre->serial_number)
-                        ->update(['examination_id' => $examination->id, 'detail_id' => $detailModel->id]);
+                        ->update(['examination_id' => $examination->id]);
 
                     if ($approvalStatus === 'Approved') {
                         $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;

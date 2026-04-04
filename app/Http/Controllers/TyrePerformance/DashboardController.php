@@ -27,9 +27,9 @@ class DashboardController extends Controller
                 return redirect()->route('login');
             }
 
-            // Check Access to Tyre Performance App (ID 20)
+            // Check Access to Tyre Performance App by dynamic Name
             $userApps = getAplikasiPerRole($user->role_id);
-            if (!$userApps->contains('id', 20)) {
+            if (!$userApps->contains('name', 'Tyre Performance')) {
                 if ($request->ajax()) {
                     return response()->json(['error' => 'Akses Ditolak: Anda tidak memiliki izin untuk mengakses Tyre Monitoring.'], 403);
                 }
@@ -45,12 +45,18 @@ class DashboardController extends Controller
         // ========================================
         // Filters
         // ========================================
-        // Logic filter tanggal (Default ke 6 bulan terakhir)
+        // Auto-detect rentang tanggal dari data movement yang ada di database
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
             $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
         } else {
-            $startDate = Carbon::now()->subMonths(5)->startOfMonth();
+            // Cek tanggal paling awal dari movement yang tersimpan
+            $earliestMovement = TyreMovement::min('movement_date');
+            if ($earliestMovement) {
+                $startDate = Carbon::parse($earliestMovement)->startOfDay();
+            } else {
+                $startDate = Carbon::now()->subMonths(5)->startOfMonth();
+            }
             $endDate = Carbon::now()->endOfDay();
         }
 
@@ -526,16 +532,16 @@ class DashboardController extends Controller
         }
 
         if ($sizeId) {
-            $query->where('tyres.size_id', $sizeId);
+            $query->where('tyres.tyre_size_id', $sizeId);
         }
 
         if ($type) {
-            $query->join('tyre_sizes', 'tyres.size_id', '=', 'tyre_sizes.id')
+            $query->join('tyre_sizes', 'tyres.tyre_size_id', '=', 'tyre_sizes.id')
                 ->where('tyre_sizes.type', $type);
         }
 
         if ($patternId) {
-            $query->where('tyres.pattern_id', $patternId);
+            $query->where('tyres.tyre_pattern_id', $patternId);
         }
 
         return $query->select('tyre_position_details.position_name', DB::raw('count(*) as total'))
@@ -653,7 +659,7 @@ class DashboardController extends Controller
                 if (!$location)
                     return response()->json(['data' => [], 'total' => 0]);
 
-                $tyres = Tyre::where('work_location_id', $location->id)
+                $tyres = Tyre::where('current_location_id', $location->id)
                     ->with(['brand', 'size', 'pattern', 'currentVehicle'])
                     ->get()
                     ->map(function ($t) {
@@ -1012,13 +1018,13 @@ class DashboardController extends Controller
                     $query->whereBetween('tyre_movements.movement_date', [$startDate, $endDate]);
                 }
                 if ($sizeId)
-                    $query->where('tyres.size_id', $sizeId);
+                    $query->where('tyres.tyre_size_id', $sizeId);
                 if ($filterType) {
-                    $query->join('tyre_sizes as ts_extra', 'tyres.size_id', '=', 'ts_extra.id')
+                    $query->join('tyre_sizes as ts_extra', 'tyres.tyre_size_id', '=', 'ts_extra.id')
                         ->where('ts_extra.type', $filterType);
                 }
                 if ($patternId)
-                    $query->where('tyres.pattern_id', $patternId);
+                    $query->where('tyres.tyre_pattern_id', $patternId);
 
                 $movements = $query->with(['tyre', 'tyre.size', 'tyre.pattern', 'vehicle', 'failureCode'])
                     ->select('tyre_movements.*') // Avoid column name collisions

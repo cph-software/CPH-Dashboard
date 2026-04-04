@@ -14,10 +14,12 @@ class AddTyrePositionConfigurationIdToMasterImportKendaraanTable extends Migrati
     public function up()
     {
         Schema::table('master_import_kendaraan', function (Blueprint $table) {
-            $table->unsignedBigInteger('tyre_position_configuration_id')->nullable()->after('total_tyre_position');
-            $table->foreign('tyre_position_configuration_id', 'mik_tyre_pos_config_foreign')
-                  ->references('id')->on('tyre_position_configurations')
-                  ->onDelete('set null');
+            if (!Schema::hasColumn('master_import_kendaraan', 'tyre_position_configuration_id')) {
+                $table->unsignedBigInteger('tyre_position_configuration_id')->nullable()->after('total_tyre_position');
+                $table->foreign('tyre_position_configuration_id', 'mik_tyre_pos_config_foreign')
+                      ->references('id')->on('tyre_position_configurations')
+                      ->onDelete('set null');
+            }
         });
     }
 

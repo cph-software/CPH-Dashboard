@@ -186,33 +186,44 @@
                      </div>
                      <div class="col-md-4 mb-3">
                         <label class="form-label fw-bold">Brand Ban Umum</label>
-                        <select name="tyre_brand" id="tyre_brand" class="form-select select2-tags">
-                           <option value="">-- Pilih Brand --</option>
-                           @foreach ($brands as $b)
-                              <option value="{{ $b->brand_name }}" data-id="{{ $b->id }}">{{ $b->brand_name }}
+                        <select name="tyre_brand" id="tyre_brand" class="form-select select2" data-placeholder="-- Pilih Brand --">
+                           <option value=""></option>
+                           @foreach($brands as $b)
+                              <option value="{{ $b->brand_name }}" data-brand-id="{{ $b->id }}" {{ old('tyre_brand') == $b->brand_name ? 'selected' : '' }}>
+                                 {{ $b->brand_name }}
                               </option>
                            @endforeach
+                           @if(old('tyre_brand') && !$brands->contains('brand_name', old('tyre_brand')))
+                              <option value="{{ old('tyre_brand') }}" selected>{{ old('tyre_brand') }}</option>
+                           @endif
                         </select>
                      </div>
                      <div class="col-md-4">
                         <label class="form-label fw-bold">Ukuran Ban Umum</label>
-                        <select name="tyre_size" id="tyre_size" class="form-select select2-tags" required>
-                           <option value="">-- Pilih Ukuran --</option>
-                           @foreach ($sizes as $s)
-                              <option value="{{ $s->size }}" data-brand-id="{{ $s->tyre_brand_id }}">
-                                 {{ $s->size }}</option>
+                        <select name="tyre_size" id="tyre_size" class="form-select select2" data-placeholder="-- Pilih Ukuran --">
+                           <option value=""></option>
+                           @foreach($sizes as $s)
+                              <option value="{{ $s->size }}" data-brand-id="{{ $s->tyre_brand_id }}" {{ old('tyre_size') == $s->size ? 'selected' : '' }}>
+                                 {{ $s->size }}
+                              </option>
                            @endforeach
+                           @if(old('tyre_size') && !$sizes->contains('size', old('tyre_size')))
+                              <option value="{{ old('tyre_size') }}" selected>{{ old('tyre_size') }}</option>
+                           @endif
                         </select>
                      </div>
                      <div class="col-md-4">
                         <label class="form-label fw-bold">Pattern Umum</label>
-                        <select name="pattern" id="pattern" class="form-select select2-tags">
-                           <option value="">-- Pilih Pattern --</option>
-                           @foreach ($patterns as $p)
-                              <option value="{{ $p->name }}" data-brand-id="{{ $p->tyre_brand_id }}">
+                        <select name="pattern" id="pattern" class="form-select select2" data-placeholder="-- Pilih Pattern --">
+                           <option value=""></option>
+                           @foreach($patterns as $p)
+                              <option value="{{ $p->name }}" data-brand-id="{{ $p->tyre_brand_id }}" {{ old('pattern') == $p->name ? 'selected' : '' }}>
                                  {{ $p->brand->brand_name ?? '-' }} - {{ $p->name }}
                               </option>
                            @endforeach
+                           @if(old('pattern') && !$patterns->contains('name', old('pattern')))
+                              <option value="{{ old('pattern') }}" selected>{{ old('pattern') }}</option>
+                           @endif
                         </select>
                         <div class="mt-1">
                            <small class="text-muted">
@@ -406,68 +417,78 @@
 @section('page-script')
    <script>
       $(function() {
-         const isAdmin = {{ auth()->user()->role_id == 1 ? 'true' : 'false' }};
-
-         // Initialize Select2 Tags for Brand/Size/Pattern
-         $('.select2-tags').each(function() {
-            $(this).wrap('<div class="position-relative"></div>').select2({
-               placeholder: $(this).data('placeholder'),
-               dropdownParent: $(this).parent(),
-               tags: isAdmin,
+         // Inisialisasi Select2 dengan Tags untuk brand, size, pattern
+         $('#tyre_brand, #tyre_size, #pattern').each(function() {
+            var $this = $(this);
+            if ($this.hasClass("select2-hidden-accessible")) {
+                $this.select2('destroy');
+            }
+            $this.select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.parent(),
+               tags: true, // Izinkan membuat tag baru
                allowClear: true,
                width: '100%'
             });
          });
 
-         $('.select2:not(.select2-tags)').each(function() {
-            $(this).wrap('<div class="position-relative"></div>').select2({
-               placeholder: $(this).data('placeholder'),
-               dropdownParent: $(this).parent()
+         // Cascading filter: Brand → Size & Pattern
+         $('#tyre_brand').on('change', function() {
+            var brandId = $(this).find(':selected').data('brand-id');
+
+            // Filter Ukuran (Size)
+            $('#tyre_size option').each(function() {
+               var optBrand = $(this).data('brand-id');
+               if (!$(this).val()) return; // lewati opsi kosong/placeholder
+
+               // Jika brand terpilih, tampilkan hanya size untuk brand tersebut (atau kosongkan filter jika tidak ada brand terpilih)
+               if (!brandId || String(optBrand) === String(brandId)) {
+                  $(this).prop('disabled', false).show();
+               } else {
+                  $(this).prop('disabled', true).hide();
+               }
+            });
+            // Re-inisialisasi Select2 pada Size agar filter teraplikasi di UI
+            $('#tyre_size').val('').select2('destroy').select2({
+               placeholder: $('#tyre_size').data('placeholder'),
+               dropdownParent: $('#tyre_size').parent(),
+               tags: true,
+               allowClear: true,
+               width: '100%'
+            });
+
+            // Filter Pola (Pattern)
+            $('#pattern option').each(function() {
+               var optBrand = $(this).data('brand-id');
+               if (!$(this).val()) return; 
+
+               if (!brandId || String(optBrand) === String(brandId)) {
+                  $(this).prop('disabled', false).show();
+               } else {
+                  $(this).prop('disabled', true).hide();
+               }
+            });
+            // Re-inisialisasi Select2 pada Pattern agar filter teraplikasi di UI
+            $('#pattern').val('').select2('destroy').select2({
+               placeholder: $('#pattern').data('placeholder'),
+               dropdownParent: $('#pattern').parent(),
+               tags: true,
+               allowClear: true,
+               width: '100%'
             });
          });
 
-         // Cascading logic: Brand > Size > Pattern
-         function filterDropdowns(brandId) {
-            const sizeSelector = '#tyre_size';
-            const patternSelector = '#pattern';
-
-            if (!brandId) {
-               $(`${sizeSelector} option`).show();
-               $(`${patternSelector} option`).show();
-               return;
+         // Initialize Select2 for tyre selection dropdowns (non-tags)
+         $('.select2:not(.select2-tags)').each(function() {
+            var $this = $(this);
+            if ($this.data('select2')) {
+                $this.select2('destroy');
             }
-
-            // Filter sizes
-            $(`${sizeSelector} option`).each(function() {
-               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
-                  $(this).show();
-               } else {
-                  $(this).hide();
-               }
+            $this.select2({
+               placeholder: $this.data('placeholder'),
+               dropdownParent: $this.parent(),
+               width: '100%'
             });
-
-            // Filter patterns
-            $(`${patternSelector} option`).each(function() {
-               if ($(this).val() === "" || $(this).data('brand-id') == brandId) {
-                  $(this).show();
-               } else {
-                  $(this).hide();
-               }
-            });
-
-            // If current selection is hidden, reset it
-            if ($(`${sizeSelector} option:selected`).css('display') === 'none') {
-               $(`${sizeSelector}`).val('').trigger('change');
-            }
-            if ($(`${patternSelector} option:selected`).css('display') === 'none') {
-               $(`${patternSelector}`).val('').trigger('change');
-            }
-         }
-
-         $('#tyre_brand').on('change', function() {
-            const selectedOption = $(this).find(':selected');
-            const brandId = selectedOption.data('id');
-            filterDropdowns(brandId);
          });
 
          const syncTyreSelections = () => {
@@ -607,6 +628,20 @@
          // Initial calculation
          $('.tyre-row').each(function() {
             calculateRow($(this));
+         });
+
+         // Intercept Form Submit to show friendly validation error
+         $('form').on('submit', function(e) {
+             if (!this.checkValidity()) {
+                 e.preventDefault();
+                 Swal.fire({
+                     icon: 'error',
+                     title: 'Validasi Gagal',
+                     text: 'Harap lengkapi semua isian wajib (seperti Standar RTD Awal) sebelum Confirm.',
+                     confirmButtonText: 'Baik'
+                 });
+                 $(this).addClass('was-validated');
+             }
          });
       });
    </script>

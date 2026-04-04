@@ -53,6 +53,9 @@
                   <tr>
                      <th width="10"><input type="checkbox" class="form-check-input" id="check-all"></th>
                      <th>Unit Code</th>
+                     @if (auth()->user()->role_id == 1)
+                        <th>Instansi</th>
+                     @endif
                      <th>No. Polisi</th>
                      <th>Type</th>
                      <th>Area</th>
@@ -441,6 +444,14 @@
                      return `<strong>${data}</strong>`;
                   }
                },
+               @if (auth()->user()->role_id == 1)
+               {
+                  data: 'company',
+                  render: function(data) {
+                     return data ? `<span class="badge bg-label-primary shadow-sm"><i class="ri-building-4-line me-1"></i>${data.company_name}</span>` : '<span class="text-muted">-</span>';
+                  }
+               },
+               @endif
                {
                   data: 'no_polisi',
                   defaultContent: '-'

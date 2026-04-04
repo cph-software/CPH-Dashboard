@@ -13,10 +13,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // User::factory(10)->create();
         $this->call([
-            TyrePerformanceSeeder::class,
-            // OtherSeeder::class,
+            // 1. Core System & Access
+            UserManagementSeeder::class,
+            TyrePerformanceMenuRefactorSeeder::class,
+            TyreExaminationMenuSeeder::class,
+            TyreMonitoringMenuSeeder::class,
+            ImportApprovalMenuSeeder::class,
+            OnboardingMenuSeeder::class,
+            GlobalExportImportPermissionSeeder::class,
+            
+            // 2. Roles, Permissions, and User Mapping
+            Phase1RolePermissionSeeder::class,
+            
+            // 3. Operational Master Data & Demos
+            DemoDataSeeder::class,
+            TimUserSeeder::class,
         ]);
     }
 }

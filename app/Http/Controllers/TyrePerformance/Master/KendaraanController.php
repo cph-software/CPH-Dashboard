@@ -72,7 +72,7 @@ class KendaraanController extends Controller
      */
     public function data(Request $request)
     {
-        $query = MasterImportKendaraan::with(['tyrePositionConfiguration', 'segment']);
+        $query = MasterImportKendaraan::with(['tyrePositionConfiguration', 'segment', 'company']);
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
@@ -81,6 +81,9 @@ class KendaraanController extends Controller
                 $q->where('kode_kendaraan', 'like', "%$searchValue%")
                     ->orWhere('jenis_kendaraan', 'like', "%$searchValue%")
                     ->orWhere('no_polisi', 'like', "%$searchValue%")
+                    ->orWhereHas('company', function ($sub) use ($searchValue) {
+                        $sub->where('company_name', 'like', "%$searchValue%");
+                    })
                     ->orWhere('area', 'like', "%$searchValue%");
             });
         }
@@ -93,15 +96,32 @@ class KendaraanController extends Controller
             $columnIndex = $request->input('order.0.column');
             $columnDir = $request->input('order.0.dir');
 
-            $cols = [
-                1 => 'kode_kendaraan',
-                2 => 'no_polisi',
-                3 => 'jenis_kendaraan',
-                4 => 'area',
-                5 => 'tyre_position_configuration_id',
-                6 => 'total_tyre_position',
-                7 => 'tyre_unit_status'
-            ];
+            $isAdmin = (auth()->check() && auth()->user()->role_id == 1);
+
+            if ($isAdmin) {
+                $cols = [
+                    1 => 'kode_kendaraan',
+                    2 => 'tyre_company_id',
+                    3 => 'no_polisi',
+                    4 => 'jenis_kendaraan',
+                    5 => 'area',
+                    6 => 'operational_segment_id',
+                    7 => 'tyre_position_configuration_id',
+                    8 => 'total_tyre_position',
+                    9 => 'tyre_unit_status'
+                ];
+            } else {
+                $cols = [
+                    1 => 'kode_kendaraan',
+                    2 => 'no_polisi',
+                    3 => 'jenis_kendaraan',
+                    4 => 'area',
+                    5 => 'operational_segment_id',
+                    6 => 'tyre_position_configuration_id',
+                    7 => 'total_tyre_position',
+                    8 => 'tyre_unit_status'
+                ];
+            }
 
             if (isset($cols[$columnIndex])) {
                 $query->orderBy($cols[$columnIndex], $columnDir);

@@ -15,6 +15,9 @@ class ImportTemplateExport implements WithMultipleSheets
 
     public function sheets(): array
     {
+        // Require the file containing the smaller classes since they don't match PSR-4 file naming
+        require_once __DIR__ . '/ImportTemplateSheets/OtherTemplateSheets.php';
+
         return match ($this->module) {
             'Tyre Master'      => [new ImportTemplateSheets\TyreMasterSheet()],
             'Vehicle Master'   => [new ImportTemplateSheets\VehicleMasterSheet()],

@@ -18,10 +18,7 @@ class TyreSegment extends Model
         return $this->belongsTo(TyreLocation::class, 'tyre_location_id');
     }
 
-    public function tyres()
-    {
-        return $this->hasMany(Tyre::class, 'tyre_segment_id');
-    }
+    // Relasi tyres() dihapus: kolom tyre_segment_id sudah diganti segment_name (string) di tabel tyres
 
     public function company()
     {

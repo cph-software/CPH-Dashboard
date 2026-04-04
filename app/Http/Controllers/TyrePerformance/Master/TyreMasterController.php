@@ -32,7 +32,7 @@ class TyreMasterController extends Controller
      */
     public function data(Request $request)
     {
-        $query = Tyre::with(['brand', 'size', 'pattern', 'location']);
+        $query = Tyre::with(['brand', 'size', 'pattern', 'location', 'company']);
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
@@ -44,6 +44,9 @@ class TyreMasterController extends Controller
                     })
                     ->orWhereHas('size', function ($sub) use ($searchValue) {
                         $sub->where('size', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('company', function ($sub) use ($searchValue) {
+                        $sub->where('company_name', 'like', "%$searchValue%");
                     })
                     ->orWhere('status', 'like', "%$searchValue%");
             });
@@ -57,15 +60,30 @@ class TyreMasterController extends Controller
             $columnIndex = $request->input('order.0.column');
             $columnDir = $request->input('order.0.dir');
 
-            // Map column index to DB field
-            $cols = [
-                1 => 'serial_number',
-                2 => 'tyre_brand_id',
-                3 => 'tyre_size_id',
-                4 => 'segment_name',
-                5 => 'is_in_warehouse',
-                6 => 'status'
-            ];
+            $isAdmin = (auth()->check() && auth()->user()->role_id == 1);
+
+            if ($isAdmin) {
+                // Map column index to DB field for Admin (with company column)
+                $cols = [
+                    1 => 'serial_number',
+                    2 => 'tyre_company_id',
+                    3 => 'tyre_brand_id',
+                    4 => 'tyre_size_id',
+                    5 => 'segment_name',
+                    6 => 'is_in_warehouse',
+                    7 => 'status'
+                ];
+            } else {
+                // Map column index to DB field for Normal User (without company column)
+                $cols = [
+                    1 => 'serial_number',
+                    2 => 'tyre_brand_id',
+                    3 => 'tyre_size_id',
+                    4 => 'segment_name',
+                    5 => 'is_in_warehouse',
+                    6 => 'status'
+                ];
+            }
 
             if (isset($cols[$columnIndex])) {
                 $query->orderBy($cols[$columnIndex], $columnDir);
@@ -209,6 +227,7 @@ class TyreMasterController extends Controller
             }
         }
 
+        $dataBefore = $tyre->toArray();
         $tyre->update($data);
         $tyre->load(['brand', 'size', 'pattern', 'location']);
 

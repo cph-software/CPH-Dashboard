@@ -119,11 +119,11 @@ class DemoDataSeeder extends Seeder
         // =============================================
         $this->command->info('📏 Membuat Master Size...');
         $sizes = [
-            ['size' => '11.00-20',    'tyre_brand_id' => $this->brandIds['BRIDGESTONE'], 'type' => 'Bias',   'std_otd' => 16.5, 'ply_rating' => 16],
-            ['size' => '10.00-20',    'tyre_brand_id' => $this->brandIds['GITI'],        'type' => 'Bias',   'std_otd' => 15.0, 'ply_rating' => 14],
-            ['size' => '12.00R24',    'tyre_brand_id' => $this->brandIds['MICHELIN'],    'type' => 'Radial', 'std_otd' => 18.0, 'ply_rating' => 20],
-            ['size' => '7.50R16',     'tyre_brand_id' => $this->brandIds['GOODYEAR'],    'type' => 'Bias',   'std_otd' => 10.5, 'ply_rating' => 14],
-            ['size' => 'R25 29.5',    'tyre_brand_id' => $this->brandIds['MICHELIN'],    'type' => 'Radial', 'std_otd' => 42.0, 'ply_rating' => 32],
+            ['size' => '11.00-20',    'tyre_brand_id' => $this->brandIds['BRIDGESTONE'], 'std_otd' => 16.5, 'ply_rating' => 16],
+            ['size' => '10.00-20',    'tyre_brand_id' => $this->brandIds['GITI'],        'std_otd' => 15.0, 'ply_rating' => 14],
+            ['size' => '12.00R24',    'tyre_brand_id' => $this->brandIds['MICHELIN'],    'std_otd' => 18.0, 'ply_rating' => 20],
+            ['size' => '7.50R16',     'tyre_brand_id' => $this->brandIds['GOODYEAR'],    'std_otd' => 10.5, 'ply_rating' => 14],
+            ['size' => 'R25 29.5',    'tyre_brand_id' => $this->brandIds['MICHELIN'],    'std_otd' => 42.0, 'ply_rating' => 32],
         ];
         foreach ($sizes as $s) {
             $size = TyreSize::firstOrCreate(['size' => $s['size']], $s);

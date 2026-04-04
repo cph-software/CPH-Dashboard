@@ -187,6 +187,9 @@ if (!function_exists('getDashboardRedirectUrl')) {
         // Check if user has access to Tyre app (by name, not hardcoded ID)
         $roleId = $user->role_id;
         $tyreApp = \App\Models\Aplikasi::where('name', 'Master Data Tyre')->first();
+        if (!$tyreApp) {
+            $tyreApp = \App\Models\Aplikasi::where('name', 'Tyre Performance')->first();
+        }
         $tyreAppId = $tyreApp ? $tyreApp->id : null;
 
         $hasTyreAccess = false;

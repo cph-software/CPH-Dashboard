@@ -23,7 +23,7 @@ class TyrePerformanceMenuRefactorSeeder extends Seeder
         if (!$app) {
             $app = Aplikasi::updateOrCreate(
                 ['name' => 'Tyre Performance'],
-                ['name' => 'Tyre Performance', 'description' => 'Aplikasi Monitoring Performa Ban']
+                ['name' => 'Tyre Performance']
             );
         }
 
@@ -75,16 +75,24 @@ class TyrePerformanceMenuRefactorSeeder extends Seeder
             'parent_id' => $opsGroup->id,
             'name' => 'Pelepasan (Remove)',
             'url' => 'pelepasan',
-            'icon' => 'ri-indeterminate-circle-line', // Icon lebih spesifik
+            'icon' => 'ri-indeterminate-circle-line',
             'order_no' => 2
         ]);
         Menu::create([
             'aplikasi_id' => $app->id,
             'parent_id' => $opsGroup->id,
-            'name' => 'Movement History',
-            'url' => 'movement', // Index page for history
-            'icon' => 'ri-history-line',
+            'name' => 'Rotasi (Rotate)',
+            'url' => 'rotasi',
+            'icon' => 'ri-refresh-line',
             'order_no' => 3
+        ]);
+        Menu::create([
+            'aplikasi_id' => $app->id,
+            'parent_id' => $opsGroup->id,
+            'name' => 'Movement History',
+            'url' => 'movement',
+            'icon' => 'ri-history-line',
+            'order_no' => 4
         ]);
 
         // C. Assets Management (Group)
@@ -127,6 +135,7 @@ class TyrePerformanceMenuRefactorSeeder extends Seeder
 
         // Sub-menus Config
         $configs = [
+            ['name' => 'Companies', 'url' => 'master_company', 'icon' => 'ri-building-4-line'],
             ['name' => 'Brands', 'url' => 'master_brand', 'icon' => 'ri-bookmark-3-line'],
             ['name' => 'Sizes', 'url' => 'master_size', 'icon' => 'ri-ruler-2-line'],
             ['name' => 'Patterns', 'url' => 'master_pattern', 'icon' => 'ri-layout-masonry-line'],

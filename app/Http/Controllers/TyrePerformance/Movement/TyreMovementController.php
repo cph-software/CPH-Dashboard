@@ -866,19 +866,20 @@ class TyreMovementController extends Controller
                     }
                 }
 
+                $finalStatus = $request->target_status ?? 'Repaired';
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
                     'is_in_warehouse' => true,
                     'current_location_id' => $request->work_location_id, // Update lokasi fisik ban
-                    'status' => $request->target_status ?? 'Repaired',
+                    'status' => $finalStatus,
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
                 ]);
 
-                // 3. Increase stock at new location (tyre entering warehouse)
-                if ($request->work_location_id) {
+                // 3. Increase stock at new location (tyre entering warehouse), UNLESS SCRAP
+                if ($request->work_location_id && $finalStatus !== 'Scrap') {
                     DB::table('tyre_locations')
                         ->where('id', $request->work_location_id)
                         ->increment('current_stock');
@@ -1146,7 +1147,7 @@ class TyreMovementController extends Controller
                 ]);
 
                 // 2. Decrement Stock at the warehouse location (it's leaving the warehouse to go back on vehicle)
-                if ($movement->work_location_id) {
+                if ($movement->work_location_id && $movement->target_status !== 'Scrap') {
                     DB::table('tyre_locations')->where('id', $movement->work_location_id)->decrement('current_stock');
                 }
 

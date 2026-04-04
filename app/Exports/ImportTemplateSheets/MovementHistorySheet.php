@@ -22,7 +22,7 @@ class MovementHistorySheet implements FromArray, WithTitle, ShouldAutoSize, With
             ['SN-BS-001', 'DT-101', 'Installation', date('Y-m-d', strtotime('-60 days')), 'LF', '50000', '2500', '15.2', '100', '', '', '', 'Awal pemasangan'],
             ['SN-BS-001', 'DT-101', 'Removal', date('Y-m-d', strtotime('-10 days')), 'LF', '55000', '2750', '11.8', '95', 'EXTN', 'Repaired', 'GUDANG PUSAT', 'Dilepas untuk vulkanisir'],
             [],
-            ['=== PANDUAN PENGISIAN ==='],
+            ['*** PANDUAN PENGISIAN ***'],
             ['Kolom', 'Keterangan', 'Wajib?', 'Contoh Nilai'],
             ['serial_number', 'Nomor seri ban. Harus sudah ada di Master Ban', 'YA', 'SN-BS-001'],
             ['kode_kendaraan', 'Kode unit kendaraan. Harus ada di Master Kendaraan', 'YA (Install)', 'DT-101'],

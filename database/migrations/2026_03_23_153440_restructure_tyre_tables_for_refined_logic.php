@@ -27,12 +27,26 @@ class RestructureTyreTablesForRefinedLogic extends Migration
             }
 
             // Clean up calculated/operational fields from master record
-            if (Schema::hasColumn('tyres', 'tyre_segment_id')) {
-                $table->dropForeign('tyres_tyre_segment_id_foreign');
-            }
-            if (Schema::hasColumn('tyres', 'work_location_id')) {
-                $table->dropForeign('tyres_work_location_id_foreign');
-            }
+        }); // Close previous Schema::table block
+
+        // Safely attempt to drop foreign keys in separate blocks so failures don't crash the entire migration
+        if (Schema::hasColumn('tyres', 'tyre_segment_id')) {
+            try {
+                Schema::table('tyres', function (Blueprint $table) {
+                    $table->dropForeign('tyres_tyre_segment_id_foreign');
+                });
+            } catch (\Exception $e) {}
+        }
+        if (Schema::hasColumn('tyres', 'work_location_id')) {
+            try {
+                Schema::table('tyres', function (Blueprint $table) {
+                    $table->dropForeign('tyres_work_location_id_foreign');
+                });
+            } catch (\Exception $e) {}
+        }
+
+        // Re-open Schema::table for remaining column drops
+        Schema::table('tyres', function (Blueprint $table) {
 
             $columnsToDrop = [];
             foreach (['total_lifetime_km', 'total_lifetime_hm', 'current_km', 'current_hm', 'tyre_segment_id', 'work_location_id'] as $col) {

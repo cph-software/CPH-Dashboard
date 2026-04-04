@@ -56,62 +56,68 @@ class ImportApprovalController extends Controller
 
     private function processData($batch)
     {
-        $items = $batch->items()->where('status', 'Pending')->get();
-        $successCount = 0;
+        // Matikan batasan waktu dan memori PHP sementara agar tidak gagal/putus di tengah jalan untuk data ribuan.
+        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+
+        $successCount = $batch->processed_rows ?? 0;
         
         // Ambil ID Perusahaan dari user yang mengupload file
         $uploaderCompanyId = $batch->user->tyre_company_id;
 
-        foreach ($items as $item) {
-            try {
-                $data = $item->data;
-                
-                switch ($batch->module) {
-                    case 'Master Tyre':
-                    case 'Tyre Master':
-                        $this->processTyreMaster($data, $uploaderCompanyId);
-                        break;
-                    case 'Vehicle Master':
-                    case 'Master Vehicle':
-                        $this->processVehicleMaster($data, $uploaderCompanyId);
-                        break;
-                    case 'Movement History':
-                        $this->processMovementHistory($data, $uploaderCompanyId);
-                        break;
-                    case 'Tyre Examination':
-                        $this->processTyreExamination($data, $uploaderCompanyId);
-                        break;
-                    case 'Tyre Brand':
-                    case 'Brands':
-                        $this->processTyreBrand($data, $uploaderCompanyId);
-                        break;
-                    case 'Tyre Size':
-                    case 'Sizes':
-                        $this->processTyreSize($data, $uploaderCompanyId);
-                        break;
-                    case 'Tyre Pattern':
-                    case 'Patterns':
-                        $this->processTyrePattern($data, $uploaderCompanyId);
-                        break;
-                    case 'Failure Codes':
-                        $this->processFailureCodes($data, $uploaderCompanyId);
-                        break;
-                    case 'Locations':
-                        $this->processLocations($data, $uploaderCompanyId);
-                        break;
-                    case 'Segments':
-                        $this->processSegments($data, $uploaderCompanyId);
-                        break;
-                    default:
-                        throw new \Exception("Modul import tidak dikenali: " . $batch->module);
-                }
+        // Gunakan chunkById(200) agar RAM tidak membengkak + aman dari bug "skipped rows" 
+        $batch->items()->where('status', 'Pending')->chunkById(200, function ($items) use ($batch, $uploaderCompanyId, &$successCount) {
+            foreach ($items as $item) {
+                try {
+                    $data = $item->data;
+                    
+                    switch ($batch->module) {
+                        case 'Master Tyre':
+                        case 'Tyre Master':
+                            $this->processTyreMaster($data, $uploaderCompanyId);
+                            break;
+                        case 'Vehicle Master':
+                        case 'Master Vehicle':
+                            $this->processVehicleMaster($data, $uploaderCompanyId);
+                            break;
+                        case 'Movement History':
+                            $this->processMovementHistory($data, $uploaderCompanyId);
+                            break;
+                        case 'Tyre Examination':
+                            $this->processTyreExamination($data, $uploaderCompanyId);
+                            break;
+                        case 'Tyre Brand':
+                        case 'Brands':
+                            $this->processTyreBrand($data, $uploaderCompanyId);
+                            break;
+                        case 'Tyre Size':
+                        case 'Sizes':
+                            $this->processTyreSize($data, $uploaderCompanyId);
+                            break;
+                        case 'Tyre Pattern':
+                        case 'Patterns':
+                            $this->processTyrePattern($data, $uploaderCompanyId);
+                            break;
+                        case 'Failure Codes':
+                            $this->processFailureCodes($data, $uploaderCompanyId);
+                            break;
+                        case 'Locations':
+                            $this->processLocations($data, $uploaderCompanyId);
+                            break;
+                        case 'Segments':
+                            $this->processSegments($data, $uploaderCompanyId);
+                            break;
+                        default:
+                            throw new \Exception("Modul import tidak dikenali: " . $batch->module);
+                    }
 
-                $item->update(['status' => 'Success']);
-                $successCount++;
-            } catch (\Exception $e) {
-                $item->update(['status' => 'Failed', 'error_message' => $e->getMessage()]);
+                    $item->update(['status' => 'Success']);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $item->update(['status' => 'Failed', 'error_message' => $e->getMessage()]);
+                }
             }
-        }
+        });
 
         $batch->update(['processed_rows' => $successCount]);
     }
@@ -163,7 +169,6 @@ class ImportApprovalController extends Controller
             ['size' => $sizeStr],
             [
                 'tyre_brand_id' => $brandId,
-                'type' => $data['type'] ?? 'Radial', // Default to Radial if not specified
                 'std_otd' => $data['std_otd'] ?? 0,
                 'ply_rating' => $data['ply_rating'] ?? 0
             ]
@@ -218,7 +223,8 @@ class ImportApprovalController extends Controller
         $sizeName = $data['size'] ?? $data['size_name'] ?? null;
         if (!empty($sizeName)) {
             $size = \App\Models\TyreSize::firstOrCreate(
-                ['size' => strtoupper(trim($sizeName)), 'tyre_brand_id' => $brandId]
+                ['size' => strtoupper(trim($sizeName)), 'tyre_brand_id' => $brandId],
+                ['std_otd' => 0, 'ply_rating' => 0]
             );
             $sizeId = $size->id;
         }
@@ -352,18 +358,30 @@ class ImportApprovalController extends Controller
             if ($configId) {
                 $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
                     ->where(function($q) use ($positionCode) {
+                        // Bersihkan kata "Posisi " atau "Position " jika user iseng ketik
+                        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
+
                         $q->where('position_code', $positionCode)
                           ->orWhere('position_name', $positionCode);
+                          
+                        if ($numericPos !== '') {
+                            $q->orWhere('display_order', $numericPos);
+                        }
                     })
                     ->first();
                 $positionId = $posDetail ? $posDetail->id : null;
             }
         }
 
-        $type = $data['movement_type'] ?? $data['tipe_pergerakan'] ?? 'Installation';
-        $moveDate = ($data['movement_date'] ?? $data['tanggal']) ? \Carbon\Carbon::parse($data['movement_date'] ?? $data['tanggal']) : now();
-        $odo = $data['odometer'] ?? $data['km'] ?? 0;
-        $hm = $data['hm'] ?? 0;
+        $type = !empty($data['movement_type']) ? ucfirst(strtolower($data['movement_type'])) : (!empty($data['tipe_pergerakan']) ? ucfirst(strtolower($data['tipe_pergerakan'])) : 'Installation');
+        $moveDate = !empty($data['movement_date']) ? \Carbon\Carbon::parse($data['movement_date']) : (!empty($data['tanggal']) ? \Carbon\Carbon::parse($data['tanggal']) : now());
+        
+        // Cast numerical columns robustly
+        $odo = !empty($data['odometer']) ? (float)$data['odometer'] : (!empty($data['km']) ? (float)$data['km'] : 0);
+        $hm = !empty($data['hm']) ? (float)$data['hm'] : 0;
+        $rtd = !empty($data['rtd']) ? (float)$data['rtd'] : null;
+        $psi = !empty($data['psi']) ? (float)$data['psi'] : null;
+        $targetStatus = !empty($data['target_status']) ? ucfirst(strtolower($data['target_status'])) : 'Repaired';
 
         $kmDiff = 0;
         $hmDiff = 0;
@@ -384,10 +402,12 @@ class ImportApprovalController extends Controller
                 'is_in_warehouse' => 0,
                 'current_location_id' => null,
                 'status' => 'Installed',
-                'current_tread_depth' => $data['rtd'] ?? $tyre->current_tread_depth
+                'current_tread_depth' => $rtd ?? $tyre->current_tread_depth
             ]);
             $posDetail->update(['tyre_id' => $tyre->id]);
         } else if ($type === 'Removal') {
+            if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit $unitCode.");
+
             // Calculate Lifetime if there was a previous installation
             $lastInstallation = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
                 ->where('movement_type', 'Installation')
@@ -405,7 +425,7 @@ class ImportApprovalController extends Controller
             // Resolve new location for removal
             $locationId = null;
             $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse'] ?? null;
-            if ($locationName) {
+            if (!empty($locationName)) {
                 $loc = \App\Models\TyreLocation::firstOrCreate(['location_name' => strtoupper(trim($locationName))]);
                 $locationId = $loc->id;
                 $loc->increment('current_stock');
@@ -416,10 +436,10 @@ class ImportApprovalController extends Controller
                 'current_position_id' => null,
                 'is_in_warehouse' => 1,
                 'current_location_id' => $locationId,
-                'status' => $data['target_status'] ?? 'Repaired',
+                'status' => $targetStatus,
                 'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                 'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
-                'current_tread_depth' => $data['rtd'] ?? $tyre->current_tread_depth
+                'current_tread_depth' => $rtd ?? $tyre->current_tread_depth
             ]);
 
             if ($posDetail && $posDetail->tyre_id == $tyre->id) {
@@ -430,7 +450,7 @@ class ImportApprovalController extends Controller
         // Find Failure Code
         $failCodeStr = $data['failure_code'] ?? null;
         $failCodeId = null;
-        if ($failCodeStr) {
+        if (!empty($failCodeStr)) {
             $failCode = \App\Models\TyreFailureCode::where('failure_code', $failCodeStr)->first();
             $failCodeId = $failCode ? $failCode->id : null;
         }
@@ -443,12 +463,12 @@ class ImportApprovalController extends Controller
             'movement_type' => $type,
             'odometer_reading' => $odo,
             'hour_meter_reading' => $hm,
-            'rtd_reading' => $data['rtd'] ?? null,
-            'psi_reading' => $data['psi'] ?? null,
+            'rtd_reading' => $rtd,
+            'psi_reading' => $psi,
             'running_km' => $kmDiff,
             'running_hm' => $hmDiff,
             'failure_code_id' => $failCodeId,
-            'target_status' => $data['target_status'] ?? null,
+            'target_status' => ($type === 'Removal') ? $targetStatus : null,
             'remarks' => $data['remark'] ?? $data['notes'] ?? null,
             'created_by' => auth()->id()
         ]);

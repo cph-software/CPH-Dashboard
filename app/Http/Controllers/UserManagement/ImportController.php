@@ -41,6 +41,82 @@ class ImportController extends Controller
 
         \DB::beginTransaction();
         try {
+            // === VALIDASI PRE-CHECK KESELURUHAN MODUL ===
+            // Mengumpulkan data untuk divalidasi
+            $snArray = [];
+            $unitArray = [];
+            $layoutArray = [];
+
+            foreach ($data as $row) {
+                $rowSafe = array_pad($row, count($header), null);
+                $rowSafe = array_slice($rowSafe, 0, count($header));
+                $rowData = array_combine($header, $rowSafe);
+                
+                if (in_array($module, ['Movement History'])) {
+                    $sn = $rowData['serial_number'] ?? $rowData['sn_ban'] ?? null;
+                    if (!empty(trim($sn))) $snArray[] = strtoupper(trim($sn));
+                }
+
+                if (in_array($module, ['Movement History', 'Tyre Examination', 'Vehicle Master', 'Master Vehicle'])) {
+                    $unitCode = $rowData['kode_kendaraan'] ?? $rowData['unit'] ?? null;
+                    if (!empty(trim($unitCode))) $unitArray[] = strtoupper(trim($unitCode));
+                }
+
+                if (in_array($module, ['Vehicle Master', 'Master Vehicle'])) {
+                    $layout = $rowData['layout'] ?? $rowData['konfigurasi'] ?? null;
+                    if (!empty(trim($layout))) $layoutArray[] = strtoupper(trim($layout));
+                }
+            }
+            
+            // 1. Pengecekan Serial Number (Untuk Movement)
+            if (!empty($snArray)) {
+                $snArray = array_unique($snArray);
+                $existingTyres = [];
+                foreach(array_chunk($snArray, 1000) as $chunk) {
+                    $found = \App\Models\Tyre::withoutGlobalScopes()->whereIn('serial_number', $chunk)->pluck('serial_number')->toArray();
+                    $existingTyres = array_merge($existingTyres, array_map('strtoupper', $found));
+                }
+                
+                $missingSn = array_diff($snArray, $existingTyres);
+                if (count($missingSn) > 0) {
+                    $missingList = implode(', ', array_slice(array_values($missingSn), 0, 10));
+                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingSn) . ' Serial Number Ban yang belum terdaftar di Master Tyre. Harap daftarkan dulu: ' . $missingList);
+                }
+            }
+
+            // 2. Pengecekan Kode Kendaraan (Untuk Movement, Examination)
+            if (!empty($unitArray) && !in_array($module, ['Vehicle Master', 'Master Vehicle'])) {
+                $unitArray = array_unique($unitArray);
+                $existingUnits = [];
+                foreach(array_chunk($unitArray, 1000) as $chunk) {
+                    $foundUnits = \App\Models\MasterImportKendaraan::withoutGlobalScopes()->whereIn('kode_kendaraan', $chunk)->pluck('kode_kendaraan')->toArray();
+                    $existingUnits = array_merge($existingUnits, array_map('strtoupper', $foundUnits));
+                }
+
+                $missingUnits = array_diff($unitArray, $existingUnits);
+                if (count($missingUnits) > 0) {
+                    $missingUnitsList = implode(', ', array_slice(array_values($missingUnits), 0, 10));
+                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingUnits) . ' Kode Kendaraan/Unit yang belum terdaftar di Master Vehicle. Harap jadikan template unit berikut di Master Unit dulu: ' . $missingUnitsList);
+                }
+            }
+
+            // 3. Pengecekan Layout / Konfigurasi Posisi (Untuk Vehicle Master)
+            if (!empty($layoutArray)) {
+                $layoutArray = array_unique($layoutArray);
+                $existingLayouts = [];
+                foreach(array_chunk($layoutArray, 1000) as $chunk) {
+                    $foundLayouts = \App\Models\TyrePositionConfiguration::withoutGlobalScopes()->whereIn('name', $chunk)->pluck('name')->toArray();
+                    $existingLayouts = array_merge($existingLayouts, array_map('strtoupper', $foundLayouts));
+                }
+
+                $missingLayouts = array_diff($layoutArray, $existingLayouts);
+                if (count($missingLayouts) > 0) {
+                    $missingLayoutsList = implode(', ', array_slice(array_values($missingLayouts), 0, 10));
+                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingLayouts) . ' Konfigurasi Roda (Layout) yang tidak dikenali sistem. Pastikan layout berikut sudah disetting di menu Position Configuration: ' . $missingLayoutsList);
+                }
+            }
+            // ====================================================
+
             $batch = \App\Models\ImportBatch::create([
                 'user_id' => auth()->id(),
                 'module' => $module,

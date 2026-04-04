@@ -11,7 +11,16 @@ class Tyre extends Model
     use BelongsToCompany;
 
     protected $table = 'tyres';
-    protected $guarded = [];
+    protected $fillable = [
+        'tyre_company_id', 'serial_number', 'custom_serial_number',
+        'tyre_pattern_id', 'ply_rating', 'original_tread_depth',
+        'is_in_warehouse', 'current_location_id', 'segment_name',
+        'status', 'retread_count', 'tyre_brand_id', 'tyre_size_id', 'price',
+        'initial_tread_depth', 'current_tread_depth',
+        'total_lifetime_km', 'total_lifetime_hm', 'current_km', 'current_hm',
+        'last_inspection_date', 'current_vehicle_id', 'current_position_id',
+        'created_by', 'updated_by', 'last_hm_reading',
+    ];
 
     protected $casts = [
         'is_in_warehouse' => 'boolean',
@@ -35,6 +44,11 @@ class Tyre extends Model
     public function location()
     {
         return $this->belongsTo(TyreLocation::class, 'current_location_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
     }
 
     public function currentVehicle()

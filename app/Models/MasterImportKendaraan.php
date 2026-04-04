@@ -23,6 +23,11 @@ class MasterImportKendaraan extends Model
         return $this->belongsTo(TyreSegment::class, 'operational_segment_id');
     }
 
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
+    }
+
     public function tyrePositionConfiguration()
     {
         return $this->belongsTo(TyrePositionConfiguration::class, 'tyre_position_configuration_id');

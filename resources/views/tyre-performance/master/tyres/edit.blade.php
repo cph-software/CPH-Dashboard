@@ -76,25 +76,20 @@
                      </select>
                   </div>
                   <div class="col-md-6 mb-3">
-                     <label for="tyre_segment_id" class="form-label">Segment</label>
-                     <select name="tyre_segment_id" id="tyre_segment_id" class="form-select select2" data-placeholder="Select Segment">
-                        <option value="">Select Segment</option>
-                        @foreach ($segments as $segment)
-                           <option value="{{ $segment->id }}" {{ old('tyre_segment_id', $tyre->tyre_segment_id) == $segment->id ? 'selected' : '' }}>
-                              {{ $segment->segment_name }}
-                           </option>
-                        @endforeach
-                     </select>
+                     <label for="segment_name" class="form-label">Segment</label>
+                     <input type="text" name="segment_name" id="segment_name" class="form-control" 
+                        placeholder="Masukkan nama segment" 
+                        value="{{ old('segment_name', $tyre->segment_name) }}">
                   </div>
                </div>
 
                <div class="row g-3">
                   <div class="col-md-12 mb-3">
-                     <label for="work_location_id" class="form-label">Location</label>
-                     <select name="work_location_id" id="work_location_id" class="form-select select2" data-placeholder="Select Location" required>
+                     <label for="current_location_id" class="form-label">Location</label>
+                     <select name="current_location_id" id="current_location_id" class="form-select select2" data-placeholder="Select Location">
                         <option value="">Select Location</option>
                         @foreach ($locations as $loc)
-                           <option value="{{ $loc->id }}" {{ old('work_location_id', $tyre->work_location_id) == $loc->id ? 'selected' : '' }}>
+                           <option value="{{ $loc->id }}" {{ old('current_location_id', $tyre->current_location_id) == $loc->id ? 'selected' : '' }}>
                               {{ $loc->location_name }}
                            </option>
                         @endforeach

@@ -209,9 +209,10 @@ class MonitoringController extends Controller
 
         $data = $request->all();
         $data['is_trail'] = $request->has('is_trail');
+        $data['status'] = 'inactive'; // Set default status to inactive when just added
 
         TyreMonitoringVehicle::create($data);
-        return redirect()->back()->with('success', 'Monitoring Vehicle created and linked to Master Data');
+        return redirect()->back()->with('success', 'Monitoring Vehicle created (Status: Inactive) and linked to Master Data');
     }
 
     public function updateVehicle(Request $request, $id)
@@ -371,6 +372,11 @@ class MonitoringController extends Controller
         try {
             $session = TyreMonitoringSession::create($data);
 
+            // Turn vehicle Active because a session has started
+            if ($vehicle->status !== 'active') {
+                $vehicle->update(['status' => 'active']);
+            }
+
             if ($request->has('checks')) {
                 foreach ($request->checks as $key => $c) {
                     // Skip if no tyre Sn or Pos ID
@@ -418,8 +424,8 @@ class MonitoringController extends Controller
                         'rtd_3' => $r3,
                         'rtd_4' => $r4,
                         'avg_rtd' => $avgRtd,
-                        'inf_press_recommended' => $c['inf_press_recommended'] ?? null,
-                        'inf_press_actual' => $c['inf_press_actual'] ?? null,
+                        'inf_press_recommended' => $c['inf_press_recommended'] ?? 0,
+                        'inf_press_actual' => $c['inf_press_actual'] ?? 0,
                         'date_assembly' => $c['date_assembly'] ?? null,
                         'date_inspection' => $c['date_inspection'] ?? $request->install_date,
                         'notes' => $c['notes'] ?? 'Bulk Installation',
@@ -439,8 +445,8 @@ class MonitoringController extends Controller
                             'hm_reading' => $request->hm_start,
                             'operation_mileage' => 0,
                             'operation_hm' => 0,
-                            'inf_press_recommended' => $c['inf_press_recommended'] ?? null,
-                            'inf_press_actual' => $c['inf_press_actual'] ?? null,
+                            'inf_press_recommended' => $c['inf_press_recommended'] ?? 0,
+                            'inf_press_actual' => $c['inf_press_actual'] ?? 0,
                             'date_assembly' => $c['date_assembly'] ?? null,
                             'date_inspection' => $request->install_date,
                             'rtd_1' => $r1,
@@ -495,9 +501,9 @@ class MonitoringController extends Controller
                                 ]);
 
                                 // 3. Sync Stock if it's a new installation from a location
-                                if ($isNewInstallation && $tyre->work_location_id) {
+                                if ($isNewInstallation && $tyre->current_location_id) {
                                     DB::table('tyre_locations')
-                                        ->where('id', $tyre->work_location_id)
+                                        ->where('id', $tyre->current_location_id)
                                         ->decrement('current_stock');
                                 }
 
@@ -538,16 +544,35 @@ class MonitoringController extends Controller
         $tyre = Tyre::where('serial_number', $request->serial_number)->first();
         
         if (!$tyre) {
-            // Create new tyre record if it doesn't exist
+            // Lookup brand/size/pattern IDs from name strings if direct IDs not provided
+            $brandId = $request->tyre_brand_id;
+            $sizeId = $request->tyre_size_id;
+            $patternId = $request->tyre_pattern_id;
+
+            // Fallback: lookup by name from session data
+            if (!$brandId && $request->brand_name) {
+                $brandLookup = TyreBrand::where('brand_name', $request->brand_name)->first();
+                $brandId = $brandLookup ? $brandLookup->id : null;
+            }
+            if (!$sizeId && $request->size_name) {
+                $sizeLookup = TyreSize::where('size', $request->size_name)->first();
+                $sizeId = $sizeLookup ? $sizeLookup->id : null;
+            }
+            if (!$patternId && $request->pattern_name) {
+                $patternLookup = TyrePattern::where('name', $request->pattern_name)->first();
+                $patternId = $patternLookup ? $patternLookup->id : null;
+            }
+
+            // Create new tyre record
             $tyre = Tyre::create([
                 'serial_number' => $request->serial_number,
-                'tyre_brand_id' => $request->tyre_brand_id,
-                'tyre_pattern_id' => $request->tyre_pattern_id,
-                'tyre_size_id' => $request->tyre_size_id,
+                'tyre_brand_id' => $brandId,
+                'tyre_pattern_id' => $patternId,
+                'tyre_size_id' => $sizeId,
                 'status' => 'Installed',
                 'original_tread_depth' => ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3,
                 'current_tread_depth' => ($request->rtd_1 + $request->rtd_2 + $request->rtd_3) / 3,
-                'tyre_company_id' => auth()->user()->tyre_company_id ?? 1, // Default or session company
+                'tyre_company_id' => auth()->user()->tyre_company_id ?? 1,
             ]);
         }
         
@@ -579,6 +604,8 @@ class MonitoringController extends Controller
                 'status' => 'Installed',
                 'current_vehicle_id' => $session->master_vehicle_id,
                 'current_position_id' => $request->position_id,
+                'current_location_id' => null, // Remove from physical location because it's on vehicle
+                'is_in_warehouse' => false,
                 'current_tread_depth' => $data['avg_rtd'],
                 'last_inspection_date' => $session->install_date,
                 'last_hm_reading' => $data['hm_reading']
@@ -594,7 +621,7 @@ class MonitoringController extends Controller
                 'odometer_reading' => $data['odometer_reading'],
                 'hour_meter_reading' => $data['hm_reading'],
                 'rtd_reading' => $data['avg_rtd'],
-                'work_location_id' => $tyre->work_location_id,
+                'work_location_id' => $tyre->current_location_id,
                 'notes' => 'Monitoring Installation Session #' . $session->session_id,
                 'tyre_company_id' => $tyre->tyre_company_id,
                 'created_by' => \Auth::id()
@@ -612,9 +639,9 @@ class MonitoringController extends Controller
                 ->update(['uploaded_by' => auth()->id()]);
 
             // Sync stock if applicable
-            if ($tyre->wasRecentlyCreated == false && $tyre->work_location_id) {
+            if ($tyre->wasRecentlyCreated == false && $tyre->current_location_id) {
                 DB::table('tyre_locations')
-                    ->where('id', $tyre->work_location_id)
+                    ->where('id', $tyre->current_location_id)
                     ->decrement('current_stock');
             }
 
@@ -757,8 +784,8 @@ class MonitoringController extends Controller
                     'position' => $inst ? $inst->position : '?',
                     'position_id' => $inst ? $inst->position_id : null,
                     'serial_number' => $serial,
-                    'inf_press_recommended' => $c['psi_recommended'] ?? $request->retase,
-                    'inf_press_actual' => $c['psi_actual'] ?? null,
+                    'inf_press_recommended' => $c['psi_recommended'] ?? $request->retase ?? 0,
+                    'inf_press_actual' => $c['psi_actual'] ?? 0,
                     'date_assembly' => $c['date_assembly'] ?? ($inst->date_assembly ?? null),
                     'date_inspection' => $request->check_date,
                     'rtd_1' => $r1,
@@ -906,7 +933,8 @@ class MonitoringController extends Controller
                     'status' => $status,
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
-                    'work_location_id' => $request->work_location_id,
+                    'current_location_id' => $request->work_location_id,
+                    'is_in_warehouse' => true,
                     'current_tread_depth' => $request->final_rtd,
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'last_inspection_date' => $request->removal_date
@@ -917,8 +945,8 @@ class MonitoringController extends Controller
                     TyrePositionDetail::where('id', $data['position_id'])->update(['tyre_id' => null]);
                 }
 
-                // Sync stock (Increment at destination location)
-                if ($request->work_location_id) {
+                // Sync stock (Increment at destination location, UNLESS SCRAP)
+                if ($request->work_location_id && $status !== 'Scrap') {
                     DB::table('tyre_locations')->where('id', $request->work_location_id)->increment('current_stock');
                 }
 

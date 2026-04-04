@@ -26,7 +26,7 @@ class VehicleMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEv
             ['DT-102', 'B 5678 DEF', 'DUMP TRUCK', 'SCANIA', 'SITE B', '18000', '30', 'Overburden', '10', '6 Roda (2+4)', 'Active'],
             ['HX-301', 'DC 9999 ZZ', 'HAUL TRUCK', 'KOMATSU', 'SITE A', '135000', '220', 'OB Haul', '4', '4 Roda (2+2)', 'Active'],
             [],
-            ['=== PANDUAN PENGISIAN ==='],
+            ['*** PANDUAN PENGISIAN ***'],
             ['Kolom', 'Keterangan', 'Wajib?', 'Contoh Nilai'],
             ['kode_kendaraan', 'Kode unik unit kendaraan (No. Lambung)', 'YA', 'DT-101'],
             ['no_polisi', 'Nomor plat kendaraan', 'TIDAK', 'B 1234 ABC'],

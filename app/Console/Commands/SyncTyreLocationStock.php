@@ -19,7 +19,7 @@ class SyncTyreLocationStock extends Command
         
         foreach ($locations as $location) {
             // Count tyres that are in this location and NOT installed
-            $count = Tyre::where('work_location_id', $location->id)
+            $count = Tyre::where('current_location_id', $location->id)
                 ->where('status', '!=', 'Installed')
                 ->count();
             
