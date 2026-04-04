@@ -33,6 +33,7 @@ class FixRolePermissionsSeeder extends Seeder
             'Monitoring',
             'Movement History',
             'Master Data', // Parent Menu
+            'Assets Management', // Parent Menu for Master Tyre and Vehicle Master
             'Brands',
             'Sizes',
             'Patterns',
@@ -110,8 +111,7 @@ class FixRolePermissionsSeeder extends Seeder
             'AR Aging',
             'Lead Time',
             'Lead Time Monitor',
-            'Lead Time Reports',
-            'Assets Management'
+            'Lead Time Reports'
         ];
         $menusToHide = Menu::whereIn('name', $unwantedMenus)->get();
 
