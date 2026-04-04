@@ -18,9 +18,9 @@ class FixRolePermissionsSeeder extends Seeder
     {
         $this->command->info('=== Fixing Missing Role Permissions Completely ===');
 
-        $adminTyre = Role::where('name', 'Admin Tyre')->first();
-        $supervisor = Role::where('name', 'Supervisor')->first();
-        $manajerial = Role::where('name', 'Manajerial')->first();
+        $adminTyre = Role::where('name', 'Admin Tyre')->orWhere('id', 4)->first();
+        $supervisor = Role::where('name', 'Supervisor')->orWhere('id', 3)->first();
+        $manajerial = Role::where('name', 'Manajerial')->orWhere('name', 'Manager')->orWhere('id', 2)->first();
 
         // Target Menus to Ensure Operational Roles Have Access To
         $menuNames = [

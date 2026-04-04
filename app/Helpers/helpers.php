@@ -192,27 +192,32 @@ if (!function_exists('getDashboardRedirectUrl')) {
         // Check if user has access to Tyre app by name OR IDs
         $roleId = $user->role_id;
         
-        $tyreApp = \App\Models\Aplikasi::where('name', 'Master Data Tyre')
-                    ->orWhere('name', 'Tyre Performance')
-                    ->orWhere('id', 2)
-                    ->orWhere('id', 3)
-                    ->first();
+        $tyreApps = \App\Models\Aplikasi::whereIn('name', ['Master Data Tyre', 'Tyre Performance'])
+                    ->orWhereIn('id', [2, 3])
+                    ->get();
                     
-        $tyreAppId = $tyreApp ? $tyreApp->id : null;
-
         $hasTyreAccess = false;
-        if ($tyreAppId) {
-            $hasTyreAccess = \App\Models\Aplikasi::where('id', $tyreAppId)
+        
+        foreach ($tyreApps as $tyreApp) {
+            $tyreAppId = $tyreApp->id;
+
+            // Check explicit mapping
+            $access = \App\Models\Aplikasi::where('id', $tyreAppId)
                 ->whereHas('roles', function ($q) use ($roleId) {
                     $q->where('role.id', $roleId);
                 })->exists();
 
-            // Secondary check via menus if explicit link is missing
-            if (!$hasTyreAccess) {
-                $hasTyreAccess = \App\Models\Menu::where('aplikasi_id', $tyreAppId)
+            // Check implicit via menus
+            if (!$access) {
+                $access = \App\Models\Menu::where('aplikasi_id', $tyreAppId)
                     ->whereHas('roles', function ($q) use ($roleId) {
                         $q->where('role.id', $roleId);
                     })->exists();
+            }
+            
+            if ($access) {
+                $hasTyreAccess = true;
+                break;
             }
         }
 
