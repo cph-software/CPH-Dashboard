@@ -52,7 +52,7 @@ class FixRolePermissionsSeeder extends Seeder
         $menuUrls = [
             'dashboard', 'tyre-dashboard', 'monitoring', 'pemasangan', 'pelepasan', 
             'rotasi', 'history', 'master_company', 'master_tyre', 'master_kendaraan',
-            'import-approval', '#'
+            'import-approval'
         ];
 
         // Temukan semua menu yang namanya ada di daftar di atas ATAU URL-nya cocok
@@ -96,6 +96,31 @@ class FixRolePermissionsSeeder extends Seeder
             }
         }
 
-        $this->command->info('✅ ALL Operational and Parent Menus linked to Manager, Supervisor, and Admin Tyre!');
+        // --- CLEANUP ACCIDENTAL MENUS ---
+        // Karena '#' sebelumnya mencakup semua parent, kita hapus parent yang bukan bagian dari modul Tyre
+        $unwantedMenus = [
+            'User Management',
+            'BA Management',
+            'Berita Acara',
+            'BA Reports',
+            'Invoicing',
+            'Invoice List',
+            'Overdue Tracking',
+            'AR Aging',
+            'Lead Time',
+            'Lead Time Monitor',
+            'Lead Time Reports',
+            'Assets Management',
+            'Examination' // Jika manager tidak boleh ke examination
+        ];
+        $menusToHide = Menu::whereIn('name', $unwantedMenus)->get();
+
+        foreach ($menusToHide as $badMenu) {
+            if ($manajerial) $manajerial->menus()->detach($badMenu->id);
+            if ($supervisor) $supervisor->menus()->detach($badMenu->id);
+            // $adminTyre might need them, or might not. Better safe.
+        }
+
+        $this->command->info('✅ ALL Operational and Parent Menus linked perfectly, extraneous menus detached!');
     }
 }
