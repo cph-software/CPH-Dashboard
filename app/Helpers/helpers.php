@@ -117,7 +117,12 @@ if (!function_exists('getAllRoleMenusForProject')) {
     {
         return \App\Models\RoleMenu::where('role_id', $roleId)
             ->whereHas('menu', function ($query) {
-                $query->where('icon', 'like', 'ri-%');
+                // Allows RemixIcon (ri-), BoxIcons (bx-), and also generic dashboard or menu without icon
+                $query->where('icon', 'like', 'ri-%')
+                      ->orWhere('icon', 'like', 'bx-%')
+                      ->orWhereNull('icon')
+                      ->orWhere('url', 'tyre-dashboard')
+                      ->orWhere('url', 'dashboard');
             })
             ->with('menu')
             ->get();
@@ -184,12 +189,15 @@ if (!function_exists('getDashboardRedirectUrl')) {
         if (!$user)
             return '/login';
 
-        // Check if user has access to Tyre app (by name, not hardcoded ID)
+        // Check if user has access to Tyre app by name OR IDs
         $roleId = $user->role_id;
-        $tyreApp = \App\Models\Aplikasi::where('name', 'Master Data Tyre')->first();
-        if (!$tyreApp) {
-            $tyreApp = \App\Models\Aplikasi::where('name', 'Tyre Performance')->first();
-        }
+        
+        $tyreApp = \App\Models\Aplikasi::where('name', 'Master Data Tyre')
+                    ->orWhere('name', 'Tyre Performance')
+                    ->orWhere('id', 2)
+                    ->orWhere('id', 3)
+                    ->first();
+                    
         $tyreAppId = $tyreApp ? $tyreApp->id : null;
 
         $hasTyreAccess = false;

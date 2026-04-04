@@ -49,8 +49,16 @@ class FixRolePermissionsSeeder extends Seeder
             'Import Approval'
         ];
 
-        // Temukan semua menu yang namanya ada di daftar di atas
-        $menus = Menu::whereIn('name', $menuNames)->get();
+        $menuUrls = [
+            'dashboard', 'tyre-dashboard', 'monitoring', 'pemasangan', 'pelepasan', 
+            'rotasi', 'history', 'master_company', 'master_tyre', 'master_kendaraan',
+            'import-approval', '#'
+        ];
+
+        // Temukan semua menu yang namanya ada di daftar di atas ATAU URL-nya cocok
+        $menus = Menu::whereIn('name', $menuNames)
+                     ->orWhereIn('url', $menuUrls)
+                     ->get();
 
         foreach ($menus as $menu) {
             $basePerms = ['view'];
