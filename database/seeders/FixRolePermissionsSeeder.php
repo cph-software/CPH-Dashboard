@@ -16,90 +16,78 @@ class FixRolePermissionsSeeder extends Seeder
      */
     public function run()
     {
-        $this->command->info('=== Fixing Missing Role Permissions ===');
+        $this->command->info('=== Fixing Missing Role Permissions Completely ===');
 
-        // 1. Fix Rotasi for Admin Tyre
-        $admin = Role::where('name', 'Admin Tyre')->first();
-        $rotasi = Menu::where('name', 'Rotasi (Rotate)')->first();
-
-        if ($admin && $rotasi) {
-            $permissionsJson = json_encode(['view', 'create', 'import']);
-            $admin->menus()->syncWithoutDetaching([
-                $rotasi->id => ['permissions' => $permissionsJson]
-            ]);
-            $this->command->info('✅ Fixed: Rotasi menu added to Admin Tyre.');
-        }
-
-        // 2. Fix Import Approval for Supervisor & Manajerial
-        $importMenu = Menu::where('name', 'Import Approval')->first();
+        $adminTyre = Role::where('name', 'Admin Tyre')->first();
         $supervisor = Role::where('name', 'Supervisor')->first();
         $manajerial = Role::where('name', 'Manajerial')->first();
 
-        if ($importMenu) {
-            // Supervisor gets full approve rights (update)
-            if ($supervisor) {
-                $supervisor->menus()->syncWithoutDetaching([
-                    $importMenu->id => ['permissions' => json_encode(['view', 'create', 'update', 'delete', 'export', 'import'])]
-                ]);
-                $this->command->info('✅ Fixed: Import Approval (Full Access) added to Supervisor.');
-            }
+        // Target Menus to Ensure Operational Roles Have Access To
+        $menuNames = [
+            'Dashboard',
+            'Tyre Operations', // Parent Menu (CRITICAL for sidebar rendering)
+            'Pemasangan (Install)',
+            'Pelepasan (Remove)',
+            'Rotasi (Rotate)',
+            'Tyre Monitoring',
+            'Monitoring',
+            'Movement History',
+            'Master Data', // Parent Menu
+            'Brands',
+            'Sizes',
+            'Patterns',
+            'Failure Codes',
+            'Locations',
+            'Segments',
+            'Axle Layouts',
+            'Position Layouts',
+            'Vehicle Master',
+            'Master Tyre',
+            'System Config', // Parent Menu
+            'System Settings', // Alternative Parent Menu
+            'Companies',
+            'Import Approval'
+        ];
 
-            // Manajerial gets view + update (approve) per DEVELOPMENT_ROADMAP.md:
-            // "Level Manajerial/Supervisor memberikan 'Approval' baru data dipindahkan ke Master"
-            if ($manajerial) {
-                $manajerial->menus()->syncWithoutDetaching([
-                    $importMenu->id => ['permissions' => json_encode(['view', 'update'])]
-                ]);
-                $this->command->info('✅ Fixed: Import Approval (View + Approve) added to Manajerial.');
-            }
-        }
-        
-        // 3. Ensure System Settings Parent is visible so they can see Import Approval
-        $systemSettings = Menu::where('name', 'System Settings')->first();
-        if ($systemSettings && $importMenu) {
-             if ($supervisor) {
-                 $supervisor->menus()->syncWithoutDetaching([
-                    $systemSettings->id => ['permissions' => json_encode(['view'])]
-                 ]);
-             }
-             if ($manajerial) {
-                 $manajerial->menus()->syncWithoutDetaching([
-                    $systemSettings->id => ['permissions' => json_encode(['view'])]
-                 ]);
-             }
-        }
+        // Temukan semua menu yang namanya ada di daftar di atas
+        $menus = Menu::whereIn('name', $menuNames)->get();
 
-        // 4. Ensure Dashboard is visible so they don't get 403 denied on /tyre-dashboard
-        $dashboardMenu = Menu::where('name', 'Dashboard')->where(function($q) {
-             $q->where('url', 'tyre-dashboard')
-               ->orWhere('aplikasi_id', 2)
-               ->orWhere('aplikasi_id', 3);
-        })->first();
-
-        // If not found by precise query, try broader
-        if (!$dashboardMenu) {
-            $dashboardMenu = Menu::where('name', 'Dashboard')->first();
-        }
-
-        if ($dashboardMenu) {
-            $adminTyre = Role::where('name', 'Admin Tyre')->first();
+        foreach ($menus as $menu) {
+            $basePerms = ['view'];
             
+            // Berikan hak penuh untuk Import Approval bagi Supervisor
+            if ($menu->name === 'Import Approval' || str_contains($menu->name, 'Tyre Monitoring')) {
+                $supervisorPerms = ['view', 'create', 'update', 'delete', 'export', 'import'];
+            } else {
+                $supervisorPerms = ['view'];
+            }
+
+            // Sync untuk Manajerial (View Only rata-rata + Update di import)
+            if ($manajerial) {
+                $manajerialPerms = ['view'];
+                if ($menu->name === 'Import Approval') {
+                    $manajerialPerms[] = 'update'; // Bisa approve
+                }
+                $manajerial->menus()->syncWithoutDetaching([
+                    $menu->id => ['permissions' => json_encode($manajerialPerms)]
+                ]);
+            }
+
+            // Sync untuk Supervisor
             if ($supervisor) {
                 $supervisor->menus()->syncWithoutDetaching([
-                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
+                    $menu->id => ['permissions' => json_encode($supervisorPerms)]
                 ]);
             }
-            if ($manajerial) {
-                $manajerial->menus()->syncWithoutDetaching([
-                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
-                ]);
-            }
-            if ($adminTyre) {
+
+            // Sync untuk Admin Tyre (Operasional Penuh)
+            if ($adminTyre && in_array($menu->name, ['Tyre Operations', 'Pemasangan (Install)', 'Pelepasan (Remove)', 'Rotasi (Rotate)', 'Tyre Monitoring', 'Movement History', 'Dashboard'])) {
                 $adminTyre->menus()->syncWithoutDetaching([
-                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
+                    $menu->id => ['permissions' => json_encode(['view', 'create', 'update', 'delete', 'export', 'import'])]
                 ]);
             }
-            $this->command->info('✅ Fixed: Dashboard permission added to Supervisor, Manajerial, Admin Tyre.');
         }
+
+        $this->command->info('✅ ALL Operational and Parent Menus linked to Manager, Supervisor, and Admin Tyre!');
     }
 }
