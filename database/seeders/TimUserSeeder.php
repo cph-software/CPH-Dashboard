@@ -24,11 +24,16 @@ class TimUserSeeder extends Seeder
             ]
         );
 
+        $adminRoleId = \App\Models\Role::where('name', 'Super Admin')->value('id') ?? 1;
+        $managerRoleId = \App\Models\Role::where('name', 'Manajerial')->value('id') ?? 2;
+        $spvRoleId = \App\Models\Role::where('name', 'Supervisor')->value('id') ?? 3;
+        $posRoleId = \App\Models\Role::where('name', 'Admin Tyre')->value('id') ?? 4;
+
         $users = [
             [
                 'name' => 'admin_tim',
                 'master_karyawan_id' => 'TIM-ADM',
-                'role_id' => 1, // Super Admin
+                'role_id' => $adminRoleId,
                 'password' => \Hash::make('Tim123456'),
                 'tyre_company_id' => $company->id,
                 'foto' => ''
@@ -36,7 +41,7 @@ class TimUserSeeder extends Seeder
             [
                 'name' => 'mgr_tim',
                 'master_karyawan_id' => 'TIM-MGR',
-                'role_id' => 2, // Manajerial
+                'role_id' => $managerRoleId,
                 'password' => \Hash::make('Tim123456'),
                 'tyre_company_id' => $company->id,
                 'foto' => ''
@@ -44,7 +49,7 @@ class TimUserSeeder extends Seeder
             [
                 'name' => 'spv_tim',
                 'master_karyawan_id' => 'TIM-SPV',
-                'role_id' => 3, // Supervisor
+                'role_id' => $spvRoleId,
                 'password' => \Hash::make('Tim123456'),
                 'tyre_company_id' => $company->id,
                 'foto' => ''
@@ -52,7 +57,7 @@ class TimUserSeeder extends Seeder
             [
                 'name' => 'pos_tim1',
                 'master_karyawan_id' => 'TIM-POS1',
-                'role_id' => 4, // Admin Tyre / POS
+                'role_id' => $posRoleId,
                 'password' => \Hash::make('Tim123456'),
                 'tyre_company_id' => $company->id,
                 'foto' => ''
@@ -60,7 +65,7 @@ class TimUserSeeder extends Seeder
             [
                 'name' => 'pos_tim2',
                 'master_karyawan_id' => 'TIM-POS2',
-                'role_id' => 4, // Admin Tyre / POS
+                'role_id' => $posRoleId,
                 'password' => \Hash::make('Tim123456'),
                 'tyre_company_id' => $company->id,
                 'foto' => ''
