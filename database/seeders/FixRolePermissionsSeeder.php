@@ -46,13 +46,14 @@ class FixRolePermissionsSeeder extends Seeder
             'System Config', // Parent Menu
             'System Settings', // Alternative Parent Menu
             'Companies',
-            'Import Approval'
+            'Import Approval',
+            'Examination'
         ];
 
         $menuUrls = [
             'dashboard', 'tyre-dashboard', 'monitoring', 'pemasangan', 'pelepasan', 
             'rotasi', 'history', 'master_company', 'master_tyre', 'master_kendaraan',
-            'import-approval'
+            'import-approval', 'examination'
         ];
 
         // Temukan semua menu yang namanya ada di daftar di atas ATAU URL-nya cocok
@@ -110,8 +111,7 @@ class FixRolePermissionsSeeder extends Seeder
             'Lead Time',
             'Lead Time Monitor',
             'Lead Time Reports',
-            'Assets Management',
-            'Examination' // Jika manager tidak boleh ke examination
+            'Assets Management'
         ];
         $menusToHide = Menu::whereIn('name', $unwantedMenus)->get();
 
