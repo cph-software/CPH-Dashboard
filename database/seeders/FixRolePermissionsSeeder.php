@@ -68,5 +68,38 @@ class FixRolePermissionsSeeder extends Seeder
                  ]);
              }
         }
+
+        // 4. Ensure Dashboard is visible so they don't get 403 denied on /tyre-dashboard
+        $dashboardMenu = Menu::where('name', 'Dashboard')->where(function($q) {
+             $q->where('url', 'tyre-dashboard')
+               ->orWhere('aplikasi_id', 2)
+               ->orWhere('aplikasi_id', 3);
+        })->first();
+
+        // If not found by precise query, try broader
+        if (!$dashboardMenu) {
+            $dashboardMenu = Menu::where('name', 'Dashboard')->first();
+        }
+
+        if ($dashboardMenu) {
+            $adminTyre = Role::where('name', 'Admin Tyre')->first();
+            
+            if ($supervisor) {
+                $supervisor->menus()->syncWithoutDetaching([
+                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
+                ]);
+            }
+            if ($manajerial) {
+                $manajerial->menus()->syncWithoutDetaching([
+                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
+                ]);
+            }
+            if ($adminTyre) {
+                $adminTyre->menus()->syncWithoutDetaching([
+                    $dashboardMenu->id => ['permissions' => json_encode(['view'])]
+                ]);
+            }
+            $this->command->info('✅ Fixed: Dashboard permission added to Supervisor, Manajerial, Admin Tyre.');
+        }
     }
 }

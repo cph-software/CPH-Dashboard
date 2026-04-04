@@ -27,9 +27,9 @@ class DashboardController extends Controller
                 return redirect()->route('login');
             }
 
-            // Check Access to Tyre Performance App by dynamic Name
+            // Check Access to Tyre App by dynamic Name
             $userApps = getAplikasiPerRole($user->role_id);
-            if (!$userApps->contains('name', 'Tyre Performance')) {
+            if (!$userApps->contains('name', 'Tyre Performance') && !$userApps->contains('name', 'Master Data Tyre')) {
                 if ($request->ajax()) {
                     return response()->json(['error' => 'Akses Ditolak: Anda tidak memiliki izin untuk mengakses Tyre Monitoring.'], 403);
                 }
