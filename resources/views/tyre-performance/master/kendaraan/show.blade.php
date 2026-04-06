@@ -249,12 +249,6 @@
                     <a href="{{ route('tyre-kendaraan.index') }}" class="btn back-btn btn-sm">
                         <i class="ri-arrow-left-line me-1"></i>Kembali
                     </a>
-                    @if(hasPermission('Vehicle Master', 'update'))
-                        <button class="btn btn-sm btn-light"
-                            onclick="window.location='{{ route('tyre-kendaraan.edit', $kendaraan->id) }}'">
-                            <i class="ri-pencil-line me-1"></i>Edit
-                        </button>
-                    @endif
                 </div>
             </div>
 
