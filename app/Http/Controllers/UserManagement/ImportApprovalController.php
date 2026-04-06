@@ -373,16 +373,55 @@ class ImportApprovalController extends Controller
         if (!$sn) throw new \Exception("Serial Number kosong");
         $sn = strtoupper(trim($sn));
 
+        // ============================================================
+        // PRE-VALIDATION: Prevent polluting Master Data with invalid rows
+        // ============================================================
+        $isDualFormat = isset($data['pemasangan_tanggal']) || isset($data['pelepasan_tanggal']);
+        $unitCode = $data['kode_kendaraan'] ?? $data['unit'] ?? null;
+        if ($unitCode) $unitCode = strtoupper(trim($unitCode));
+
+        if ($isDualFormat) {
+            $installDate = $this->parseFlexDate($data['pemasangan_tanggal'] ?? null);
+            $keterangan  = strtoupper(trim($data['keterangan'] ?? ''));
+            $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
+
+            if (!$installDate && !$isScrapOnly) {
+                throw new \Exception("Movement tidak diproses karena Tanggal Pemasangan kosong.");
+            }
+
+            if ($installDate && empty($unitCode)) {
+                throw new \Exception("Movement gagal: Pemasangan memerlukan Unit Kendaraan yang valid.");
+            }
+        }
+
         $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
         if (!$tyre) {
+            $brand = \App\Models\TyreBrand::firstOrCreate(
+                ['brand_name' => 'UNKNOWN'],
+                ['status' => 'Active']
+            );
+            $size = \App\Models\TyreSize::firstOrCreate(
+                ['size' => 'UNKNOWN', 'tyre_brand_id' => $brand->id],
+                ['std_otd' => 0, 'ply_rating' => 0]
+            );
+            $pattern = \App\Models\TyrePattern::firstOrCreate(
+                ['name' => 'UNKNOWN', 'tyre_brand_id' => $brand->id]
+            );
+
             // Auto-create tyre with minimal data
             $tyre = \App\Models\Tyre::create([
                 'serial_number'       => $sn,
                 'tyre_company_id'     => $uploaderCompanyId,
+                'tyre_brand_id'       => $brand->id,
+                'tyre_size_id'        => $size->id,
+                'tyre_pattern_id'     => $pattern->id,
                 'status'              => 'New',
                 'is_in_warehouse'     => 1,
                 'initial_tread_depth' => 0,
                 'current_tread_depth' => 0,
+                'original_tread_depth'=> 0,
+                'price'               => 0,
+                'ply_rating'          => 0,
             ]);
         }
 
@@ -398,6 +437,7 @@ class ImportApprovalController extends Controller
             if (!$vehicle) {
                 $vehicle = \App\Models\MasterImportKendaraan::create([
                     'kode_kendaraan'      => $unitCode,
+                    'no_polisi'           => '-',
                     'tyre_company_id'     => $uploaderCompanyId,
                     'jenis_kendaraan'     => 'Unknown',
                     'area'                => 'Unknown',
@@ -445,9 +485,13 @@ class ImportApprovalController extends Controller
 
         // 1. Create INSTALLATION record
         if ($installDate) {
+            if (!$vehicle) {
+                throw new \Exception("Movement gagal: Pemasangan memerlukan Unit Kendaraan yang valid.");
+            }
+
             \App\Models\TyreMovement::create([
                 'tyre_id'          => $tyre->id,
-                'vehicle_id'       => $vehicle ? $vehicle->id : null,
+                'vehicle_id'       => $vehicle->id,
                 'position_id'      => $positionId,
                 'movement_type'    => 'Installation',
                 'movement_date'    => $installDate,
@@ -479,7 +523,7 @@ class ImportApprovalController extends Controller
                 'current_vehicle_id'  => null,
                 'current_position_id' => null,
                 'is_in_warehouse'     => 1,
-                'status'              => $targetStatus === 'Scrap' ? 'Scrap' : 'Used',
+                'status'              => $targetStatus,
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
                 'total_lifetime_km'   => ($tyre->total_lifetime_km ?? 0) + $runningKm,
             ]);
@@ -490,6 +534,12 @@ class ImportApprovalController extends Controller
                 'current_position_id' => $positionId,
                 'is_in_warehouse'     => 0,
                 'status'              => 'Installed',
+            ]);
+        } else if (!$installDate && !$removeDate && $targetStatus === 'Scrap') {
+            // SCRAP-ONLY: No movement dates, just status update
+            $tyre->update([
+                'status'              => 'Scrap',
+                'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
             ]);
         }
     }
