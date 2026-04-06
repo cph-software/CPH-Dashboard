@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 
 class ImportApprovalController extends Controller
 {
+    private $brandCache = [];
+    private $sizeCache = [];
+    private $patternCache = [];
+    private $tyreCache = [];
+    private $vehicleCache = [];
+
     /**
      * Get a company-scoped query for ImportBatch.
      * Super Admin (role_id 1) sees ALL batches.
@@ -58,23 +64,31 @@ class ImportApprovalController extends Controller
             return redirect()->back()->with('error', 'Batch ini sudah diproses.');
         }
 
-        $batch->update([
-            'status' => 'Approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now()
-        ]);
-
         // Process Data immediately (for now, later can be queued)
         try {
             $this->processData($batch);
             
+            // Check if all items are processed (no more pending)
+            $remainingPending = $batch->items()->where('status', 'Pending')->count();
+            if ($remainingPending === 0) {
+                $batch->update([
+                    'status' => 'Approved',
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now()
+                ]);
+                $msg = 'Batch berhasil disetujui sepenuhnya dan semua data telah diproses.';
+            } else {
+                $msg = 'Sebagian data berhasil disetujui. Terdapat ' . $remainingPending . ' baris yang masih perlu perbaikan dan berstatus Pending.';
+            }
+
             setLogActivity(auth()->id(), "Menyetujui dan memproses import batch #$id ({$batch->module})", [
                 'module' => 'Import Approval',
                 'batch_id' => $id,
-                'status' => 'Success'
+                'status' => 'Success',
+                'remainingPending' => $remainingPending
             ]);
 
-            return redirect()->route('import-approval.index')->with('success', 'Batch berhasil disetujui dan data telah diproses.');
+            return redirect()->route('import-approval.index')->with('success', $msg);
         } catch (\Exception $e) {
             $batch->update(['status' => 'Failed', 'notes' => $e->getMessage()]);
             
@@ -99,6 +113,14 @@ class ImportApprovalController extends Controller
                 try {
                     $data = $item->data;
                     
+                    // Skip if invalid (Partial Approval Logic) for Movement History
+                    if ($batch->module === 'Movement History') {
+                        $isValid = $data['_validation']['is_valid'] ?? true;
+                        if (!$isValid) {
+                            continue; // Biarkan tetap Pending di keranjang
+                        }
+                    }
+
                     switch ($batch->module) {
                         case 'Master Tyre':
                         case 'Tyre Master':
@@ -394,19 +416,33 @@ class ImportApprovalController extends Controller
             }
         }
 
-        $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
+        // Check Tyre Cache first
+        if (array_key_exists($sn, $this->tyreCache)) {
+            $tyre = $this->tyreCache[$sn];
+        } else {
+            $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
+            if ($tyre) {
+                $this->tyreCache[$sn] = $tyre;
+            }
+        }
+
         if (!$tyre) {
-            $brand = \App\Models\TyreBrand::firstOrCreate(
+            $brand = $this->brandCache['UNKNOWN'] ?? \App\Models\TyreBrand::firstOrCreate(
                 ['brand_name' => 'UNKNOWN'],
                 ['status' => 'Active']
             );
-            $size = \App\Models\TyreSize::firstOrCreate(
+            $this->brandCache['UNKNOWN'] = $brand;
+
+            $size = $this->sizeCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyreSize::firstOrCreate(
                 ['size' => 'UNKNOWN', 'tyre_brand_id' => $brand->id],
                 ['std_otd' => 0, 'ply_rating' => 0]
             );
-            $pattern = \App\Models\TyrePattern::firstOrCreate(
+            $this->sizeCache["UNKNOWN_{$brand->id}"] = $size;
+
+            $pattern = $this->patternCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyrePattern::firstOrCreate(
                 ['name' => 'UNKNOWN', 'tyre_brand_id' => $brand->id]
             );
+            $this->patternCache["UNKNOWN_{$brand->id}"] = $pattern;
 
             // Auto-create tyre with minimal data
             $tyre = \App\Models\Tyre::create([
@@ -423,6 +459,7 @@ class ImportApprovalController extends Controller
                 'price'               => 0,
                 'ply_rating'          => 0,
             ]);
+            $this->tyreCache[$sn] = $tyre;
         }
 
         // ============================================================
@@ -433,17 +470,22 @@ class ImportApprovalController extends Controller
 
         $vehicle = null;
         if ($unitCode) {
-            $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
-            if (!$vehicle) {
-                $vehicle = \App\Models\MasterImportKendaraan::create([
-                    'kode_kendaraan'      => $unitCode,
-                    'no_polisi'           => '-',
-                    'tyre_company_id'     => $uploaderCompanyId,
-                    'jenis_kendaraan'     => 'Unknown',
-                    'area'                => 'Unknown',
-                    'total_tyre_position' => 0,
-                    'tyre_unit_status'    => 'Active',
-                ]);
+            if (array_key_exists($unitCode, $this->vehicleCache)) {
+                $vehicle = $this->vehicleCache[$unitCode];
+            } else {
+                $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
+                if (!$vehicle) {
+                    $vehicle = \App\Models\MasterImportKendaraan::create([
+                        'kode_kendaraan'      => $unitCode,
+                        'no_polisi'           => '-',
+                        'tyre_company_id'     => $uploaderCompanyId,
+                        'jenis_kendaraan'     => 'Unknown',
+                        'area'                => 'Unknown',
+                        'total_tyre_position' => 0,
+                        'tyre_unit_status'    => 'Active',
+                    ]);
+                }
+                $this->vehicleCache[$unitCode] = $vehicle;
             }
         }
 
@@ -867,5 +909,64 @@ class ImportApprovalController extends Controller
         ]);
 
         return redirect()->route('import-approval.index')->with('warning', 'Batch telah ditolak.');
+    }
+
+    public function updateItem(Request $request, $itemId)
+    {
+        $item = \App\Models\ImportItem::findOrFail($itemId);
+        
+        $data = $item->data;
+        $updates = $request->except('_token', '_method');
+        
+        // Merge updates
+        foreach ($updates as $key => $val) {
+            $data[$key] = $val;
+        }
+
+        // Re-validate
+        $validation = $this->validateMovementRow($data);
+        $data['_validation'] = $validation;
+
+        $item->data = $data;
+        $item->save();
+
+        return response()->json([
+            'success' => true,
+            'is_valid' => $validation['is_valid'],
+            'errors' => $validation['errors'],
+            'item_data' => $data
+        ]);
+    }
+
+    private function validateMovementRow($data)
+    {
+        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
+        $sn = strtoupper(trim((string)$sn));
+        $errors = [];
+
+        if (empty($sn)) {
+            $errors[] = "Nomor Seri kosong.";
+        }
+
+        $installDateRaw = $data['pemasangan_tanggal'] ?? null;
+        $installDate = !empty($installDateRaw) && trim($installDateRaw) !== '0';
+
+        $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
+        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
+        
+        $unitCode = trim($data['kode_kendaraan'] ?? $data['unit'] ?? '');
+
+        if (!$installDate && !$isScrapOnly) {
+            $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
+        }
+
+        if ($installDate && empty($unitCode)) {
+            $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
+        }
+
+        return [
+            'is_valid' => empty($errors),
+            'errors' => $errors
+        ];
     }
 }

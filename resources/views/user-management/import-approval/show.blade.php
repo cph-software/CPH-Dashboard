@@ -69,52 +69,130 @@
       </div>
 
       {{-- Data Table --}}
+      @php
+          $readyItems = collect();
+          $attentionItems = collect();
+          $headers = [];
+
+          if ($batch->items->count() > 0) {
+              // Ensure we exclude _validation from headers
+              $headers = array_diff(array_keys($batch->items->first()->data), ['_validation']);
+              
+              foreach ($batch->items as $item) {
+                  $is_valid = $item->data['_validation']['is_valid'] ?? ($item->status === 'Success' || $item->status === 'Pending');
+                  if ($item->status === 'Failed') $is_valid = false;
+                  
+                  if ($is_valid) {
+                      $readyItems->push($item);
+                  } else {
+                      $attentionItems->push($item);
+                  }
+              }
+          }
+      @endphp
+
       <div class="card shadow-sm border-0">
-         <div class="card-header bg-label-secondary py-2">
-            <h6 class="mb-0">Pratinjau Data (Imported Rows)</h6>
+         <div class="card-header bg-white border-bottom p-0">
+            <ul class="nav nav-tabs nav-fill mb-0" role="tablist">
+               <li class="nav-item">
+                  <button type="button" class="nav-link active fw-bold text-success py-3" role="tab" data-bs-toggle="tab" data-bs-target="#navs-ready">
+                     <i class="ri-check-double-line me-1"></i> Siap Disetujui (Ready)
+                     <span class="badge bg-success ms-1">{{ $readyItems->count() }}</span>
+                  </button>
+               </li>
+               <li class="nav-item">
+                  <button type="button" class="nav-link fw-bold text-danger py-3" role="tab" data-bs-toggle="tab" data-bs-target="#navs-attention">
+                     <i class="ri-error-warning-line me-1"></i> Perlu Perbaikan
+                     <span class="badge bg-danger ms-1">{{ $attentionItems->count() }}</span>
+                  </button>
+               </li>
+            </ul>
          </div>
-         <div class="table-responsive text-nowrap" style="max-height: 500px">
-            <table class="table table-hover table-striped border-top mb-0">
-               <thead>
-                  <tr>
-                     <th width="50">#</th>
-                     <th width="100">Status</th>
-                     {{-- Find columns from the first item data keys --}}
-                     @if ($batch->items->count() > 0)
-                        @foreach (array_keys($batch->items->first()->data) as $column)
-                           <th>{{ ucwords(str_replace(['_', '-'], ' ', $column)) }}</th>
-                        @endforeach
-                     @endif
-                     <th>Notes/Error</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  @forelse ($batch->items as $idx => $item)
-                     <tr>
-                        <td>{{ $idx + 1 }}</td>
-                        <td>
+         
+         <div class="tab-content p-0">
+            {{-- TAB 1: READY --}}
+            <div class="tab-pane fade show active" id="navs-ready" role="tabpanel">
+               <div class="table-responsive text-nowrap" style="max-height: 500px">
+                  <table class="table table-hover table-striped mb-0">
+                     <thead class="table-light sticky-top">
+                        <tr>
+                           <th width="50">#</th>
+                           <th width="100">Status</th>
+                           @foreach ($headers as $column)
+                              <th>{{ ucwords(str_replace(['_', '-'], ' ', $column)) }}</th>
+                           @endforeach
+                           <th>Validation Notes</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        @forelse ($readyItems as $idx => $item)
+                           <tr>
+                              <td>{{ $idx + 1 }}</td>
+                              <td><span class="badge bg-label-success small">Ready</span></td>
+                              @foreach ($headers as $col)
+                                 <td>{{ $item->data[$col] ?? '-' }}</td>
+                              @endforeach
+                              <td class="small text-success">Valid</td>
+                           </tr>
+                        @empty
+                           <tr>
+                              <td colspan="{{ count($headers) + 3 }}" class="text-center py-5">Baris data siap disetujui tidak ditemukan.</td>
+                           </tr>
+                        @endforelse
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+
+            {{-- TAB 2: NEEDS ATTENTION (INLINE EDIT) --}}
+            <div class="tab-pane fade" id="navs-attention" role="tabpanel">
+               <div class="bg-label-warning p-2 small border-bottom text-center">
+                  <i class="ri-information-line me-1"></i> Ubah data di bawah ini dan klik tombol <i class="ri-save-line text-primary"></i> untuk memvalidasi ulang baris.
+               </div>
+               <div class="table-responsive text-nowrap" style="max-height: 500px; padding-bottom: 50px;">
+                  <table class="table table-hover mb-0">
+                     <thead class="table-light sticky-top">
+                        <tr>
+                           <th width="50">Aksi</th>
+                           <th width="100">Alasan Error</th>
+                           @foreach ($headers as $column)
+                              <th>{{ ucwords(str_replace(['_', '-'], ' ', $column)) }}</th>
+                           @endforeach
+                        </tr>
+                     </thead>
+                     <tbody>
+                        @forelse ($attentionItems as $idx => $item)
                            @php
-                              $itemStatusClass =
-                                  [
-                                      'Pending' => 'bg-label-warning',
-                                      'Success' => 'bg-label-success',
-                                      'Failed' => 'bg-label-danger',
-                                  ][$item->status] ?? 'bg-label-secondary';
+                              $errors = $item->data['_validation']['errors'] ?? [];
+                              $errorMsg = is_array($errors) ? implode(', ', $errors) : ($item->error_message ?? 'Kesalahan Data');
                            @endphp
-                           <span class="badge {{ $itemStatusClass }} small">{{ $item->status }}</span>
-                        </td>
-                        @foreach ($item->data as $val)
-                           <td>{{ is_array($val) ? json_encode($val) : $val }}</td>
-                        @endforeach
-                        <td class="small text-danger">{{ $item->error_message ?? '-' }}</td>
-                     </tr>
-                  @empty
-                     <tr>
-                        <td colspan="10" class="text-center py-5">Baris data tidak ditemukan.</td>
-                     </tr>
-                  @endforelse
-               </tbody>
-            </table>
+                           <tr id="row-{{ $item->id }}" class="border-danger" style="border-left: 3px solid;">
+                              <td>
+                                 <button class="btn btn-sm btn-icon btn-primary btn-save-row" data-id="{{ $item->id }}" title="Simpan Perubahan">
+                                    <i class="ri-save-line"></i>
+                                 </button>
+                              </td>
+                              <td class="small text-danger fw-bold" style="white-space: normal; min-width: 200px;">{{ $errorMsg }}</td>
+                              
+                              @foreach ($headers as $col)
+                                 <td>
+                                    <input type="text" class="form-control form-control-sm form-edit-input" 
+                                           data-row="{{ $item->id }}" 
+                                           data-key="{{ $col }}" 
+                                           value="{{ $item->data[$col] ?? '' }}" 
+                                           style="min-width: 120px; font-size: 0.85rem">
+                                 </td>
+                              @endforeach
+                           </tr>
+                        @empty
+                           <tr>
+                              <td colspan="{{ count($headers) + 2 }}" class="text-center py-5">Tidak ada data yang perlu perbaikan. Luar biasa!</td>
+                           </tr>
+                        @endforelse
+                     </tbody>
+                  </table>
+               </div>
+            </div>
          </div>
       </div>
 
@@ -142,4 +220,76 @@
          </div>
       </div>
    </div>
+@endsection
+
+@section('vendor-style')
+   <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
+@endsection
+
+@section('vendor-script')
+   <script src="{{ asset('template/full-version/assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+@endsection
+
+@section('page-script')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-save-row').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const rowId = this.dataset.id;
+            const parentRow = document.getElementById('row-' + rowId);
+            const inputs = parentRow.querySelectorAll('.form-edit-input');
+            
+            let data = {};
+            inputs.forEach(input => {
+                data[input.dataset.key] = input.value;
+            });
+            
+            data['_token'] = '{{ csrf_token() }}';
+            data['_method'] = 'PATCH';
+
+            this.disabled = true;
+            this.innerHTML = '<i class="ri-loader-4-line ri-spin"></i>';
+
+            try {
+                const response = await fetch(`{{ url('import-approval/item') }}/${rowId}/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Valid!',
+                        text: 'Data baris ini berhasil diperbaiki.',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Masih ada kesalahan',
+                        text: result.errors.join(', '),
+                    });
+                    this.disabled = false;
+                    this.innerHTML = '<i class="ri-save-line"></i>';
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Terjadi kesalahan koneksi/server.');
+                this.disabled = false;
+                this.innerHTML = '<i class="ri-save-line"></i>';
+            }
+        });
+    });
+});
+</script>
 @endsection

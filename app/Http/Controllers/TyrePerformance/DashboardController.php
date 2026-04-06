@@ -54,13 +54,8 @@ class DashboardController extends Controller
             $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
             $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
         } else {
-            // Cek tanggal paling awal dari movement yang tersimpan
-            $earliestMovement = TyreMovement::min('movement_date');
-            if ($earliestMovement) {
-                $startDate = Carbon::parse($earliestMovement)->startOfDay();
-            } else {
-                $startDate = Carbon::now()->subMonths(5)->startOfMonth();
-            }
+            // Default sesuai request: Mulai dari 1 Januari 2023 sampai hari ini
+            $startDate = Carbon::create(2023, 1, 1)->startOfDay();
             $endDate = Carbon::now()->endOfDay();
         }
 
@@ -1061,7 +1056,7 @@ class DashboardController extends Controller
     {
         $type = $request->input('type', 'movements');
         $format = $request->input('format', 'csv'); // csv or excel
-        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(5)->startOfMonth();
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::create(2023, 1, 1)->startOfDay();
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
         $filename = "Export_{$type}_" . now()->format('Ymd_His');

@@ -20,7 +20,7 @@ class ImportController extends Controller
         $module = $request->module;
 
         // Parse Excel file
-        $rawData = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
+        $rawData = \Maatwebsite\Excel\Facades\Excel::toArray(new \stdClass(), $file)[0];
 
         // ============================================================
         // MOVEMENT HISTORY: Special handling for wide format
@@ -109,15 +109,27 @@ class ImportController extends Controller
             ]);
 
             $imported = 0;
+            $insertData = [];
+            $now = now()->toDateTimeString();
+
             foreach ($expandedData as $row) {
                 $rowData = array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), ''));
 
-                \App\Models\ImportItem::create([
-                    'batch_id' => $batch->id,
-                    'data' => $rowData,
-                    'status' => 'Pending'
-                ]);
+                // Perform pre-validation to tag valid vs invalid rows
+                $rowData['_validation'] = $this->validateMovementRow($rowData);
+
+                $insertData[] = [
+                    'batch_id'   => $batch->id,
+                    'data'       => json_encode($rowData),
+                    'status'     => 'Pending',
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ];
                 $imported++;
+            }
+
+            foreach (array_chunk($insertData, 500) as $chunk) {
+                \App\Models\ImportItem::insert($chunk);
             }
 
             \DB::commit();
@@ -134,6 +146,38 @@ class ImportController extends Controller
             \DB::rollback();
             return redirect()->back()->with('error', 'Gagal memproses file: ' . $e->getMessage());
         }
+    }
+
+    private function validateMovementRow($data)
+    {
+        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
+        $sn = strtoupper(trim((string)$sn));
+        $errors = [];
+
+        if (empty($sn)) {
+            $errors[] = "Nomor Seri kosong.";
+        }
+
+        $installDateRaw = $data['pemasangan_tanggal'] ?? null;
+        $installDate = !empty($installDateRaw) && trim($installDateRaw) !== '0';
+
+        $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
+        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
+        
+        $unitCode = trim($data['kode_kendaraan'] ?? $data['unit'] ?? '');
+
+        if (!$installDate && !$isScrapOnly) {
+            $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
+        }
+
+        if ($installDate && empty($unitCode)) {
+            $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
+        }
+
+        return [
+            'is_valid' => empty($errors),
+            'errors' => $errors
+        ];
     }
 
     /**
