@@ -87,7 +87,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master')->middleware('tyre.permission:Master Tyre');
     Route::get('master_kendaraan/data', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'data'])->name('tyre-kendaraan.data')->middleware('tyre.permission:Vehicle Master');
     Route::post('master_kendaraan/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'bulkAction'])->name('tyre-kendaraan.bulk-action')->middleware('tyre.permission:Vehicle Master');
-    Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan')->middleware('tyre.permission:Vehicle Master');
+    Route::resource('master_kendaraan', \App\Http\Controllers\TyrePerformance\Master\KendaraanController::class)->names('tyre-kendaraan')->except(['create', 'edit'])->middleware('tyre.permission:Vehicle Master');
 
     // ======================================================================
     // TYRE PERFORMANCE — Movement
