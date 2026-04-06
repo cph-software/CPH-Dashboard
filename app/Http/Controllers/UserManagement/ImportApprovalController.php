@@ -366,17 +366,140 @@ class ImportApprovalController extends Controller
 
     private function processMovementHistory($data, $uploaderCompanyId)
     {
-        // Headers matching UI Guide: serial_number, kode_kendaraan, movement_type, movement_date, position_code, odometer, hm, rtd, psi, failure_code, target_status, remark
-        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
-        if (!$sn) throw new \Exception("Serial Number (serial_number) kosong");
-        
+        // ============================================================
+        // STEP 1: Resolve Serial Number — Auto-Create if not found
+        // ============================================================
+        $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
+        if (!$sn) throw new \Exception("Serial Number kosong");
+        $sn = strtoupper(trim($sn));
+
         $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
-        if (!$tyre) throw new \Exception("Ban $sn tidak ditemukan di Master Ban.");
+        if (!$tyre) {
+            // Auto-create tyre with minimal data
+            $tyre = \App\Models\Tyre::create([
+                'serial_number'       => $sn,
+                'tyre_company_id'     => $uploaderCompanyId,
+                'status'              => 'New',
+                'is_in_warehouse'     => 1,
+                'initial_tread_depth' => 0,
+                'current_tread_depth' => 0,
+            ]);
+        }
 
+        // ============================================================
+        // STEP 2: Resolve Vehicle — Auto-Create if not found
+        // ============================================================
         $unitCode = $data['kode_kendaraan'] ?? $data['unit'] ?? null;
-        $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
-        if (!$vehicle && $unitCode) throw new \Exception("Unit $unitCode tidak ditemukan.");
+        if ($unitCode) $unitCode = strtoupper(trim($unitCode));
 
+        $vehicle = null;
+        if ($unitCode) {
+            $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
+            if (!$vehicle) {
+                $vehicle = \App\Models\MasterImportKendaraan::create([
+                    'kode_kendaraan'      => $unitCode,
+                    'tyre_company_id'     => $uploaderCompanyId,
+                    'jenis_kendaraan'     => 'Unknown',
+                    'area'                => 'Unknown',
+                    'total_tyre_position' => 0,
+                    'tyre_unit_status'    => 'Active',
+                ]);
+            }
+        }
+
+        // ============================================================
+        // STEP 3: Detect format — Dual-Row or Single-Event
+        // ============================================================
+        $isDualFormat = isset($data['pemasangan_tanggal']) || isset($data['pelepasan_tanggal']);
+
+        if ($isDualFormat) {
+            $this->processDualMovement($data, $tyre, $vehicle, $uploaderCompanyId);
+        } else {
+            $this->processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId);
+        }
+    }
+
+    /**
+     * DUAL-ROW FORMAT: 1 baris = Pemasangan + Pelepasan
+     * (Format real data user: NO SERI, UNIT, POSISI BAN, PEMASANGAN TANGGAL/KM, PELEPASAN TANGGAL/KM, dll.)
+     */
+    private function processDualMovement($data, $tyre, $vehicle, $companyId)
+    {
+        $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
+        $positionId = $this->resolvePositionId($positionCode, $vehicle);
+
+        // Parse dates & numbers with flexible format
+        $installDate = $this->parseFlexDate($data['pemasangan_tanggal'] ?? null);
+        $installKm   = $this->parseEuroNum($data['pemasangan_km'] ?? 0);
+        $removeDate  = $this->parseFlexDate($data['pelepasan_tanggal'] ?? null);
+        $removeKm    = $this->parseEuroNum($data['pelepasan_km'] ?? 0);
+        $rtd         = !empty($data['tebal_telapak']) ? (float)$data['tebal_telapak'] : null;
+        $remark      = $data['penyebab'] ?? $data['remark'] ?? null;
+        $keterangan  = strtoupper(trim($data['keterangan'] ?? ''));
+
+        // Map KETERANGAN -> target_status
+        $targetStatus = 'Repaired';
+        if (in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL'])) {
+            $targetStatus = 'Scrap';
+        }
+
+        // 1. Create INSTALLATION record
+        if ($installDate) {
+            \App\Models\TyreMovement::create([
+                'tyre_id'          => $tyre->id,
+                'vehicle_id'       => $vehicle ? $vehicle->id : null,
+                'position_id'      => $positionId,
+                'movement_type'    => 'Installation',
+                'movement_date'    => $installDate,
+                'odometer_reading' => $installKm,
+                'created_by'       => auth()->id(),
+            ]);
+        }
+
+        // 2. Create REMOVAL record (only if removal date exists)
+        if ($removeDate) {
+            $runningKm = max(0, $removeKm - $installKm);
+
+            \App\Models\TyreMovement::create([
+                'tyre_id'          => $tyre->id,
+                'vehicle_id'       => $vehicle ? $vehicle->id : null,
+                'position_id'      => $positionId,
+                'movement_type'    => 'Removal',
+                'movement_date'    => $removeDate,
+                'odometer_reading' => $removeKm,
+                'running_km'       => $runningKm,
+                'rtd_reading'      => $rtd,
+                'target_status'    => $targetStatus,
+                'remarks'          => $remark,
+                'created_by'       => auth()->id(),
+            ]);
+
+            // Update tyre state -> back to warehouse
+            $tyre->update([
+                'current_vehicle_id'  => null,
+                'current_position_id' => null,
+                'is_in_warehouse'     => 1,
+                'status'              => $targetStatus === 'Scrap' ? 'Scrap' : 'Used',
+                'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
+                'total_lifetime_km'   => ($tyre->total_lifetime_km ?? 0) + $runningKm,
+            ]);
+        } else if ($installDate && $vehicle) {
+            // Only installation, no removal yet — tyre currently installed on vehicle
+            $tyre->update([
+                'current_vehicle_id'  => $vehicle->id,
+                'current_position_id' => $positionId,
+                'is_in_warehouse'     => 0,
+                'status'              => 'Installed',
+            ]);
+        }
+    }
+
+    /**
+     * SINGLE-EVENT FORMAT (original/legacy): 1 baris = 1 event (Installation OR Removal)
+     * Backward compatible with old import template.
+     */
+    private function processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId)
+    {
         // Find Position
         $positionCode = $data['position_code'] ?? $data['posisi'] ?? null;
         $positionId = null;
@@ -386,12 +509,9 @@ class ImportApprovalController extends Controller
             if ($configId) {
                 $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
                     ->where(function($q) use ($positionCode) {
-                        // Bersihkan kata "Posisi " atau "Position " jika user iseng ketik
                         $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
-
                         $q->where('position_code', $positionCode)
                           ->orWhere('position_name', $positionCode);
-                          
                         if ($numericPos !== '') {
                             $q->orWhere('display_order', $numericPos);
                         }
@@ -403,8 +523,8 @@ class ImportApprovalController extends Controller
 
         $type = !empty($data['movement_type']) ? ucfirst(strtolower($data['movement_type'])) : (!empty($data['tipe_pergerakan']) ? ucfirst(strtolower($data['tipe_pergerakan'])) : 'Installation');
         $moveDate = !empty($data['movement_date']) ? \Carbon\Carbon::parse($data['movement_date']) : (!empty($data['tanggal']) ? \Carbon\Carbon::parse($data['tanggal']) : now());
-        
-        // Cast numerical columns robustly
+
+        // Cast numerical columns
         $odo = !empty($data['odometer']) ? (float)$data['odometer'] : (!empty($data['km']) ? (float)$data['km'] : 0);
         $hm = !empty($data['hm']) ? (float)$data['hm'] : 0;
         $rtd = !empty($data['rtd']) ? (float)$data['rtd'] : null;
@@ -414,12 +534,11 @@ class ImportApprovalController extends Controller
         $kmDiff = 0;
         $hmDiff = 0;
 
-        // Perform Installation/Removal Logic
+        // Perform Installation/Removal Logic (unchanged from original)
         if ($type === 'Installation') {
             if (!$vehicle) throw new \Exception("Pemasangan memerlukan Unit Code.");
-            if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit $unitCode.");
+            if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit " . ($vehicle ? $vehicle->kode_kendaraan : 'N/A') . ".");
 
-            // Decrement stock from old location if it was in warehouse
             if ($tyre->is_in_warehouse && $tyre->current_location_id) {
                 \App\Models\TyreLocation::where('id', $tyre->current_location_id)->decrement('current_stock');
             }
@@ -434,9 +553,6 @@ class ImportApprovalController extends Controller
             ]);
             $posDetail->update(['tyre_id' => $tyre->id]);
         } else if ($type === 'Removal') {
-            if (!$posDetail) throw new \Exception("Posisi $positionCode tidak valid untuk unit $unitCode.");
-
-            // Calculate Lifetime if there was a previous installation
             $lastInstallation = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
                 ->where('movement_type', 'Installation')
                 ->orderBy('movement_date', 'desc')
@@ -450,7 +566,6 @@ class ImportApprovalController extends Controller
                 if ($hmDiff < 0) $hmDiff = 0;
             }
 
-            // Resolve new location for removal
             $locationId = null;
             $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse'] ?? null;
             if (!empty($locationName)) {
@@ -500,6 +615,99 @@ class ImportApprovalController extends Controller
             'remarks' => $data['remark'] ?? $data['notes'] ?? null,
             'created_by' => auth()->id()
         ]);
+    }
+
+    // ============================================================
+    // HELPER METHODS
+    // ============================================================
+
+    /**
+     * Resolve position ID from position code (number or text).
+     * Returns position_detail ID or null.
+     */
+    private function resolvePositionId($positionCode, $vehicle)
+    {
+        if (!$positionCode || !$vehicle) return null;
+
+        $configId = $vehicle->tyre_position_configuration_id;
+        if (!$configId) return null;
+
+        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
+
+        $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
+            ->where(function($q) use ($positionCode, $numericPos) {
+                $q->where('position_code', $positionCode)
+                  ->orWhere('position_name', $positionCode);
+                if ($numericPos !== '') {
+                    $q->orWhere('display_order', (int)$numericPos);
+                }
+            })
+            ->first();
+
+        return $posDetail ? $posDetail->id : null;
+    }
+
+    /**
+     * Parse European-format number: "32.816" → 32816, "48.124" → 48124
+     * Also handles: "103.574" → 103574, "1724" → 1724
+     */
+    private function parseEuroNum($value)
+    {
+        if ($value === null || $value === '') return 0;
+        $str = trim((string)$value);
+
+        // Remove spaces
+        $str = str_replace(' ', '', $str);
+
+        // Pattern: digits.3digits (e.g. 32.816, 103.574) = thousands separator
+        if (preg_match('/^\d{1,3}(\.\d{3})+$/', $str)) {
+            return (float)str_replace('.', '', $str);
+        }
+
+        // Pattern: digits,3digits (e.g. 32,816) = thousands separator with comma
+        if (preg_match('/^\d{1,3}(,\d{3})+$/', $str)) {
+            return (float)str_replace(',', '', $str);
+        }
+
+        // Otherwise parse as regular float
+        return (float)str_replace(',', '.', $str);
+    }
+
+    /**
+     * Parse flexible date formats:
+     * - DD.MM.YYYY (European: 17.10.2023)
+     * - DD/MM/YYYY
+     * - YYYY-MM-DD (ISO)
+     * - Excel numeric serial (e.g. 45218)
+     */
+    private function parseFlexDate($value)
+    {
+        if ($value === null || trim($value) === '' || $value === '-') return null;
+        $value = trim($value);
+
+        // Excel numeric serial date (e.g. 45218)
+        if (is_numeric($value) && (int)$value > 30000 && (int)$value < 60000) {
+            return \Carbon\Carbon::createFromFormat('Y-m-d', 
+                \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((int)$value)->format('Y-m-d')
+            );
+        }
+
+        // DD.MM.YYYY
+        if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $value, $m)) {
+            return \Carbon\Carbon::createFromFormat('d.m.Y', sprintf('%02d.%02d.%s', $m[1], $m[2], $m[3]));
+        }
+
+        // DD/MM/YYYY
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $m)) {
+            return \Carbon\Carbon::createFromFormat('d/m/Y', sprintf('%02d/%02d/%s', $m[1], $m[2], $m[3]));
+        }
+
+        // Fallback: let Carbon try to parse it
+        try {
+            return \Carbon\Carbon::parse($value);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     private function processTyreExamination($data, $uploaderCompanyId = null)

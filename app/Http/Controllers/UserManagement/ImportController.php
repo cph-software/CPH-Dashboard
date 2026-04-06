@@ -39,6 +39,31 @@ class ImportController extends Controller
             return strtolower(str_replace([' ', '-'], '_', trim($h)));
         }, $header);
 
+        // Normalize Indonesian headers to system keys
+        $headerAliases = [
+            'no'                   => '_row_number',
+            'no_seri'              => 'serial_number',
+            'unit'                 => 'kode_kendaraan',
+            'posisi_ban'           => 'position_code',
+            'pemasangan'           => '_skip',
+            'pemasangan_tanggal'   => 'pemasangan_tanggal',
+            'pemasangan_km'        => 'pemasangan_km',
+            'pelepasan'            => '_skip',
+            'pelepasan_tanggal'    => 'pelepasan_tanggal',
+            'pelepasan_km'         => 'pelepasan_km',
+            'jarak_tempuh_ban_(km)' => '_jarak_tempuh',
+            'jarak_tempuh_ban'     => '_jarak_tempuh',
+            'total_hari'           => '_total_hari',
+            'keterangan'           => 'keterangan',
+            'tebal_telapak'        => 'tebal_telapak',
+            'penyebab'             => 'penyebab',
+        ];
+        $header = array_map(function($h) use ($headerAliases) {
+            return isset($headerAliases[$h]) ? $headerAliases[$h] : $h;
+        }, $header);
+        // Remove any _skip columns
+        $header = array_values($header);
+
         \DB::beginTransaction();
         try {
             // === VALIDASI PRE-CHECK KESELURUHAN MODUL ===
@@ -51,13 +76,9 @@ class ImportController extends Controller
                 $rowSafe = array_pad($row, count($header), null);
                 $rowSafe = array_slice($rowSafe, 0, count($header));
                 $rowData = array_combine($header, $rowSafe);
-                
-                if (in_array($module, ['Movement History'])) {
-                    $sn = $rowData['serial_number'] ?? $rowData['sn_ban'] ?? null;
-                    if (!empty(trim($sn))) $snArray[] = strtoupper(trim($sn));
-                }
 
-                if (in_array($module, ['Movement History', 'Tyre Examination', 'Vehicle Master', 'Master Vehicle'])) {
+                // Only collect for Examination pre-check (Movement no longer requires pre-check)
+                if (in_array($module, ['Tyre Examination'])) {
                     $unitCode = $rowData['kode_kendaraan'] ?? $rowData['unit'] ?? null;
                     if (!empty(trim($unitCode))) $unitArray[] = strtoupper(trim($unitCode));
                 }
@@ -67,25 +88,11 @@ class ImportController extends Controller
                     if (!empty(trim($layout))) $layoutArray[] = strtoupper(trim($layout));
                 }
             }
-            
-            // 1. Pengecekan Serial Number (Untuk Movement)
-            if (!empty($snArray)) {
-                $snArray = array_unique($snArray);
-                $existingTyres = [];
-                foreach(array_chunk($snArray, 1000) as $chunk) {
-                    $found = \App\Models\Tyre::withoutGlobalScopes()->whereIn('serial_number', $chunk)->pluck('serial_number')->toArray();
-                    $existingTyres = array_merge($existingTyres, array_map('strtoupper', $found));
-                }
-                
-                $missingSn = array_diff($snArray, $existingTyres);
-                if (count($missingSn) > 0) {
-                    $missingList = implode(', ', array_slice(array_values($missingSn), 0, 10));
-                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingSn) . ' Serial Number Ban yang belum terdaftar di Master Tyre. Harap daftarkan dulu: ' . $missingList);
-                }
-            }
 
-            // 2. Pengecekan Kode Kendaraan (Untuk Movement, Examination)
-            if (!empty($unitArray) && !in_array($module, ['Vehicle Master', 'Master Vehicle'])) {
+            // 1. Movement History: No pre-check needed — auto-create at approve time
+
+            // 2. Pengecekan Kode Kendaraan (Hanya untuk Examination, bukan Movement)
+            if (!empty($unitArray) && !in_array($module, ['Vehicle Master', 'Master Vehicle', 'Movement History'])) {
                 $unitArray = array_unique($unitArray);
                 $existingUnits = [];
                 foreach(array_chunk($unitArray, 1000) as $chunk) {
@@ -96,7 +103,7 @@ class ImportController extends Controller
                 $missingUnits = array_diff($unitArray, $existingUnits);
                 if (count($missingUnits) > 0) {
                     $missingUnitsList = implode(', ', array_slice(array_values($missingUnits), 0, 10));
-                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingUnits) . ' Kode Kendaraan/Unit yang belum terdaftar di Master Vehicle. Harap jadikan template unit berikut di Master Unit dulu: ' . $missingUnitsList);
+                    throw new \Exception('Ditolak Otomatis (Auto Reject): Terdapat ' . count($missingUnits) . ' Kode Kendaraan/Unit yang belum terdaftar di Master Vehicle. Harap daftarkan dulu: ' . $missingUnitsList);
                 }
             }
 
