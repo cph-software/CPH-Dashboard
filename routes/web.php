@@ -171,7 +171,8 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('tyre.permission:Import Approval,view');
         
     Route::patch('import-approval/item/{itemId}/update', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'updateItem'])
-        ->name('import-approval.update-item');
+        ->name('import-approval.update-item')
+        ->middleware('tyre.permission:Import Approval,view');
 
     Route::post('import-approval/{id}/approve', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'approve'])
         ->name('import-approval.approve')
