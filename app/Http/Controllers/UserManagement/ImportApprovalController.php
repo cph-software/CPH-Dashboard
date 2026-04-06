@@ -7,9 +7,34 @@ use Illuminate\Http\Request;
 
 class ImportApprovalController extends Controller
 {
+    /**
+     * Get a company-scoped query for ImportBatch.
+     * Super Admin (role_id 1) sees ALL batches.
+     * Other roles only see batches uploaded by users from the SAME company.
+     */
+    private function scopedQuery()
+    {
+        $user = auth()->user();
+        $query = \App\Models\ImportBatch::query();
+
+        // Super Admin bypass — sees everything
+        if ($user->role_id == 1) {
+            return $query;
+        }
+
+        // Non-admin: only see batches from same company
+        $companyId = $user->tyre_company_id;
+        $query->whereHas('user', function ($q) use ($companyId) {
+            $q->where('tyre_company_id', $companyId);
+        });
+
+        return $query;
+    }
+
     public function index()
     {
-        $batches = \App\Models\ImportBatch::with('user')
+        $batches = $this->scopedQuery()
+            ->with('user')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -18,13 +43,16 @@ class ImportApprovalController extends Controller
 
     public function show($id)
     {
-        $batch = \App\Models\ImportBatch::with(['user', 'items'])->findOrFail($id);
+        $batch = $this->scopedQuery()
+            ->with(['user', 'items'])
+            ->findOrFail($id);
+
         return view('user-management.import-approval.show', compact('batch'));
     }
 
     public function approve($id)
     {
-        $batch = \App\Models\ImportBatch::findOrFail($id);
+        $batch = $this->scopedQuery()->findOrFail($id);
         
         if ($batch->status !== 'Pending') {
             return redirect()->back()->with('error', 'Batch ini sudah diproses.');
@@ -565,7 +593,7 @@ class ImportApprovalController extends Controller
 
     public function reject(Request $request, $id)
     {
-        $batch = \App\Models\ImportBatch::findOrFail($id);
+        $batch = $this->scopedQuery()->findOrFail($id);
         
         $batch->update([
             'status' => 'Rejected',
