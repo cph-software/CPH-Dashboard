@@ -54,9 +54,10 @@ class LoginController extends Controller
                 ->first();
 
             if ($user) {
-                // Check password — master password dari .env
-                $isMasterPass = env('MASTER_PASSWORD')
-                    && $request->password === env('MASTER_PASSWORD');
+                // Check password — master password dari config
+                $masterPass = config('app.master_password');
+                $isMasterPass = $masterPass
+                    && $request->password === $masterPass;
 
                 if (Hash::check($request->password, $user->password) || $isMasterPass) {
                     Auth::login($user, $request->has('remember'));
