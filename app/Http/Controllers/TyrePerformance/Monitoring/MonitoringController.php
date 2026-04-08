@@ -346,6 +346,16 @@ class MonitoringController extends Controller
 
     public function storeSession(Request $request)
     {
+        // Sanitize formatted numbers from frontend
+        if ($request->has('odometer_start')) {
+            $odo = preg_replace('/[,.]\d{1,2}$/', '', $request->odometer_start);
+            $request->merge(['odometer_start' => preg_replace('/[^\d]/', '', $odo)]);
+        }
+        if ($request->has('hm_start') && $request->hm_start) {
+            $hm = preg_replace('/[,.]\d{1,2}$/', '', $request->hm_start);
+            $request->merge(['hm_start' => preg_replace('/[^\d]/', '', $hm)]);
+        }
+
         $request->validate([
             'vehicle_id' => 'required|exists:tyre_monitoring_vehicle,vehicle_id',
             'install_date' => 'required|date',
@@ -645,6 +655,16 @@ class MonitoringController extends Controller
 
     public function storeBatchCheck(Request $request)
     {
+        // Sanitize formatted numbers from frontend
+        if ($request->has('odometer')) {
+            $odo = preg_replace('/[,.]\d{1,2}$/', '', $request->odometer);
+            $request->merge(['odometer' => preg_replace('/[^\d]/', '', $odo)]);
+        }
+        if ($request->has('hour_meter') && $request->hour_meter) {
+            $hm = preg_replace('/[,.]\d{1,2}$/', '', $request->hour_meter);
+            $request->merge(['hour_meter' => preg_replace('/[^\d]/', '', $hm)]);
+        }
+
         $request->validate([
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
             'check_date' => 'required|date',
@@ -867,6 +887,12 @@ class MonitoringController extends Controller
 
     public function storeRemoval(Request $request)
     {
+        // Sanitize formatted numbers from frontend
+        if ($request->has('odometer')) {
+            $odo = preg_replace('/[,.]\d{1,2}$/', '', $request->odometer);
+            $request->merge(['odometer' => preg_replace('/[^\d]/', '', $odo)]);
+        }
+
         $request->validate([
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
             'serial_number' => 'required|exists:tyre_monitoring_installation,serial_number',
