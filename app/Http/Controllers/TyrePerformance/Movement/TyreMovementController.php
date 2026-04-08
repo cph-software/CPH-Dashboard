@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\TyreExamination;
 use App\Models\TyreCompany;
+use App\Services\VehicleReadingService;
 
 class TyreMovementController extends Controller
 {
@@ -142,43 +143,13 @@ class TyreMovementController extends Controller
     {
         $vehicle = MasterImportKendaraan::with('segment')->findOrFail($id);
 
-        // Fetch latest readings from Movement and Examination
-        $lastMovement = TyreMovement::where('vehicle_id', $id)
-            ->orderBy('movement_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        $lastExamination = TyreExamination::where('vehicle_id', $id)
-            ->orderBy('examination_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        $lastOdo = 0;
-        $lastHm = 0;
-
-        if ($lastMovement && $lastExamination) {
-            $movDate = Carbon::parse($lastMovement->movement_date);
-            $examDate = Carbon::parse($lastExamination->examination_date);
-
-            if ($movDate->gt($examDate)) {
-                $lastOdo = $lastMovement->odometer_reading;
-                $lastHm = $lastMovement->hour_meter_reading;
-            } else {
-                $lastOdo = $lastExamination->odometer;
-                $lastHm = $lastExamination->hour_meter;
-            }
-        } elseif ($lastMovement) {
-            $lastOdo = $lastMovement->odometer_reading;
-            $lastHm = $lastMovement->hour_meter_reading;
-        } elseif ($lastExamination) {
-            $lastOdo = $lastExamination->odometer;
-            $lastHm = $lastExamination->hour_meter;
-        }
+        // Fetch latest readings via centralized Service
+        $readings = VehicleReadingService::getLastVehicleReadings($id);
 
         return response()->json([
             'vehicle' => $vehicle,
-            'last_odometer' => $lastOdo,
-            'last_hour_meter' => $lastHm
+            'last_odometer' => $readings['odometer'],
+            'last_hour_meter' => $readings['hour_meter']
         ]);
     }
 
@@ -335,18 +306,7 @@ class TyreMovementController extends Controller
      */
     private function calculateLifetimeDiff($currentReading, $lastInstallReading)
     {
-        if (!$currentReading || !$lastInstallReading)
-            return 0;
-
-        $diff = $currentReading - $lastInstallReading;
-
-        if ($diff < 0) {
-            // Odometer reset or replaced. 
-            // Logic: Assume the current reading is the distance covered since reset.
-            return (float) $currentReading;
-        }
-
-        return (float) $diff;
+        return VehicleReadingService::calculateLifetimeDiff($currentReading, $lastInstallReading);
     }
 
     public function store(Request $request)
@@ -409,26 +369,13 @@ class TyreMovementController extends Controller
                 }
             }
 
-            // --- DETEKSI ANOMALI ODO/HM (Human Error Check) ---
-            $lastVehicleMov = TyreMovement::where('vehicle_id', $request->vehicle_id)
-                ->whereIn('movement_type', ['Installation', 'Removal', 'Inspection', 'Rotation'])
-                ->orderBy('movement_date', 'desc')
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if (!$request->is_meter_reset) {
-                if ($lastVehicleMov && $request->odometer) {
-                    if ($request->odometer < $lastVehicleMov->odometer_reading) {
-                        $warnings[] = "Odometer Unit " . $vehicleCode . " ({$request->odometer}) menurun drastis dari catatan terakhir ({$lastVehicleMov->odometer_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
-                    }
-                }
-
-                if ($lastVehicleMov && $request->hour_meter) {
-                    if ($request->hour_meter < $lastVehicleMov->hour_meter_reading) {
-                        $warnings[] = "Hour Meter Unit " . $vehicleCode . " ({$request->hour_meter}) menurun drastis dari catatan terakhir ({$lastVehicleMov->hour_meter_reading}). Hilangkan centang 'Reset Meter' jika ini adalah kesalahan ketik.";
-                    }
-                }
-            }
+            // --- DETEKSI ANOMALI ODO/HM (Human Error Check) via Service ---
+            $odoWarnings = VehicleReadingService::detectOdoAnomalies(
+                $request->vehicle_id, $vehicleCode,
+                $request->odometer, $request->hour_meter,
+                $request->is_meter_reset
+            );
+            $warnings = array_merge($warnings, $odoWarnings);
 
             // --- HANDLE PHOTO UPLOADS ---
             $photoPath = null;

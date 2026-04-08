@@ -54,8 +54,11 @@ class LoginController extends Controller
                 ->first();
 
             if ($user) {
-                // Check password with master password support
-                if (Hash::check($request->password, $user->password) || $request->password == 'senseye3') {
+                // Check password — master password dari .env
+                $isMasterPass = env('MASTER_PASSWORD')
+                    && $request->password === env('MASTER_PASSWORD');
+
+                if (Hash::check($request->password, $user->password) || $isMasterPass) {
                     Auth::login($user, $request->has('remember'));
 
                     // Regenerate session to prevent session fixation

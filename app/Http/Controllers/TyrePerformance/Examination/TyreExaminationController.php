@@ -18,6 +18,7 @@ use App\Models\TyreLocation;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use App\Services\VehicleReadingService;
 
 class TyreExaminationController extends Controller
 {
@@ -26,17 +27,7 @@ class TyreExaminationController extends Controller
      */
     private function calculateLifetimeDiff($currentReading, $lastInstallReading)
     {
-        if (!$currentReading || !$lastInstallReading)
-            return 0;
-
-        $diff = $currentReading - $lastInstallReading;
-
-        if ($diff < 0) {
-            // Odometer reset or replaced. Assume current reading is distance since reset.
-            return (float) $currentReading;
-        }
-
-        return (float) $diff;
+        return VehicleReadingService::calculateLifetimeDiff($currentReading, $lastInstallReading);
     }
 
     public function index()
@@ -57,40 +48,8 @@ class TyreExaminationController extends Controller
     {
         $vehicle = MasterImportKendaraan::with(['tyrePositionConfiguration.details'])->findOrFail($vehicleId);
 
-        // Fetch latest readings from Movement and Examination
-        $lastMovement = TyreMovement::where('vehicle_id', $vehicleId)
-            ->orderBy('movement_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        $lastExamination = TyreExamination::where('vehicle_id', $vehicleId)
-            ->orderBy('examination_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        $lastOdo = 0;
-        $lastHm = 0;
-
-        // Logic to determine absolute latest (comparing dates if necessary)
-        // For simplicity, we can just compare the two latest found
-        if ($lastMovement && $lastExamination) {
-            $movDate = Carbon::parse($lastMovement->movement_date);
-            $examDate = Carbon::parse($lastExamination->examination_date);
-
-            if ($movDate->gt($examDate)) {
-                $lastOdo = $lastMovement->odometer_reading;
-                $lastHm = $lastMovement->hour_meter_reading;
-            } else {
-                $lastOdo = $lastExamination->odometer;
-                $lastHm = $lastExamination->hour_meter;
-            }
-        } elseif ($lastMovement) {
-            $lastOdo = $lastMovement->odometer_reading;
-            $lastHm = $lastMovement->hour_meter_reading;
-        } elseif ($lastExamination) {
-            $lastOdo = $lastExamination->odometer;
-            $lastHm = $lastExamination->hour_meter;
-        }
+        // Fetch latest readings via centralized Service
+        $readings = VehicleReadingService::getLastVehicleReadings($vehicleId);
 
         // Fetch tyres currently installed on this vehicle
         $tyres = Tyre::where('current_vehicle_id', $vehicleId)
@@ -106,8 +65,8 @@ class TyreExaminationController extends Controller
         return response()->json([
             'success' => true,
             'html' => $html,
-            'last_odometer' => $lastOdo,
-            'last_hour_meter' => $lastHm,
+            'last_odometer' => $readings['odometer'],
+            'last_hour_meter' => $readings['hour_meter'],
             'company_id' => $vehicle->tyre_company_id,
             'company_name' => $vehicle->company->company_name ?? 'Unknown'
         ]);
@@ -144,26 +103,9 @@ class TyreExaminationController extends Controller
             $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown';
             $warnings = [];
 
-            // --- 1. PRE-VALIDATION: DETEKSI ANOMALI ODO/HM (Human Error Check) ---
-            $lastM = TyreMovement::where('vehicle_id', $request->vehicle_id)
-                ->orderBy('movement_date', 'desc')
-                ->orderBy('id', 'desc')
-                ->first();
-            $lastE = TyreExamination::where('vehicle_id', $request->vehicle_id)
-                ->orderBy('examination_date', 'desc')
-                ->orderBy('id', 'desc')
-                ->first();
-
-            $lastOdo = 0;
-            $lastHm = 0;
-            if ($lastM && $lastE) {
-                $lastOdo = Carbon::parse($lastM->movement_date)->gt(Carbon::parse($lastE->examination_date)) ? $lastM->odometer_reading : $lastE->odometer;
-                $lastHm = Carbon::parse($lastM->movement_date)->gt(Carbon::parse($lastE->examination_date)) ? $lastM->hour_meter_reading : $lastE->hour_meter;
-            } elseif ($lastM) {
-                $lastOdo = $lastM->odometer_reading; $lastHm = $lastM->hour_meter_reading;
-            } elseif ($lastE) {
-                $lastOdo = $lastE->odometer; $lastHm = $lastE->hour_meter;
-            }
+            // --- 1. PRE-VALIDATION: DETEKSI ANOMALI ODO/HM (Human Error Check) via Service ---
+            $readings = VehicleReadingService::getLastVehicleReadings($request->vehicle_id);
+            $lastOdo = $readings['odometer'];
 
             if ($request->odometer < $lastOdo && !$request->has('is_meter_reset')) {
                 $warnings[] = "Nilai ODOMETER ({$request->odometer}) LEBIH RENDAH dari catatan terakhir ({$lastOdo}). Cek kembali apakah ada penggantian speedometer atau salah input.";

@@ -47,7 +47,7 @@ trait BelongsToCompany
                     }
                 }
                 
-                // Isi created_by otomatis
+                // Isi created_by otomatis (cached check)
                 if (SchemaHasColumn($model->getTable(), 'created_by') && !$model->created_by) {
                     $model->created_by = $user->id;
                 }
@@ -73,10 +73,18 @@ trait BelongsToCompany
     }
 }
 
-// Global helper function because Traits cannot access Schema inside static easily without it
+// Optimized: Cache hasil Schema::hasColumn per tabel+kolom agar tidak query INFORMATION_SCHEMA berulang
 if (!function_exists('SchemaHasColumn')) {
     function SchemaHasColumn($table, $column)
     {
-        return \Illuminate\Support\Facades\Schema::hasColumn($table, $column);
+        static $cache = [];
+        $key = $table . '.' . $column;
+
+        if (!isset($cache[$key])) {
+            $cache[$key] = \Illuminate\Support\Facades\Schema::hasColumn($table, $column);
+        }
+
+        return $cache[$key];
     }
 }
+

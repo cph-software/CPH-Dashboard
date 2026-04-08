@@ -13,13 +13,11 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/debug-menus', function () {
-    return \App\Models\Menu::where('url', 'like', '%master_%')->orWhere('name', 'like', '%Vehicle%')->orWhere('name', 'like', '%Kendaraan%')->get();
-});
+
 
 // Authentication Routes
 Route::get('login/{type?}', [LoginController::class, 'login'])->name('login')->middleware('guest');
-Route::post('login', [LoginController::class, 'postLogin']);
+Route::post('login', [LoginController::class, 'postLogin'])->middleware('throttle:5,1');
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 // ======================================================================

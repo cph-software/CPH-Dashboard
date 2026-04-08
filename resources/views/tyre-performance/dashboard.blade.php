@@ -89,6 +89,26 @@
          border-color: #7367f0 !important;
       }
 
+      /* Loading spinner for AJAX charts */
+      .chart-loading {
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         min-height: 280px;
+         flex-direction: column;
+         gap: 0.75rem;
+      }
+      .chart-loading .spinner-border {
+         width: 2rem;
+         height: 2rem;
+         border-width: 0.2rem;
+      }
+      .chart-loading-text {
+         font-size: 0.75rem;
+         color: #a1acb8;
+         font-weight: 500;
+      }
+
       /* Select2 Custom Styling - Solid, not transparent */
       .select2-container--default .select2-selection--single {
          border: 1px solid #dbdade !important;
@@ -871,6 +891,12 @@
          var globalStartDate = '{{ $startDate->format('Y-m-d') }}';
          var globalEndDate = '{{ $endDate->format('Y-m-d') }}';
 
+         // Helper: tampilkan loading spinner di chart container
+         function showChartLoading(containerId, text) {
+            var el = document.querySelector(containerId);
+            if (el) el.innerHTML = '<div class="chart-loading"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><span class="chart-loading-text">' + (text || 'Memuat data...') + '</span></div>';
+         }
+
          function openDrillDown(type, value, extraParams) {
             var modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
             document.getElementById('drillDownLoading').style.display = 'block';
@@ -1124,6 +1150,7 @@
          renderBrandChart(@json($brandPerformance));
 
          $('#brandFilterSize, #brandFilterPattern').on('change', function() {
+            showChartLoading('#brandPerformanceChart', 'Memuat performa brand...');
             $.ajax({
                url: brandPerformanceUrl,
                data: {
@@ -1191,6 +1218,7 @@
          renderCpkChart(@json($cpkByBrand));
 
          $('#cpkFilterSize, #cpkFilterPattern').on('change', function() {
+            showChartLoading('#cpkByBrandChart', 'Memuat data CPK...');
             $.ajax({
                url: cpkByBrandUrl,
                data: {
@@ -1417,6 +1445,7 @@
          renderAxleChart(@json($axleAnalysis));
 
          $('#axleFilterSize, #axleFilterPattern').on('change', function() {
+            showChartLoading('#axleAnalysisChart', 'Memuat data posisi...');
             $.ajax({
                url: axleAnalysisUrl,
                data: {

@@ -113,6 +113,7 @@
       .img-container {
          text-align: center;
          margin-top: 10px;
+         page-break-inside: avoid; /* PREVENT SLICING PAGES */
       }
 
       .img-label {
@@ -126,9 +127,10 @@
          height: 250px;
          border: 1px dashed #ccc;
          display: inline-block;
-         margin: 5px;
+         margin: 5px auto;
          overflow: hidden;
          background-color: #fafafa;
+         page-break-inside: avoid; /* PREVENT ORPHANS */
       }
 
       .img-placeholder {
@@ -137,8 +139,9 @@
       }
 
       img {
+         width: auto; /* STRICT BOUNDARIES FOR DOMPDF ENGINE */
+         height: 230px;
          max-width: 100%;
-         max-height: 100%;
          object-fit: contain;
       }
 

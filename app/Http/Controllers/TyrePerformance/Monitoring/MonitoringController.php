@@ -26,6 +26,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use DB;
+use App\Services\VehicleReadingService;
 
 class MonitoringController extends Controller
 {
@@ -34,18 +35,7 @@ class MonitoringController extends Controller
      */
     private function calculateLifetimeDiff($currentReading, $lastInstallReading)
     {
-        if ($currentReading === null || $lastInstallReading === null)
-            return 0;
-
-        $diff = $currentReading - $lastInstallReading;
-
-        if ($diff < 0) {
-            // Odometer reset or replaced. 
-            // Logic: Assume the current reading is the distance covered since reset.
-            return (float) $currentReading;
-        }
-
-        return (float) $diff;
+        return VehicleReadingService::calculateLifetimeDiff($currentReading, $lastInstallReading);
     }
 
     public function index()
@@ -980,12 +970,18 @@ class MonitoringController extends Controller
     {
         $session = TyreMonitoringSession::findOrFail($id);
         $request->validate([
-            'status' => 'required|in:active,completed',
+            'status' => 'required|in:active,completed,Active,Completed',
             'notes' => 'nullable|string'
         ]);
 
-        $session->update($request->only(['status', 'notes']));
-        return redirect()->back()->with('success', 'Session status updated to ' . $request->status);
+        $statusToSave = ucfirst(strtolower($request->status));
+
+        $session->update([
+            'status' => $statusToSave,
+            'notes'  => $request->notes
+        ]);
+        
+        return redirect()->back()->with('success', 'Session status updated to ' . $statusToSave);
     }
 
     public function destroySession($id)
@@ -1078,7 +1074,7 @@ class MonitoringController extends Controller
             'date' => date('d M Y'),
         ];
 
-        $pdf = Pdf::loadView('tyre-performance.monitoring.report_pdf', $data)->setPaper('a4', 'landscape');
+        $pdf = app('dompdf.wrapper')->loadView('tyre-performance.monitoring.report_pdf', $data)->setPaper('a4', 'landscape');
         return $pdf->stream('Monitoring_Report_Vehicle_' . $session->vehicle->vehicle_number . '.pdf');
     }
 

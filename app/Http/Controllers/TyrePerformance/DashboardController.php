@@ -15,6 +15,7 @@ use App\Models\MasterImportKendaraan;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -124,36 +125,51 @@ class DashboardController extends Controller
             ->pluck('total', 'status_label')
             ->toArray();
 
-        // 2b. Monthly Movement Trend - Filtered
+        // 2b. Monthly Movement Trend - Filtered (Super Optimized Aggregate Logic)
         $monthlyMovements = [];
-        // Gunakan startOfMonth untuk kedua tanggal agar perbandingan per bulan akurat
         $periodStart = $startDate->copy()->startOfMonth();
         $periodEnd = $endDate->copy()->startOfMonth();
         $period = \Carbon\CarbonPeriod::create($periodStart, '1 month', $periodEnd);
 
-        foreach ($period as $date) {
-            $monthStart = $date->copy()->startOfMonth();
-            $monthEnd = $date->copy()->endOfMonth();
-            $monthLabel = $monthStart->format('M Y');
+        // --- STEP 1: Tarik seluruh data Movement dipecah per bulan HANYA DENGAN 1 QUERY ---
+        $movementsAgg = TyreMovement::whereBetween('movement_date', [$startDate->copy()->startOfMonth(), $endDate->copy()->endOfMonth()])
+            ->select(
+                DB::raw("DATE_FORMAT(movement_date, '%Y-%m') as month_key"),
+                DB::raw("SUM(CASE WHEN movement_type = 'Installation' THEN 1 ELSE 0 END) as installs"),
+                DB::raw("SUM(CASE WHEN movement_type = 'Removal' THEN 1 ELSE 0 END) as removals"),
+                DB::raw("SUM(CASE WHEN movement_type = 'Inspection' THEN 1 ELSE 0 END) as inspections"),
+                DB::raw("SUM(CASE WHEN movement_type = 'Rotation' THEN 1 ELSE 0 END) as rotations")
+            )
+            ->groupBy('month_key')
+            ->get()
+            ->keyBy('month_key');
 
-            $installs = TyreMovement::where('movement_type', 'Installation')
-                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
-            $removals = TyreMovement::where('movement_type', 'Removal')
-                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
-            $inspections = TyreMovement::where('movement_type', 'Inspection')
-                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
-            $rotations = TyreMovement::where('movement_type', 'Rotation')
-                ->whereBetween('movement_date', [$monthStart, $monthEnd])->count();
-            $examinations = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
-                ->whereBetween('check_date', [$monthStart, $monthEnd])->count();
+        // --- STEP 2: Tarik seluruh data Tyre Monitoring HANYA DENGAN 1 QUERY ---
+        $examinationsAgg = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
+            ->whereBetween('check_date', [$startDate->copy()->startOfMonth(), $endDate->copy()->endOfMonth()])
+            ->select(
+                DB::raw("DATE_FORMAT(check_date, '%Y-%m') as month_key"),
+                DB::raw("COUNT(*) as examinations")
+            )
+            ->groupBy('month_key')
+            ->get()
+            ->keyBy('month_key');
+
+        // --- STEP 3: Rakit kembali untuk tampilan Grafik Web (Cepat tanpa koneksi DB lagi!) ---
+        foreach ($period as $date) {
+            $monthKey = $date->format('Y-m');
+            $monthLabel = $date->format('M Y');
+
+            $mov = $movementsAgg->get($monthKey);
+            $exam = $examinationsAgg->get($monthKey);
 
             $monthlyMovements[] = [
                 'month' => $monthLabel,
-                'installations' => $installs,
-                'removals' => $removals,
-                'inspections' => $inspections,
-                'rotations' => $rotations,
-                'examinations' => $examinations,
+                'installations' => $mov->installs ?? 0,
+                'removals' => $mov->removals ?? 0,
+                'inspections' => $mov->inspections ?? 0,
+                'rotations' => $mov->rotations ?? 0,
+                'examinations' => $exam->examinations ?? 0,
             ];
         }
 
@@ -277,138 +293,153 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get Fleet Health data using percentage-based RTD/OTD calculation
+     * Get Fleet Health data using percentage-based RTD/OTD calculation (Cached)
      */
     private function getFleetHealthData()
     {
-        $installedTyres = Tyre::where('status', 'Installed')
-            ->whereNotNull('current_tread_depth')
-            ->whereNotNull('initial_tread_depth')
-            ->where('initial_tread_depth', '>', 0)
-            ->select('id', 'serial_number', 'current_tread_depth', 'initial_tread_depth')
-            ->get();
+        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $cacheKey = "fleet_health_comp_{$companyId}";
 
-        $categories = [
-            'Critical (< 20%)' => 0,
-            'Warning (20-40%)' => 0,
-            'Monitor (40-60%)' => 0,
-            'Good (> 60%)' => 0,
-        ];
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () {
+            $installedTyres = Tyre::where('status', 'Installed')
+                ->whereNotNull('current_tread_depth')
+                ->whereNotNull('initial_tread_depth')
+                ->where('initial_tread_depth', '>', 0)
+                ->select('id', 'serial_number', 'current_tread_depth', 'initial_tread_depth')
+                ->get();
 
-        $totalPercent = 0;
-        $countWithData = 0;
-        $noDataCount = Tyre::where('status', 'Installed')
-            ->where(function ($q) {
-                $q->whereNull('current_tread_depth')
-                    ->orWhereNull('initial_tread_depth')
-                    ->orWhere('initial_tread_depth', '<=', 0);
-            })
-            ->count();
+            $categories = [
+                'Critical (< 20%)' => 0,
+                'Warning (20-40%)' => 0,
+                'Monitor (40-60%)' => 0,
+                'Good (> 60%)' => 0,
+            ];
 
-        foreach ($installedTyres as $tyre) {
-            $pctRemaining = ($tyre->current_tread_depth / $tyre->initial_tread_depth) * 100;
-            $pctRemaining = min($pctRemaining, 100); // cap at 100%
-            $totalPercent += $pctRemaining;
-            $countWithData++;
+            $totalPercent = 0;
+            $countWithData = 0;
+            $noDataCount = Tyre::where('status', 'Installed')
+                ->where(function ($q) {
+                    $q->whereNull('current_tread_depth')
+                        ->orWhereNull('initial_tread_depth')
+                        ->orWhere('initial_tread_depth', '<=', 0);
+                })
+                ->count();
 
-            if ($pctRemaining < 20) {
-                $categories['Critical (< 20%)']++;
-            } elseif ($pctRemaining < 40) {
-                $categories['Warning (20-40%)']++;
-            } elseif ($pctRemaining < 60) {
-                $categories['Monitor (40-60%)']++;
-            } else {
-                $categories['Good (> 60%)']++;
+            foreach ($installedTyres as $tyre) {
+                $pctRemaining = ($tyre->current_tread_depth / $tyre->initial_tread_depth) * 100;
+                $pctRemaining = min($pctRemaining, 100); // cap at 100%
+                $totalPercent += $pctRemaining;
+                $countWithData++;
+
+                if ($pctRemaining < 20) {
+                    $categories['Critical (< 20%)']++;
+                } elseif ($pctRemaining < 40) {
+                    $categories['Warning (20-40%)']++;
+                } elseif ($pctRemaining < 60) {
+                    $categories['Monitor (40-60%)']++;
+                } else {
+                    $categories['Good (> 60%)']++;
+                }
             }
-        }
 
-        $avgFleetHealth = $countWithData > 0 ? round($totalPercent / $countWithData, 1) : 0;
+            $avgFleetHealth = $countWithData > 0 ? round($totalPercent / $countWithData, 1) : 0;
 
-        return [
-            'categories' => $categories,
-            'avgHealth' => $avgFleetHealth,
-            'totalWithData' => $countWithData,
-            'noDataCount' => $noDataCount,
-        ];
+            return [
+                'categories' => $categories,
+                'avgHealth' => $avgFleetHealth,
+                'totalWithData' => $countWithData,
+                'noDataCount' => $noDataCount,
+            ];
+        });
     }
 
     /**
-     * Get Brand Performance data with optional filters
+     * Get Brand Performance data with optional filters (Cached)
      */
     private function getBrandPerformanceData($sizeId = null, $type = null, $patternId = null)
     {
-        $query = Tyre::select(
-            'tyre_brand_id',
-            DB::raw('AVG(total_lifetime_km) as avg_km'),
-            DB::raw('AVG(total_lifetime_hm) as avg_hm'),
-            DB::raw('COUNT(*) as tyre_count')
-        )
-            ->where('total_lifetime_km', '>', 0);
+        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $cacheKey = "brand_perf_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
 
-        // Apply filters
-        if ($sizeId) {
-            $query->where('tyre_size_id', $sizeId);
-        }
-        if ($type) {
-            $query->whereHas('size', function ($q) use ($type) {
-                $q->where('type', $type);
-            });
-        }
-        if ($patternId) {
-            $query->where('tyre_pattern_id', $patternId);
-        }
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {
+            $query = Tyre::select(
+                'tyre_brand_id',
+                DB::raw('AVG(total_lifetime_km) as avg_km'),
+                DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+                DB::raw('COUNT(*) as tyre_count')
+            )
+                ->where('total_lifetime_km', '>', 0);
 
-        return $query->groupBy('tyre_brand_id')
-            ->with('brand:id,brand_name')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'brand' => $item->brand->brand_name ?? 'Unknown',
-                    'avg_km' => round($item->avg_km, 0),
-                    'avg_hm' => round($item->avg_hm, 0),
-                    'count' => $item->tyre_count,
-                ];
-            });
+            // Apply filters
+            if ($sizeId) {
+                $query->where('tyre_size_id', $sizeId);
+            }
+            if ($type) {
+                $query->whereHas('size', function ($q) use ($type) {
+                    $q->where('type', $type);
+                });
+            }
+            if ($patternId) {
+                $query->where('tyre_pattern_id', $patternId);
+            }
+
+            return $query->groupBy('tyre_brand_id')
+                ->with('brand:id,brand_name')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'brand' => $item->brand->brand_name ?? 'Unknown',
+                        'avg_km' => round($item->avg_km, 0),
+                        'avg_hm' => round($item->avg_hm, 0),
+                        'count' => $item->tyre_count,
+                    ];
+                });
+        });
     }
 
     /**
-     * Get CPK by Brand data with optional filters
+     * Get CPK by Brand data with optional filters (Cached)
      */
     private function getCpkByBrandData($sizeId = null, $type = null, $patternId = null)
     {
-        $query = Tyre::select(
-            'tyre_brand_id',
-            DB::raw('SUM(price) as total_price'),
-            DB::raw('SUM(total_lifetime_km) as total_km'),
-            DB::raw('COUNT(*) as tyre_count')
-        )
-            ->where('total_lifetime_km', '>', 0)
-            ->whereNotNull('price')
-            ->where('price', '>', 0);
+        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
 
-        // Apply filters
-        if ($sizeId) {
-            $query->where('tyre_size_id', $sizeId);
-        }
-        if ($type) {
-            $query->whereHas('size', function ($q) use ($type) {
-                $q->where('type', $type);
-            });
-        }
-        if ($patternId) {
-            $query->where('tyre_pattern_id', $patternId);
-        }
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {
+            $query = Tyre::select(
+                'tyre_brand_id',
+                DB::raw('SUM(price) as total_price'),
+                DB::raw('SUM(total_lifetime_km) as total_km'),
+                DB::raw('COUNT(*) as tyre_count')
+            )
+                ->where('total_lifetime_km', '>', 0)
+                ->whereNotNull('price')
+                ->where('price', '>', 0);
 
-        return $query->groupBy('tyre_brand_id')
-            ->with('brand:id,brand_name')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'brand' => $item->brand->brand_name ?? 'Unknown',
-                    'cpk' => $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0,
-                    'count' => $item->tyre_count,
-                ];
-            });
+            // Apply filters
+            if ($sizeId) {
+                $query->where('tyre_size_id', $sizeId);
+            }
+            if ($type) {
+                $query->whereHas('size', function ($q) use ($type) {
+                    $q->where('type', $type);
+                });
+            }
+            if ($patternId) {
+                $query->where('tyre_pattern_id', $patternId);
+            }
+
+            return $query->groupBy('tyre_brand_id')
+                ->with('brand:id,brand_name')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'brand' => $item->brand->brand_name ?? 'Unknown',
+                        'cpk' => $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0,
+                        'count' => $item->tyre_count,
+                    ];
+                });
+        });
     }
 
     /**

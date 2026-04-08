@@ -42,6 +42,11 @@ class User extends Authenticatable
     }
 
     /**
+     * Cached menu permissions — di-load sekali per request
+     */
+    protected $cachedMenuPermissions = null;
+
+    /**
      * Check if user has specific permission for a menu.
      * 
      * @param string $menuName  Nama menu yang dicek
@@ -53,18 +58,25 @@ class User extends Authenticatable
         if (!$this->role)
             return false;
 
-        $menu = $this->role->menus()->where('name', $menuName)->first();
+        // Load semua menu+permission sekali, simpan di memory
+        if ($this->cachedMenuPermissions === null) {
+            $this->cachedMenuPermissions = [];
+            $menus = $this->role->menus()->get();
+            foreach ($menus as $menu) {
+                $this->cachedMenuPermissions[$menu->name] = json_decode($menu->pivot->permissions, true) ?? [];
+            }
+        }
 
-        if (!$menu)
+        // Cek apakah menu ada
+        if (!isset($this->cachedMenuPermissions[$menuName]))
             return false;
 
         // Jika tidak ada permission spesifik, cukup cek akses menu
         if (!$permission)
             return true;
 
-        // Cek granular permission dari pivot
-        $permissions = json_decode($menu->pivot->permissions, true) ?? [];
-        return in_array($permission, $permissions);
+        // Cek granular permission dari cache
+        return in_array($permission, $this->cachedMenuPermissions[$menuName]);
     }
 
     /**
