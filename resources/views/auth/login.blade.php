@@ -98,8 +98,8 @@
                   <input type="hidden" name="login_type" value="cph">
                   <div class="form-floating form-floating-outline mb-5 form-control-validation">
                      <input type="text" class="form-control" id="employee_id" name="employee_id"
-                        placeholder="Email / ID Karyawan" autofocus value="{{ old('employee_id') }}" />
-                     <label for="employee_id">Email / ID Karyawan</label>
+                        placeholder="Email / ID Pengguna" autofocus value="{{ old('employee_id') }}" />
+                     <label for="employee_id">Email / ID Pengguna</label>
                   </div>
                   <div class="mb-5">
                      <div class="form-password-toggle form-control-validation">
@@ -195,14 +195,15 @@
                   </h6>
                   <p>
                      <strong>CPH Tyre Performance Dashboard</strong> (selanjutnya disebut "Sistem") adalah platform
-                     manajemen performa ban kendaraan berbasis web yang dikembangkan secara eksklusif untuk mendukung
-                     kegiatan operasional internal PT Catur Putra Harmonis. Sistem ini mencakup, namun tidak terbatas
-                     pada, fitur pencatatan pergerakan ban, pemeriksaan berkala, pemantauan kondisi ban di lapangan,
-                     analisis umur pakai, serta pelaporan dan visualisasi data analitik operasional armada kendaraan.
+                     manajemen performa ban kendaraan berbasis web yang dikembangkan oleh PT Catur Putra Harmonis.
+                     Sistem ini mencakup, namun tidak terbatas pada, fitur pencatatan pergerakan ban, pemeriksaan
+                     berkala, pemantauan kondisi ban di lapangan, analisis umur pakai, serta pelaporan dan
+                     visualisasi data analitik operasional armada kendaraan.
                   </p>
                   <p>
-                     Perjanjian ini berlaku bagi seluruh Pengguna yang mengakses Sistem melalui antarmuka web maupun
-                     kanal resmi lainnya yang disediakan oleh Perusahaan, tanpa terkecuali.
+                     Perjanjian ini berlaku bagi seluruh Pengguna yang mengakses Sistem, baik selaku mitra,
+                     pelanggan, maupun pihak lain yang telah diberikan otorisasi resmi oleh PT Catur Putra Harmonis,
+                     melalui antarmuka web maupun kanal resmi lainnya yang disediakan oleh Perusahaan.
                   </p>
                </div>
 
@@ -214,21 +215,23 @@
                   </h6>
                   <ul class="ps-3">
                      <li class="mb-2">
-                        Akses terhadap Sistem hanya diberikan kepada karyawan tetap, karyawan kontrak, atau pihak
-                        ketiga yang telah ditunjuk dan diotorisasi secara resmi oleh manajemen PT Catur Putra Harmonis.
+                        Akses terhadap Sistem hanya diberikan kepada pihak yang telah ditunjuk dan diotorisasi
+                        secara resmi oleh PT Catur Putra Harmonis, termasuk namun tidak terbatas pada mitra bisnis,
+                        pelanggan, dan pihak ketiga yang terikat perjanjian kerja sama dengan Perusahaan.
                      </li>
                      <li class="mb-2">
-                        Setiap Pengguna wajib menjaga kerahasiaan kredensial akun (ID Karyawan dan kata sandi) dan
+                        Setiap Pengguna wajib menjaga kerahasiaan kredensial akun (ID Pengguna dan kata sandi) dan
                         bertanggung jawab penuh atas seluruh aktivitas yang dilakukan melalui akun tersebut.
                      </li>
                      <li class="mb-2">
-                        Pengguna <strong>dilarang keras</strong> membagikan, meminjamkan, atau mengalihkan akses akun
-                        kepada pihak mana pun, termasuk sesama rekan kerja, tanpa persetujuan tertulis dari administrator
-                        Sistem atau pihak manajemen yang berwenang.
+                        Pengguna <strong>dilarang keras</strong> membagikan, meminjamkan, atau mengalihkan akses
+                        akun kepada pihak mana pun tanpa persetujuan tertulis dari administrator Sistem atau
+                        pihak yang berwenang dari PT Catur Putra Harmonis.
                      </li>
                      <li class="mb-2">
                         Perusahaan berhak menangguhkan atau mencabut hak akses Pengguna kapan saja apabila terdapat
-                        indikasi penyalahgunaan, pelanggaran keamanan, atau perubahan status kepegawaian.
+                        indikasi penyalahgunaan, pelanggaran keamanan, atau berakhirnya perjanjian kerja sama
+                        yang mendasari pemberian akses.
                      </li>
                   </ul>
                </div>
@@ -242,12 +245,12 @@
                   <ul class="ps-3">
                      <li class="mb-2">
                         Seluruh data yang dikelola dalam Sistem — mencakup data operasional, data armada kendaraan,
-                        data ban, data lokasi, maupun data karyawan — bersifat <strong>rahasia perusahaan</strong>
-                        dan merupakan aset eksklusif PT Catur Putra Harmonis.
+                        data ban, data lokasi, maupun data yang berkaitan dengan Pengguna — bersifat
+                        <strong>rahasia</strong> dan merupakan aset yang dilindungi oleh PT Catur Putra Harmonis.
                      </li>
                      <li class="mb-2">
                         Pengguna dilarang menyalin, mengunduh secara massal, mendistribusikan, mempublikasikan, atau
-                        mengungkapkan data Sistem dalam bentuk apa pun kepada pihak ketiga, baik secara langsung
+                        mengungkapkan data Sistem dalam bentuk apa pun kepada pihak lain, baik secara langsung
                         maupun melalui media elektronik, tanpa otorisasi tertulis dari Perusahaan.
                      </li>
                      <li class="mb-2">
@@ -271,16 +274,17 @@
                   </h6>
                   <ul class="ps-3">
                      <li class="mb-2">
-                        Menggunakan Sistem semata-mata untuk keperluan operasional yang telah ditetapkan dan sesuai
-                        dengan wewenang jabatan masing-masing.
+                        Menggunakan Sistem semata-mata untuk keperluan yang telah disepakati dalam perjanjian
+                        kerja sama atau otorisasi akses yang diberikan oleh PT Catur Putra Harmonis.
                      </li>
                      <li class="mb-2">
                         Memasukkan dan memperbarui data secara <strong>akurat, jujur, lengkap, dan tepat waktu</strong>
-                        berdasarkan kondisi aktual di lapangan, demi menjaga integritas data operasional Perusahaan.
+                        berdasarkan kondisi aktual, demi menjaga integritas data dalam Sistem.
                      </li>
                      <li class="mb-2">
                         Segera melaporkan kepada administrator Sistem apabila mengetahui atau menduga adanya
-                        pelanggaran keamanan, akses tidak sah, kehilangan kredensial, atau anomali data yang mencurigakan.
+                        pelanggaran keamanan, akses tidak sah, kehilangan kredensial, atau anomali data
+                        yang mencurigakan.
                      </li>
                      <li class="mb-2">
                         Tidak melakukan segala bentuk upaya untuk memanipulasi data, merekayasa balik
@@ -288,8 +292,8 @@
                         ketersediaan dan integritas Sistem dengan cara apa pun.
                      </li>
                      <li class="mb-2">
-                        Mengakhiri sesi akses dengan benar (<em>log out</em>) setiap kali selesai menggunakan Sistem,
-                        terutama pada perangkat yang digunakan bersama.
+                        Mengakhiri sesi akses dengan benar (<em>log out</em>) setiap kali selesai menggunakan
+                        Sistem, terutama pada perangkat yang digunakan bersama.
                      </li>
                   </ul>
                </div>
@@ -313,9 +317,8 @@
                         tidak akurat, atau menyalahgunakan Sistem di luar ketentuan yang berlaku.
                      </li>
                      <li class="mb-2">
-                        Seluruh keputusan strategis maupun operasional yang diambil berdasarkan data atau laporan
-                        yang dihasilkan Sistem sepenuhnya menjadi tanggung jawab pihak manajemen dan Pengguna
-                        yang bersangkutan.
+                        Seluruh keputusan yang diambil berdasarkan data atau laporan yang dihasilkan Sistem
+                        sepenuhnya menjadi tanggung jawab Pengguna yang bersangkutan.
                      </li>
                   </ul>
                </div>
@@ -351,7 +354,7 @@
                      <li class="mb-2"><strong>UU No. 11 Tahun 2008 jo. UU No. 19 Tahun 2016</strong> tentang Informasi dan Transaksi Elektronik (UU ITE).</li>
                      <li class="mb-2"><strong>UU No. 27 Tahun 2022</strong> tentang Perlindungan Data Pribadi.</li>
                      <li class="mb-2"><strong>PP No. 71 Tahun 2019</strong> tentang Penyelenggaraan Sistem dan Transaksi Elektronik.</li>
-                     <li class="mb-2">Peraturan internal PT Catur Putra Harmonis yang berlaku.</li>
+                     <li class="mb-2">Ketentuan dan kebijakan yang ditetapkan oleh PT Catur Putra Harmonis yang berlaku.</li>
                   </ul>
                   <p>
                      Perjanjian ini tunduk pada dan ditafsirkan berdasarkan hukum yang berlaku di
@@ -374,8 +377,8 @@
                         tanpa kewajiban pemberitahuan terlebih dahulu.
                      </li>
                      <li class="mb-2">
-                        Tindakan disipliner sesuai dengan Peraturan Perusahaan dan Perjanjian Kerja yang berlaku,
-                        mulai dari peringatan tertulis hingga pemutusan hubungan kerja.
+                        Pengakhiran perjanjian kerja sama atau otorisasi akses yang mendasari penggunaan Sistem,
+                        sesuai dengan ketentuan yang disepakati antara Pengguna dan PT Catur Putra Harmonis.
                      </li>
                      <li class="mb-2">
                         Tuntutan ganti rugi secara perdata atas kerugian yang ditimbulkan kepada Perusahaan
@@ -504,7 +507,7 @@
                e.preventDefault();
                e.stopPropagation();
                e.stopImmediatePropagation(); // Blokir script template Vuexy agar form TIDAK submit
-               
+
                // Buka modal EULA secara otomatis
                if(bsModal) {
                    bsModal.show();
