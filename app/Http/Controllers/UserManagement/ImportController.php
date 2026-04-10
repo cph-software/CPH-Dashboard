@@ -88,6 +88,55 @@ class ImportController extends Controller
             $result = $this->expandWideMovement($dataRows, $snColIdx);
         } else {
             // NARROW format: standard 13 columns
+            // FIX: Jika data ditemukan via regex (bukan via header keyword),
+            // header row TIDAK termasuk di $dataRows. Kita perlu cari header
+            // di baris-baris SEBELUM dataStartIdx.
+            $headerRow = null;
+            for ($h = $dataStartIdx - 1; $h >= 0; $h--) {
+                $rowStr = strtoupper(implode('|', array_map(function($v) {
+                    return trim((string)($v ?? ''));
+                }, $rawData[$h])));
+                
+                // Cari baris yang mengandung keyword header
+                if (strpos($rowStr, 'NO SERI') !== false 
+                    || strpos($rowStr, 'NO_SERI') !== false
+                    || strpos($rowStr, 'SERIAL') !== false
+                    || strpos($rowStr, 'UNIT') !== false) {
+                    $headerRow = $rawData[$h];
+                    
+                    // Untuk merged headers: gabungkan dengan sub-header (baris berikutnya)
+                    // Contoh: Baris 2 = ["No", "NO SERI", "UNIT", "POSISI BAN", "PEMASANGAN", "", "PELEPASAN", ""]
+                    //         Baris 3 = ["", "", "", "", "TANGGAL", "KM", "TANGGAL", "KM"]
+                    // Hasil:  ["No", "NO SERI", "UNIT", "POSISI BAN", "PEMASANGAN TANGGAL", "PEMASANGAN KM", "PELEPASAN TANGGAL", "PELEPASAN KM"]
+                    if ($h + 1 < $dataStartIdx) {
+                        $subRow = $rawData[$h + 1] ?? [];
+                        $parentGroup = '';
+                        for ($ci = 0; $ci < count($headerRow); $ci++) {
+                            $parent = trim((string)($headerRow[$ci] ?? ''));
+                            $sub = trim((string)($subRow[$ci] ?? ''));
+                            
+                            // Track parent group name (PEMASANGAN, PELEPASAN)
+                            if (!empty($parent)) {
+                                $parentGroup = $parent;
+                            }
+                            
+                            // Jika cell header kosong tapi sub-header ada → gabungkan parent + sub
+                            if (empty($parent) && !empty($sub)) {
+                                $headerRow[$ci] = $parentGroup . ' ' . $sub;
+                            } else if (!empty($parent) && !empty($sub)) {
+                                $headerRow[$ci] = $parent . ' ' . $sub;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+
+            // Jika header ditemukan, sisipkan di awal dataRows agar parseNarrowMovement bisa array_shift()
+            if ($headerRow) {
+                array_unshift($dataRows, $headerRow);
+            }
+            
             $result = $this->parseNarrowMovement($dataRows);
         }
 
@@ -153,13 +202,25 @@ class ImportController extends Controller
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
         $sn = strtoupper(trim((string)$sn));
         $errors = [];
+        $warnings = [];
 
+        // 1. Serial Number wajib
         if (empty($sn)) {
             $errors[] = "Nomor Seri kosong.";
+        } else {
+            // Cek apakah SN terdaftar di database
+            $tyreExists = \App\Models\Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
+            if (!$tyreExists) {
+                $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre.";
+            }
         }
 
+        // 2. Tanggal
         $installDateRaw = $data['pemasangan_tanggal'] ?? null;
         $installDate = !empty($installDateRaw) && trim($installDateRaw) !== '0';
+
+        $removeDateRaw = $data['pelepasan_tanggal'] ?? null;
+        $removeDate = !empty($removeDateRaw) && trim($removeDateRaw) !== '0';
 
         $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
         $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
@@ -170,13 +231,31 @@ class ImportController extends Controller
             $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
         }
 
+        // 3. Kendaraan
         if ($installDate && empty($unitCode)) {
             $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
         }
 
+        if (!empty($unitCode)) {
+            $vehicleExists = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                ->where('kode_kendaraan', strtoupper($unitCode))
+                ->exists();
+            if (!$vehicleExists) {
+                $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+            }
+        }
+
+        // 4. Odometer anomali (warning, bukan error)
+        $installKm = (float)($data['pemasangan_km'] ?? 0);
+        $removeKm = (float)($data['pelepasan_km'] ?? 0);
+        if ($removeDate && $installDate && $removeKm > 0 && $installKm > 0 && $removeKm < $installKm) {
+            $warnings[] = "Odometer anomali: KM Lepas ({$removeKm}) < KM Pasang ({$installKm}).";
+        }
+
         return [
             'is_valid' => empty($errors),
-            'errors' => $errors
+            'errors' => $errors,
+            'warnings' => $warnings,
         ];
     }
 

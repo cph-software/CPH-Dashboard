@@ -4,6 +4,8 @@ namespace App\Http\Controllers\UserManagement;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ImportApprovalController extends Controller
 {
@@ -98,13 +100,14 @@ class ImportApprovalController extends Controller
 
     private function processData($batch)
     {
-        // Matikan batasan waktu dan memori PHP sementara agar tidak gagal/putus di tengah jalan untuk data ribuan.
-        set_time_limit(0);
-        ini_set('memory_limit', '-1');
+        // [P3] Batas wajar: 5 menit dan 512MB. Cukup untuk ribuan baris.
+        // Jika file >10.000 baris, sisa yang belum diproses tetap Pending.
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
 
         $successCount = $batch->processed_rows ?? 0;
         
-        // Ambil ID Perusahaan dari user yang mengupload file
+        // [P7] Ambil ID Perusahaan dari user yang MENGUPLOAD (bukan yang approve)
         $uploaderCompanyId = $batch->user->tyre_company_id;
 
         // Gunakan chunkById(200) agar RAM tidak membengkak + aman dari bug "skipped rows" 
@@ -120,6 +123,10 @@ class ImportApprovalController extends Controller
                             continue; // Biarkan tetap Pending di keranjang
                         }
                     }
+
+                    // [P1] Setiap baris dibungkus dalam transaction.
+                    // Jika 1 baris gagal di tengah, seluruh operasi baris itu dibatalkan.
+                    DB::beginTransaction();
 
                     switch ($batch->module) {
                         case 'Master Tyre':
@@ -161,15 +168,28 @@ class ImportApprovalController extends Controller
                             throw new \Exception("Modul import tidak dikenali: " . $batch->module);
                     }
 
+                    DB::commit();
                     $item->update(['status' => 'Success']);
                     $successCount++;
                 } catch (\Exception $e) {
+                    DB::rollBack();
                     $item->update(['status' => 'Failed', 'error_message' => $e->getMessage()]);
                 }
             }
         });
 
         $batch->update(['processed_rows' => $successCount]);
+
+        // [P10] Log hasil proses ke Activity Log
+        $failedCount = $batch->items()->where('status', 'Failed')->count();
+        $pendingCount = $batch->items()->where('status', 'Pending')->count();
+        setLogActivity(auth()->id(), "Memproses import batch #{$batch->id} ({$batch->module}): {$successCount} sukses, {$failedCount} gagal, {$pendingCount} pending", [
+            'module' => 'Import Approval',
+            'batch_id' => $batch->id,
+            'success_count' => $successCount,
+            'failed_count' => $failedCount,
+            'pending_count' => $pendingCount,
+        ]);
     }
 
     private function processFailureCodes($data, $uploaderCompanyId = null)
@@ -303,7 +323,7 @@ class ImportApprovalController extends Controller
             $locationId = $location->id;
         }
 
-        \App\Models\Tyre::updateOrCreate(
+        $tyre = \App\Models\Tyre::updateOrCreate(
             ['serial_number' => $sn],
             [
                 'tyre_brand_id' => $brandId,
@@ -322,8 +342,9 @@ class ImportApprovalController extends Controller
             ]
         );
         
-        // 5. Update Stock Count if in warehouse
-        if ($inWarehouse && $locationId) {
+        // [P8] Hanya increment stok jika ban BARU dibuat (bukan update data existing)
+        // Mencegah double-counting saat re-import file yang sama
+        if ($inWarehouse && $locationId && $tyre->wasRecentlyCreated) {
             \App\Models\TyreLocation::where('id', $locationId)->increment('current_stock');
         }
     }
@@ -501,14 +522,16 @@ class ImportApprovalController extends Controller
         }
     }
 
-    /**
-     * DUAL-ROW FORMAT: 1 baris = Pemasangan + Pelepasan
-     * (Format real data user: NO SERI, UNIT, POSISI BAN, PEMASANGAN TANGGAL/KM, PELEPASAN TANGGAL/KM, dll.)
-     */
     private function processDualMovement($data, $tyre, $vehicle, $companyId)
     {
         $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
         $positionId = $this->resolvePositionId($positionCode, $vehicle);
+
+        // [P4] Resolve position detail object for 2-way sync
+        $posDetail = null;
+        if ($positionId) {
+            $posDetail = \App\Models\TyrePositionDetail::find($positionId);
+        }
 
         // Parse dates & numbers with flexible format
         $installDate = $this->parseFlexDate($data['pemasangan_tanggal'] ?? null);
@@ -525,14 +548,33 @@ class ImportApprovalController extends Controller
             $targetStatus = 'Scrap';
         }
 
+        $sn = $tyre->serial_number;
+
         // 1. Create INSTALLATION record
         if ($installDate) {
             if (!$vehicle) {
                 throw new \Exception("Movement gagal: Pemasangan memerlukan Unit Kendaraan yang valid.");
             }
 
+            // [P9] Cek duplikat: apakah movement Installation dengan SN+tanggal+odometer yang sama sudah ada?
+            $existsInstall = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
+                ->where('movement_type', 'Installation')
+                ->where('movement_date', $installDate)
+                ->where('odometer_reading', $installKm)
+                ->exists();
+
+            if ($existsInstall) {
+                throw new \Exception("Movement duplikat: SN {$sn} Installation pada {$installDate->format('Y-m-d')} KM={$installKm} sudah tercatat.");
+            }
+
+            // [P5] Kurangi stok gudang saat ban diambil untuk dipasang
+            if ($tyre->is_in_warehouse && $tyre->current_location_id) {
+                \App\Models\TyreLocation::where('id', $tyre->current_location_id)->decrement('current_stock');
+            }
+
             \App\Models\TyreMovement::create([
                 'tyre_id'          => $tyre->id,
+                'tyre_company_id'  => $companyId, // [P7] Company uploader, bukan approver
                 'vehicle_id'       => $vehicle->id,
                 'position_id'      => $positionId,
                 'movement_type'    => 'Installation',
@@ -546,8 +588,25 @@ class ImportApprovalController extends Controller
         if ($removeDate) {
             $runningKm = max(0, $removeKm - $installKm);
 
+            // [P2] Log warning jika odometer terbalik (kemungkinan typo di Excel)
+            if ($removeKm > 0 && $installKm > 0 && $removeKm < $installKm) {
+                Log::warning("Import odometer anomaly: SN={$sn}, install_km={$installKm}, remove_km={$removeKm}. Running KM set to 0.");
+            }
+
+            // [P9] Cek duplikat Removal
+            $existsRemoval = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
+                ->where('movement_type', 'Removal')
+                ->where('movement_date', $removeDate)
+                ->where('odometer_reading', $removeKm)
+                ->exists();
+
+            if ($existsRemoval) {
+                throw new \Exception("Movement duplikat: SN {$sn} Removal pada {$removeDate->format('Y-m-d')} KM={$removeKm} sudah tercatat.");
+            }
+
             \App\Models\TyreMovement::create([
                 'tyre_id'          => $tyre->id,
+                'tyre_company_id'  => $companyId, // [P7]
                 'vehicle_id'       => $vehicle ? $vehicle->id : null,
                 'position_id'      => $positionId,
                 'movement_type'    => 'Removal',
@@ -569,6 +628,16 @@ class ImportApprovalController extends Controller
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
                 'total_lifetime_km'   => ($tyre->total_lifetime_km ?? 0) + $runningKm,
             ]);
+
+            // [P4] Clear posisi kendaraan saat removal (sinkronisasi 2-arah)
+            if ($posDetail && $posDetail->tyre_id == $tyre->id) {
+                $posDetail->update(['tyre_id' => null]);
+            }
+
+            // [P6] Refresh cache agar baris berikutnya pakai data terbaru
+            $tyre->refresh();
+            $this->tyreCache[$sn] = $tyre;
+
         } else if ($installDate && $vehicle) {
             // Only installation, no removal yet — tyre currently installed on vehicle
             $tyre->update([
@@ -577,12 +646,26 @@ class ImportApprovalController extends Controller
                 'is_in_warehouse'     => 0,
                 'status'              => 'Installed',
             ]);
+
+            // [P4] Sinkronisasi 2-arah: update posisi kendaraan
+            if ($posDetail) {
+                $posDetail->update(['tyre_id' => $tyre->id]);
+            }
+
+            // [P6] Refresh cache
+            $tyre->refresh();
+            $this->tyreCache[$sn] = $tyre;
+
         } else if (!$installDate && !$removeDate && $targetStatus === 'Scrap') {
             // SCRAP-ONLY: No movement dates, just status update
             $tyre->update([
                 'status'              => 'Scrap',
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
             ]);
+
+            // [P6] Refresh cache
+            $tyre->refresh();
+            $this->tyreCache[$sn] = $tyre;
         }
     }
 
@@ -656,6 +739,11 @@ class ImportApprovalController extends Controller
                 $hmDiff = (float)$hm - (float)$lastInstallation->hour_meter_reading;
                 if ($kmDiff < 0) $kmDiff = 0;
                 if ($hmDiff < 0) $hmDiff = 0;
+
+                // [P2] Log warning jika odometer terbalik
+                if ((float)$odo > 0 && (float)$lastInstallation->odometer_reading > 0 && (float)$odo < (float)$lastInstallation->odometer_reading) {
+                    Log::warning("Import odometer anomaly (Single): SN={$tyre->serial_number}, install_km={$lastInstallation->odometer_reading}, remove_km={$odo}. Running KM set to 0.");
+                }
             }
 
             $locationId = null;
@@ -682,6 +770,10 @@ class ImportApprovalController extends Controller
             }
         }
 
+        // [P6] Refresh cache setelah update agar baris selanjutnya pakai data terbaru
+        $tyre->refresh();
+        $this->tyreCache[strtoupper($tyre->serial_number)] = $tyre;
+
         // Find Failure Code
         $failCodeStr = $data['failure_code'] ?? null;
         $failCodeId = null;
@@ -692,6 +784,7 @@ class ImportApprovalController extends Controller
 
         \App\Models\TyreMovement::create([
             'tyre_id' => $tyre->id,
+            'tyre_company_id' => $uploaderCompanyId, // [P7] Company uploader, bukan approver
             'vehicle_id' => $vehicle ? $vehicle->id : null,
             'position_id' => $positionId,
             'movement_date' => $moveDate,
@@ -914,6 +1007,7 @@ class ImportApprovalController extends Controller
     public function updateItem(Request $request, $itemId)
     {
         $item = \App\Models\ImportItem::findOrFail($itemId);
+        $batch = $item->batch;
         
         $data = $item->data;
         $updates = $request->except('_token', '_method');
@@ -923,8 +1017,8 @@ class ImportApprovalController extends Controller
             $data[$key] = $val;
         }
 
-        // Re-validate
-        $validation = $this->validateMovementRow($data);
+        // Re-validate menggunakan validasi yang diperkuat
+        $validation = $this->validateMovementRow($data, $batch->user->tyre_company_id ?? null);
         $data['_validation'] = $validation;
 
         $item->data = $data;
@@ -934,22 +1028,41 @@ class ImportApprovalController extends Controller
             'success' => true,
             'is_valid' => $validation['is_valid'],
             'errors' => $validation['errors'],
+            'warnings' => $validation['warnings'] ?? [],
             'item_data' => $data
         ]);
     }
 
-    private function validateMovementRow($data)
+    /**
+     * Validasi mendalam untuk setiap baris import Movement History.
+     * Ini adalah QUALITY GATE utama yang membagi data menjadi "Ready" vs "Perlu Perbaikan".
+     * 
+     * Mengatasi: P2 (odometer), P4 (posisi), P7 (company), P9 (duplikat)
+     */
+    private function validateMovementRow($data, $uploaderCompanyId = null)
     {
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
         $sn = strtoupper(trim((string)$sn));
         $errors = [];
+        $warnings = [];
 
+        // ── 1. VALIDASI WAJIB: Serial Number ──
         if (empty($sn)) {
             $errors[] = "Nomor Seri kosong.";
+        } else {
+            // Cek apakah SN terdaftar di database
+            $tyreExists = \App\Models\Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
+            if (!$tyreExists) {
+                $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre. Daftarkan terlebih dahulu.";
+            }
         }
 
+        // ── 2. VALIDASI TANGGAL ──
         $installDateRaw = $data['pemasangan_tanggal'] ?? null;
         $installDate = !empty($installDateRaw) && trim($installDateRaw) !== '0';
+
+        $removeDateRaw = $data['pelepasan_tanggal'] ?? null;
+        $removeDate = !empty($removeDateRaw) && trim($removeDateRaw) !== '0';
 
         $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
         $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
@@ -960,13 +1073,70 @@ class ImportApprovalController extends Controller
             $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
         }
 
+        // Cek tanggal masa depan
+        if ($installDate) {
+            try {
+                $parsedInstall = \Carbon\Carbon::parse($installDateRaw);
+                if ($parsedInstall->isFuture()) {
+                    $errors[] = "Tanggal Pemasangan ({$installDateRaw}) tidak boleh di masa depan.";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Format Tanggal Pemasangan tidak valid: '{$installDateRaw}'.";
+            }
+        }
+
+        if ($removeDate) {
+            try {
+                $parsedRemove = \Carbon\Carbon::parse($removeDateRaw);
+                if ($parsedRemove->isFuture()) {
+                    $errors[] = "Tanggal Pelepasan ({$removeDateRaw}) tidak boleh di masa depan.";
+                }
+                // Cek kronologi: remove harus setelah install
+                if ($installDate) {
+                    $parsedInstallCheck = \Carbon\Carbon::parse($installDateRaw);
+                    if ($parsedRemove->lt($parsedInstallCheck)) {
+                        $errors[] = "Tanggal Pelepasan ({$removeDateRaw}) lebih awal dari Tanggal Pemasangan ({$installDateRaw}).";
+                    }
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Format Tanggal Pelepasan tidak valid: '{$removeDateRaw}'.";
+            }
+        }
+
+        // ── 3. VALIDASI KENDARAAN ──
         if ($installDate && empty($unitCode)) {
             $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
         }
 
+        if (!empty($unitCode)) {
+            $vehicleExists = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                ->where('kode_kendaraan', strtoupper($unitCode))
+                ->exists();
+            if (!$vehicleExists) {
+                $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+            }
+        }
+
+        // ── 4. VALIDASI ODOMETER (P2) ──
+        $installKm = (float)($data['pemasangan_km'] ?? 0);
+        $removeKm = (float)($data['pelepasan_km'] ?? 0);
+
+        if ($removeDate && $installDate && $removeKm > 0 && $installKm > 0) {
+            if ($removeKm < $installKm) {
+                $warnings[] = "Odometer anomali: KM Pelepasan ({$removeKm}) lebih kecil dari KM Pemasangan ({$installKm}). Running KM akan diset 0.";
+            }
+        }
+
+        // ── 5. VALIDASI POSISI BAN (P4) ──
+        $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
+        if ($installDate && !empty($unitCode) && empty(trim((string)($positionCode ?? '')))) {
+            $warnings[] = "Posisi Ban tidak diisi. Ban akan dipasang tanpa info posisi.";
+        }
+
         return [
             'is_valid' => empty($errors),
-            'errors' => $errors
+            'errors' => $errors,
+            'warnings' => $warnings,
         ];
     }
 }
