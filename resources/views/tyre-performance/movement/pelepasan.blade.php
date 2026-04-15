@@ -261,7 +261,7 @@
                            <select name="failure_code_id" id="failure_code_id" class="form-select select2">
                               <option value="">-- Pilih Alasan --</option>
                               @foreach ($failureCodes as $fc)
-                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}
+                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->getDisplayNameByCompanyId(auth()->user()->tyre_company_id) }}
                                  </option>
                               @endforeach
                            </select>

@@ -58,7 +58,7 @@ class Tyre extends Model
 
     public function currentPosition()
     {
-        return $this->belongsTo(TyrePosition::class, 'current_position_id');
+        return $this->belongsTo(TyrePositionDetail::class, 'current_position_id');
     }
 
     public function latestInstallation()

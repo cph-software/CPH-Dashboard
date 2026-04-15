@@ -45,10 +45,55 @@ if (!function_exists('setLogActivity')) {
                 'data_after'      => $options['data_after'] ?? null,
                 'ip_address'      => $options['ip_address'] ?? (request() ? request()->ip() : null),
             ]);
+
+            // Dispatch notification if it's an error
+            if (strtolower($options['action_type'] ?? '') === 'error') {
+                $companyId = $options['tyre_company_id'] ?? (auth()->check() ? auth()->user()->tyre_company_id : null);
+                $userName = auth()->check() ? (auth()->user()->karyawan->full_name ?? auth()->user()->name) : 'System';
+
+                // Cari role mana saja yang diizinkan melihat Error Notification
+                $menu = \App\Models\Menu::where('name', 'Error Notification')->first();
+                $roleIdsWithPermission = [];
+                if ($menu) {
+                    $roleIdsWithPermission = \Illuminate\Support\Facades\DB::table('menu_role')
+                        ->where('menu_id', $menu->id)
+                        ->pluck('role_id')
+                        ->toArray();
+                }
+                
+                // Pastikan Super Admin selalu dapat notifikasi (Role 1)
+                if (!in_array(1, $roleIdsWithPermission)) {
+                    $roleIdsWithPermission[] = 1;
+                }
+
+                $targetUsers = \App\Models\User::whereIn('role_id', $roleIdsWithPermission)
+                    ->where(function($query) use ($companyId) {
+                        $query->where('role_id', 1); // Super Admin selalu dapat semua
+                        
+                        if ($companyId) {
+                            // Untuk role lain, isolasi berdasarkan perusahaannya
+                            $query->orWhere('tyre_company_id', $companyId);
+                        }
+                    })->get();
+
+                if ($targetUsers->count() > 0) {
+                    \Illuminate\Support\Facades\Notification::send(
+                        $targetUsers, 
+                        new \App\Notifications\HumanErrorNotification(
+                            $message,
+                            $userId,
+                            $userName,
+                            $options['module'] ?? 'System',
+                            $options,
+                            $companyId
+                        )
+                    );
+                }
+            }
         } catch (\Exception $e) {
             // Fallback ke file log jika DB gagal (backward compat)
             \Log::info("User ID {$userId}: {$message}");
-            \Log::warning("ActivityLog DB write failed: " . $e->getMessage());
+            \Log::error("ActivityLog DB/Notification write failed: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
         }
     }
 }

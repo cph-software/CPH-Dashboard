@@ -4,6 +4,8 @@ composer.lock
 /public/storage
 /storage/*.key
 /vendor
+vendor.zip
+.vscode/
 .env
 .env.backup
 .phpunit.result.cache

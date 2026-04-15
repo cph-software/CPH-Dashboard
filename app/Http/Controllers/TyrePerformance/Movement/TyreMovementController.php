@@ -97,7 +97,7 @@ class TyreMovementController extends Controller
             ->whereHas('tyres') // Only vehicles with tyres
             ->select('id', 'kode_kendaraan', 'no_polisi')
             ->get();
-        $failureCodes = TyreFailureCode::where('status', 'Active')->select('id', 'failure_name', 'failure_code')->get();
+        $failureCodes = TyreFailureCode::where('status', 'Active')->get();
         $locations = \App\Models\TyreLocation::all();
         $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
         return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments', 'locations'));
@@ -993,13 +993,22 @@ class TyreMovementController extends Controller
             if ($movement->movement_type === 'Installation') {
                 // LOGIC: Undo Installation (Remove from vehicle → Return to stock)
 
-                // 1. Reset Tyre Status to "New" or available state
+                // Determine original status before installation from install_condition field
+                // install_condition: 'New' → status was 'New', 'Repair' → status was 'Repaired'
+                $originalStatus = 'New'; // Safe default
+                if ($movement->install_condition === 'Repair') {
+                    $originalStatus = 'Repaired';
+                } elseif ($movement->install_condition === 'New') {
+                    $originalStatus = 'New';
+                }
+
+                // 1. Reset Tyre Status to original pre-installation state
                 $tyre->update([
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
                     'is_in_warehouse' => true,
                     'current_location_id' => $movement->work_location_id,
-                    'status' => 'New',
+                    'status' => $originalStatus,
                 ]);
 
                 // 2. Increment Stock at that location (assuming it goes back to inventory)

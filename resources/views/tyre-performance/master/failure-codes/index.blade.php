@@ -38,12 +38,19 @@
             <div class="row align-items-center">
                <div class="col-md-4">
                   <label class="form-label fw-bold">View as Company (Preview Aliases)</label>
+                  @if(auth()->user()->role_id == 1)
                   <select id="companyFilter" class="form-select select2">
                      <option value="">Default (Master Names)</option>
                      @foreach ($companies as $company)
                         <option value="{{ $company->id }}">{{ $company->company_name }}</option>
                      @endforeach
                   </select>
+                  @else
+                  <select id="companyFilter" class="form-select select2" disabled>
+                     <option value="{{ auth()->user()->tyre_company_id }}" selected>{{ auth()->user()->tyreCompany->company_name ?? 'My Company' }}</option>
+                  </select>
+                  <input type="hidden" id="auto_trigger_preview" value="1">
+                  @endif
                </div>
                <div class="col-md-8 text-muted small">
                   <i class="ri-information-line me-1"></i> Pilih instansi untuk melihat bagaimana nama kode kerusakan
@@ -171,16 +178,23 @@
                      <label class="form-label text-muted small">Failure Code</label>
                      <div class="fw-bold" id="alias_fc_display"></div>
                   </div>
+                  @if (auth()->user()->role_id == 1)
                   <div class="mb-3">
-                     <label class="form-label fw-bold">Select Company</label>
+                     <label class="form-label fw-bold">Pilih Instansi</label>
                      <select name="tyre_company_id" class="form-select select2-modal" required
-                        data-placeholder="Choose Company...">
+                        data-placeholder="Pilih Instansi...">
                         <option value=""></option>
                         @foreach ($companies as $company)
                            <option value="{{ $company->id }}">{{ $company->company_name }}</option>
                         @endforeach
                      </select>
                   </div>
+                  @else
+                     <input type="hidden" name="tyre_company_id" value="{{ auth()->user()->tyre_company_id }}">
+                     <div class="alert alert-info py-2 small mb-3">
+                        <i class="ri-information-line me-1"></i> Alias ini akan tersimpan khusus untuk Instansi Anda (<strong>{{ auth()->user()->tyreCompany->company_name ?? 'Sistem' }}</strong>).
+                     </div>
+                  @endif
                   <div class="mb-0">
                      <label class="form-label fw-bold">Custom Alias Name</label>
                      <input type="text" name="alias_name" class="form-control" required
@@ -247,6 +261,12 @@
                }
             });
          });
+
+         if ($('#auto_trigger_preview').length > 0) {
+             setTimeout(() => {
+                 $('#companyFilter').trigger('change');
+             }, 300);
+         }
 
          $('.datatables-failures').DataTable({
             order: [],

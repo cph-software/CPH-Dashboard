@@ -55,6 +55,10 @@ class User extends Authenticatable
      */
     public function hasPermission($menuName, $permission = null)
     {
+        if ($this->role_id == 1) {
+            return true;
+        }
+
         if (!$this->role)
             return false;
 

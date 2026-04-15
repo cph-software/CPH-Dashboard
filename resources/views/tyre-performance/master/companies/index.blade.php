@@ -14,9 +14,11 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Instansi Proyek Tyre</h4>
+         @if(hasPermission('Companies', 'create'))
          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
             <i class="icon-base ri ri-add-line me-1"></i> Tambah Instansi
          </button>
+         @endif
       </div>
 
       <div class="card">
@@ -63,6 +65,7 @@
                                     <i class="icon-base ri ri-shield-keyhole-line"></i>
                                  </a>
                               @endif
+                              @if(hasPermission('Companies', 'update'))
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill edit-company"
                                  data-id="{{ $company->id }}" data-name="{{ $company->company_name }}"
@@ -71,11 +74,14 @@
                                  data-status="{{ $company->status }}">
                                  <i class="icon-base ri ri-pencil-line"></i>
                               </button>
+                              @endif
+                              @if(hasPermission('Companies', 'delete'))
                               <button type="button"
                                  class="btn btn-sm btn-icon btn-text-danger rounded-pill delete-company"
                                  data-id="{{ $company->id }}" data-name="{{ $company->company_name }}">
                                  <i class="icon-base ri ri-delete-bin-line"></i>
                               </button>
+                              @endif
                            </div>
                         </td>
                      </tr>
@@ -116,6 +122,14 @@
                            class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" class="form-control" required value="0">
                      <small class="text-muted d-block mt-1 small">Batas maksimal penginputan ban di sistem.</small>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold">Mode Pengukuran (Odometer/Hour Meter) <span class="text-danger">*</span></label>
+                     <select name="measurement_mode" class="form-select">
+                        <option value="BOTH">Tampilkan Keduanya (KM & HM)</option>
+                        <option value="KM">Hanya Kilometer (KM - Truk/Bus)</option>
+                        <option value="HM">Hanya Hour Meter (HM - Alat Berat)</option>
+                     </select>
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
@@ -165,6 +179,14 @@
                         class="form-control" required>
                   </div>
                   <div class="mb-3">
+                     <label class="form-label fw-bold">Mode Pengukuran <span class="text-danger">*</span></label>
+                     <select name="measurement_mode" id="edit_measurement_mode" class="form-select">
+                        <option value="BOTH">Tampilkan Keduanya (KM & HM)</option>
+                        <option value="KM">Hanya Kilometer (KM)</option>
+                        <option value="HM">Hanya Hour Meter (HM)</option>
+                     </select>
+                  </div>
+                  <div class="mb-3">
                      <label class="form-label fw-bold">Status</label>
                      <select name="status" id="edit_status" class="form-select">
                         <option value="Active">Active</option>
@@ -212,6 +234,13 @@
                $('#edit_total_tyres').val(data.total_tyres);
                $('#edit_total_tyre_capacity').val(data.total_tyre_capacity);
                $('#edit_status').val(data.status);
+               
+               if (data.measurement_mode) {
+                   $('#edit_measurement_mode').val(data.measurement_mode);
+               } else {
+                   $('#edit_measurement_mode').val('BOTH');
+               }
+               
                $('#editCompanyForm').attr('action', baseUrl + '/' + id);
 
                $('#editCompanyModal').modal('show');

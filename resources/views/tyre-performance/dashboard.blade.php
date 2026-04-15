@@ -200,12 +200,15 @@
                         <i class="icon-base ri ri-upload-2-line me-1"></i> Import Data
                      </button>
                   @endif
+                  @if (hasPermission('Dashboard', 'export') || hasPermission('Import Approval', 'view'))
                   <div class="btn-group">
                      <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
                         style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="icon-base ri ri-download-2-line me-1"></i> Export
+                        <i class="icon-base {{ hasPermission('Dashboard', 'export') ? 'ri-download-2-line' : 'ri-menu-line' }} me-1"></i> 
+                        {{ hasPermission('Dashboard', 'export') ? 'Export' : 'More' }}
                      </button>
                      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                        @if (hasPermission('Dashboard', 'export'))
                         <li>
                            <h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6>
                         </li>
@@ -218,14 +221,22 @@
                         <li><a class="dropdown-item"
                               href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
                                  class="ri-disc-line me-1"></i> Tyre Master List</a></li>
+                        @endif
+
+                        @if (hasPermission('Dashboard', 'export') && hasPermission('Import Approval', 'view'))
                         <li>
                            <hr class="dropdown-divider">
                         </li>
+                        @endif
+
+                        @if (hasPermission('Import Approval', 'view'))
                         <li><a class="dropdown-item text-success fw-bold" href="{{ route('import-approval.index') }}">
                               <i class="icon-base ri ri-check-double-line me-1"></i>
                               Log Approval Import</a></li>
+                        @endif
                      </ul>
                   </div>
+                  @endif
                </div>
             </form>
          </div>
@@ -288,7 +299,7 @@
             </div>
          </div>
 
-         {{-- Avg Lifetime KM --}}
+         {{-- Avg Lifetime --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
             <div class="card kpi-card card-border-shadow-warning h-100">
                <div class="card-body py-3">
@@ -299,13 +310,29 @@
                      </div>
                      <span class="kpi-sub">Avg Lifetime</span>
                   </div>
-                  <div class="kpi-number text-warning">{{ number_format($avgLifetimeKm, 0) }}</div>
-                  <div class="kpi-sub mt-1">KM rata-rata</div>
+                  @if($measurementMode == 'KM')
+                     <div class="kpi-number text-warning">{{ number_format($avgLifetimeKm, 0) }}</div>
+                     <div class="kpi-sub mt-1">KM rata-rata</div>
+                  @elseif($measurementMode == 'HM')
+                     <div class="kpi-number text-warning">{{ number_format($avgLifetimeHm, 0) }}</div>
+                     <div class="kpi-sub mt-1">HM rata-rata</div>
+                  @else
+                     <div class="d-flex justify-content-between align-items-end mt-1">
+                        <div>
+                           <div class="kpi-number text-warning fs-5" style="line-height: 1;">{{ number_format($avgLifetimeKm, 0) }}</div>
+                           <div class="kpi-sub" style="font-size: 0.65rem;">KM rata-rata</div>
+                        </div>
+                        <div class="text-end">
+                           <div class="kpi-number text-warning fs-5" style="line-height: 1;">{{ number_format($avgLifetimeHm, 0) }}</div>
+                           <div class="kpi-sub" style="font-size: 0.65rem;">HM rata-rata</div>
+                        </div>
+                     </div>
+                  @endif
                </div>
             </div>
          </div>
 
-         {{-- Cost Per KM --}}
+         {{-- Avg Cost --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
             <div class="card kpi-card card-border-shadow-secondary h-100">
                <div class="card-body py-3">
@@ -314,10 +341,28 @@
                         <span class="avatar-initial rounded-3 bg-label-secondary"><i
                               class="icon-base ri ri-money-dollar-circle-line"></i></span>
                      </div>
-                     <span class="kpi-sub">Cost / KM</span>
+                     <span class="kpi-sub">
+                        @if($measurementMode == 'KM') Cost / KM @elseif($measurementMode == 'HM') Cost / HM @else Cost / KM & HM @endif
+                     </span>
                   </div>
-                  <div class="kpi-number">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
-                  <div class="kpi-sub mt-1">Rata-rata CPK</div>
+                  @if($measurementMode == 'KM')
+                     <div class="kpi-number">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
+                     <div class="kpi-sub mt-1">Rata-rata CPK</div>
+                  @elseif($measurementMode == 'HM')
+                     <div class="kpi-number">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
+                     <div class="kpi-sub mt-1">Rata-rata CPH</div>
+                  @else
+                     <div class="d-flex justify-content-between align-items-end mt-1">
+                        <div>
+                           <div class="kpi-number fs-6" style="line-height: 1;">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
+                           <div class="kpi-sub text-primary fw-bold" style="font-size: 0.65rem;">CPK</div>
+                        </div>
+                        <div class="text-end">
+                           <div class="kpi-number fs-6" style="line-height: 1;">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
+                           <div class="kpi-sub text-primary fw-bold" style="font-size: 0.65rem;">CPH</div>
+                        </div>
+                     </div>
+                  @endif
                </div>
             </div>
          </div>

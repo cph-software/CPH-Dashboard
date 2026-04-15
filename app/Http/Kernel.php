@@ -64,5 +64,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'tyre.permission' => \App\Http\Middleware\CheckTyrePermission::class,
+        'eula' => \App\Http\Middleware\CheckEula::class,
     ];
 }

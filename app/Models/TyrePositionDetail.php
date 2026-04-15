@@ -10,7 +10,6 @@ class TyrePositionDetail extends Model
 {
     use UserTracking;
     protected $table = 'tyre_position_details';
-    protected $guarded = [];
 
     protected $fillable = [
         'configuration_id',

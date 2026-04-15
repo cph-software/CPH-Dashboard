@@ -123,4 +123,33 @@ class LoginController extends Controller
             return redirect('/login');
         }
     }
+
+    /**
+     * Show the EULA page.
+     * 
+     * @return \Illuminate\View\View
+     */
+    public function showEula()
+    {
+        return view('auth.eula');
+    }
+
+    /**
+     * Accept the EULA for the authenticated user.
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function acceptEula(Request $request)
+    {
+        $user = auth()->user();
+        if ($user) {
+            $user->eula_accepted_at = now();
+            $user->save();
+        }
+
+        // Redirect to dashboard explicitly instead of intended()
+        // Because often intended() might be /eula or something else if not careful
+        return redirect(getDashboardRedirectUrl());
+    }
 }

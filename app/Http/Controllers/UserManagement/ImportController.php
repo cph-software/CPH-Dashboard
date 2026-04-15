@@ -158,6 +158,7 @@ class ImportController extends Controller
             ]);
 
             $imported = 0;
+            $invalidCount = 0;
             $insertData = [];
             $now = now()->toDateTimeString();
 
@@ -166,6 +167,9 @@ class ImportController extends Controller
 
                 // Perform pre-validation to tag valid vs invalid rows
                 $rowData['_validation'] = $this->validateMovementRow($rowData);
+                if (!$rowData['_validation']['is_valid']) {
+                    $invalidCount++;
+                }
 
                 $insertData[] = [
                     'batch_id'   => $batch->id,
@@ -183,11 +187,21 @@ class ImportController extends Controller
 
             \DB::commit();
 
-            setLogActivity(auth()->id(), "Import Excel ({$module}): {$imported} baris", [
-                'module' => 'Import',
+            $logOptions = [
+                'module' => 'Import Approval',
                 'batch_id' => $batch->id,
                 'filename' => $batch->filename
-            ]);
+            ];
+
+            if ($invalidCount > 0) {
+                $logOptions['action_type'] = 'error';
+                $logOptions['Pesan Error'] = [
+                    "Dari total {$imported} baris data, terdapat {$invalidCount} data yang berstatus 'Perlu Diperbaiki'.",
+                    "Silahkan tinjau dan perbaiki di halaman Log Approval."
+                ];
+            }
+
+            setLogActivity(auth()->id(), "Import Excel {$module} Selesai Diunggah", $logOptions);
 
             return redirect()->back()->with('success',
                 "Data berhasil diupload ({$imported} data movement) dan menunggu persetujuan (ID: #{$batch->id}).");

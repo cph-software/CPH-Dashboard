@@ -84,6 +84,22 @@ class DashboardController extends Controller
         $avgCpk = ($tyresWithCpk && $tyresWithCpk->total_km > 0)
             ? $tyresWithCpk->total_price / $tyresWithCpk->total_km
             : 0;
+            
+        // Average Cost Per HM
+        $tyresWithCph = Tyre::where('total_lifetime_hm', '>', 0)
+            ->whereNotNull('price')
+            ->where('price', '>', 0)
+            ->select(DB::raw('SUM(price) as total_price, SUM(total_lifetime_hm) as total_hm'))
+            ->first();
+        $avgCph = ($tyresWithCph && $tyresWithCph->total_hm > 0)
+            ? $tyresWithCph->total_price / $tyresWithCph->total_hm
+            : 0;
+
+        // Company Measurement Mode
+        $measurementMode = 'BOTH';
+        if (auth()->check() && auth()->user()->tyreCompany) {
+            $measurementMode = auth()->user()->tyreCompany->measurement_mode ?? 'BOTH';
+        }
 
         // Scrap Rate %
         $scrapRate = $totalTyres > 0 ? round(($scrappedTyres / $totalTyres) * 100, 1) : 0;
@@ -263,6 +279,8 @@ class DashboardController extends Controller
             'avgLifetimeKm',
             'avgLifetimeHm',
             'avgCpk',
+            'avgCph',
+            'measurementMode',
             'scrapRate',
             'installationsThisMonth',
             'removalsThisMonth',

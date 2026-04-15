@@ -67,6 +67,34 @@
       @endif
 
       <ul class="navbar-nav flex-row align-items-center ms-auto">
+         <!-- Notification -->
+         @if(Auth::check() && hasPermission('Error Notification'))
+         <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-4 me-xl-1">
+            <a class="nav-link btn btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" aria-expanded="false">
+               <i class="icon-base ri ri-notification-3-line icon-22px"></i>
+               <span class="position-absolute top-0 start-50 translate-middle-y badge badge-dot bg-danger mt-2 border" id="notification-badge" style="display:none;"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end py-0 shadow-sm border-0" style="min-width: 320px;">
+               <li class="dropdown-menu-header border-bottom">
+                  <div class="dropdown-header d-flex align-items-center py-3">
+                     <h6 class="mb-0 me-auto fw-bold">Notifications</h6>
+                     <a href="javascript:void(0)" class="text-body" id="mark-all-read" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark all as read">
+                        <i class="icon-base ri ri-mail-check-line icon-20px"></i>
+                     </a>
+                  </div>
+               </li>
+               <li class="dropdown-notifications-list scrollable-container" style="max-height: 350px; overflow-y: auto;">
+                  <ul class="list-group list-group-flush" id="notification-list">
+                     <li class="list-group-item list-group-item-action dropdown-notifications-item d-flex align-items-center justify-content-center py-4 border-0">
+                        <small class="text-muted"><i class="ri-loader-4-line ri-spin me-2"></i>Loading notifications...</small>
+                     </li>
+                  </ul>
+               </li>
+            </ul>
+         </li>
+         @endif
+         <!--/ Notification -->
+
          <!-- User -->
          <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
@@ -123,3 +151,99 @@
       </ul>
    </div>
 </nav>
+
+@if(Auth::check() && hasPermission('Error Notification'))
+<style>
+.notification-item { border-left: 3px solid transparent; transition: all 0.2s ease; cursor: pointer; }
+.notification-item:hover { background-color: #f8f9fa; border-left: 3px solid var(--bs-primary); }
+</style>
+<script>
+   document.addEventListener('DOMContentLoaded', function() {
+      const fetchNotifications = () => {
+         fetch('{{ route("notifications.unread") }}', {
+            headers: {
+               'X-Requested-With': 'XMLHttpRequest',
+               'Accept': 'application/json'
+            }
+         })
+         .then(res => res.json())
+         .then(data => {
+            if (data.success) {
+               const badge = document.getElementById('notification-badge');
+               const list = document.getElementById('notification-list');
+               
+               if (data.count > 0) {
+                  badge.style.display = 'block';
+                  list.innerHTML = '';
+                  data.data.forEach(notif => {
+                     // Extract warning list
+                     let errorsHtml = '';
+                     if (notif.details && notif.details['Pesan Error']) {
+                        let errs = Array.isArray(notif.details['Pesan Error']) ? notif.details['Pesan Error'] : [notif.details['Pesan Error']];
+                        errorsHtml = `<ul class="ps-3 mb-0 mt-1 small text-danger" style="font-size: 0.75rem;">` + errs.map(e => `<li>${e}</li>`).join('') + `</ul>`;
+                     }
+
+                     list.innerHTML += `
+                        <li class="list-group-item border-bottom notification-item p-3" data-id="${notif.id}">
+                           <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                              <h6 class="mb-0 text-danger fw-bold" style="font-size: 0.85rem;">
+                                 <i class="ri-error-warning-line me-1 align-middle"></i>${notif.module}
+                              </h6>
+                              <small class="text-muted" style="font-size: 0.7rem;">${notif.created_at}</small>
+                           </div>
+                           <p class="mb-0 small fw-medium" style="font-size: 0.8rem;">${notif.message}</p>
+                           ${errorsHtml}
+                           <small class="text-muted d-block mt-1" style="font-size: 0.7rem;"><i class="ri-user-line me-1"></i>${notif.user_name}</small>
+                        </li>
+                     `;
+                  });
+                  
+                  // Add click listeners to mark as read
+                  document.querySelectorAll('.notification-item').forEach(item => {
+                     item.addEventListener('click', function(e) {
+                         // Prevent default if acting on children, but we want the whole surface clickable
+                         const id = this.getAttribute('data-id');
+                         fetch(`/notifications/${id}/read`, {
+                             method: 'POST',
+                             headers: {
+                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                 'Accept': 'application/json'
+                             }
+                         }).then(() => fetchNotifications());
+                     });
+                  });
+               } else {
+                  badge.style.display = 'none';
+                  list.innerHTML = `
+                     <li class="list-group-item border-0 d-flex flex-column align-items-center justify-content-center py-5">
+                        <i class="ri-notification-badge-line text-muted mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <small class="text-muted">No new notifications</small>
+                     </li>
+                  `;
+               }
+            }
+         });
+      };
+
+      // Fetch on load
+      fetchNotifications();
+
+      // Poll every 15 seconds
+      setInterval(fetchNotifications, 15000);
+
+      // Mark all read
+      const markAllBtn = document.getElementById('mark-all-read');
+      if (markAllBtn) {
+         markAllBtn.addEventListener('click', function() {
+             fetch('{{ route("notifications.read-all") }}', {
+                 method: 'POST',
+                 headers: {
+                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                     'Accept': 'application/json'
+                 }
+             }).then(() => fetchNotifications());
+         });
+      }
+   });
+</script>
+@endif
