@@ -3,15 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Traits\BelongsToCompany;
 
 class MasterImportKendaraan extends Model
 {
-    use BelongsToCompany;
+    use BelongsToCompany, SoftDeletes;
 
     protected $table = 'master_import_kendaraan';
     protected $guarded = [];
+
+    protected $casts = [
+        'permanent_deleted_at' => 'datetime',
+    ];
 
     public function tyres()
     {

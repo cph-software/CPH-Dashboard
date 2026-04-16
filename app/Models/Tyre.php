@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Traits\BelongsToCompany;
 
 class Tyre extends Model
 {
-    use BelongsToCompany;
+    use BelongsToCompany, SoftDeletes;
 
     protected $table = 'tyres';
     protected $fillable = [
@@ -20,10 +21,12 @@ class Tyre extends Model
         'total_lifetime_km', 'total_lifetime_hm', 'current_km', 'current_hm',
         'last_inspection_date', 'current_vehicle_id', 'current_position_id',
         'created_by', 'updated_by', 'last_hm_reading',
+        'deleted_by', 'permanent_deleted_at',
     ];
 
     protected $casts = [
         'is_in_warehouse' => 'boolean',
+        'permanent_deleted_at' => 'datetime',
     ];
 
     public function brand()

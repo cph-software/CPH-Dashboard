@@ -146,7 +146,7 @@ class KendaraanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan',
+            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,NULL,id,deleted_at,NULL',
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
             'vehicle_brand' => 'nullable|string|max:255',
@@ -191,7 +191,7 @@ class KendaraanController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,' . $id,
+            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,' . $id . ',id,deleted_at,NULL',
             'no_polisi' => 'required|string|max:255',
             'jenis_kendaraan' => 'nullable|string|max:255',
             'vehicle_brand' => 'nullable|string|max:255',
@@ -256,6 +256,7 @@ class KendaraanController extends Controller
             'data_before' => $kendaraan->toArray()
         ]);
 
+        $kendaraan->update(['deleted_by' => auth()->id()]);
         $kendaraan->delete();
 
         return redirect()->back()->with('success', 'Vehicle deleted successfully');

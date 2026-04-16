@@ -115,6 +115,18 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::get('movement-detail/{id}', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'show'])->name('tyre-movement.show')->middleware('tyre.permission:Movement History');
 
     // ======================================================================
+    // TYRE PERFORMANCE — Backup & Restore (Trash)
+    // ======================================================================
+    Route::get('trash', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'index'])->name('trash.index')->middleware('tyre.permission:Backup & Restore');
+    Route::get('trash/data', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'data'])->name('trash.data')->middleware('tyre.permission:Backup & Restore');
+    Route::post('trash/{type}/{id}/restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'restore'])->name('trash.restore')->middleware('tyre.permission:Backup & Restore,update');
+    Route::delete('trash/{type}/{id}/force-delete', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'forceDelete'])->name('trash.force-delete')->middleware('tyre.permission:Backup & Restore,delete');
+    Route::get('admin-trash', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminTrash'])->name('trash.admin');
+    Route::get('admin-trash/data', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminData'])->name('trash.admin.data');
+    Route::post('admin-trash/{type}/{id}/restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminRestore'])->name('trash.admin.restore');
+    Route::delete('admin-trash/{type}/{id}/purge', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminPurge'])->name('trash.admin.purge');
+
+    // ======================================================================
     // TYRE PERFORMANCE — Monitoring
     // ======================================================================
     Route::get('monitoring/data', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'data'])->name('monitoring.data')->middleware('tyre.permission:Monitoring');
@@ -157,15 +169,15 @@ Route::middleware(['auth', 'eula'])->group(function () {
     // ======================================================================
     // USER MANAGEMENT
     // ======================================================================
-    Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class);
-    Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class);
-    Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class);
-    Route::get('get-tokos', [\App\Http\Controllers\UserManagement\UserController::class, 'getTokos'])->name('users.get-tokos');
+    Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class)->middleware('tyre.permission:Roles');
+    Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class)->middleware('tyre.permission:Menus');
+    Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class)->middleware('tyre.permission:Users');
+    Route::get('get-tokos', [\App\Http\Controllers\UserManagement\UserController::class, 'getTokos'])->name('users.get-tokos')->middleware('tyre.permission:Users,view');
 
     // Permission Management
-    Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index');
-    Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get');
-    Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store');
+    Route::get('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'index'])->name('permissions.index')->middleware('tyre.permission:Permissions,view');
+    Route::get('permissions/get', [\App\Http\Controllers\UserManagement\PermissionController::class, 'getPermissions'])->name('permissions.get')->middleware('tyre.permission:Permissions,view');
+    Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store')->middleware('tyre.permission:Permissions,update');
 
     // Import Approval
     Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])

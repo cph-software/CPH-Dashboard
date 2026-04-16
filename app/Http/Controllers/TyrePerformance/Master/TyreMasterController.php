@@ -131,8 +131,8 @@ class TyreMasterController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'serial_number' => 'required|string|max:255|unique:tyres',
-            'custom_serial_number' => 'nullable|string|max:255|unique:tyres',
+            'serial_number' => 'required|string|max:255|unique:tyres,serial_number,NULL,id,deleted_at,NULL',
+            'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,NULL,id,deleted_at,NULL',
             'tyre_brand_id' => 'required', // Can be ID or String for Admin
             'tyre_size_id' => 'required',
             'tyre_pattern_id' => 'nullable',
@@ -192,8 +192,8 @@ class TyreMasterController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'serial_number' => 'required|string|max:255|unique:tyres,serial_number,' . $id,
-            'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id,
+            'serial_number' => 'required|string|max:255|unique:tyres,serial_number,' . $id . ',id,deleted_at,NULL',
+            'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id . ',id,deleted_at,NULL',
             'tyre_brand_id' => 'required',
             'tyre_size_id' => 'required',
             'tyre_pattern_id' => 'nullable',
@@ -262,6 +262,7 @@ class TyreMasterController extends Controller
             'data_before' => $tyre->toArray()
         ]);
 
+        $tyre->update(['deleted_by' => auth()->id()]);
         $tyre->delete();
 
         return redirect()->back()->with('success', 'Tyre deleted successfully');

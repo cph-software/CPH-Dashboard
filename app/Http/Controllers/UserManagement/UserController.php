@@ -68,9 +68,14 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'role_id' => 'required',
+            'role_id' => 'required|exists:role,id',
             'name' => 'required|unique:users,name',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+        ], [
+            'name.unique' => 'Username ini sudah digunakan.',
+            'role_id.exists' => 'Role tidak valid.',
+            'tyre_company_id.exists' => 'Perusahaan tidak valid.',
         ]);
 
         $this->userService->store([
@@ -113,6 +118,17 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'role_id' => 'required|exists:role,id',
+            'name' => 'required|unique:users,name,' . $id,
+            'password' => 'nullable|min:6',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
+        ], [
+            'name.unique' => 'Username ini sudah digunakan.',
+            'role_id.exists' => 'Role tidak valid.',
+            'tyre_company_id.exists' => 'Perusahaan tidak valid.',
+        ]);
+
         $data = [
             'name' => $request->name,
             'role_id' => $request->role_id,

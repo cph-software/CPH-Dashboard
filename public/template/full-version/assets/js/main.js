@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
           ? window.templateCustomizer.settings.defaultShowDropdownOnHover // Use the config.js value
           : true // Use this if you are not using the config.js and want to set value directly from here
     });
-    // Change parameter to true if you want scroll animation
-    window.Helpers.scrollToActive((animate = false));
+    // Disable automatic scrolling to prevent jarring layout jumps on page reload
+    // window.Helpers.scrollToActive((animate = false));
     window.Helpers.mainMenu = menu;
   });
 
