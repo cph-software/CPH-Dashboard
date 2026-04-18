@@ -33,6 +33,7 @@ class TyreCompanyController extends Controller
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'total_tyre_capacity' => 'required|integer|min:0',
+            'max_users' => 'required|integer|min:1',
             'measurement_mode' => 'required|in:KM,HM,BOTH',
             'status' => 'required|in:Active,Inactive',
         ]);
@@ -54,6 +55,7 @@ class TyreCompanyController extends Controller
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'total_tyre_capacity' => 'required|integer|min:0',
+            'max_users' => 'required|integer|min:1',
             'measurement_mode' => 'required|in:KM,HM,BOTH',
             'status' => 'required|in:Active,Inactive',
         ]);
@@ -99,12 +101,13 @@ class TyreCompanyController extends Controller
 
     public function mapping($id)
     {
-        $company = TyreCompany::with(['brands', 'patterns', 'sizes'])->findOrFail($id);
+        $company = TyreCompany::with(['brands', 'patterns', 'sizes', 'roles'])->findOrFail($id);
         $allBrands = TyreBrand::orderBy('brand_name')->get();
         $allPatterns = TyrePattern::with('brand')->orderBy('name')->get();
         $allSizes = TyreSize::with('brand')->orderBy('size')->get();
+        $allRoles = \App\Models\Role::where('id', '!=', 1)->orderBy('name')->get();
 
-        return view('tyre-performance.master.companies.mapping', compact('company', 'allBrands', 'allPatterns', 'allSizes'));
+        return view('tyre-performance.master.companies.mapping', compact('company', 'allBrands', 'allPatterns', 'allSizes', 'allRoles'));
     }
 
     public function updateMapping(Request $request, $id)
@@ -114,6 +117,7 @@ class TyreCompanyController extends Controller
         $company->brands()->sync($request->input('brands', []));
         $company->patterns()->sync($request->input('patterns', []));
         $company->sizes()->sync($request->input('sizes', []));
+        $company->roles()->sync($request->input('roles', []));
 
         setLogActivity(auth()->id(), 'Memperbarui mapping data untuk: ' . $company->company_name, [
             'action_type' => 'update_mapping',

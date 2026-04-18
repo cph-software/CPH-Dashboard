@@ -54,7 +54,7 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center">
-                              @if (hasPermission('Brands', 'update'))
+                              @if (hasPermission('Brands', 'update') && auth()->user()->role_id == 1)
                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-brand"
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editBrandModal"
                                     data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}"
@@ -62,7 +62,7 @@
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
-                              @if (hasPermission('Brands', 'delete'))
+                              @if (hasPermission('Brands', 'delete') && auth()->user()->role_id == 1)
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-brand"
                                     data-id="{{ $brand->id }}" data-name="{{ $brand->brand_name }}" title="Delete">

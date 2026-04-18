@@ -379,10 +379,10 @@ class MonitoringController extends Controller
 
             if ($request->has('checks')) {
                 foreach ($request->checks as $key => $c) {
-                    // Skip if no tyre Sn or Pos ID
-                    if (!isset($c['serial_number']) && !isset($c['position_id'])) continue;
+                    // Skip if no tyre Sn
+                    if (empty($c['serial_number'])) continue;
                     
-                    $serial = $c['serial_number'] ?? null;
+                    $serial = $c['serial_number'];
                     $tyreId = $c['tyre_id'] ?? null;
                     $posId = $c['position_id'];
                     
@@ -1000,10 +1000,11 @@ class MonitoringController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $statusToSave = ucfirst(strtolower($request->status));
+        // Map to database enum values: 'active' or 'closed'
+        $dbStatus = strtolower($request->status) === 'completed' ? 'closed' : 'active';
 
         $session->update([
-            'status' => $statusToSave,
+            'status' => $dbStatus,
             'notes'  => $request->notes
         ]);
         
@@ -1148,8 +1149,7 @@ class MonitoringController extends Controller
         foreach ($checks as $c) {
             $c->update([
                 'approval_status' => 'Approved',
-                'approved_by' => auth()->id(),
-                'approved_at' => now()
+                'approved_by' => auth()->id()
             ]);
 
             // Sync with Tyre Master if not already synced (e.g. from User input)
@@ -1166,7 +1166,7 @@ class MonitoringController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' telah disetujui.');
+        return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' disetujui, dan master ban telah tersinkron.');
     }
 
     public function reject(Request $request, $sessionId, $checkNumber)
@@ -1177,7 +1177,7 @@ class MonitoringController extends Controller
             ->where('check_number', $checkNumber)
             ->update([
                 'approval_status' => 'Rejected',
-                'reject_reason' => $request->reason
+                'rejection_reason' => $request->reason
             ]);
 
         return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' telah ditolak.');

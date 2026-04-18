@@ -32,11 +32,34 @@
             <p class="text-muted mb-0 small">Create and manage system access for employees and partners.</p>
          </div>
          <div class="col-md-6 text-md-end">
-            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-               <i class="icon-base ri ri-user-add-line me-1"></i> Add New User
-            </button>
+            @if(isset($quotaInfo) && $quotaInfo['current'] >= $quotaInfo['max'])
+               <button class="btn btn-secondary shadow-sm" disabled title="Batas Kuota User Sudah Penuh">
+                  <i class="icon-base ri ri-user-add-line me-1"></i> Add New User (Full)
+               </button>
+            @else
+               <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                  <i class="icon-base ri ri-user-add-line me-1"></i> Add New User
+               </button>
+            @endif
          </div>
       </div>
+
+      @if(isset($quotaInfo))
+         <div class="alert {{ $quotaInfo['current'] >= $quotaInfo['max'] ? 'alert-danger' : 'alert-info' }} d-flex align-items-center mb-4" role="alert">
+            <i class="icon-base ri {{ $quotaInfo['current'] >= $quotaInfo['max'] ? 'ri-error-warning-line' : 'ri-information-line' }} ri-24px me-3"></i>
+            <div>
+               <h6 class="alert-heading mb-1 fw-bold">🏢 {{ $quotaInfo['company_name'] }}</h6>
+               <p class="mb-0">
+                  Pengguna Terdaftar: <strong>{{ $quotaInfo['current'] }}</strong> / {{ $quotaInfo['max'] }} 
+                  @if($quotaInfo['current'] >= $quotaInfo['max'])
+                     (Kuota Penuh. Hubungi administrator untuk menambah kuota).
+                  @else
+                     (Sisa kuota: {{ $quotaInfo['max'] - $quotaInfo['current'] }} user lagi).
+                  @endif
+               </p>
+            </div>
+         </div>
+      @endif
 
       <!-- Users Stats -->
       <div class="row g-4 mb-4">
@@ -184,6 +207,7 @@
                         <input type="text" name="master_karyawan_id" class="form-control" placeholder="E.g. EMP001">
                         <div class="form-text small">Used for internal staff identification.</div>
                      </div>
+                     @if($isSuperAdmin)
                      <div class="mb-4">
                         <label class="form-label fw-bold">Tyre Project Company <span class="text-danger">*</span></label>
                         <select name="tyre_company_id" class="form-select select2-modal" required
@@ -195,6 +219,7 @@
                         </select>
                         <div class="form-text small">Used for failure code aliases and project separation.</div>
                      </div>
+                     @endif
                      <div class="mb-4">
                         <label class="form-label fw-bold">Access Password <span class="text-danger">*</span></label>
                         <div class="input-group input-group-merge">
@@ -266,6 +291,7 @@
                         <input type="password" name="password" class="form-control"
                            placeholder="Leave empty to keep current password">
                      </div>
+                     @if($isSuperAdmin)
                      <div class="mb-4">
                         <label class="form-label fw-bold">Tyre Project Company</label>
                         <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2-modal">
@@ -275,6 +301,7 @@
                            @endforeach
                         </select>
                      </div>
+                     @endif
                      <div class="mb-0">
                         <label class="form-label fw-bold">Branch Access (Original)</label>
                         <select name="toko_id" id="edit_toko_id" class="form-select select2-toko"

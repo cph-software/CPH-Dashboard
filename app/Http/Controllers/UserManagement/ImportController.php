@@ -19,6 +19,24 @@ class ImportController extends Controller
         $file = $request->file('file');
         $module = $request->module;
 
+        // Apply RBAC (Role Based Access Control) strictly on the backend as well
+        $permissionMap = [
+            'Tyre Master' => 'Master Tyre',
+            'Vehicle Master' => 'Vehicle Master',
+            'Movement History' => 'Movement History',
+            'Tyre Brand' => 'Brands',
+            'Tyre Size' => 'Sizes',
+            'Tyre Pattern' => 'Patterns',
+            'Failure Codes' => 'Failure Codes',
+            'Locations' => 'Locations',
+            'Segments' => 'Segments'
+        ];
+
+        $requiredPermission = $permissionMap[$module] ?? null;
+        if ($requiredPermission && !hasPermission($requiredPermission, 'create')) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Anda tidak diberi izin (Permission) untuk melakukan Import pada modul ' . $module);
+        }
+
         // Parse Excel file
         $rawData = \Maatwebsite\Excel\Facades\Excel::toArray(new \stdClass(), $file)[0];
 

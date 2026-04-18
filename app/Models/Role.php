@@ -26,4 +26,9 @@ class Role extends Model
     {
         return $this->hasMany(User::class, 'role_id');
     }
+
+    public function companies()
+    {
+        return $this->belongsToMany(TyreCompany::class, 'tyre_company_roles', 'role_id', 'tyre_company_id');
+    }
 }

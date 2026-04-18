@@ -25,7 +25,7 @@
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
             @endif
-            @if (hasPermission('Failure Codes', 'create'))
+            @if (hasPermission('Failure Codes', 'create') && auth()->user()->role_id == 1)
                <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
                </a>
@@ -132,23 +132,26 @@
                                  title="View Detail (Guidebook)">
                                  <i class="icon-base ri ri-eye-line"></i>
                               </a>
-                              @if (hasPermission('Failure Codes', 'update'))
-                                 <button type="button"
-                                    class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect waves-light me-1 manage-alias"
-                                    data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}"
-                                    data-name="{{ $fc->failure_name }}" title="Manage Company Aliases">
-                                    <i class="icon-base ri ri-price-tag-3-line"></i>
-                                 </button>
+                              <!-- All users (with view permission) can set company aliases -->
+                              <button type="button"
+                                 class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect waves-light me-1 manage-alias"
+                                 data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}"
+                                 data-name="{{ $fc->failure_name }}" title="Manage Company Aliases">
+                                 <i class="icon-base ri ri-price-tag-3-line"></i>
+                              </button>
+
+                              <!-- Only Super Admin can Edit/Delete global Failure Codes -->
+                              @if (hasPermission('Failure Codes', 'update') && auth()->user()->role_id == 1)
                                  <a href="{{ route('tyre-failure-codes.edit', $fc->id) }}"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
-                                    title="Edit">
+                                    title="Edit Global Code">
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
-                              @if (hasPermission('Failure Codes', 'delete'))
+                              @if (hasPermission('Failure Codes', 'delete') && auth()->user()->role_id == 1)
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-failure"
-                                    data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete">
+                                    data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete Global Code">
                                     <i class="icon-base ri ri-delete-bin-line"></i>
                                  </button>
                               @endif

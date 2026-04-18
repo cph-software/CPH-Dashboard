@@ -158,8 +158,14 @@
                   <div class="row g-2">
                      <div class="col-md-6 mb-3">
                         <label for="segment_name" class="form-label">Segment Name</label>
-                        <input type="text" id="segment_name" name="segment_name" class="form-control"
-                           placeholder="Ex: Mining, Logging, etc.">
+                        <select id="segment_name" name="segment_name" class="form-select select2-tags-segment" data-placeholder="Ex: Mining, Logging, dll.">
+                           <option value="">Pilih Segmen</option>
+                           @foreach ($segments as $segment)
+                              <option value="{{ $segment->segment_name }}" {{ old('segment_name') == $segment->segment_name ? 'selected' : '' }}>
+                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? '-' }})
+                              </option>
+                           @endforeach
+                        </select>
                      </div>
                      <div class="col-md-6 mb-3">
                         <label for="current_location_id" class="form-label">Warehouse / Lokasi</label>
@@ -297,7 +303,14 @@
                   <div class="row g-2">
                      <div class="col-md-6 mb-3">
                         <label for="edit_segment_name" class="form-label">Segment Name</label>
-                        <input type="text" id="edit_segment_name" name="segment_name" class="form-control">
+                        <select id="edit_segment_name" name="segment_name" class="form-select select2-tags-segment" data-placeholder="Ex: Mining, Logging, dll.">
+                           <option value="">Pilih Segmen</option>
+                           @foreach ($segments as $segment)
+                              <option value="{{ $segment->segment_name }}">
+                                 {{ $segment->segment_name }} ({{ $segment->location->location_name ?? '-' }})
+                              </option>
+                           @endforeach
+                        </select>
                      </div>
                      <div class="col-md-6 mb-3">
                         <label for="edit_ply_rating" class="form-label">Ply Rating</label>
@@ -670,7 +683,10 @@
             $('#edit_brand_id').val(brandId).trigger('change');
             $('#edit_size_id').val(sizeId).trigger('change');
             $('#edit_pattern_id').val(patternId).trigger('change');
-            $('#edit_segment_name').val(segmentName);
+            if (segmentName && !$('#edit_segment_name').find("option[value='" + segmentName + "']").length) {
+               $('#edit_segment_name').append(new Option(segmentName, segmentName, true, true));
+            }
+            $('#edit_segment_name').val(segmentName).trigger('change');
             $('#edit_current_location_id').val(locationId).trigger('change');
             $('#edit_is_in_warehouse').prop('checked', warehouse == 1);
             $('#edit_status').val(status);
@@ -776,12 +792,18 @@
             if (!$('#tyre_brand_id').data('select2')) initSelect2Tags('#tyre_brand_id');
             if (!$('#tyre_size_id').data('select2')) initSelect2Tags('#tyre_size_id');
             if (!$('#tyre_pattern_id').data('select2')) initSelect2Tags('#tyre_pattern_id');
+            if (!$('#segment_name').data('select2')) {
+               $('#segment_name').select2({ placeholder: $(this).data('placeholder'), dropdownParent: $('#segment_name').parent(), tags: true, width: '100%' });
+            }
          });
 
          $('#editTyreModal').on('shown.bs.modal', function () {
             if (!$('#edit_brand_id').data('select2')) initSelect2Tags('#edit_brand_id');
             if (!$('#edit_size_id').data('select2')) initSelect2Tags('#edit_size_id');
             if (!$('#edit_pattern_id').data('select2')) initSelect2Tags('#edit_pattern_id');
+            if (!$('#edit_segment_name').data('select2')) {
+               $('#edit_segment_name').select2({ placeholder: $(this).data('placeholder'), dropdownParent: $('#edit_segment_name').parent(), tags: true, width: '100%' });
+            }
          });
 
          initStandardSelect2();

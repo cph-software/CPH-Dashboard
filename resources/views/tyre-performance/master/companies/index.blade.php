@@ -29,7 +29,7 @@
                      <th>Nama Instansi</th>
                      <th>Keterangan</th>
                      <th class="text-center">Total Ban / Jatah</th>
-                     <th>Total User</th>
+                     <th class="text-center">Kuota User</th>
                      <th>Status</th>
                      <th>Aksi</th>
                   </tr>
@@ -51,7 +51,17 @@
                               @endif
                            </div>
                         </td>
-                        <td><span class="badge bg-label-info">{{ $company->users_count }} Users</span></td>
+                         <td class="text-center">
+                            <div class="d-flex flex-column align-items-center">
+                               <span class="fw-bold fs-5 text-info">{{ number_format($company->users_count) }}</span>
+                               <small class="text-muted" style="font-size: 0.7rem;">
+                                  Max: {{ number_format($company->max_users) }}
+                               </small>
+                               @if ($company->users_count >= $company->max_users)
+                                  <span class="badge bg-label-danger mt-1" style="font-size: 0.6rem;">Penuh</span>
+                               @endif
+                            </div>
+                         </td>
                         <td>
                            <span class="badge bg-label-{{ $company->status == 'Active' ? 'success' : 'secondary' }}">
                               {{ $company->status }}
@@ -124,6 +134,11 @@
                      <small class="text-muted d-block mt-1 small">Batas maksimal penginputan ban di sistem.</small>
                   </div>
                   <div class="mb-3">
+                     <label class="form-label fw-bold small">KUOTA USER MAKSIMAL <span class="text-danger">*</span></label>
+                     <input type="number" name="max_users" class="form-control" required value="10" min="1">
+                     <small class="text-muted d-block mt-1 small">Batas maksimal akun karyawan yang bisa didaftarkan.</small>
+                  </div>
+                  <div class="mb-3">
                      <label class="form-label fw-bold">Mode Pengukuran (Odometer/Hour Meter) <span class="text-danger">*</span></label>
                      <select name="measurement_mode" class="form-select">
                         <option value="BOTH">Tampilkan Keduanya (KM & HM)</option>
@@ -177,6 +192,10 @@
                            class="text-danger">*</span></label>
                      <input type="number" name="total_tyre_capacity" id="edit_total_tyre_capacity"
                         class="form-control" required>
+                  </div>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold small">KUOTA USER MAKSIMAL <span class="text-danger">*</span></label>
+                     <input type="number" name="max_users" id="edit_max_users" class="form-control" required min="1">
                   </div>
                   <div class="mb-3">
                      <label class="form-label fw-bold">Mode Pengukuran <span class="text-danger">*</span></label>
@@ -233,6 +252,7 @@
                $('#edit_description').val(data.description);
                $('#edit_total_tyres').val(data.total_tyres);
                $('#edit_total_tyre_capacity').val(data.total_tyre_capacity);
+               $('#edit_max_users').val(data.max_users);
                $('#edit_status').val(data.status);
                
                if (data.measurement_mode) {

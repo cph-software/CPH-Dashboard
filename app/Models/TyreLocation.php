@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\UserTracking;
 
+use App\Traits\BelongsToCompany;
+
 class TyreLocation extends Model
 {
-    use UserTracking;
+    use UserTracking, BelongsToCompany;
 
     protected $table = 'tyre_locations';
     protected $guarded = [];

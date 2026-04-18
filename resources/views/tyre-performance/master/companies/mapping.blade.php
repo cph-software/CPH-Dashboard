@@ -18,6 +18,28 @@
       <form action="{{ route('tyre-companies.update-mapping', $company->id) }}" method="POST">
          @csrf
          <div class="row">
+            {{-- Roles Section --}}
+            <div class="col-12 mb-4">
+               <div class="card bg-label-info border-info">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                     <h5 class="mb-0 text-info"><i class="ri-user-settings-line me-1"></i> Whitelist Access Roles</h5>
+                     <button type="button" class="btn btn-xs btn-outline-info select-all"
+                        data-target="roles-select">Select All</button>
+                  </div>
+                  <div class="card-body">
+                     <select name="roles[]" id="roles-select" class="form-select select2" multiple>
+                        @foreach ($allRoles as $role)
+                           <option value="{{ $role->id }}"
+                              {{ $company->roles->contains($role->id) ? 'selected' : '' }}>
+                              {{ $role->name }}
+                           </option>
+                        @endforeach
+                     </select>
+                     <p class="text-info small mt-2">Pilih Role Akses yang diperbolehkan untuk dipilih saat Local Admin / SPV di Instansi ini membuat <stron>Karyawan/User</stron> baru.</p>
+                  </div>
+               </div>
+            </div>
+
             {{-- Brands Section --}}
             <div class="col-12 mb-4">
                <div class="card">

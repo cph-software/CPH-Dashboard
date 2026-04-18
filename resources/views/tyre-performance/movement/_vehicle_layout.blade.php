@@ -20,6 +20,10 @@
          <div class="v-tyre front m-tyre-node {{ $leftTyre ? 'filled' : 'empty' }}" data-position-id="{{ $left->id }}"
             data-code="{{ $left->position_code }}" data-name="{{ $left->position_name }}"
             data-sn="{{ $leftTyre->serial_number ?? '' }}"
+            data-brand="{{ optional(optional($leftTyre)->brand)->brand_name ?? '' }}"
+            data-pattern="{{ optional(optional($leftTyre)->pattern)->name ?? '' }}"
+            data-size="{{ optional(optional($leftTyre)->size)->size ?? '' }}"
+            data-date="{{ optional(optional($leftTyre)->latestInstallation)->movement_date ?? optional(optional($leftTyre)->created_at)->format('Y-m-d') ?? '' }}"
             title="{{ $left->position_name }} {{ $leftTyre ? '[' . $leftTyre->serial_number . ']' : '(Kosong)' }}">
             <span class="v-tyre-code">{{ $left->position_code }}</span>
             @if ($leftTyre)
@@ -29,6 +33,10 @@
          <div class="v-tyre front m-tyre-node {{ $rightTyre ? 'filled' : 'empty' }}"
             data-position-id="{{ $right->id }}" data-code="{{ $right->position_code }}"
             data-name="{{ $right->position_name }}" data-sn="{{ $rightTyre->serial_number ?? '' }}"
+            data-brand="{{ optional(optional($rightTyre)->brand)->brand_name ?? '' }}"
+            data-pattern="{{ optional(optional($rightTyre)->pattern)->name ?? '' }}"
+            data-size="{{ optional(optional($rightTyre)->size)->size ?? '' }}"
+            data-date="{{ optional(optional($rightTyre)->latestInstallation)->movement_date ?? optional(optional($rightTyre)->created_at)->format('Y-m-d') ?? '' }}"
             title="{{ $right->position_name }} {{ $rightTyre ? '[' . $rightTyre->serial_number . ']' : '(Kosong)' }}">
             <span class="v-tyre-code">{{ $right->position_code }}</span>
             @if ($rightTyre)
@@ -49,6 +57,10 @@
                <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
+                  data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
+                  data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
+                  data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
                   @if ($t)
@@ -65,6 +77,10 @@
                <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
+                  data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
+                  data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
+                  data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
                   @if ($t)
@@ -85,6 +101,10 @@
                <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
+                  data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
+                  data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
+                  data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
                   @if ($t)
@@ -99,6 +119,10 @@
                <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
+                  data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
+                  data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
+                  data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
                   @if ($t)
@@ -118,6 +142,10 @@
             <div class="v-tyre spare m-tyre-node {{ $t ? 'filled' : 'empty' }}" data-position-id="{{ $s->id }}"
                data-code="{{ $s->position_code }}" data-name="{{ $s->position_name }}"
                data-sn="{{ $t->serial_number ?? '' }}"
+               data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
+               data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
+               data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+               data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                title="{{ $s->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                <span class="v-tyre-code">{{ $s->position_code }}</span>
                @if ($t)

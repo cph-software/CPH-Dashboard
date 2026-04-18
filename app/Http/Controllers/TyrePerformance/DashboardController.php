@@ -224,7 +224,12 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($item) {
                 $fc = $item->failureCode;
-                $companyId = auth()->user()->tyre_company_id ?? null;
+                $user = auth()->user();
+                $companyId = $user->tyre_company_id ?? null;
+                if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+                    $companyId = session('active_company_id');
+                }
+                
                 $displayName = $fc ? $fc->getDisplayNameByCompanyId($companyId) : 'Unknown';
                 return [
                     'label' => $fc ? ($fc->failure_code . ' - ' . $displayName) : 'Unknown',
@@ -315,7 +320,11 @@ class DashboardController extends Controller
      */
     private function getFleetHealthData()
     {
-        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id ?? 0;
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
         $cacheKey = "fleet_health_comp_{$companyId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () {
@@ -376,7 +385,12 @@ class DashboardController extends Controller
      */
     private function getBrandPerformanceData($sizeId = null, $type = null, $patternId = null)
     {
-        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id ?? 0;
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+
         $cacheKey = "brand_perf_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {
@@ -420,7 +434,12 @@ class DashboardController extends Controller
      */
     private function getCpkByBrandData($sizeId = null, $type = null, $patternId = null)
     {
-        $companyId = auth()->user()->tyre_company_id ?? 0;
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id ?? 0;
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+        
         $cacheKey = "cpk_brand_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {

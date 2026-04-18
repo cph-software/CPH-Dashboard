@@ -34,6 +34,11 @@ class TyreCompany extends Model
         return $this->belongsToMany(TyreSize::class, 'tyre_company_sizes', 'tyre_company_id', 'tyre_size_id');
     }
 
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'tyre_company_roles', 'tyre_company_id', 'role_id');
+    }
+
     /**
      * Get all tyres owned by this company
      */

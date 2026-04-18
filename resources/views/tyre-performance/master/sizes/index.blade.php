@@ -73,7 +73,7 @@
                         <td>{{ $size->ply_rating ?? '-' }}</td>
                         <td>
                            <div class="d-flex align-items-center">
-                              @if (hasPermission('Sizes', 'update'))
+                              @if (hasPermission('Sizes', 'update') && auth()->user()->role_id == 1)
                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-size"
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editSizeModal"
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}"
@@ -89,7 +89,7 @@
                                     </button>
                                  @endif
                               @endif
-                              @if (hasPermission('Sizes', 'delete'))
+                              @if (hasPermission('Sizes', 'delete') && auth()->user()->role_id == 1)
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-size"
                                     data-id="{{ $size->id }}" data-size="{{ $size->size }}" title="Delete">

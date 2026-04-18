@@ -18,22 +18,42 @@
                      <label class="form-label fw-bold">1. Pilih Modul Tujuan</label>
                      <select name="module" id="importModuleSelect" class="form-select" required>
                         <option value="" selected disabled>-- Pilih Modul --</option>
-                        <option value="Tyre Master" data-template="template_tyre_master.csv">Tyre Master (Aset Ban)
-                        </option>
-                        <option value="Vehicle Master" data-template="template_vehicle_master.csv">Vehicle Master (Unit)
-                        </option>
-                        <option value="Movement History" data-template="template_movement.csv">Tyre Movement (Riwayat)
-                        </option>
-                        <option value="Tyre Brand" data-template="template_brand.csv">Tyre Brand (Merek Ban)</option>
-                        <option value="Tyre Size" data-template="template_size.csv">Tyre Size (Ukuran Ban)</option>
-                        <option value="Tyre Pattern" data-template="template_pattern.csv">Tyre Pattern (Tipe Kembangan)
-                        </option>
-                        <option value="Failure Codes" data-template="template_failure_codes.csv">Failure Codes (Kamus
-                           Kerusakan)</option>
-                        <option value="Locations" data-template="template_locations.csv">Tyre Locations (Lokasi Kerja)
-                        </option>
-                        <option value="Segments" data-template="template_segments.csv">Tyre Segments (Segmen Operasi)
-                        </option>
+                        
+                        @if (hasPermission('Master Tyre', 'create'))
+                           <option value="Tyre Master" data-template="template_tyre_master.csv">Tyre Master (Aset Ban)</option>
+                        @endif
+
+                        @if (hasPermission('Vehicle Master', 'create'))
+                           <option value="Vehicle Master" data-template="template_vehicle_master.csv">Vehicle Master (Unit)</option>
+                        @endif
+
+                        @if (hasPermission('Movement History', 'create'))
+                           <option value="Movement History" data-template="template_movement.csv">Tyre Movement (Riwayat)</option>
+                        @endif
+
+                        @if (hasPermission('Brands', 'create'))
+                           <option value="Tyre Brand" data-template="template_brand.csv">Tyre Brand (Merek Ban)</option>
+                        @endif
+
+                        @if (hasPermission('Sizes', 'create'))
+                           <option value="Tyre Size" data-template="template_size.csv">Tyre Size (Ukuran Ban)</option>
+                        @endif
+
+                        @if (hasPermission('Patterns', 'create'))
+                           <option value="Tyre Pattern" data-template="template_pattern.csv">Tyre Pattern (Tipe Kembangan)</option>
+                        @endif
+
+                        @if (hasPermission('Failure Codes', 'create'))
+                           <option value="Failure Codes" data-template="template_failure_codes.csv">Failure Codes (Kamus Kerusakan)</option>
+                        @endif
+
+                        @if (hasPermission('Locations', 'create'))
+                           <option value="Locations" data-template="template_locations.csv">Tyre Locations (Lokasi Kerja)</option>
+                        @endif
+
+                        @if (hasPermission('Segments', 'create'))
+                           <option value="Segments" data-template="template_segments.csv">Tyre Segments (Segmen Operasi)</option>
+                        @endif
                      </select>
                   </div>
                   <div class="mb-3">

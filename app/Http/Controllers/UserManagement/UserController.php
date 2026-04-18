@@ -29,12 +29,40 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = \App\Models\User::with(['role', 'karyawan', 'tyreCompany'])->latest()->get();
-        $roles = $this->roleService->getAll();
-        $companies = \App\Models\TyreCompany::orderBy('company_name')->get();
-        $tokos = \App\Models\Toko::limit(50)->get(); // Initial set
+        $user = auth()->user();
+        $isSuperAdmin = $user->role_id == 1;
 
-        return view('user-management.users.index', compact('users', 'roles', 'companies', 'tokos'));
+        $usersQuery = \App\Models\User::with(['role', 'karyawan', 'tyreCompany'])->latest();
+        if (!$isSuperAdmin) {
+            $usersQuery->where('tyre_company_id', $user->tyre_company_id);
+        }
+        $users = $usersQuery->get();
+
+        $rolesQuery = \App\Models\Role::query();
+        if (!$isSuperAdmin) {
+            $rolesQuery->where('id', '!=', 1);
+            if ($user->tyre_company_id) {
+                $rolesQuery->whereHas('companies', function($q) use ($user) {
+                    $q->where('tyre_companies.id', $user->tyre_company_id);
+                });
+            }
+        }
+        $roles = $rolesQuery->get();
+
+        $companies = $isSuperAdmin ? \App\Models\TyreCompany::orderBy('company_name')->get() : collect();
+        $tokos = \App\Models\Toko::limit(50)->get();
+
+        $quotaInfo = null;
+        if (!$isSuperAdmin && $user->tyre_company_id) {
+            $company = \App\Models\TyreCompany::find($user->tyre_company_id);
+            $quotaInfo = [
+                'current' => $users->count(),
+                'max' => $company->max_users ?? 10,
+                'company_name' => $company->company_name,
+            ];
+        }
+
+        return view('user-management.users.index', compact('users', 'roles', 'companies', 'tokos', 'isSuperAdmin', 'quotaInfo'));
     }
 
     /**
@@ -78,13 +106,41 @@ class UserController extends Controller
             'tyre_company_id.exists' => 'Perusahaan tidak valid.',
         ]);
 
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->role_id == 1;
+
+        if (!$isSuperAdmin && $request->role_id == 1) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk memberikan role Super Admin.');
+        }
+
+        $companyId = $isSuperAdmin ? $request->tyre_company_id : $currentUser->tyre_company_id;
+
+        if ($companyId) {
+            $company = \App\Models\TyreCompany::with('roles')->find($companyId);
+            if ($company) {
+                if (!$isSuperAdmin) {
+                    // Check Role Whitelist
+                    $allowedRoleIds = $company->roles->pluck('id')->toArray();
+                    if (!in_array($request->role_id, $allowedRoleIds)) {
+                        return redirect()->back()->with('error', 'Role tersebut tidak diizinkan untuk digunakan di perusahaan Anda.');
+                    }
+                    
+                    // Check Quota
+                    $currentCount = \App\Models\User::where('tyre_company_id', $companyId)->count();
+                    if ($currentCount >= $company->max_users) {
+                        return redirect()->back()->with('error', "Kuota user untuk {$company->company_name} sudah penuh ({$currentCount}/{$company->max_users}). Hubungi Super Admin.");
+                    }
+                }
+            }
+        }
+
         $this->userService->store([
             'name' => $request->name,
             'role_id' => $request->role_id,
             'password' => Hash::make($request->password),
             'master_karyawan_id' => $request->master_karyawan_id,
             'toko_id' => $request->toko_id,
-            'tyre_company_id' => $request->tyre_company_id,
+            'tyre_company_id' => $companyId,
             'foto' => ''
         ]);
 
@@ -106,6 +162,12 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = $this->userService->getById($id);
+        
+        $currentUser = auth()->user();
+        if ($currentUser->role_id != 1 && $user->tyre_company_id != $currentUser->tyre_company_id) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
         return response()->json($user);
     }
 
@@ -129,12 +191,37 @@ class UserController extends Controller
             'tyre_company_id.exists' => 'Perusahaan tidak valid.',
         ]);
 
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->role_id == 1;
+        $targetUser = \App\Models\User::findOrFail($id);
+
+        if (!$isSuperAdmin && $targetUser->tyre_company_id != $currentUser->tyre_company_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke user ini.');
+        }
+
+        if (!$isSuperAdmin && $request->role_id == 1) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk memberikan role Super Admin.');
+        }
+
+        $companyId = $isSuperAdmin ? $request->tyre_company_id : $currentUser->tyre_company_id;
+
+        if (!$isSuperAdmin && $companyId) {
+            $company = \App\Models\TyreCompany::with('roles')->find($companyId);
+            if ($company) {
+                // Check Role Whitelist for Update
+                $allowedRoleIds = $company->roles->pluck('id')->toArray();
+                if (!in_array($request->role_id, $allowedRoleIds)) {
+                    return redirect()->back()->with('error', 'Role tersebut tidak diizinkan untuk digunakan di perusahaan Anda.');
+                }
+            }
+        }
+
         $data = [
             'name' => $request->name,
             'role_id' => $request->role_id,
             'master_karyawan_id' => $request->master_karyawan_id,
             'toko_id' => $request->toko_id,
-            'tyre_company_id' => $request->tyre_company_id,
+            'tyre_company_id' => $companyId,
         ];
 
         if ($request->filled('password')) {
@@ -163,6 +250,17 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
+        $currentUser = auth()->user();
+        $targetUser = \App\Models\User::findOrFail($id);
+
+        if ($currentUser->role_id != 1 && $targetUser->tyre_company_id != $currentUser->tyre_company_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke user ini.');
+        }
+
+        if ($currentUser->id == $id) {
+            return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun Anda sendiri.');
+        }
+
         setLogActivity(auth()->id(), 'Menghapus user ID: ' . $id, [
             'action_type' => 'delete',
             'module' => 'Users'

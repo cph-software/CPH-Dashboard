@@ -221,6 +221,34 @@
                         </select>
                      </div>
 
+                     <div id="current_tyre_info" class="mb-4 removal-info-box shadow-sm border border-warning rounded p-3 bg-light" style="display: none;">
+                        <h6 class="mb-3 fw-bold text-warning text-uppercase small"><i
+                              class="ri ri-information-line me-1"></i>
+                           Data Ban Sebelumnya di Posisi Ini</h6>
+                        <div class="row g-3">
+                           <div class="col-md-4">
+                              <small class="text-muted d-block">Serial Number</small>
+                              <strong id="old_info_sn" class="fs-5 text-dark">-</strong>
+                           </div>
+                           <div class="col-md-4">
+                              <small class="text-muted d-block">Brand</small>
+                              <span id="old_info_brand" class="fw-bold">-</span>
+                           </div>
+                           <div class="col-md-4">
+                              <small class="text-muted d-block">Pattern/Size</small>
+                              <span id="old_info_pattern_size" class="fw-bold">-</span>
+                           </div>
+                           <div class="col-12 mt-2 pt-2 border-top">
+                              <div class="d-flex gap-4">
+                                 <div>
+                                    <small class="text-muted d-block">Terakhir Dipasang / Dicek</small>
+                                    <span id="old_info_date" class="fw-bold text-warning">-</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
                      <div class="mb-4 p-3 bg-light rounded-3 border">
                         <label class="form-label fw-bold text-primary" for="tyre_id">2. Pilih Ban (Serial
                            Number)</label>
@@ -747,9 +775,21 @@
                   document.getElementById('info_pos_name').textContent = targetNode.getAttribute('data-name');
                   document.getElementById('info_pos_code').textContent = targetNode.getAttribute('data-code');
                   selectionInfo.style.display = 'block';
+
+                  // Show old tyre info if replaced
+                  if (targetNode.classList.contains('filled')) {
+                     document.getElementById('old_info_sn').textContent = targetNode.getAttribute('data-sn') || '-';
+                     document.getElementById('old_info_brand').textContent = targetNode.getAttribute('data-brand') || '-';
+                     document.getElementById('old_info_pattern_size').textContent = (targetNode.getAttribute('data-pattern') || '-') + ' / ' + (targetNode.getAttribute('data-size') || '-');
+                     document.getElementById('old_info_date').textContent = targetNode.getAttribute('data-date') || '-';
+                     document.getElementById('current_tyre_info').style.display = 'block';
+                  } else {
+                     document.getElementById('current_tyre_info').style.display = 'none';
+                  }
                }
             } else {
                selectionInfo.style.display = 'none';
+               document.getElementById('current_tyre_info').style.display = 'none';
             }
          });
 

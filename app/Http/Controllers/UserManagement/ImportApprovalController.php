@@ -25,8 +25,15 @@ class ImportApprovalController extends Controller
         $user = auth()->user();
         $query = \App\Models\ImportBatch::query();
 
-        // Super Admin bypass — sees everything
-        if ($user->role_id == 1) {
+        // Super Admin bypass
+        if ($user->role_id == 1 || $user->tyre_company_id == 1) {
+            // Respect company filter dropdown for Super Admin
+            if (session()->has('active_company_id')) {
+                $companyId = session('active_company_id');
+                $query->whereHas('user', function ($q) use ($companyId) {
+                    $q->where('tyre_company_id', $companyId);
+                });
+            }
             return $query;
         }
 

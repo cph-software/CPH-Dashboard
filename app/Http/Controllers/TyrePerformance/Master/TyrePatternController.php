@@ -40,6 +40,9 @@ class TyrePatternController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (auth()->user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat mengubah Data Master Global.');
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
@@ -66,6 +69,10 @@ class TyrePatternController extends Controller
 
     public function destroy($id)
     {
+        if (auth()->user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menghapus Data Master Global.');
+        }
+
         $pattern = TyrePattern::findOrFail($id);
 
         if ($pattern->tyres()->exists()) {

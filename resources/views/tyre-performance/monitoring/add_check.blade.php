@@ -490,51 +490,56 @@
             }
          }
 
-         // --- FORM SUBMIT VALIDATION ---
-         const generalPhotosMandatory = ['fleet', 'vehicle', 'map', 'odometer_km', 'hm'];
-         const tyrePhotosMandatory = ['tyre_serial', 'tyre_psi', 'tyre_rtd_1', 'tyre_rtd_2', 'tyre_rtd_3',
-            'tyre_tread'
-         ];
-         const generalUploaded = {};
+         // --- FORM SUBMIT VALIDATION (SMART CONDITIONAL UX) ---
+         // 1. General Documentation: Cuma "Foto Odometer" yang diwajibkan sbg bukti kehadiran.
+         const generalPhotosMandatory = ['odometer_km']; 
 
+         // Track general upload clicks (opsional, sebagai tracker saja)
+         const generalUploaded = {};
          $('.upload-btn').on('click', function() {
             const type = $(this).data('type');
             generalUploaded[type] = true;
          });
 
          $('form').on('submit', function(e) {
-            // 1. Check General Photos
+            // STEP 1: Cek General Photos (Khusus Odo Wajib)
             for (const type of generalPhotosMandatory) {
                const preview = $(`#preview-${type} img`);
                if (preview.length === 0) {
-                  alert(`Silakan upload foto: ${type.replace('_', ' ').toUpperCase()} terlebih dahulu.`);
+                  alert(`[BUKTI KEHADIRAN WAJIB]\nSilakan upload Foto KM (Odometer) unit ini terlebih dahulu di bagian atas.`);
                   e.preventDefault();
                   return false;
                }
             }
 
-            // 2. Check Tyre Photos
+            // STEP 2: Cek Smart Validation Ban (Wajib Foto HANYA jika masalah)
             let missingTyreDocs = false;
-            $('.tyre-doc-btn').each(function() {
-               const serial = $(this).data('serial');
-               const pos = $(this).data('pos');
-
-               for (const type of tyrePhotosMandatory) {
-                  if (!uploadedLog[serial] || !uploadedLog[serial][type]) {
-                     alert(
-                        `Ban ${serial} (Pos ${pos}) belum lengkap dokumentasinya. Harap upload semua foto (Serial, PSI, RTD 1-3, Telapak).`
-                     );
-                     missingTyreDocs = true;
-                     return false; // break inner loop
+            
+            $('select[name$="[condition]"]').each(function() {
+               const condition = $(this).val();
+               const nameAttr = $(this).attr('name');
+               const serialMatch = nameAttr.match(/checks\[(.*?)\]\[condition\]/);
+               
+               if (serialMatch && (condition === 'warning' || condition === 'critical')) {
+                  const serial = serialMatch[1];
+                  const pos = $(`.tyre-doc-btn[data-serial="${serial}"]`).data('pos') || '-';
+                  
+                  // Kalau teknisi lapor ada masalah (warning/critical), maka minimal Foto Telapak WAJIB ada!
+                  if (!uploadedLog[serial] || !uploadedLog[serial]['tyre_tread']) {
+                      alert(`[PERINGATAN DOKUMENTASI]\nBan ${serial} (Posisi ${pos}) dilaporkan memiliki kondisi '${condition.toUpperCase()}'.\n\nAnda dilarang menyimpan formulir sebelum melampirkan minimal 'Foto Telapak' pada ban tersebut sebagai bukti fisik masalah!`);
+                      missingTyreDocs = true;
+                      return false; // Break the each loop
                   }
                }
-               if (missingTyreDocs) return false; // break outer loop
             });
 
             if (missingTyreDocs) {
                e.preventDefault();
                return false;
             }
+
+            // Lolos semua filter UX Smart!
+            return true;
          });
       });
    </script>

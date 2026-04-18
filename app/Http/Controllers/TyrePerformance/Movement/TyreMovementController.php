@@ -129,6 +129,7 @@ class TyreMovementController extends Controller
         // Fetch all tyres currently on this vehicle
         $assignedTyres = Tyre::where('current_vehicle_id', $id)
             ->whereNotNull('current_position_id')
+            ->with(['brand', 'size', 'pattern'])
             ->get()
             ->keyBy('current_position_id');
 
