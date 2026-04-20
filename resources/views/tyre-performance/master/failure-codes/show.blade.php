@@ -16,9 +16,11 @@
             <a href="{{ route('tyre-failure-codes.index') }}" class="btn btn-outline-secondary">
                <i class="icon-base ri ri-arrow-left-line me-1"></i> Back
             </a>
+            @if (hasPermission('Failure Codes', 'update') && auth()->user()->role_id == 1)
             <a href="{{ route('tyre-failure-codes.edit', $failureCode->id) }}" class="btn btn-primary">
                <i class="icon-base ri ri-pencil-line me-1"></i> Edit
             </a>
+            @endif
          </div>
       </div>
 

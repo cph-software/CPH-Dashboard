@@ -1142,31 +1142,81 @@ class MonitoringController extends Controller
 
     public function approve(Request $request, $sessionId, $checkNumber)
     {
+        $session = TyreMonitoringSession::findOrFail($sessionId);
+
         $checks = TyreMonitoringCheck::where('session_id', $sessionId)
             ->where('check_number', $checkNumber)
             ->get();
 
-        foreach ($checks as $c) {
-            $c->update([
-                'approval_status' => 'Approved',
-                'approved_by' => auth()->id()
-            ]);
-
-            // Sync with Tyre Master if not already synced (e.g. from User input)
-            $tyre = Tyre::where('serial_number', $c->serial_number)->first();
-            if ($tyre) {
-                // Calculate average of RTD 1-4
-                $rtds = array_filter([$c->rtd_1, $c->rtd_2, $c->rtd_3, $c->rtd_4], function($v) { return $v > 0; });
-                $avgRtd = count($rtds) > 0 ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
-
-                $tyre->update([
-                    'current_tread_depth' => $avgRtd,
-                    'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + ($c->operation_mileage ?? 0)
+        DB::beginTransaction();
+        try {
+            foreach ($checks as $c) {
+                $c->update([
+                    'approval_status' => 'Approved',
+                    'approved_by' => auth()->id()
                 ]);
-            }
-        }
 
-        return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' disetujui, dan master ban telah tersinkron.');
+                // Sync with Tyre Master
+                $tyre = Tyre::where('serial_number', $c->serial_number)->first();
+                if ($tyre) {
+                    // Calculate average of RTD 1-4
+                    $rtds = array_filter([$c->rtd_1, $c->rtd_2, $c->rtd_3, $c->rtd_4], function($v) { return $v > 0; });
+                    $avgRtd = count($rtds) > 0 ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
+
+                    // Calculate KM/HM delta from last movement to avoid double-counting
+                    $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                        ->where('movement_date', '<=', $c->check_date)
+                        ->orderBy('movement_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+
+                    $kmDiff = 0;
+                    $hmDiff = 0;
+                    if ($lastMov) {
+                        $kmDiff = $this->calculateLifetimeDiff($c->odometer_reading, $lastMov->odometer_reading);
+                        if ($c->hm_reading && $lastMov->hour_meter_reading) {
+                            $hmDiff = $c->hm_reading - $lastMov->hour_meter_reading;
+                        }
+                    }
+
+                    // Create Movement record for traceability
+                    $inst = TyreMonitoringInstallation::where('session_id', $sessionId)
+                        ->where('serial_number', $c->serial_number)
+                        ->first();
+
+                    TyreMovement::create([
+                        'tyre_id' => $tyre->id,
+                        'vehicle_id' => $session->master_vehicle_id,
+                        'position_id' => $inst ? $inst->position_id : null,
+                        'movement_type' => 'Inspection',
+                        'movement_date' => $c->check_date,
+                        'odometer_reading' => $c->odometer_reading,
+                        'hour_meter_reading' => $c->hm_reading,
+                        'running_km' => $kmDiff,
+                        'running_hm' => $hmDiff,
+                        'rtd_reading' => $avgRtd,
+                        'notes' => "Periodic Check #{$checkNumber} (Session #{$sessionId}) - Approved",
+                        'tyre_company_id' => $tyre->tyre_company_id,
+                        'created_by' => auth()->id()
+                    ]);
+
+                    // Update Master Tyre with latest data
+                    $tyre->update([
+                        'current_tread_depth' => $avgRtd,
+                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + ($hmDiff > 0 ? $hmDiff : 0),
+                        'last_inspection_date' => $c->check_date,
+                        'last_hm_reading' => $c->hm_reading
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' disetujui, dan master ban telah tersinkron.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error saat approve: ' . $e->getMessage());
+        }
     }
 
     public function reject(Request $request, $sessionId, $checkNumber)

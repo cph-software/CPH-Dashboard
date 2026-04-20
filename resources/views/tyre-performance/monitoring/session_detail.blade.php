@@ -413,7 +413,24 @@
                            </td>
                            <td class="align-middle">
                               @if ($tyre)
-                                 <span class="fw-bold">{{ $tyre->current_tread_depth }} mm</span>
+                                 @php
+                                    // Show latest check RTD if available, otherwise fall back to master tyre
+                                    $latestCheckForRtd = $session->checks
+                                        ->where('serial_number', $tyre->serial_number)
+                                        ->sortByDesc('check_number')
+                                        ->first();
+                                    
+                                    if ($latestCheckForRtd) {
+                                        $rtdValues = array_filter([$latestCheckForRtd->rtd_1, $latestCheckForRtd->rtd_2, $latestCheckForRtd->rtd_3, $latestCheckForRtd->rtd_4], fn($v) => $v > 0);
+                                        $displayRtd = count($rtdValues) > 0 ? round(array_sum($rtdValues) / count($rtdValues), 2) : $tyre->current_tread_depth;
+                                    } else {
+                                        $displayRtd = $tyre->current_tread_depth;
+                                    }
+                                 @endphp
+                                 <span class="fw-bold">{{ $displayRtd }} mm</span>
+                                 @if ($latestCheckForRtd && $latestCheckForRtd->approval_status === 'Pending')
+                                    <small class="text-warning d-block"><i class="ri-time-line"></i> Menunggu Approval</small>
+                                 @endif
                               @else
                                  -
                               @endif

@@ -734,6 +734,14 @@
             });
          @endif
 
+         @if ($errors->any())
+            Swal.fire({
+               icon: 'error',
+               title: 'Validasi Gagal',
+               html: '{!! implode('<br>', $errors->all()) !!}'
+            });
+         @endif
+
          // Initialize Select2
          $('.select2').each(function() {
             var $this = $(this);

@@ -69,11 +69,13 @@
                         </ul>
                      @endif
 
+                     @if (hasPermission('Master Tyre', 'update'))
                      <div class="d-grid gap-2 mt-4">
                         <a href="{{ route('tyre-master.edit', $tyre->id) }}" class="btn btn-primary">
                            <i class="icon-base ri ri-edit-line me-1"></i> Edit Tyre
                         </a>
                      </div>
+                     @endif
                   </div>
                </div>
             </div>

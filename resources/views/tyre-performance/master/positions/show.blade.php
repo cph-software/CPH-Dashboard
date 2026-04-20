@@ -166,9 +166,11 @@
             </p>
          </div>
          <div class="d-flex gap-2">
+            @if (hasPermission('Position Layouts', 'update') && auth()->user()->role_id == 1)
             <a href="{{ route('tyre-positions.edit', $configuration->id) }}" class="btn btn-outline-secondary">
                <i class="ri-pencil-line me-1"></i> Edit
             </a>
+            @endif
             <a href="{{ route('tyre-positions.index') }}" class="btn btn-primary">
                <i class="ri-arrow-left-line me-1"></i> Kembali
             </a>

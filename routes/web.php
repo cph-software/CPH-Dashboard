@@ -87,7 +87,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::post('failure-aliases', [\App\Http\Controllers\TyrePerformance\Master\TyreFailureAliasController::class, 'store'])->name('tyre-failure-aliases.store')->middleware('tyre.permission:Failure Codes,view');
     Route::delete('failure-aliases/{id}', [\App\Http\Controllers\TyrePerformance\Master\TyreFailureAliasController::class, 'destroy'])->name('tyre-failure-aliases.destroy')->middleware('tyre.permission:Failure Codes,view');
     Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions')->middleware('tyre.permission:Position Layouts');
-    Route::get('master_position/{id}/layout', [\App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class, 'getLayout'])->name('tyre-positions.layout')->middleware('tyre.permission:Position Layouts');
+    Route::get('master_position/{id}/layout', [\App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class, 'getLayout'])->name('tyre-positions.layout');
     Route::get('master_tyre/data', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'data'])->name('tyre-master.data')->middleware('tyre.permission:Master Tyre');
     Route::post('master_tyre/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'bulkAction'])->name('tyre-master.bulk-action')->middleware('tyre.permission:Master Tyre');
     Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master')->middleware('tyre.permission:Master Tyre');

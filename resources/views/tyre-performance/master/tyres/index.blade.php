@@ -186,8 +186,8 @@
                            placeholder="Ex: 16PR, 18PR">
                      </div>
                      <div class="col-md-6 mb-3">
-                        <label for="original_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
-                        <input type="number" id="original_tread_depth" name="original_tread_depth"
+                        <label for="initial_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
+                        <input type="number" id="initial_tread_depth" name="initial_tread_depth"
                            class="form-control" placeholder="18.5" step="0.01">
                      </div>
                   </div>
@@ -320,8 +320,8 @@
 
                   <div class="row g-2">
                      <div class="col-md-6 mb-3">
-                        <label for="edit_original_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
-                        <input type="number" id="edit_original_tread_depth" name="original_tread_depth"
+                        <label for="edit_initial_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
+                        <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
                            class="form-control" step="0.01">
                      </div>
                      <div class="col-md-6 mb-3">
@@ -557,7 +557,7 @@
                                data-location-id="${row.current_location_id || ''}"
                                data-status="${row.status}"
                                data-price="${row.price || ''}"
-                               data-original-tread="${row.original_tread_depth || ''}"
+                               data-initial-tread="${row.initial_tread_depth || ''}"
                                data-ply-rating="${row.ply_rating || ''}"
                                data-retread-count="${row.retread_count || 0}"
                                title="Edit">
@@ -671,7 +671,7 @@
             const status = $(this).data('status');
             const warehouse = $(this).data('warehouse');
             const price = $(this).data('price');
-            const originalTread = $(this).data('original-tread');
+            const initialTread = $(this).data('initial-tread');
             const plyRating = $(this).data('ply-rating');
             const retreadCount = $(this).data('retread-count');
             const companyId = $(this).data('company-id');
@@ -698,7 +698,7 @@
                $('#edit_price').val('');
             }
 
-            $('#edit_original_tread_depth').val(originalTread);
+            $('#edit_initial_tread_depth').val(initialTread);
             $('#edit_ply_rating').val(plyRating);
          });
 
@@ -880,6 +880,14 @@
                icon: 'error',
                title: 'Oops...',
                text: '{{ session('error') }}',
+            });
+         @endif
+
+         @if ($errors->any())
+            Swal.fire({
+               icon: 'error',
+               title: 'Validasi Gagal!',
+               html: `{!! implode('<br>', $errors->all()) !!}`
             });
          @endif
       });
