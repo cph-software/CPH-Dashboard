@@ -717,7 +717,9 @@
                         method: 'POST',
                         body: formData,
                         headers: {
-                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                           'Accept': 'application/json',
+                           'X-Requested-With': 'XMLHttpRequest'
                         }
                      })
                      .then(response => response.json())

@@ -831,7 +831,9 @@
                         method: 'POST',
                         body: formData,
                         headers: {
-                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                           'Accept': 'application/json',
+                           'X-Requested-With': 'XMLHttpRequest'
                         }
                      })
                      .then(response => response.json().then(data => ({
@@ -857,7 +859,8 @@
                         }
                      })
                      .catch(err => {
-                        Swal.fire('Error', 'Terjadi kesalahan koneksi', 'error');
+                        console.error('Fetch Error:', err);
+                        Swal.fire('Error', 'Terjadi kesalahan sistem/jaringan: ' + (err.message || 'Unknown Error'), 'error');
                         btn.disabled = false;
                         btn.innerHTML = '<i class="ri ri-save-3-line me-1"></i> Simpan Pemasangan';
                      });

@@ -24,6 +24,11 @@ class TyreMovement extends Model
         'created_by', 'updated_by',
     ];
 
+    protected $casts = [
+        'is_replacement' => 'boolean',
+        'new_bolts_used' => 'boolean',
+    ];
+
     public function tyre()
     {
         return $this->belongsTo(Tyre::class, 'tyre_id');
