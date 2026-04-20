@@ -33,7 +33,7 @@ class ImportController extends Controller
         ];
 
         $requiredPermission = $permissionMap[$module] ?? null;
-        if ($requiredPermission && !hasPermission($requiredPermission, 'create')) {
+        if ($requiredPermission && !hasPermission($requiredPermission, 'create') && !hasPermission($requiredPermission, 'import')) {
             return redirect()->back()->with('error', 'Akses Ditolak: Anda tidak diberi izin (Permission) untuk melakukan Import pada modul ' . $module);
         }
 
