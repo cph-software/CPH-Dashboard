@@ -443,7 +443,7 @@
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-bar-chart-horizontal-line me-1 text-primary"></i> Performa
-                     Brand (Avg Lifetime KM)</h6>
+                     Brand (Avg Lifetime {{ $measurementMode === 'BOTH' ? 'KM & HM' : $measurementMode }})</h6>
                   <p class="kpi-sub mb-0">Perbandingan umur rata-rata ban per brand</p>
                </div>
                <div class="card-body">
@@ -480,8 +480,8 @@
             <div class="card chart-card h-100">
                <div class="card-header pb-0">
                   <h6 class="mb-1"><i class="icon-base ri ri-money-dollar-circle-line me-1 text-warning"></i> Cost Per
-                     KM by Brand (CPK)</h6>
-                  <p class="kpi-sub mb-0">Perbandingan biaya per KM antar brand</p>
+                     {{ $measurementMode === 'BOTH' ? 'KM & HM' : $measurementMode }} by Brand (CP{{ $measurementMode === 'HM' ? 'H' : 'K' }})</h6>
+                  <p class="kpi-sub mb-0">Perbandingan biaya per {{ $measurementMode === 'BOTH' ? 'satuan' : $measurementMode }} antar brand</p>
                </div>
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
@@ -1209,7 +1209,7 @@
                   }
                },
                series: [{
-                  name: 'Avg KM',
+                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
                   data: data.map(function(b) {
                      return b.avg_km;
                   })
@@ -1232,7 +1232,7 @@
                dataLabels: {
                   enabled: true,
                   formatter: function(v, o) {
-                     return v.toLocaleString() + ' km (' + data[o.dataPointIndex].count + ' ban)';
+                     return v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }} (' + data[o.dataPointIndex].count + ' ban)';
                   }
                }
             }).render();
@@ -1277,7 +1277,7 @@
                   }
                },
                series: [{
-                  name: 'CPK',
+                  name: 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }}',
                   data: data.map(function(b) {
                      return b.cpk;
                   })
@@ -1338,7 +1338,7 @@
                   height: 300
                },
                series: [{
-                  name: 'Avg KM',
+                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
                   data: data.by_pattern.map(p => p.avg_km)
                }],
                xaxis: {
@@ -1356,7 +1356,7 @@
                dataLabels: {
                   enabled: true,
                   offsetY: -20,
-                  formatter: v => v.toLocaleString()
+                  formatter: v => v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }}'
                }
             });
             brandPatternChart.render();
@@ -1369,7 +1369,7 @@
                   height: 300
                },
                series: [{
-                  name: 'Avg KM',
+                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
                   data: data.by_size.map(s => s.avg_km)
                }],
                xaxis: {
@@ -1387,7 +1387,7 @@
                dataLabels: {
                   enabled: true,
                   offsetY: -20,
-                  formatter: v => v.toLocaleString()
+                  formatter: v => v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }}'
                }
             });
             brandSizeChart.render();

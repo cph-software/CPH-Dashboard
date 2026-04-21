@@ -390,17 +390,24 @@ class DashboardController extends Controller
         if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
             $companyId = session('active_company_id');
         }
+        $company = \App\Models\TyreCompany::find($companyId);
+        $measurementMode = $company->measurement_mode ?? 'BOTH';
 
-        $cacheKey = "brand_perf_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
+        $cacheKey = "brand_perf_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}_mode{$measurementMode}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId, $measurementMode) {
             $query = Tyre::select(
                 'tyre_brand_id',
                 DB::raw('AVG(total_lifetime_km) as avg_km'),
                 DB::raw('AVG(total_lifetime_hm) as avg_hm'),
                 DB::raw('COUNT(*) as tyre_count')
-            )
-                ->where('total_lifetime_km', '>', 0);
+            );
+            
+            if ($measurementMode === 'HM') {
+                $query->where('total_lifetime_hm', '>', 0);
+            } else {
+                $query->where('total_lifetime_km', '>', 0);
+            }
 
             // Apply filters
             if ($sizeId) {
@@ -418,20 +425,16 @@ class DashboardController extends Controller
             return $query->groupBy('tyre_brand_id')
                 ->with('brand:id,brand_name')
                 ->get()
-                ->map(function ($item) {
+                ->map(function ($item) use ($measurementMode) {
                     return [
                         'brand' => $item->brand->brand_name ?? 'Unknown',
-                        'avg_km' => round($item->avg_km, 0),
-                        'avg_hm' => round($item->avg_hm, 0),
+                        'avg_km' => $measurementMode === 'HM' ? round($item->avg_hm, 0) : round($item->avg_km, 0),
                         'count' => $item->tyre_count,
                     ];
                 });
         });
     }
 
-    /**
-     * Get CPK by Brand data with optional filters (Cached)
-     */
     private function getCpkByBrandData($sizeId = null, $type = null, $patternId = null)
     {
         $user = auth()->user();
@@ -439,19 +442,27 @@ class DashboardController extends Controller
         if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
             $companyId = session('active_company_id');
         }
+        $company = \App\Models\TyreCompany::find($companyId);
+        $measurementMode = $company->measurement_mode ?? 'BOTH';
         
-        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}";
+        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}_mode{$measurementMode}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId) {
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId, $measurementMode) {
             $query = Tyre::select(
                 'tyre_brand_id',
                 DB::raw('SUM(price) as total_price'),
                 DB::raw('SUM(total_lifetime_km) as total_km'),
+                DB::raw('SUM(total_lifetime_hm) as total_hm'),
                 DB::raw('COUNT(*) as tyre_count')
             )
-                ->where('total_lifetime_km', '>', 0)
                 ->whereNotNull('price')
                 ->where('price', '>', 0);
+            
+            if ($measurementMode === 'HM') {
+                $query->where('total_lifetime_hm', '>', 0);
+            } else {
+                $query->where('total_lifetime_km', '>', 0);
+            }
 
             // Apply filters
             if ($sizeId) {
@@ -469,10 +480,12 @@ class DashboardController extends Controller
             return $query->groupBy('tyre_brand_id')
                 ->with('brand:id,brand_name')
                 ->get()
-                ->map(function ($item) {
+                ->map(function ($item) use ($measurementMode) {
+                    $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
+                    $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
                     return [
                         'brand' => $item->brand->brand_name ?? 'Unknown',
-                        'cpk' => $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0,
+                        'cpk' => $measurementMode === 'HM' ? $cpH : $cpK,
                         'count' => $item->tyre_count,
                     ];
                 });

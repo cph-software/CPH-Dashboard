@@ -223,7 +223,7 @@ class TyreExaminationController extends Controller
 
                     if ($approvalStatus === 'Approved') {
                         $avgRtd = $hasRtd ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
-                        $this->recordMovement($examination, $tyre, $detail['position_id'], $avgRtd, $detail['psi'] ?? null);
+                        $this->recordMovement($examination, $tyre, $detail['position_id'], $avgRtd, $detail['psi'] ?? null, $detailModel);
                     }
                 }
             }
@@ -247,7 +247,7 @@ class TyreExaminationController extends Controller
         }
     }
 
-    private function recordMovement(TyreExamination $examination, Tyre $tyre, $positionId, $avgRtd, $psiReading)
+    private function recordMovement(TyreExamination $examination, Tyre $tyre, $positionId, $avgRtd, $psiReading, $detailModel = null)
     {
         // --- Calculate Lifetime since last recorded event (Date-Aware) ---
         $lastMov = TyreMovement::where('tyre_id', $tyre->id)
@@ -283,6 +283,12 @@ class TyreExaminationController extends Controller
             'running_hm' => $hmDiff ?? 0,
             'psi_reading' => $psiReading,
             'rtd_reading' => $avgRtd,
+            'rtd_1' => $detailModel ? $detailModel->rtd_1 : null,
+            'rtd_2' => $detailModel ? $detailModel->rtd_2 : null,
+            'rtd_3' => $detailModel ? $detailModel->rtd_3 : null,
+            'rtd_4' => $detailModel ? $detailModel->rtd_4 : null,
+            'start_time' => $examination->start_time,
+            'end_time' => $examination->end_time,
             'notes' => 'Pemeriksaan rutin',
             'created_by' => Auth::id(),
         ]);
@@ -309,7 +315,7 @@ class TyreExaminationController extends Controller
                 });
 
                 $avgRtd = count($rtds) > 0 ? array_sum($rtds) / count($rtds) : $tyre->current_tread_depth;
-                $this->recordMovement($examination, $tyre, $detail->position_id, $avgRtd, $detail->psi_reading);
+                $this->recordMovement($examination, $tyre, $detail->position_id, $avgRtd, $detail->psi_reading, $detail);
             }
 
             DB::commit();
@@ -355,9 +361,7 @@ class TyreExaminationController extends Controller
         $exams = $query->skip($start)->take($length)->get();
 
         $data = $exams->map(function ($row) {
-            $deleteBtn = '';
-            // Allow delete if pending, or if super admin. But typically let's just show it.
-            $deleteBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExam(' . $row->id . ')"><i class="ri-delete-bin-line"></i></button>';
+            $deleteBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExam(' . $row->id . ')"><i class="icon-base ri ri-delete-bin-line me-1"></i>Hapus</button>';
 
             return [
                 'id' => $row->id,
@@ -367,7 +371,7 @@ class TyreExaminationController extends Controller
                 'tyre_man' => $row->tyre_man ?? '-',
                 'status' => $row->approval_status ?? 'Pending',
                 'type' => $row->exam_type ?? 'Customer',
-                'action' => '<a href="' . route('examination.show', $row->id) . '" class="btn btn-sm btn-info"><i class="ri-eye-line"></i></a>' . $deleteBtn
+                'action' => '<a href="' . route('examination.show', $row->id) . '" class="btn btn-sm btn-info"><i class="icon-base ri ri-eye-line me-1"></i>Detail</a>' . $deleteBtn
             ];
         });
 
