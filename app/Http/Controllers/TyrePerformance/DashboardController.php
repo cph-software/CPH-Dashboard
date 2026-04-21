@@ -55,8 +55,8 @@ class DashboardController extends Controller
             $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
             $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
         } else {
-            // Default sesuai request: Mulai dari 1 Januari 2023 sampai hari ini
-            $startDate = Carbon::create(2023, 1, 1)->startOfDay();
+            // Default sesuai request: Mulai dari 1 Januari 2026 sampai hari ini
+            $startDate = Carbon::create(2026, 1, 1)->startOfDay();
             $endDate = Carbon::now()->endOfDay();
         }
 

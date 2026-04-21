@@ -260,6 +260,7 @@ class TyreMovementController extends Controller
 
         $installDate = $installMov ? Carbon::parse($installMov->movement_date)->format('d/m/Y') : null;
         $installOdo = $installMov ? $installMov->odometer_reading : null;
+        $installHm = $installMov ? $installMov->hour_meter_reading : null;
 
         // Days since installation
         $daysSinceInstall = $installMov
@@ -275,8 +276,14 @@ class TyreMovementController extends Controller
             $rtdWearPct = round((1 - ($tyre->current_tread_depth / $tyre->initial_tread_depth)) * 100, 1);
         }
 
+        $measurementMode = 'BOTH';
+        if (auth()->check() && auth()->user()->tyreCompany) {
+            $measurementMode = auth()->user()->tyreCompany->measurement_mode ?? 'BOTH';
+        }
+
         return response()->json([
             'success' => true,
+            'measurement_mode' => $measurementMode,
             'tyre' => [
                 'id' => $tyre->id,
                 'serial_number' => $tyre->serial_number,
@@ -295,6 +302,7 @@ class TyreMovementController extends Controller
                 'total_lifetime_hm' => $tyre->total_lifetime_hm ?? 0,
                 'install_date' => $installDate,
                 'install_odo' => $installOdo,
+                'install_hm' => $installHm,
                 'days_since_install' => $daysSinceInstall,
                 'total_movements' => $totalMovements,
             ],

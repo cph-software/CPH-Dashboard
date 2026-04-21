@@ -311,20 +311,20 @@
                      <span class="kpi-sub">Avg Lifetime</span>
                   </div>
                   @if($measurementMode == 'KM')
-                     <div class="kpi-number text-warning">{{ number_format($avgLifetimeKm, 0) }}</div>
+                     <div class="kpi-number text-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Rata-rata jarak tempuh (KM) yang dicapai ban sebelum dilepas/discrap">{{ number_format($avgLifetimeKm, 0, ',', '.') }}</div>
                      <div class="kpi-sub mt-1">KM rata-rata</div>
                   @elseif($measurementMode == 'HM')
-                     <div class="kpi-number text-warning">{{ number_format($avgLifetimeHm, 0) }}</div>
+                     <div class="kpi-number text-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Rata-rata jam operasional (HM) yang dicapai ban sebelum dilepas/discrap">{{ number_format($avgLifetimeHm, 0, ',', '.') }}</div>
                      <div class="kpi-sub mt-1">HM rata-rata</div>
                   @else
-                     <div class="d-flex justify-content-between align-items-end mt-1">
-                        <div>
-                           <div class="kpi-number text-warning fs-5" style="line-height: 1;">{{ number_format($avgLifetimeKm, 0) }}</div>
-                           <div class="kpi-sub" style="font-size: 0.65rem;">KM rata-rata</div>
+                     <div class="d-flex flex-column mt-2">
+                        <div class="d-flex justify-content-between align-items-end mb-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Rata-rata jarak tempuh (KM) yang dicapai ban">
+                           <div class="kpi-sub" style="font-size: 0.65rem;">KM Rata-rata</div>
+                           <div class="kpi-number text-warning fw-bold" style="font-size: 1.15rem; line-height: 1;">{{ number_format($avgLifetimeKm, 0, ',', '.') }}</div>
                         </div>
-                        <div class="text-end">
-                           <div class="kpi-number text-warning fs-5" style="line-height: 1;">{{ number_format($avgLifetimeHm, 0) }}</div>
-                           <div class="kpi-sub" style="font-size: 0.65rem;">HM rata-rata</div>
+                        <div class="d-flex justify-content-between align-items-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Rata-rata jam operasional (HM) yang dicapai ban">
+                           <div class="kpi-sub" style="font-size: 0.65rem;">HM Rata-rata</div>
+                           <div class="kpi-number text-warning fw-bold" style="font-size: 1.15rem; line-height: 1;">{{ number_format($avgLifetimeHm, 0, ',', '.') }}</div>
                         </div>
                      </div>
                   @endif
@@ -346,20 +346,20 @@
                      </span>
                   </div>
                   @if($measurementMode == 'KM')
-                     <div class="kpi-number">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
+                     <div class="kpi-number" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Biaya seluruh ban dibagi Total KM tempuh seluruh ban">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
                      <div class="kpi-sub mt-1">Rata-rata CPK</div>
                   @elseif($measurementMode == 'HM')
-                     <div class="kpi-number">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
+                     <div class="kpi-number" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Biaya seluruh ban dibagi Total HM operasional seluruh ban">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
                      <div class="kpi-sub mt-1">Rata-rata CPH</div>
                   @else
-                     <div class="d-flex justify-content-between align-items-end mt-1">
-                        <div>
-                           <div class="kpi-number fs-6" style="line-height: 1;">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
-                           <div class="kpi-sub text-primary fw-bold" style="font-size: 0.65rem;">CPK</div>
+                     <div class="d-flex flex-column mt-2">
+                        <div class="d-flex justify-content-between align-items-end mb-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Biaya Rata-rata per KM (Total Harga Ban / Total KM)">
+                           <div class="kpi-sub text-secondary fw-bold" style="font-size: 0.65rem;">Cost/KM</div>
+                           <div class="kpi-number fw-bold text-dark" style="font-size: 1.05rem; line-height: 1;">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
                         </div>
-                        <div class="text-end">
-                           <div class="kpi-number fs-6" style="line-height: 1;">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
-                           <div class="kpi-sub text-primary fw-bold" style="font-size: 0.65rem;">CPH</div>
+                        <div class="d-flex justify-content-between align-items-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Biaya Rata-rata per HM (Total Harga Ban / Total HM)">
+                           <div class="kpi-sub text-secondary fw-bold" style="font-size: 0.65rem;">Cost/HM</div>
+                           <div class="kpi-number fw-bold text-dark" style="font-size: 1.05rem; line-height: 1;">Rp {{ number_format($avgCph, 0, ',', '.') }}</div>
                         </div>
                      </div>
                   @endif
@@ -1073,6 +1073,23 @@
                      }
                   }
                }
+            },
+            tooltip: {
+               custom: function({series, seriesIndex, dataPointIndex, w}) {
+                  var label = w.globals.labels[seriesIndex];
+                  var val = series[seriesIndex];
+                  var desc = '';
+                  if (label.indexOf('Installed') === 0) desc = 'Ban saat ini terpasang dan aktif di unit kendaraan.';
+                  else if (label.indexOf('New') === 0) desc = 'Ban baru asli dari pabrik (R0) yang tersimpan atau terpasang.';
+                  else if (label.indexOf('Retread') === 0) desc = 'Ban hasil vulkanisir di mana tapaknya telah diperbarui (R1, R2, dst).';
+                  else if (label.indexOf('Repaired') === 0) desc = 'Ban yang sedang/telah diperbaiki akibat bocor atau robek ringan.';
+                  else if (label.indexOf('Scrap') === 0) desc = 'Ban rusak permanen / afkir yang sudah tidak layak digunakan (Dibuang).';
+                  
+                  return '<div style="background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 12px; max-width: 260px;">' +
+                         '<div style="font-weight: 700; font-size: 13px; color: #2b3445; margin-bottom: 6px;">' + label + ' : ' + val + ' Ban</div>' +
+                         '<div style="font-size: 12px; color: #7d879c; white-space: normal; line-height: 1.5;">' + desc + '</div>' +
+                         '</div>';
+               }
             }
          }).render();
 
@@ -1080,7 +1097,8 @@
          new ApexCharts(document.querySelector('#movementTrendChart'), {
             chart: {
                type: 'bar',
-               height: 300,
+               height: 320,
+               fontFamily: 'inherit',
                toolbar: {
                   show: false
                },
@@ -1098,47 +1116,74 @@
             },
             series: [{
                   name: 'Pemasangan',
-                  data: monthlyData.map(function(m) {
-                     return m.installations;
-                  })
+                  data: monthlyData.map(function(m) { return m.installations; })
                },
                {
                   name: 'Pelepasan',
-                  data: monthlyData.map(function(m) {
-                     return m.removals;
-                  })
+                  data: monthlyData.map(function(m) { return m.removals; })
                },
                {
                   name: 'Inspeksi',
-                  data: monthlyData.map(function(m) {
-                     return m.inspections || 0;
-                  })
+                  data: monthlyData.map(function(m) { return m.inspections || 0; })
                },
                {
                   name: 'Rotasi',
-                  data: monthlyData.map(function(m) {
-                     return m.rotations || 0;
-                  })
+                  data: monthlyData.map(function(m) { return m.rotations || 0; })
                },
                {
                   name: 'Exam',
-                  data: monthlyData.map(function(m) {
-                     return m.examinations || 0;
-                  })
+                  data: monthlyData.map(function(m) { return m.examinations || 0; })
                }
             ],
             xaxis: {
-               categories: monthlyData.map(function(m) {
-                  return m.month;
-               })
+               categories: monthlyData.map(function(m) { return m.month; }),
+               axisBorder: { show: false },
+               axisTicks: { show: false },
+               labels: {
+                  style: { colors: '#a1acb8', fontSize: '13px' }
+               }
+            },
+            yaxis: {
+               labels: {
+                  style: { colors: '#a1acb8', fontSize: '13px' }
+               }
+            },
+            grid: {
+               strokeDashArray: 7,
+               borderColor: '#e9ecef',
+               padding: { top: -20, bottom: -10, left: 10, right: 10 }
             },
             colors: [colors.success, colors.danger, colors.info, colors.warning, colors.secondary],
             plotOptions: {
                bar: {
-                  columnWidth: '40%',
-                  borderRadius: 4,
+                  columnWidth: '50%',
+                  borderRadius: 6,
+                  borderRadiusApplication: 'end',
                   dataLabels: {
                      position: 'top'
+                  }
+               }
+            },
+            dataLabels: {
+               enabled: false
+            },
+            stroke: {
+               show: true,
+               width: 3,
+               colors: ['transparent']
+            },
+            legend: {
+               position: 'top',
+               horizontalAlign: 'right',
+               markers: { radius: 12 },
+               itemMargin: { horizontal: 10 }
+            },
+            tooltip: {
+               shared: true,
+               intersect: false,
+               y: {
+                  formatter: function (val) {
+                     return val === 0 ? "0 pergerakan" : val + " pergerakan";
                   }
                }
             }

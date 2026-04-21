@@ -360,15 +360,20 @@
                         </div>`;
                   }
 
+                  let mode = data.measurement_mode || 'BOTH';
+                  let isHmMode = mode === 'HM';
+
                   // Movement history rows
                   let movRows = '';
+                  let runHeader = isHmMode ? 'Run HM' : 'Run KM';
                   if (m.length > 0) {
                      m.forEach(mv => {
+                        let runVal = isHmMode ? (mv.running_hm || 0) : (mv.running_km || 0);
                         movRows += `
                         <tr>
                            <td><small>${mv.date}</small></td>
                            <td><span class="badge ${movBadge(mv.type_raw)} badge-sm">${mv.type}</span></td>
-                           <td class="text-end"><small>${(mv.running_km || 0).toLocaleString()}</small></td>
+                           <td class="text-end"><small>${runVal.toLocaleString()}</small></td>
                            <td class="text-end"><small>${mv.rtd ?? '-'}</small></td>
                         </tr>`;
                      });
@@ -377,11 +382,48 @@
                         '<tr><td colspan="4" class="text-center text-muted py-3">Belum ada riwayat</td></tr>';
                   }
 
-                  // CPK calculation
+                  // Layout Logic
+                  let statKm = (mode === 'KM' || mode === 'BOTH') ? `
+                           <div class="col-6">
+                              <div class="p-2 rounded bg-light text-center">
+                                 <i class="ri ri-road-map-line text-primary d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <div class="fw-bold">${t.total_lifetime_km.toLocaleString()}</div>
+                                 <small class="text-muted">Total KM</small>
+                              </div>
+                           </div>` : '';
+                           
+                  let statHm = (mode === 'HM' || mode === 'BOTH') ? `
+                           <div class="col-6">
+                              <div class="p-2 rounded bg-light text-center">
+                                 <i class="ri ri-time-line text-warning d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <div class="fw-bold">${t.total_lifetime_hm.toLocaleString()}</div>
+                                 <small class="text-muted">Total HM</small>
+                              </div>
+                           </div>` : '';
+
+                  let cpkTitle = isHmMode ? 'Cost/HM' : 'Cost/KM';
                   let cpkText = '-';
-                  if (t.price && t.total_lifetime_km > 0) {
-                     cpkText = 'Rp ' + Math.round(t.price / t.total_lifetime_km).toLocaleString();
+                  if (t.price) {
+                     if (isHmMode && t.total_lifetime_hm > 0) {
+                        cpkText = 'Rp ' + Math.round(t.price / t.total_lifetime_hm).toLocaleString();
+                     } else if (!isHmMode && t.total_lifetime_km > 0) {
+                        cpkText = 'Rp ' + Math.round(t.price / t.total_lifetime_km).toLocaleString();
+                     }
                   }
+
+                  let costHtml = `
+                           <div class="col-6">
+                              <div class="p-2 rounded bg-light text-center">
+                                 <i class="ri ri-money-dollar-circle-line text-success d-block mb-1" style="font-size: 1.3rem;"></i>
+                                 <div class="fw-bold">${cpkText}</div>
+                                 <small class="text-muted">${cpkTitle}</small>
+                              </div>
+                           </div>`;
+
+                  let startLabel = isHmMode ? 'HM Saat Pasang' : 'KM Saat Pasang';
+                  let startVal = isHmMode ? 
+                        (t.install_hm !== null ? t.install_hm.toLocaleString() : '-') : 
+                        (t.install_odo !== null ? t.install_odo.toLocaleString() : '-');
 
                   body.innerHTML = `
                      <!-- Header Card -->
@@ -404,27 +446,9 @@
                      <!-- Stats Grid -->
                      <div class="p-3 border-bottom">
                         <div class="row g-2">
-                           <div class="col-6">
-                              <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri ri-road-map-line text-primary d-block mb-1" style="font-size: 1.3rem;"></i>
-                                 <div class="fw-bold">${t.total_lifetime_km.toLocaleString()}</div>
-                                 <small class="text-muted">Total KM</small>
-                              </div>
-                           </div>
-                           <div class="col-6">
-                              <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri ri-time-line text-warning d-block mb-1" style="font-size: 1.3rem;"></i>
-                                 <div class="fw-bold">${t.total_lifetime_hm.toLocaleString()}</div>
-                                 <small class="text-muted">Total HM</small>
-                              </div>
-                           </div>
-                           <div class="col-6">
-                              <div class="p-2 rounded bg-light text-center">
-                                 <i class="ri ri-money-dollar-circle-line text-success d-block mb-1" style="font-size: 1.3rem;"></i>
-                                 <div class="fw-bold">${cpkText}</div>
-                                 <small class="text-muted">Cost/KM</small>
-                              </div>
-                           </div>
+                           ${statKm}
+                           ${statHm}
+                           ${costHtml}
                            <div class="col-6">
                               <div class="p-2 rounded bg-light text-center">
                                  <i class="ri ri-calendar-check-line text-info d-block mb-1" style="font-size: 1.3rem;"></i>
@@ -447,8 +471,8 @@
                               <span class="fw-bold">${t.install_date || '-'}</span>
                            </div>
                            <div>
-                              <small class="text-muted d-block">KM Saat Pasang</small>
-                              <span class="fw-bold">${t.install_odo !== null ? t.install_odo.toLocaleString() : '-'}</span>
+                              <small class="text-muted d-block">${startLabel}</small>
+                              <span class="fw-bold">${startVal}</span>
                            </div>
                            <div>
                               <small class="text-muted d-block">Total Transaksi</small>
@@ -468,7 +492,7 @@
                                  <tr class="text-muted">
                                     <th><small>Tanggal</small></th>
                                     <th><small>Tipe</small></th>
-                                    <th class="text-end"><small>Run KM</small></th>
+                                    <th class="text-end"><small>${runHeader}</small></th>
                                     <th class="text-end"><small>RTD</small></th>
                                  </tr>
                               </thead>

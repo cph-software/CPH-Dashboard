@@ -355,6 +355,10 @@ class TyreExaminationController extends Controller
         $exams = $query->skip($start)->take($length)->get();
 
         $data = $exams->map(function ($row) {
+            $deleteBtn = '';
+            // Allow delete if pending, or if super admin. But typically let's just show it.
+            $deleteBtn = '<button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteExam(' . $row->id . ')"><i class="ri-delete-bin-line"></i></button>';
+
             return [
                 'id' => $row->id,
                 'date' => Carbon::parse($row->examination_date)->format('d/m/Y'),
@@ -363,7 +367,7 @@ class TyreExaminationController extends Controller
                 'tyre_man' => $row->tyre_man ?? '-',
                 'status' => $row->approval_status ?? 'Pending',
                 'type' => $row->exam_type ?? 'Customer',
-                'action' => '<a href="' . route('examination.show', $row->id) . '" class="btn btn-sm btn-info"><i class="ri-eye-line"></i> Detail</a>'
+                'action' => '<a href="' . route('examination.show', $row->id) . '" class="btn btn-sm btn-info"><i class="ri-eye-line"></i></a>' . $deleteBtn
             ];
         });
 
@@ -373,6 +377,29 @@ class TyreExaminationController extends Controller
             "recordsFiltered" => intval($filteredRecords),
             "data" => $data
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $exam = TyreExamination::orderBy('id')->findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            // Delete associated images
+            TyreExaminationImage::where('examination_id', $exam->id)->delete();
+            
+            // Delete details
+            $exam->details()->delete();
+            
+            // Delete the main record
+            $exam->delete();
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Pemeriksaan berhasil dihapus.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()], 500);
+        }
     }
 
     public function show($id)

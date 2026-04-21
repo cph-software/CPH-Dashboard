@@ -110,5 +110,39 @@
             }
          });
       });
+
+      function deleteExam(id) {
+         Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Data pemeriksaan yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e0284f',
+            cancelButtonColor: '#8c98a4',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+         }).then((result) => {
+            if (result.isConfirmed) {
+               $.ajax({
+                  url: "{{ url('examination') }}/" + id,
+                  type: 'DELETE',
+                  data: {
+                     _token: '{{ csrf_token() }}'
+                  },
+                  success: function(response) {
+                     if (response.success) {
+                        Swal.fire('Terhapus!', response.message, 'success');
+                        $('#exam-table').DataTable().ajax.reload();
+                     } else {
+                        Swal.fire('Gagal!', response.message, 'error');
+                     }
+                  },
+                  error: function(err) {
+                     Swal.fire('Error!', 'Terjadi kesalahan pada server.', 'error');
+                  }
+               });
+            }
+         });
+      }
    </script>
 @endsection

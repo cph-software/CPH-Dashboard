@@ -235,27 +235,27 @@
             <i class="ri ri-line-chart-line position-absolute opacity-25"
                style="font-size: 8rem; right: -20px; top: -20px;"></i>
             <div class="row text-center g-4 position-relative">
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Rata-rata sisa ketebalan tapak ban saat ini (mm)">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-ruler-2-line me-1"></i>Avg RTD</p>
                   <h4 class="mb-0 text-white fw-bold">{{ $summary['avg_rtd'] }} <small>mm</small></h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Persentase keausan ban dari ketebalan awal hingga saat ini">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-focus-3-line me-1"></i>Worn %</p>
                   <h4 class="mb-0 text-white fw-bold">{{ round($summary['worn_pct']) }}%</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh setiap penipisan ban 1 mm' : 'Rata-rata KM yang ditempuh setiap penipisan ban 1 mm' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh per harinya' : 'Rata-rata KM yang ditempuh per harinya' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Proyeksi total umur pakai ban dalam HM hingga batas aman tapak (3mm)' : 'Proyeksi total umur pakai ban dalam KM hingga batas aman tapak (3mm)' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $measurementMode === 'HM' ? 'Proj. HM' : 'Proj. KM' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h4>
                </div>
-               <div class="col-md-2 col-6">
+               <div class="col-md-2 col-6" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estimasi sisa umur pakai ban dalam bulan dengan ritme pemakaian saat ini">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-calendar-check-line me-1"></i>Remaining</p>
                   <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} <small>Mo</small></h4>
                </div>
