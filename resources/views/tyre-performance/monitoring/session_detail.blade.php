@@ -440,15 +440,14 @@
                                  @php
                                     $latestCheck = $session->checks
                                         ->where('serial_number', $tyre->serial_number)
-                                        ->sortByDesc('check_date')
+                                        ->sortByDesc('check_number')
                                         ->first();
                                  @endphp
                                  @if ($latestCheck)
                                     <div class="d-flex flex-column">
                                        <small
                                           class="fw-bold">{{ \Carbon\Carbon::parse($latestCheck->check_date)->format('d/m/Y') }}</small>
-                                       <small class="text-info">{{ $measurementMode === 'HM' ? number_format($latestCheck->operation_hm ?? 0) : number_format($latestCheck->operation_mileage) }}
-                                          KM</small>
+                                       <small class="text-info">{{ $measurementMode === 'HM' ? number_format($latestCheck->operation_hm ?? 0) : number_format($latestCheck->operation_mileage) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small>
                                     </div>
                                  @else
                                     <small class="text-muted">No check yet</small>
