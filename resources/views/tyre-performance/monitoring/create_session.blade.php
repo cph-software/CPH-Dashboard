@@ -169,14 +169,19 @@
                         <input type="date" name="install_date" class="form-control form-control-lg" required
                            value="{{ date('Y-m-d') }}">
                      </div>
+                     @if ($measurementMode !== 'HM')
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Odometer Saat Ini</label>
-                        <input type="number" name="odometer_start" class="form-control form-control-lg" required
+                        <label class="form-label fw-bold">Odometer Saat Ini (KM)</label>
+                        <input type="number" name="odometer_start" class="form-control form-control-lg" {{ $measurementMode === 'KM' || $measurementMode === 'BOTH' ? 'required' : '' }}
                            placeholder="KM" value="{{ old('odometer_start', $currentKM) }}">
                      </div>
+                     @else
+                     <input type="hidden" name="odometer_start" value="{{ old('odometer_start', 0) }}">
+                     @endif
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Hour Meter Saat Ini</label>
+                        <label class="form-label fw-bold">Hour Meter Saat Ini (HM)</label>
                         <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM"
+                           {{ $measurementMode === 'HM' ? 'required' : '' }}
                            value="{{ old('hm_start', $currentHM) }}">
                      </div>
                      <div class="col-md-3">

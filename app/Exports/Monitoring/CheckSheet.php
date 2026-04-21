@@ -33,10 +33,17 @@ class CheckSheet implements FromView, WithTitle
             $inst = $this->session->installations->where('serial_number', $check->serial_number)->first();
             $origRtd = $inst->original_rtd ?? ($this->session->original_rtd ?? 12); // Fallback to 12 if none
 
+            // Get measurement mode for the company
+            $measurementMode = 'BOTH';
+            if (auth()->check() && auth()->user()->tyreCompany) {
+                $measurementMode = auth()->user()->tyreCompany->measurement_mode ?? 'BOTH';
+            }
+
             $calc = TyreMonitoringCalculator::calculate(
                 $origRtd,
                 $this->session->install_date,
-                $check
+                $check,
+                $measurementMode
             );
             $check->calculated = $calc;
 

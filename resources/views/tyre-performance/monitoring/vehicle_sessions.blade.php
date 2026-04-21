@@ -374,7 +374,7 @@
                <tr>
                   <th>Period Start</th>
                   <th>Tyre Size</th>
-                  <th>Odo Start</th>
+                  <th>{{ $measurementMode === 'HM' ? 'HM Start' : 'Odo Start' }}</th>
                   <th>Progress</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -385,7 +385,7 @@
                   <tr>
                      <td>{{ \Carbon\Carbon::parse($session->install_date)->format('d/m/Y') }}</td>
                      <td>{{ $session->tyre_size }}</td>
-                     <td>{{ number_format($session->odometer_start) }} KM</td>
+                     <td>{{ $measurementMode === 'HM' ? number_format($session->hm_start) . ' HM' : number_format($session->odometer_start) . ' KM' }}</td>
                      <td>
                         <div class="d-flex align-items-center gap-1">
                            <span class="badge bg-label-warning" title="Installations">

@@ -31,6 +31,18 @@ use App\Services\VehicleReadingService;
 class MonitoringController extends Controller
 {
     /**
+     * Get measurement mode for the current user's company (KM, HM, or BOTH)
+     */
+    private function getMeasurementMode()
+    {
+        $user = auth()->user();
+        if ($user && $user->tyreCompany) {
+            return $user->tyreCompany->measurement_mode ?? 'BOTH';
+        }
+        return 'BOTH';
+    }
+
+    /**
      * Helper to calculate lifetime difference handling potential meter resets (minus diff)
      */
     private function calculateLifetimeDiff($currentReading, $lastInstallReading)
@@ -45,8 +57,9 @@ class MonitoringController extends Controller
         }])->latest()->get();
 
         $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')->get();
+        $measurementMode = $this->getMeasurementMode();
         
-        return view('tyre-performance.monitoring.index', compact('vehicles', 'masterVehicles'));
+        return view('tyre-performance.monitoring.index', compact('vehicles', 'masterVehicles', 'measurementMode'));
     }
 
     public function getMasterVehicleDetails($id)
@@ -138,6 +151,8 @@ class MonitoringController extends Controller
         $patterns = TyrePattern::orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
 
+        $measurementMode = $this->getMeasurementMode();
+
         return view('tyre-performance.monitoring.vehicle_sessions', compact(
             'vehicle', 
             'sessions', 
@@ -146,7 +161,8 @@ class MonitoringController extends Controller
             'configuration',
             'brands',
             'patterns',
-            'sizes'
+            'sizes',
+            'measurementMode'
         ));
     }
 
@@ -179,10 +195,13 @@ class MonitoringController extends Controller
             }
         }
 
+        $measurementMode = $this->getMeasurementMode();
+
         return view('tyre-performance.monitoring.session_detail', compact(
             'session',
             'masterPositions',
-            'assignedTyres'
+            'assignedTyres',
+            'measurementMode'
         ));
     }
 
@@ -266,6 +285,8 @@ class MonitoringController extends Controller
         $currentKM = $latestMovement->odometer_reading ?? 0;
         $currentHM = $latestMovement->hour_meter_reading ?? 0;
 
+        $measurementMode = $this->getMeasurementMode();
+
         return view('tyre-performance.monitoring.create_session', compact(
             'vehicle',
             'masterPositions',
@@ -275,7 +296,8 @@ class MonitoringController extends Controller
             'sizes',
             'availableTyres',
             'currentKM',
-            'currentHM'
+            'currentHM',
+            'measurementMode'
         ));
     }
 
@@ -329,6 +351,8 @@ class MonitoringController extends Controller
         $currentKM = $lastCheck ? $lastCheck->odometer_reading : ($session->odometer_start ?? 0);
         $currentHM = $lastCheck ? $lastCheck->hm_reading : ($session->hm_start ?? 0);
 
+        $measurementMode = $this->getMeasurementMode();
+
         return view('tyre-performance.monitoring.add_check', compact(
             'session',
             'vehicle',
@@ -340,7 +364,8 @@ class MonitoringController extends Controller
             'sizes',
             'installedTyres',
             'currentKM',
-            'currentHM'
+            'currentHM',
+            'measurementMode'
         ));
     }
 
@@ -356,14 +381,28 @@ class MonitoringController extends Controller
             $request->merge(['hm_start' => preg_replace('/[^\d]/', '', $hm)]);
         }
 
-        $request->validate([
+        $mode = $this->getMeasurementMode();
+
+        $rules = [
             'vehicle_id' => 'required|exists:tyre_monitoring_vehicle,vehicle_id',
             'install_date' => 'required|date',
             'tyre_size' => 'required|string',
             'original_rtd' => 'required|numeric',
-            'odometer_start' => 'required|integer',
-            'hm_start' => 'nullable|integer',
-        ]);
+        ];
+
+        // Conditional validation based on measurement mode
+        if ($mode === 'HM') {
+            $rules['odometer_start'] = 'nullable|integer';
+            $rules['hm_start'] = 'required|integer';
+        } elseif ($mode === 'KM') {
+            $rules['odometer_start'] = 'required|integer';
+            $rules['hm_start'] = 'nullable|integer';
+        } else { // BOTH
+            $rules['odometer_start'] = 'required|integer';
+            $rules['hm_start'] = 'nullable|integer';
+        }
+
+        $request->validate($rules);
 
         $vehicle = TyreMonitoringVehicle::findOrFail($request->vehicle_id);
         $data = $request->except('checks');
@@ -665,38 +704,58 @@ class MonitoringController extends Controller
             $request->merge(['hour_meter' => preg_replace('/[^\d]/', '', $hm)]);
         }
 
-        $request->validate([
+        $mode = $this->getMeasurementMode();
+
+        $rules = [
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
             'check_date' => 'required|date',
-            'odometer' => 'required|numeric|min:0',
-            'hour_meter' => 'nullable|numeric|min:0',
             'driver_name' => 'required|string|max:255',
             'phone_number' => 'nullable|string|max:20',
             'retase' => 'required|numeric',
             'checks' => 'required|array',
-            'temp_id' => 'nullable|string', // For image linking
-        ], [
-            'odometer.required' => 'Odometer harus diisi.',
+            'temp_id' => 'nullable|string',
+        ];
+
+        // Conditional validation based on measurement mode
+        if ($mode === 'HM') {
+            $rules['odometer'] = 'nullable|numeric|min:0';
+            $rules['hour_meter'] = 'required|numeric|min:0';
+        } elseif ($mode === 'KM') {
+            $rules['odometer'] = 'required|numeric|min:0';
+            $rules['hour_meter'] = 'nullable|numeric|min:0';
+        } else {
+            $rules['odometer'] = 'required|numeric|min:0';
+            $rules['hour_meter'] = 'nullable|numeric|min:0';
+        }
+
+        $request->validate($rules, [
+            'odometer.required' => 'Odometer (KM) harus diisi.',
+            'hour_meter.required' => 'Hour Meter (HM) harus diisi.',
             'driver_name.required' => 'Nama driver harus diisi.',
         ]);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
         
-        // Human error prevention: Odometer check vs Session Start
-        if ($request->odometer < $session->odometer_start) {
-            return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Awal Sesi ({$session->odometer_start}).")->withInput();
+        // Human error prevention: Odometer check vs Session Start (only if KM mode)
+        if ($mode !== 'HM' && $request->odometer && $session->odometer_start) {
+            if ($request->odometer < $session->odometer_start) {
+                return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Awal Sesi ({$session->odometer_start}).")->withInput();
+            }
         }
 
-        // Human error prevention: Odometer check vs Last Check
+        // Human error prevention: Odometer check vs Last Check (only if KM mode)
         $lastCheckRecord = TyreMonitoringCheck::where('session_id', $session->session_id)
             ->orderBy('check_number', 'desc')
             ->first();
         
-        if ($lastCheckRecord && $request->odometer < $lastCheckRecord->odometer_reading) {
-            return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Check sebelumnya ({$lastCheckRecord->odometer_reading}).")->withInput();
+        if ($mode !== 'HM' && $lastCheckRecord && $request->odometer && $lastCheckRecord->odometer_reading) {
+            if ($request->odometer < $lastCheckRecord->odometer_reading) {
+                return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Check sebelumnya ({$lastCheckRecord->odometer_reading}).")->withInput();
+            }
         }
 
-        if ($request->hour_meter && $session->hm_start && $request->hour_meter < $session->hm_start) {
+        // Human error prevention: HM check (applicable when HM mode or BOTH)
+        if ($mode !== 'KM' && $request->hour_meter && $session->hm_start && $request->hour_meter < $session->hm_start) {
             return redirect()->back()->with('error', "Hour Meter Input ({$request->hour_meter}) tidak boleh lebih kecil dari HM Awal Sesi ({$session->hm_start}).")->withInput();
         }
 
@@ -767,8 +826,12 @@ class MonitoringController extends Controller
                 $rtdCount = $r4 > 0 ? 4 : 3;
                 $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
 
-                // Analytics
-                $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
+                // Analytics — use correct metric base depending on mode
+                if ($mode === 'HM') {
+                    $opMileage = $this->calculateLifetimeDiff($request->hour_meter, $session->hm_start);
+                } else {
+                    $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
+                }
                 $lossRtd = $origRtd - $avgRtd;
                 $wornPct = ($origRtd > 0) ? ($lossRtd / $origRtd * 100) : 0;
                 
@@ -856,7 +919,14 @@ class MonitoringController extends Controller
                             'hour_meter_reading' => $request->hour_meter,
                             'running_km' => $kmDiff,
                             'running_hm' => $hmDiff,
+                            'psi_reading' => $c['psi_actual'] ?? null,
+                            'rtd_1' => $r1,
+                            'rtd_2' => $r2,
+                            'rtd_3' => $r3,
+                            'rtd_4' => $r4,
                             'rtd_reading' => $avgRtd,
+                            'start_time' => $request->check_date,
+                            'end_time' => $request->check_date,
                             'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id}) - ADMIN",
                             'tyre_company_id' => $tyre->tyre_company_id,
                             'created_by' => \Auth::id()
@@ -893,15 +963,24 @@ class MonitoringController extends Controller
             $request->merge(['odometer' => preg_replace('/[^\d]/', '', $odo)]);
         }
 
-        $request->validate([
+        $mode = $this->getMeasurementMode();
+
+        $rules = [
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
             'serial_number' => 'required|exists:tyre_monitoring_installation,serial_number',
             'removal_date' => 'required|date',
-            'odometer' => 'required|integer',
             'final_rtd' => 'required|numeric',
             'work_location_id' => 'nullable|exists:tyre_locations,id',
             'target_status' => 'nullable|in:New,Repaired,Scrap'
-        ]);
+        ];
+
+        if ($mode === 'HM') {
+            $rules['odometer'] = 'nullable|integer';
+        } else {
+            $rules['odometer'] = 'required|integer';
+        }
+
+        $request->validate($rules);
 
         $session = TyreMonitoringSession::findOrFail($request->session_id);
         

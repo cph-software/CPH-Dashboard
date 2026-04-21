@@ -12,9 +12,10 @@ class TyreMonitoringCalculator
      * @param float $originalRtd
      * @param string $installDate
      * @param object|array $checkData
+     * @param string $measurementMode - 'KM', 'HM', or 'BOTH'
      * @return array
      */
-    public static function calculate($originalRtd, $installDate, $checkData)
+    public static function calculate($originalRtd, $installDate, $checkData, $measurementMode = 'BOTH')
     {
         // Handle object or array
         $r1 = (float) (is_object($checkData) ? $checkData->rtd_1 : ($checkData['rtd_1'] ?? 0));
@@ -23,28 +24,36 @@ class TyreMonitoringCalculator
         $r4 = (float) (is_object($checkData) ? $checkData->rtd_4 : ($checkData['rtd_4'] ?? 0));
         $checkDate = is_object($checkData) ? $checkData->check_date : $checkData['check_date'];
         $operationMileage = (float) (is_object($checkData) ? $checkData->operation_mileage : $checkData['operation_mileage']);
+        $operationHm = (float) (is_object($checkData) ? ($checkData->operation_hm ?? 0) : ($checkData['operation_hm'] ?? 0));
 
         $rtdCount = ($r4 > 0) ? 4 : 3;
         $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
         
         $wearAmount = $originalRtd - $avgRtd;
+
+        // Determine the primary operation metric based on mode
+        if ($measurementMode === 'HM') {
+            $primaryOp = $operationHm;
+        } else {
+            $primaryOp = $operationMileage;
+        }
         
         // Threshold: If wear is less than 0.1mm, we don't calculate performance yet
         // to avoid "immortal tyre" numbers (huge values)
         if ($wearAmount < 0.1) {
-            $kmPerMm = 0;
-            $projLifeKm = 0;
+            $perMm = 0;
+            $projLife = 0;
             $wornPct = ($wearAmount > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
         } else {
             $wornPct = ($wearAmount / $originalRtd) * 100;
-            $kmPerMm = $operationMileage / $wearAmount;
-            $projLifeKm = $kmPerMm * ($originalRtd - 3);
+            $perMm = $primaryOp / $wearAmount;
+            $projLife = $perMm * ($originalRtd - 3);
         }
         
         $installDateCarbon = Carbon::parse($installDate);
         $checkDateCarbon = Carbon::parse($checkDate);
         
-        // Elapsed days since INSTALLATION (for KM/Day)
+        // Elapsed days since INSTALLATION
         $daysSinceInstall = $installDateCarbon->diffInDays($checkDateCarbon);
         if ($daysSinceInstall <= 0) $daysSinceInstall = 1;
         
@@ -53,19 +62,40 @@ class TyreMonitoringCalculator
         $asmDateCarbon = $asmDateRaw ? Carbon::parse($asmDateRaw) : $installDateCarbon;
         $daysSinceAsm = $asmDateCarbon->diffInDays($checkDateCarbon);
 
-        $kmPerDay = $operationMileage / $daysSinceInstall;
-        $projLifeDay = ($kmPerDay > 0) ? ($projLifeKm / $kmPerDay) : 0;
+        $perDay = $primaryOp / $daysSinceInstall;
+        $projLifeDay = ($perDay > 0) ? ($projLife / $perDay) : 0;
 
-        return [
+        // Build result with mode-aware keys
+        $result = [
             'avg_rtd' => round($avgRtd, 2),
             'worn_pct' => round($wornPct, 1),
-            'km_per_mm' => round($kmPerMm, 1),
-            'proj_life_km' => round($projLifeKm, 0),
-            'days_elapsed' => $daysSinceAsm, // Now matches assembly to inspection
+            'days_elapsed' => $daysSinceAsm,
             'months_elapsed' => round($daysSinceAsm / 30, 1),
-            'km_per_day' => round($kmPerDay, 1),
             'proj_life_day' => round($projLifeDay, 0),
             'proj_life_month' => round($projLifeDay / 30, 1),
         ];
+
+        if ($measurementMode === 'HM') {
+            $result['hm_per_mm'] = round($perMm, 1);
+            $result['proj_life_hm'] = round($projLife, 0);
+            $result['hm_per_day'] = round($perDay, 1);
+            // Also include KM keys with 0-fallback for backward compat
+            $result['km_per_mm'] = round($perMm, 1);
+            $result['proj_life_km'] = round($projLife, 0);
+            $result['km_per_day'] = round($perDay, 1);
+        } else {
+            $result['km_per_mm'] = round($perMm, 1);
+            $result['proj_life_km'] = round($projLife, 0);
+            $result['km_per_day'] = round($perDay, 1);
+            // Also include HM keys for BOTH mode
+            if ($measurementMode === 'BOTH' && $operationHm > 0) {
+                $hmPerMm = ($wearAmount >= 0.1) ? ($operationHm / $wearAmount) : 0;
+                $result['hm_per_mm'] = round($hmPerMm, 1);
+                $result['proj_life_hm'] = round($hmPerMm * ($originalRtd - 3), 0);
+                $result['hm_per_day'] = round($operationHm / $daysSinceInstall, 1);
+            }
+        }
+
+        return $result;
     }
 }

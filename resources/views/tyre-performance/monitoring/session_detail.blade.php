@@ -208,8 +208,8 @@
       <div class="col-6 col-md-3">
          <div class="card h-100">
             <div class="card-body py-3">
-               <p class="text-muted small mb-1">Running Mileage</p>
-               <h4 class="mb-0 fw-bold">{{ number_format($runningKm) }} <small class="text-muted fw-normal">KM</small></h4>
+               <p class="text-muted small mb-1">{{ $measurementMode === 'HM' ? 'Running HM' : 'Running Mileage' }}</p>
+               <h4 class="mb-0 fw-bold">{{ number_format($runningKm) }} <small class="text-muted fw-normal">{{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small></h4>
             </div>
          </div>
       </div>
@@ -229,7 +229,7 @@
 
    {{-- Wear Calculation Summary --}}
    @if ($lastCheck)
-      @php $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck); @endphp
+      @php $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck, $measurementMode); @endphp
       <div class="card mb-4 bg-primary text-white shadow-sm overflow-hidden">
          <div class="card-body py-4 position-relative">
             <i class="ri ri-line-chart-line position-absolute opacity-25"
@@ -244,15 +244,15 @@
                   <h4 class="mb-0 text-white fw-bold">{{ round($summary['worn_pct']) }}%</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>KM / mm</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>KM / Day</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>Proj. KM</p>
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $measurementMode === 'HM' ? 'Proj. HM' : 'Proj. KM' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h4>
                </div>
                <div class="col-md-2 col-6">
@@ -447,7 +447,7 @@
                                     <div class="d-flex flex-column">
                                        <small
                                           class="fw-bold">{{ \Carbon\Carbon::parse($latestCheck->check_date)->format('d/m/Y') }}</small>
-                                       <small class="text-info">{{ number_format($latestCheck->operation_mileage) }}
+                                       <small class="text-info">{{ $measurementMode === 'HM' ? number_format($latestCheck->operation_hm ?? 0) : number_format($latestCheck->operation_mileage) }}
                                           KM</small>
                                     </div>
                                  @else
@@ -493,7 +493,7 @@
                            {{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}
                         </h6>
                         <p class="text-muted small mb-1">{{ $session->installations->count() }} ban terpasang · Odometer:
-                           {{ number_format($session->odometer_start) }} KM</p>
+                           {{ $measurementMode === 'HM' ? number_format($session->hm_start) : number_format($session->odometer_start) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</p>
                         <div class="d-flex flex-wrap gap-2">
                            @foreach ($session->installations as $inst)
                               <span class="badge bg-label-dark p-2" title="{{ $inst->position }}"><i
@@ -595,7 +595,7 @@
                            </div>
                         @endif
                         <p class="text-muted small mb-2">{{ $group->count() }} posisi diperiksa · Op. Mileage:
-                           {{ number_format($first->operation_mileage) }} KM · Avg RTD: {{ number_format($avgRtd, 2) }}
+                           {{ $measurementMode === 'HM' ? number_format($first->operation_hm ?? 0) : number_format($first->operation_mileage) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }} · Avg RTD: {{ number_format($avgRtd, 2) }}
                            mm</p>
                         {{-- Detail Table --}}
                         <div class="table-responsive">
@@ -608,8 +608,8 @@
                                     <th>RTD</th>
                                     <th>Avg</th>
                                     <th>Worn%</th>
-                                    <th>KM/mm</th>
-                                    <th>Proj.Life</th>
+                                    <th>{{ $measurementMode === 'HM' ? 'HM/mm' : 'KM/mm' }}</th>
+                                    <th>{{ $measurementMode === 'HM' ? 'Proj.HM' : 'Proj.KM' }}</th>
                                     <th>Condition</th>
                                  </tr>
                               </thead>
