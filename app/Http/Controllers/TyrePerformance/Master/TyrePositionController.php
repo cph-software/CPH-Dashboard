@@ -41,7 +41,7 @@ class TyrePositionController extends Controller
             'middle_axles' => 'required|integer|min:0|max:5',
             'rear_axles' => 'required|integer|min:0|max:10',
             'spare_tyres' => 'required|integer|min:0|max:5',
-            'config_type' => 'required|in:Rigid,Head Unit,Trailer',
+            'config_type' => 'required|in:Rigid,Head Unit,Trailer,Standard',
         ]);
 
         DB::beginTransaction();
@@ -145,7 +145,7 @@ class TyrePositionController extends Controller
             'middle_axles' => 'required|integer|min:0|max:5',
             'rear_axles' => 'required|integer|min:0|max:10',
             'spare_tyres' => 'required|integer|min:0|max:5',
-            'config_type' => 'required|in:Rigid,Head Unit,Trailer',
+            'config_type' => 'required|in:Rigid,Head Unit,Trailer,Standard',
         ]);
 
         $configuration = TyrePositionConfiguration::findOrFail($id);
