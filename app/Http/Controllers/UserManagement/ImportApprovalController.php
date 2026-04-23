@@ -85,6 +85,10 @@ class ImportApprovalController extends Controller
                     'approved_by' => auth()->id(),
                     'approved_at' => now()
                 ]);
+                
+                // Clear all dashboard caches to reflect new data
+                \Illuminate\Support\Facades\Cache::flush();
+                
                 $msg = 'Batch berhasil disetujui sepenuhnya dan semua data telah diproses.';
             } else {
                 $msg = 'Sebagian data berhasil disetujui. Terdapat ' . $remainingPending . ' baris yang masih perlu perbaikan dan berstatus Pending.';
@@ -363,9 +367,28 @@ class ImportApprovalController extends Controller
         if (!$code) throw new \Exception("Kode Unit (kode_kendaraan) kosong.");
 
         $layoutId = null;
+        $totalPositions = $data['total_positions'] ?? $data['total_ban'] ?? 0;
         if (!empty($data['layout'])) {
-            $layout = \App\Models\TyrePosition::where('name', $data['layout'])->first();
-            $layoutId = $layout ? $layout->id : null;
+            $layoutName = trim($data['layout']);
+            
+            // Strategy 1: Exact match
+            $layout = \App\Models\TyrePositionConfiguration::where('name', $layoutName)->first();
+            
+            // Strategy 2: Case-insensitive match
+            if (!$layout) {
+                $layout = \App\Models\TyrePositionConfiguration::whereRaw('UPPER(name) = ?', [strtoupper($layoutName)])->first();
+            }
+            
+            // Strategy 3: Match by axle pattern e.g. (2+2+2)
+            if (!$layout && preg_match('/\((\d+(?:\+\d+)+)\)/', $layoutName, $m)) {
+                $pattern = $m[1];
+                $layout = \App\Models\TyrePositionConfiguration::where('name', 'LIKE', "%({$pattern})%")->first();
+            }
+            
+            if ($layout) {
+                $layoutId = $layout->id;
+                $totalPositions = $layout->total_positions;
+            }
         }
 
         // 1. Resolve Segment (Auto-create if missing)
@@ -407,7 +430,7 @@ class ImportApprovalController extends Controller
                 'area' => trim($area),
                 'operational_segment_id' => $segmentId,
                 'tyre_position_configuration_id' => $layoutId,
-                'total_tyre_position' => $data['total_positions'] ?? $data['total_ban'] ?? 0,
+                'total_tyre_position' => $totalPositions,
                 'tyre_unit_status' => $data['status'] ?? 'Active',
                 'tyre_company_id' => $uploaderCompanyId
             ]
@@ -543,8 +566,10 @@ class ImportApprovalController extends Controller
         // Parse dates & numbers with flexible format
         $installDate = $this->parseFlexDate($data['pemasangan_tanggal'] ?? null);
         $installKm   = $this->parseEuroNum($data['pemasangan_km'] ?? 0);
+        $installHm   = $this->parseEuroNum($data['pemasangan_hm'] ?? $data['pemasangan_hour_meter'] ?? 0);
         $removeDate  = $this->parseFlexDate($data['pelepasan_tanggal'] ?? null);
         $removeKm    = $this->parseEuroNum($data['pelepasan_km'] ?? 0);
+        $removeHm    = $this->parseEuroNum($data['pelepasan_hm'] ?? $data['pelepasan_hour_meter'] ?? 0);
         $rtd         = !empty($data['tebal_telapak']) ? (float)$data['tebal_telapak'] : null;
         $remark      = $data['penyebab'] ?? $data['remark'] ?? null;
         $keterangan  = strtoupper(trim($data['keterangan'] ?? ''));
@@ -587,6 +612,7 @@ class ImportApprovalController extends Controller
                 'movement_type'    => 'Installation',
                 'movement_date'    => $installDate,
                 'odometer_reading' => $installKm,
+                'hour_meter_reading' => $installHm,
                 'created_by'       => auth()->id(),
             ]);
         }
@@ -594,6 +620,7 @@ class ImportApprovalController extends Controller
         // 2. Create REMOVAL record (only if removal date exists)
         if ($removeDate) {
             $runningKm = max(0, $removeKm - $installKm);
+            $runningHm = max(0, $removeHm - $installHm);
 
             // [P2] Log warning jika odometer terbalik (kemungkinan typo di Excel)
             if ($removeKm > 0 && $installKm > 0 && $removeKm < $installKm) {
@@ -619,7 +646,9 @@ class ImportApprovalController extends Controller
                 'movement_type'    => 'Removal',
                 'movement_date'    => $removeDate,
                 'odometer_reading' => $removeKm,
+                'hour_meter_reading' => $removeHm,
                 'running_km'       => $runningKm,
+                'running_hm'       => $runningHm,
                 'rtd_reading'      => $rtd,
                 'target_status'    => $targetStatus,
                 'remarks'          => $remark,
@@ -634,6 +663,7 @@ class ImportApprovalController extends Controller
                 'status'              => $targetStatus,
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
                 'total_lifetime_km'   => ($tyre->total_lifetime_km ?? 0) + $runningKm,
+                'total_lifetime_hm'   => ($tyre->total_lifetime_hm ?? 0) + $runningHm,
             ]);
 
             // [P4] Clear posisi kendaraan saat removal (sinkronisasi 2-arah)
@@ -689,19 +719,11 @@ class ImportApprovalController extends Controller
         if ($positionCode && $vehicle) {
             $configId = $vehicle->tyre_position_configuration_id;
             if ($configId) {
-                $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
-                    ->where(function($q) use ($positionCode) {
-                        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
-                        $q->where('position_code', $positionCode)
-                          ->orWhere('position_name', $positionCode);
-                        if ($numericPos !== '') {
-                            $q->orWhere('display_order', $numericPos);
-                        }
-                    })
-                    ->first();
+                $posDetail = $this->resolvePosition($configId, $positionCode);
                 $positionId = $posDetail ? $posDetail->id : null;
             }
         }
+
 
         $type = !empty($data['movement_type']) ? ucfirst(strtolower($data['movement_type'])) : (!empty($data['tipe_pergerakan']) ? ucfirst(strtolower($data['tipe_pergerakan'])) : 'Installation');
         $moveDate = !empty($data['movement_date']) ? \Carbon\Carbon::parse($data['movement_date']) : (!empty($data['tanggal']) ? \Carbon\Carbon::parse($data['tanggal']) : now());
@@ -789,6 +811,17 @@ class ImportApprovalController extends Controller
             $failCodeId = $failCode ? $failCode->id : null;
         }
 
+        // [P9] Cek duplikat: hindari import ganda jika SN+Type+Date+Odo sudah ada
+        $existsMovement = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
+            ->where('movement_type', $type)
+            ->where('movement_date', $moveDate)
+            ->where('odometer_reading', $odo)
+            ->exists();
+
+        if ($existsMovement) {
+            throw new \Exception("Movement duplikat: SN {$tyre->serial_number} {$type} pada {$moveDate->format('Y-m-d')} KM={$odo} sudah tercatat.");
+        }
+
         \App\Models\TyreMovement::create([
             'tyre_id' => $tyre->id,
             'tyre_company_id' => $uploaderCompanyId, // [P7] Company uploader, bukan approver
@@ -824,18 +857,7 @@ class ImportApprovalController extends Controller
         $configId = $vehicle->tyre_position_configuration_id;
         if (!$configId) return null;
 
-        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
-
-        $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $configId)
-            ->where(function($q) use ($positionCode, $numericPos) {
-                $q->where('position_code', $positionCode)
-                  ->orWhere('position_name', $positionCode);
-                if ($numericPos !== '') {
-                    $q->orWhere('display_order', (int)$numericPos);
-                }
-            })
-            ->first();
-
+        $posDetail = $this->resolvePosition($configId, $positionCode);
         return $posDetail ? $posDetail->id : null;
     }
 
@@ -1070,15 +1092,20 @@ class ImportApprovalController extends Controller
 
         $removeDateRaw = $data['pelepasan_tanggal'] ?? null;
         $removeDate = !empty($removeDateRaw) && trim($removeDateRaw) !== '0';
+        
+        $movementDateRaw = $data['movement_date'] ?? $data['tanggal'] ?? null;
+        $hasSingleMovementDate = !empty($movementDateRaw) && trim($movementDateRaw) !== '0';
 
-        $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
-        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
+        $keterangan = strtoupper(trim($data['keterangan'] ?? $data['remark'] ?? ''));
+        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']) || strtoupper(trim($data['target_status'] ?? '')) === 'SCRAP';
         
         $unitCode = trim($data['kode_kendaraan'] ?? $data['unit'] ?? '');
 
-        if (!$installDate && !$isScrapOnly) {
+        if (!$installDate && !$hasSingleMovementDate && !$isScrapOnly) {
             $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
         }
+
+        $isInstallation = $installDate || (strtoupper(trim($data['movement_type'] ?? '')) === 'INSTALLATION');
 
         // Cek tanggal masa depan
         if ($installDate) {
@@ -1110,8 +1137,19 @@ class ImportApprovalController extends Controller
             }
         }
 
+        if ($hasSingleMovementDate) {
+            try {
+                $parsedSingleDate = \Carbon\Carbon::parse($movementDateRaw);
+                if ($parsedSingleDate->isFuture()) {
+                    $errors[] = "Tanggal Movement ({$movementDateRaw}) tidak boleh di masa depan.";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Format Tanggal Movement tidak valid: '{$movementDateRaw}'.";
+            }
+        }
+
         // ── 3. VALIDASI KENDARAAN ──
-        if ($installDate && empty($unitCode)) {
+        if ($isInstallation && empty($unitCode)) {
             $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
         }
 
@@ -1145,5 +1183,52 @@ class ImportApprovalController extends Controller
             'errors' => $errors,
             'warnings' => $warnings,
         ];
+    }
+    private function resolvePosition($configId, $positionCode)
+    {
+        $searchCode = strtoupper(trim($positionCode));
+        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
+        
+        // Dictionary mapping common user terms to our internal base codes
+        $aliasMap = [
+            'LM-IN' => 'LMI', 'LM-OUT' => 'LMO', 'LMI' => 'LMI', 'LMO' => 'LMO',
+            'RM-IN' => 'RMI', 'RM-OUT' => 'RMO', 'RMI' => 'RMI', 'RMO' => 'RMO',
+            'LR-IN' => 'LRI', 'LR-OUT' => 'LRO', 'LRI' => 'LRI', 'LRO' => 'LRO',
+            'RR-IN' => 'RRI', 'RR-OUT' => 'RRO', 'RRI' => 'RRI', 'RRO' => 'RRO',
+            'LF-IN' => 'LFI', 'LF-OUT' => 'LFO', 'LFI' => 'LFI', 'LFO' => 'LFO',
+            'RF-IN' => 'RFI', 'RF-OUT' => 'RFO', 'RFI' => 'RFI', 'RFO' => 'RFO',
+            'LF' => 'LF', 'RF' => 'RF', 'SP' => 'SP',
+            // Sometimes they use spaces
+            'LM IN' => 'LMI', 'LM OUT' => 'LMO', 'RM IN' => 'RMI', 'RM OUT' => 'RMO',
+            'LR IN' => 'LRI', 'LR OUT' => 'LRO', 'RR IN' => 'RRI', 'RR OUT' => 'RRO',
+        ];
+
+        // If the code exactly matches a key, use the mapped base code
+        $baseSearch = $aliasMap[$searchCode] ?? null;
+
+        // If not mapped, maybe it has numbers like "RR-IN 2" -> "RR-IN"
+        if (!$baseSearch) {
+            $textOnly = trim(preg_replace('/[0-9]/', '', $searchCode));
+            $baseSearch = $aliasMap[$textOnly] ?? $textOnly;
+        }
+
+        return \App\Models\TyrePositionDetail::where('configuration_id', $configId)
+            ->where(function($q) use ($positionCode, $searchCode, $baseSearch, $numericPos) {
+                // Exact match of raw input
+                $q->where('position_code', $searchCode)
+                  ->orWhere('position_name', $positionCode);
+
+                // Match base alias + any sequence (e.g., LRI/3)
+                if ($baseSearch) {
+                    $q->orWhere('position_code', 'LIKE', $baseSearch . '/%');
+                    $q->orWhere('position_code', $baseSearch); // if no seq
+                }
+
+                // Match by numeric display order if provided
+                if ($numericPos !== '') {
+                    $q->orWhere('display_order', $numericPos);
+                }
+            })
+            ->first();
     }
 }

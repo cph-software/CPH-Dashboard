@@ -253,18 +253,22 @@ class ImportController extends Controller
 
         $removeDateRaw = $data['pelepasan_tanggal'] ?? null;
         $removeDate = !empty($removeDateRaw) && trim($removeDateRaw) !== '0';
+        
+        $movementDateRaw = $data['movement_date'] ?? $data['tanggal'] ?? null;
+        $hasSingleMovementDate = !empty($movementDateRaw) && trim($movementDateRaw) !== '0';
 
-        $keterangan = strtoupper(trim($data['keterangan'] ?? ''));
-        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']);
+        $keterangan = strtoupper(trim($data['keterangan'] ?? $data['remark'] ?? ''));
+        $isScrapOnly = in_array($keterangan, ['BUANG', 'SCRAP', 'DISPOSAL']) || strtoupper(trim($data['target_status'] ?? '')) === 'SCRAP';
         
         $unitCode = trim($data['kode_kendaraan'] ?? $data['unit'] ?? '');
 
-        if (!$installDate && !$isScrapOnly) {
+        if (!$installDate && !$hasSingleMovementDate && !$isScrapOnly) {
             $errors[] = "Tanggal Pemasangan kosong dan bukan pembuangan (Scrap).";
         }
 
         // 3. Kendaraan
-        if ($installDate && empty($unitCode)) {
+        $isInstallation = $installDate || (strtoupper(trim($data['movement_type'] ?? '')) === 'INSTALLATION');
+        if ($isInstallation && empty($unitCode)) {
             $errors[] = "Pemasangan memerlukan Unit Kendaraan yang diisi.";
         }
 
@@ -544,17 +548,72 @@ class ImportController extends Controller
                 }
             }
 
-            // Vehicle Master: check layouts exist
+            // Vehicle Master: check & resolve layouts — Smart matching
             if (!empty($layoutArray)) {
                 $layoutArray = array_unique($layoutArray);
-                $existingLayouts = [];
-                foreach(array_chunk($layoutArray, 1000) as $chunk) {
-                    $found = \App\Models\TyrePositionConfiguration::withoutGlobalScopes()->whereIn('name', $chunk)->pluck('name')->toArray();
-                    $existingLayouts = array_merge($existingLayouts, array_map('strtoupper', $found));
+                $missing = [];
+                
+                foreach ($layoutArray as $inputName) {
+                    // Strategy 1: Exact match (case-insensitive)
+                    $found = \App\Models\TyrePositionConfiguration::whereRaw('UPPER(name) = ?', [$inputName])->exists();
+                    if ($found) continue;
+                    
+                    // Strategy 2: Match by axle pattern e.g. (2+4+4), (2+2+2)
+                    if (preg_match('/\((\d+(?:\+\d+)+)\)/', $inputName, $m)) {
+                        $pattern = $m[1]; // e.g. "2+2+2"
+                        $found = \App\Models\TyrePositionConfiguration::where('name', 'LIKE', "%({$pattern})%")->exists();
+                        if ($found) continue;
+                    }
+                    
+                    // Strategy 3: Auto-create the layout from the axle pattern
+                    if (preg_match('/\((\d+(?:\+\d+)+)\)/', $inputName, $m)) {
+                        $pattern = $m[1];
+                        $parts = array_map('intval', explode('+', $pattern));
+                        $totalWheels = array_sum($parts);
+                        
+                        // Determine axle config from parts
+                        $axleConfig = ['front' => 0, 'middle' => 0, 'rear' => 0, 'spare' => 1];
+                        if (count($parts) === 2) {
+                            $axleConfig['front'] = 1;
+                            $axleConfig['rear'] = 1;
+                        } elseif (count($parts) === 3) {
+                            $axleConfig['front'] = 1;
+                            $axleConfig['middle'] = 1;
+                            $axleConfig['rear'] = 1;
+                        } elseif (count($parts) >= 4) {
+                            $axleConfig['front'] = 1;
+                            $axleConfig['middle'] = count($parts) - 2;
+                            $axleConfig['rear'] = 1;
+                        }
+                        
+                        // Create the configuration
+                        $originalName = mb_convert_case(mb_strtolower($inputName), MB_CASE_TITLE);
+                        $code = strtoupper(str_replace([' ', '(', ')'], ['-', '', ''], $inputName));
+                        
+                        $config = \App\Models\TyrePositionConfiguration::create([
+                            'name' => $originalName,
+                            'code' => $code,
+                            'total_positions' => $totalWheels + 1, // +1 for spare
+                            'total_spare' => 1,
+                            'config_type' => 'Standard',
+                            'status' => 'Active',
+                        ]);
+                        
+                        // Generate positions
+                        $positions = $config->generatePositions($axleConfig);
+                        foreach ($positions as $pos) {
+                            \App\Models\TyrePositionDetail::create($pos);
+                        }
+                        
+                        \Illuminate\Support\Facades\Log::info("Auto-created layout: {$originalName} (ID={$config->id}) with " . count($positions) . " positions");
+                        continue;
+                    }
+                    
+                    $missing[] = $inputName;
                 }
-                $missing = array_diff($layoutArray, $existingLayouts);
+                
                 if (count($missing) > 0) {
-                    $list = implode(', ', array_slice(array_values($missing), 0, 10));
+                    $list = implode(', ', array_slice($missing, 0, 10));
                     throw new \Exception('Auto Reject: ' . count($missing) . ' Layout tidak dikenali: ' . $list);
                 }
             }

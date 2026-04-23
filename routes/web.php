@@ -120,11 +120,15 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::get('trash', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'index'])->name('trash.index')->middleware('tyre.permission:Backup & Restore');
     Route::get('trash/data', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'data'])->name('trash.data')->middleware('tyre.permission:Backup & Restore');
     Route::post('trash/{type}/{id}/restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'restore'])->name('trash.restore')->middleware('tyre.permission:Backup & Restore,update');
+    Route::post('trash/bulk-restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'bulkRestore'])->name('trash.bulk-restore')->middleware('tyre.permission:Backup & Restore,update');
     Route::delete('trash/{type}/{id}/force-delete', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'forceDelete'])->name('trash.force-delete')->middleware('tyre.permission:Backup & Restore,delete');
+    Route::delete('trash/bulk-force-delete', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'bulkForceDelete'])->name('trash.bulk-force-delete')->middleware('tyre.permission:Backup & Restore,delete');
     Route::get('admin-trash', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminTrash'])->name('trash.admin');
     Route::get('admin-trash/data', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminData'])->name('trash.admin.data');
     Route::post('admin-trash/{type}/{id}/restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminRestore'])->name('trash.admin.restore');
+    Route::post('admin-trash/bulk-restore', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminBulkRestore'])->name('trash.admin.bulk-restore');
     Route::delete('admin-trash/{type}/{id}/purge', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminPurge'])->name('trash.admin.purge');
+    Route::delete('admin-trash/bulk-purge', [\App\Http\Controllers\TyrePerformance\TrashController::class, 'adminBulkPurge'])->name('trash.admin.bulk-purge');
 
     // ======================================================================
     // TYRE PERFORMANCE — Monitoring

@@ -67,12 +67,30 @@
          </div>
       </div>
 
+      {{-- Bulk Actions --}}
+      <div class="card mb-4" id="bulkActionsCard" style="display: none;">
+         <div class="card-body py-3 d-flex justify-content-between align-items-center bg-light rounded">
+            <div>
+               <span class="fw-bold" id="selectedCount">0</span> data terpilih
+            </div>
+            <div class="d-flex gap-2">
+               <button class="btn btn-success" id="btnAdminBulkRestore">
+                  <i class="ri-arrow-go-back-line me-1"></i> Pulihkan Terpilih
+               </button>
+               <button class="btn btn-outline-danger" id="btnAdminBulkPurge">
+                  <i class="ri-delete-bin-line me-1"></i> Purge Permanen Terpilih
+               </button>
+            </div>
+         </div>
+      </div>
+
       {{-- DataTable --}}
       <div class="card">
          <div class="card-datatable table-responsive">
             <table class="table border-top" id="adminTrashTable">
                <thead>
                   <tr>
+                     <th style="width: 50px;"><input type="checkbox" class="form-check-input" id="selectAll"></th>
                      <th>Nama Data</th>
                      <th>Detail</th>
                      <th>Instansi</th>
@@ -111,6 +129,14 @@
                }
             },
             columns: [
+               { 
+                  data: 'id', 
+                  orderable: false, 
+                  searchable: false,
+                  render: function(data) {
+                     return `<input type="checkbox" class="row-checkbox form-check-input" value="${data}">`;
+                  }
+               },
                { data: 'name', render: (data) => `<strong>${data}</strong>` },
                { data: 'detail' },
                { data: 'company', render: (data) => `<span class="badge bg-label-info">${data}</span>` },
@@ -142,8 +168,121 @@
             }
          });
 
-         $('#companyFilter, #typeFilter').on('change', () => table.ajax.reload());
-         $('#refreshBtn').on('click', () => table.ajax.reload());
+          $('#companyFilter, #typeFilter').on('change', function() {
+             table.ajax.reload();
+             $('#selectAll').prop('checked', false);
+             updateBulkActionVisibility();
+          });
+          $('#refreshBtn').on('click', function() {
+             table.ajax.reload();
+             $('#selectAll').prop('checked', false);
+             updateBulkActionVisibility();
+          });
+
+          // Checkbox logic
+          $('#selectAll').on('change', function() {
+             $('.row-checkbox').prop('checked', $(this).prop('checked'));
+             updateBulkActionVisibility();
+          });
+
+          $(document).on('change', '.row-checkbox', function() {
+             if (!$(this).prop('checked')) {
+                $('#selectAll').prop('checked', false);
+             } else if ($('.row-checkbox:checked').length === $('.row-checkbox').length) {
+                $('#selectAll').prop('checked', true);
+             }
+             updateBulkActionVisibility();
+          });
+
+          // Listen to datatable draw event to reset checkboxes
+          table.on('draw', function() {
+             $('#selectAll').prop('checked', false);
+             updateBulkActionVisibility();
+          });
+
+          function updateBulkActionVisibility() {
+             const selectedCount = $('.row-checkbox:checked').length;
+             $('#selectedCount').text(selectedCount);
+             if (selectedCount > 0) {
+                $('#bulkActionsCard').slideDown('fast');
+             } else {
+                $('#bulkActionsCard').slideUp('fast');
+             }
+          }
+
+          function getSelectedIds() {
+             return $('.row-checkbox:checked').map(function() { return $(this).val(); }).get();
+          }
+
+          // Admin Bulk Restore
+          $('#btnAdminBulkRestore').on('click', function() {
+             const ids = getSelectedIds();
+             if (ids.length === 0) return;
+             const type = $('#typeFilter').val();
+
+             Swal.fire({
+                title: 'Pulihkan Data Terpilih?',
+                html: `<strong>${ids.length} data</strong> akan dikembalikan sepenuhnya ke sistem aktif.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="ri-arrow-go-back-line me-1"></i> Ya, Pulihkan!',
+                cancelButtonText: 'Batal',
+                customClass: { confirmButton: 'btn btn-success me-3', cancelButton: 'btn btn-outline-secondary' },
+                buttonsStyling: false
+             }).then((result) => {
+                if (result.isConfirmed) {
+                   fetch(`{{ route('trash.admin.bulk-restore') }}`, {
+                      method: 'POST',
+                      headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ ids: ids, type: type })
+                   })
+                   .then(res => res.json())
+                   .then(data => {
+                      if (data.success) {
+                         Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 2000, showConfirmButton: false });
+                         table.ajax.reload();
+                      } else {
+                         Swal.fire('Gagal', data.message, 'error');
+                      }
+                   });
+                }
+             });
+          });
+
+          // Admin Bulk Purge
+          $('#btnAdminBulkPurge').on('click', function() {
+             const ids = getSelectedIds();
+             if (ids.length === 0) return;
+             const type = $('#typeFilter').val();
+
+             Swal.fire({
+                title: 'Purge Permanen Terpilih?',
+                html: `<strong>${ids.length} data</strong> akan dihapus permanen dari database dan tidak dapat dipulihkan lagi.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="ri-delete-bin-line me-1"></i> Ya, Purge!',
+                cancelButtonText: 'Batal',
+                customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-outline-secondary' },
+                buttonsStyling: false
+             }).then((result) => {
+                if (result.isConfirmed) {
+                   fetch(`{{ route('trash.admin.bulk-purge') }}`, {
+                      method: 'DELETE',
+                      headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ ids: ids, type: type })
+                   })
+                   .then(res => res.json())
+                   .then(data => {
+                      if (data.success) {
+                         Swal.fire({ icon: 'success', title: 'Dihapus!', text: data.message, timer: 2000, showConfirmButton: false });
+                         table.ajax.reload();
+                      } else {
+                         Swal.fire('Gagal', data.message, 'error');
+                      }
+                   });
+                }
+             });
+          });
 
          // Restore from Tier 2
          $(document).on('click', '.admin-restore-btn', function() {

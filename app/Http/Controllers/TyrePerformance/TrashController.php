@@ -308,6 +308,119 @@ class TrashController extends Controller
     }
 
     // =====================================================================
+    // BULK ACTIONS (TIER 1 & TIER 2)
+    // =====================================================================
+
+    public function bulkRestore(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        $type = $request->input('type', 'tyres');
+
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Tidak ada data yang dipilih.']);
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $model = $this->resolveModel($type, $id);
+            if ($model && $this->canAccess($model)) {
+                $model->restore();
+                $count++;
+            }
+        }
+
+        setLogActivity(Auth::id(), "Memulihkan $count data secara massal dari Trash", [
+            'action_type' => 'bulk_restore',
+            'module' => 'Backup & Restore',
+            'data_after' => ['type' => $type, 'count' => $count]
+        ]);
+
+        return response()->json(['success' => true, 'message' => "$count data berhasil dipulihkan."]);
+    }
+
+    public function bulkForceDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        $type = $request->input('type', 'tyres');
+
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Tidak ada data yang dipilih.']);
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $model = $this->resolveModel($type, $id);
+            if ($model && $this->canAccess($model)) {
+                \DB::table($model->getTable())
+                    ->where('id', $model->id)
+                    ->update(['permanent_deleted_at' => now()]);
+                $count++;
+            }
+        }
+
+        setLogActivity(Auth::id(), "Menghapus permanen (Tier 2) $count data secara massal", [
+            'action_type' => 'bulk_force_delete',
+            'module' => 'Backup & Restore',
+            'data_before' => ['type' => $type, 'count' => $count]
+        ]);
+
+        return response()->json(['success' => true, 'message' => "$count data telah dihapus permanen dari tampilan Anda."]);
+    }
+
+    public function adminBulkRestore(Request $request)
+    {
+        if (Auth::user()->role_id != 1) return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+
+        $ids = $request->input('ids', []);
+        $type = $request->input('type', 'tyres');
+
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Tidak ada data yang dipilih.']);
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $model = $this->resolveModel($type, $id, true);
+            if ($model) {
+                \DB::table($model->getTable())
+                    ->where('id', $model->id)
+                    ->update(['permanent_deleted_at' => null]);
+                $model->restore();
+                $count++;
+            }
+        }
+
+        setLogActivity(Auth::id(), "Super Admin memulihkan $count data secara massal dari Tier 2", [
+            'action_type' => 'admin_bulk_restore',
+            'module' => 'Backup & Restore',
+            'data_after' => ['type' => $type, 'count' => $count]
+        ]);
+
+        return response()->json(['success' => true, 'message' => "$count data berhasil dipulihkan ke sistem."]);
+    }
+
+    public function adminBulkPurge(Request $request)
+    {
+        if (Auth::user()->role_id != 1) return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+
+        $ids = $request->input('ids', []);
+        $type = $request->input('type', 'tyres');
+
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Tidak ada data yang dipilih.']);
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $model = $this->resolveModel($type, $id, true);
+            if ($model) {
+                $model->forceDelete();
+                $count++;
+            }
+        }
+
+        setLogActivity(Auth::id(), "Super Admin menghapus permanen (Hard Delete) $count data secara massal", [
+            'action_type' => 'admin_bulk_purge',
+            'module' => 'Backup & Restore',
+            'data_before' => ['type' => $type, 'count' => $count]
+        ]);
+
+        return response()->json(['success' => true, 'message' => "$count data telah dihapus permanen dari database."]);
+    }
+
+    // =====================================================================
     // HELPERS
     // =====================================================================
 

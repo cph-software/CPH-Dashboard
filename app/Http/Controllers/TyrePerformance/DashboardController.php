@@ -55,8 +55,11 @@ class DashboardController extends Controller
             $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
             $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
         } else {
-            // Default sesuai request: Mulai dari 1 Januari 2026 sampai hari ini
-            $startDate = Carbon::create(2026, 1, 1)->startOfDay();
+            // Auto-detect: ambil tanggal movement paling awal dari database
+            $earliestMovement = TyreMovement::orderBy('movement_date', 'asc')->value('movement_date');
+            $startDate = $earliestMovement 
+                ? Carbon::parse($earliestMovement)->startOfDay() 
+                : Carbon::now()->subYear()->startOfDay();
             $endDate = Carbon::now()->endOfDay();
         }
 
@@ -536,21 +539,32 @@ class DashboardController extends Controller
             return response()->json(['success' => false, 'message' => 'Brand ID is required']);
         }
 
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id ?? 0;
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+        $company = \App\Models\TyreCompany::find($companyId);
+        $measurementMode = $company->measurement_mode ?? 'BOTH';
+        $useHm = ($measurementMode === 'HM');
+        $lifetimeCol = $useHm ? 'total_lifetime_hm' : 'total_lifetime_km';
+        $avgAlias = $useHm ? 'avg_hm' : 'avg_km';
+
         // 1. Comparison by Pattern
         $byPattern = Tyre::select(
             'tyre_pattern_id',
-            DB::raw('AVG(total_lifetime_km) as avg_km'),
+            DB::raw("AVG({$lifetimeCol}) as {$avgAlias}"),
             DB::raw('COUNT(*) as tyre_count')
         )
             ->where('tyre_brand_id', $brandId)
-            ->where('total_lifetime_km', '>', 0)
+            ->where($lifetimeCol, '>', 0)
             ->groupBy('tyre_pattern_id')
             ->with('pattern:id,name')
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($avgAlias) {
                 return [
                     'label' => $item->pattern->name ?? 'Unknown',
-                    'avg_km' => round($item->avg_km, 0),
+                    'avg_km' => round($item->$avgAlias, 0),
                     'count' => $item->tyre_count,
                 ];
             });
@@ -558,18 +572,18 @@ class DashboardController extends Controller
         // 2. Comparison by Size
         $bySize = Tyre::select(
             'tyre_size_id',
-            DB::raw('AVG(total_lifetime_km) as avg_km'),
+            DB::raw("AVG({$lifetimeCol}) as {$avgAlias}"),
             DB::raw('COUNT(*) as tyre_count')
         )
             ->where('tyre_brand_id', $brandId)
-            ->where('total_lifetime_km', '>', 0)
+            ->where($lifetimeCol, '>', 0)
             ->groupBy('tyre_size_id')
             ->with('size:id,size')
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($avgAlias) {
                 return [
                     'label' => $item->size->size ?? 'Unknown',
-                    'avg_km' => round($item->avg_km, 0),
+                    'avg_km' => round($item->$avgAlias, 0),
                     'count' => $item->tyre_count,
                 ];
             });

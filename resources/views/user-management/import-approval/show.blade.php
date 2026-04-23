@@ -273,7 +273,7 @@
                                  </button>
                               </td>
                               <td class="small text-danger fw-bold" style="white-space: normal; min-width: 250px;">
-                                 @if(is_array($errors))
+                                 @if(is_array($errors) && !empty($errors))
                                     @foreach($errors as $err)
                                        <div class="mb-1"><i class="ri-close-circle-fill me-1"></i>{{ $err }}</div>
                                     @endforeach
