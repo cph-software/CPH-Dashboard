@@ -79,6 +79,22 @@ try {
         echo "✓ Melepas {$clearedPositions} ban dari posisi kendaraan\n";
     }
 
+    // 3.5 Bersihkan riwayat pemeriksaan/monitoring mandiri berdasarkan nomor seri ban
+    $tyreSerials = App\Models\Tyre::withoutGlobalScopes()->where('tyre_company_id', $companyId)->pluck('serial_number')->toArray();
+    if (!empty($tyreSerials)) {
+        DB::table('tyre_monitoring_check')->whereIn('serial_number', $tyreSerials)->delete();
+        DB::table('tyre_monitoring_installation')->whereIn('serial_number', $tyreSerials)->delete();
+        DB::table('tyre_monitoring_removal')->whereIn('serial_number', $tyreSerials)->delete();
+        DB::table('tyre_examination_images')->whereIn('serial_number', $tyreSerials)->delete();
+        DB::table('tyre_examination_details')->whereIn('serial_number', $tyreSerials)->delete();
+        
+        $examIds = DB::table('tyre_examinations')->where('tyre_company_id', $companyId)->pluck('id')->toArray();
+        if(!empty($examIds)){
+            DB::table('tyre_examinations')->whereIn('id', $examIds)->delete();
+        }
+        echo "✓ Membersihkan seluruh riwayat pemeriksaan mandiri yang terkait dengan ban\n";
+    }
+
     // 4. Hapus Ban (termasuk yang ada di tong sampah / soft deleted)
     $deletedTyres = DB::table('tyres')->where('tyre_company_id', $companyId)->delete();
     echo "✓ Menghapus total {$deletedTyres} data fisik ban (Tyre Master)\n";
