@@ -185,57 +185,72 @@
                            value="{{ old('hm_start', $currentHM) }}">
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Standar RTD Awal (Baru)</label>
+                        <label class="form-label fw-bold text-truncate w-100" title="Standar RTD Awal (Opsional)">Standar RTD <small class="text-muted fw-normal">(Opsional)</small></label>
                         <input type="number" name="original_rtd" class="form-control form-control-lg" step="0.1"
-                           required placeholder="Contoh: 14.5">
+                           placeholder="Otomatis dari Master">
                      </div>
-                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Brand Ban Umum</label>
-                        <select name="tyre_brand" id="tyre_brand" class="form-select select2" data-placeholder="-- Pilih Brand --">
-                           <option value=""></option>
-                           @foreach($brands as $b)
-                              <option value="{{ $b->brand_name }}" data-brand-id="{{ $b->id }}" {{ old('tyre_brand') == $b->brand_name ? 'selected' : '' }}>
-                                 {{ $b->brand_name }}
-                              </option>
-                           @endforeach
-                           @if(old('tyre_brand') && !$brands->contains('brand_name', old('tyre_brand')))
-                              <option value="{{ old('tyre_brand') }}" selected>{{ old('tyre_brand') }}</option>
-                           @endif
-                        </select>
-                     </div>
-                     <div class="col-md-4">
-                        <label class="form-label fw-bold">Ukuran Ban Umum</label>
-                        <select name="tyre_size" id="tyre_size" class="form-select select2" data-placeholder="-- Pilih Ukuran --">
-                           <option value=""></option>
-                           @foreach($sizes as $s)
-                              <option value="{{ $s->size }}" data-brand-id="{{ $s->tyre_brand_id }}" {{ old('tyre_size') == $s->size ? 'selected' : '' }}>
-                                 {{ $s->size }}
-                              </option>
-                           @endforeach
-                           @if(old('tyre_size') && !$sizes->contains('size', old('tyre_size')))
-                              <option value="{{ old('tyre_size') }}" selected>{{ old('tyre_size') }}</option>
-                           @endif
-                        </select>
-                     </div>
-                     <div class="col-md-4">
-                        <label class="form-label fw-bold">Pattern Umum</label>
-                        <select name="pattern" id="pattern" class="form-select select2" data-placeholder="-- Pilih Pattern --">
-                           <option value=""></option>
-                           @foreach($patterns as $p)
-                              <option value="{{ $p->name }}" data-brand-id="{{ $p->tyre_brand_id }}" {{ old('pattern') == $p->name ? 'selected' : '' }}>
-                                 {{ $p->brand->brand_name ?? '-' }} - {{ $p->name }}
-                              </option>
-                           @endforeach
-                           @if(old('pattern') && !$patterns->contains('name', old('pattern')))
-                              <option value="{{ old('pattern') }}" selected>{{ old('pattern') }}</option>
-                           @endif
-                        </select>
-                        <div class="mt-1">
-                           <small class="text-muted">
-                              <i class="ri-information-line"></i> Data tidak ada?
-                              <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20Monitoring%20(Brand/Size/Pattern)"
-                                 target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
-                           </small>
+                     <div class="col-12 mt-3">
+                        <div class="ps-4 py-3 border-start border-primary border-4 rounded-end" style="background-color: rgba(115, 103, 240, 0.04);">
+                           <div class="form-check form-switch mb-0">
+                              <input class="form-check-input cursor-pointer" type="checkbox" id="toggleUniformSpecs" {{ old('tyre_brand') || old('tyre_size') || old('pattern') ? 'checked' : '' }}>
+                              <label class="form-check-label fw-bold text-dark cursor-pointer" for="toggleUniformSpecs">
+                                 Gunakan Spesifikasi Ban Seragam (Bulk Input)
+                              </label>
+                              <div class="text-muted small mt-1">Aktifkan ini jika ban yang dipasang memiliki spesifikasi yang sama, agar Anda tidak perlu mengisinya satu per satu di tabel bawah.</div>
+                           </div>
+                           
+                           <div class="row g-3 mt-2 {{ old('tyre_brand') || old('tyre_size') || old('pattern') ? '' : 'd-none' }}" id="uniformSpecsContainer">
+                              <hr class="my-2 border-light">
+                              <div class="col-md-4">
+                                 <label class="form-label fw-bold">Brand Ban Umum</label>
+                                 <select name="tyre_brand" id="tyre_brand" class="form-select select2" data-placeholder="-- Pilih Brand --">
+                                    <option value=""></option>
+                                    @foreach($brands as $b)
+                                       <option value="{{ $b->brand_name }}" data-brand-id="{{ $b->id }}" {{ old('tyre_brand') == $b->brand_name ? 'selected' : '' }}>
+                                          {{ $b->brand_name }}
+                                       </option>
+                                    @endforeach
+                                    @if(old('tyre_brand') && !$brands->contains('brand_name', old('tyre_brand')))
+                                       <option value="{{ old('tyre_brand') }}" selected>{{ old('tyre_brand') }}</option>
+                                    @endif
+                                 </select>
+                              </div>
+                              <div class="col-md-4">
+                                 <label class="form-label fw-bold">Ukuran Ban Umum</label>
+                                 <select name="tyre_size" id="tyre_size" class="form-select select2" data-placeholder="-- Pilih Ukuran --">
+                                    <option value=""></option>
+                                    @foreach($sizes as $s)
+                                       <option value="{{ $s->size }}" data-brand-id="{{ $s->tyre_brand_id }}" {{ old('tyre_size') == $s->size ? 'selected' : '' }}>
+                                          {{ $s->size }}
+                                       </option>
+                                    @endforeach
+                                    @if(old('tyre_size') && !$sizes->contains('size', old('tyre_size')))
+                                       <option value="{{ old('tyre_size') }}" selected>{{ old('tyre_size') }}</option>
+                                    @endif
+                                 </select>
+                              </div>
+                              <div class="col-md-4">
+                                 <label class="form-label fw-bold">Pattern Umum</label>
+                                 <select name="pattern" id="pattern" class="form-select select2" data-placeholder="-- Pilih Pattern --">
+                                    <option value=""></option>
+                                    @foreach($patterns as $p)
+                                       <option value="{{ $p->name }}" data-brand-id="{{ $p->tyre_brand_id }}" {{ old('pattern') == $p->name ? 'selected' : '' }}>
+                                          {{ $p->brand->brand_name ?? '-' }} - {{ $p->name }}
+                                       </option>
+                                    @endforeach
+                                    @if(old('pattern') && !$patterns->contains('name', old('pattern')))
+                                       <option value="{{ old('pattern') }}" selected>{{ old('pattern') }}</option>
+                                    @endif
+                                 </select>
+                                 <div class="mt-1">
+                                    <small class="text-muted">
+                                       <i class="ri-information-line"></i> Data tidak ada?
+                                       <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20request%20penambahan%20Master%20Data%20Monitoring%20(Brand/Size/Pattern)"
+                                          target="_blank" class="text-primary fw-bold">Hubungi Admin</a>
+                                    </small>
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                      </div>
 
@@ -285,7 +300,7 @@
                                     $tyre = $assignedTyres->get($pos->id) ?? null;
                                     $rowId = $tyre ? $tyre->serial_number : 'pos_' . $pos->id;
                                  @endphp
-                                 <tr class="tyre-row" data-serial="{{ $tyre ? $tyre->serial_number : '' }}">
+                                 <tr class="tyre-row {{ $tyre ? '' : 'empty-position' }}" data-serial="{{ $tyre ? $tyre->serial_number : '' }}" data-otd="{{ $tyre && $tyre->initial_tread_depth > 0 ? $tyre->initial_tread_depth : '' }}">
                                     <td class="text-center fw-bold bg-light" style="font-size: 1.2rem;">
                                        {{ $pos->position_code }}</td>
                                     <td>
@@ -573,14 +588,24 @@
             });
          });
 
-         // PSI Apply All
+         // PSI Apply All — with visual feedback
          $(document).on('click', '#btn-apply-all-psi', function() {
+            let applied = 0;
+            const btn = $(this);
             $('.tyre-row').each(function() {
                const rec = $(this).find('input[name$="[inf_press_recommended]"]').val();
                if (rec) {
-                  $(this).find('input[name$="[inf_press_actual]"]').val(rec);
+                  $(this).find('input[name$="[inf_press_actual]"]').val(rec).addClass('border-success');
+                  applied++;
                }
             });
+            if (applied > 0) {
+               btn.removeClass('btn-primary').addClass('btn-success').html('<i class="ri ri-check-line"></i> ' + applied + ' Applied!');
+               setTimeout(() => {
+                  btn.removeClass('btn-success').addClass('btn-primary').html('<i class="ri ri-arrow-down-line"></i> All Act');
+                  $('.tyre-row input[name$="[inf_press_actual]"]').removeClass('border-success');
+               }, 2000);
+            }
          });
 
          // Assembly Date Apply All
@@ -589,8 +614,22 @@
             $('input[name$="[date_assembly]"]').val(today);
          });
 
+         // Toggle Uniform Specs (Bulk Input)
+         $('#toggleUniformSpecs').on('change', function() {
+            if ($(this).is(':checked')) {
+               $('#uniformSpecsContainer').removeClass('d-none').hide().slideDown(300);
+            } else {
+               $('#uniformSpecsContainer').slideUp(300, function() {
+                  $(this).addClass('d-none');
+                  // Clear values when hiding
+                  $('#tyre_brand, #tyre_size, #pattern').val('').trigger('change');
+               });
+            }
+         });
+
          const calculateRow = (row) => {
-            const originalRtd = parseFloat($('input[name="original_rtd"]').val()) || 0;
+            // Per-tyre OTD: prioritize data-otd attribute, then global fallback
+             const originalRtd = parseFloat(row.attr("data-otd")) || parseFloat($('input[name="original_rtd"]').val()) || 0;
             let sum = 0;
             let count = 0;
 
@@ -642,7 +681,7 @@
                  Swal.fire({
                      icon: 'error',
                      title: 'Validasi Gagal',
-                     text: 'Harap lengkapi semua isian wajib (seperti Standar RTD Awal) sebelum Confirm.',
+                     text: 'Harap lengkapi semua isian wajib sebelum Confirm.',
                      confirmButtonText: 'Baik'
                  });
                  $(this).addClass('was-validated');

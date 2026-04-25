@@ -38,7 +38,8 @@ class TyreMovementController extends Controller
     public function index()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
-            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->withCount('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
         return view('tyre-performance.movement.index', compact('kendaraans'));
     }
@@ -46,7 +47,8 @@ class TyreMovementController extends Controller
     public function pemasangan()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
-            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->withCount('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
         // Removed eager loading of all tyres to avoid memory bloat
         // Available tyres will be fetched via AJAX search
@@ -95,7 +97,8 @@ class TyreMovementController extends Controller
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
             ->whereHas('tyres') // Only vehicles with tyres
-            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->withCount('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
         $failureCodes = TyreFailureCode::where('status', 'Active')->get();
         $locations = \App\Models\TyreLocation::all();
@@ -107,7 +110,8 @@ class TyreMovementController extends Controller
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
             ->whereHas('tyres')
-            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->withCount('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
         $locations = \App\Models\TyreLocation::all();
         $segments = \App\Models\TyreSegment::where('status', 'Active')->get();

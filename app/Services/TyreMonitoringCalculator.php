@@ -9,7 +9,7 @@ class TyreMonitoringCalculator
     /**
      * Calculate monitoring metrics for a specific check record.
      *
-     * @param float $originalRtd
+     * @param float $originalRtd - Baseline RTD at session start (NOT brand-new OTD)
      * @param string $installDate
      * @param object|array $checkData
      * @param string $measurementMode - 'KM', 'HM', or 'BOTH'
@@ -38,16 +38,24 @@ class TyreMonitoringCalculator
             $primaryOp = $operationMileage;
         }
         
-        // Threshold: If wear is less than 0.1mm, we don't calculate performance yet
-        // to avoid "immortal tyre" numbers (huge values)
+        // Minimum usable tread depth (safety limit)
+        $minSafeRtd = 3;
+        
+        // Remaining usable tread from CURRENT state to safety limit
+        $remainingTread = max(0, $avgRtd - $minSafeRtd);
+        
+        // Threshold: If wear is less than 0.1mm, we don't have enough data yet
         if ($wearAmount < 0.1) {
             $perMm = 0;
-            $projLife = 0;
-            $wornPct = ($wearAmount > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
+            $projRemainingLife = 0;
+            $wornPct = ($wearAmount > 0 && $originalRtd > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
         } else {
-            $wornPct = ($wearAmount / $originalRtd) * 100;
+            $wornPct = ($originalRtd > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
             $perMm = $primaryOp / $wearAmount;
-            $projLife = $perMm * ($originalRtd - 3);
+            
+            // REMAINING life = rate × remaining usable tread
+            // This DECREASES as tyre wears down (intuitive for operators)
+            $projRemainingLife = $perMm * $remainingTread;
         }
         
         $installDateCarbon = Carbon::parse($installDate);
@@ -63,7 +71,7 @@ class TyreMonitoringCalculator
         $daysSinceAsm = $asmDateCarbon->diffInDays($checkDateCarbon);
 
         $perDay = $primaryOp / $daysSinceInstall;
-        $projLifeDay = ($perDay > 0) ? ($projLife / $perDay) : 0;
+        $projRemainingDays = ($perDay > 0) ? ($projRemainingLife / $perDay) : 0;
 
         // Build result with mode-aware keys
         $result = [
@@ -71,27 +79,27 @@ class TyreMonitoringCalculator
             'worn_pct' => round($wornPct, 1),
             'days_elapsed' => $daysSinceAsm,
             'months_elapsed' => round($daysSinceAsm / 30, 1),
-            'proj_life_day' => round($projLifeDay, 0),
-            'proj_life_month' => round($projLifeDay / 30, 1),
+            'proj_life_day' => round($projRemainingDays, 0),
+            'proj_life_month' => round($projRemainingDays / 30, 1),
         ];
 
         if ($measurementMode === 'HM') {
             $result['hm_per_mm'] = round($perMm, 1);
-            $result['proj_life_hm'] = round($projLife, 0);
+            $result['proj_life_hm'] = round($projRemainingLife, 0);
             $result['hm_per_day'] = round($perDay, 1);
-            // Also include KM keys with 0-fallback for backward compat
+            // Also include KM keys with same values for backward compat
             $result['km_per_mm'] = round($perMm, 1);
-            $result['proj_life_km'] = round($projLife, 0);
+            $result['proj_life_km'] = round($projRemainingLife, 0);
             $result['km_per_day'] = round($perDay, 1);
         } else {
             $result['km_per_mm'] = round($perMm, 1);
-            $result['proj_life_km'] = round($projLife, 0);
+            $result['proj_life_km'] = round($projRemainingLife, 0);
             $result['km_per_day'] = round($perDay, 1);
             // Also include HM keys for BOTH mode
             if ($measurementMode === 'BOTH' && $operationHm > 0) {
                 $hmPerMm = ($wearAmount >= 0.1) ? ($operationHm / $wearAmount) : 0;
                 $result['hm_per_mm'] = round($hmPerMm, 1);
-                $result['proj_life_hm'] = round($hmPerMm * ($originalRtd - 3), 0);
+                $result['proj_life_hm'] = round($hmPerMm * $remainingTread, 0);
                 $result['hm_per_day'] = round($operationHm / $daysSinceInstall, 1);
             }
         }

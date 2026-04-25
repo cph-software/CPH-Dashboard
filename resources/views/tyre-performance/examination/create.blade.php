@@ -120,7 +120,7 @@
                      <select name="vehicle_id" id="vehicle_id" class="form-select select2" required>
                         <option value="">-- Pilih Kendaraan --</option>
                         @foreach ($kendaraans as $v)
-                           <option value="{{ $v->id }}">{{ $v->no_polisi }} / {{ $v->kode_kendaraan }}</option>
+                           <option value="{{ $v->id }}">{{ $v->no_polisi }} / {{ $v->kode_kendaraan }} - {{ $v->tyre_capacity_label }}</option>
                         @endforeach
                      </select>
                   </div>

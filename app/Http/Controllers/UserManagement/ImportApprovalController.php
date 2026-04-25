@@ -69,8 +69,9 @@ class ImportApprovalController extends Controller
     {
         $batch = $this->scopedQuery()->findOrFail($id);
         
-        if ($batch->status !== 'Pending') {
-            return redirect()->back()->with('error', 'Batch ini sudah diproses.');
+        $pendingCount = $batch->items()->where('status', 'Pending')->count();
+        if ($batch->status !== 'Pending' && $pendingCount === 0) {
+            return redirect()->back()->with('error', 'Batch ini sudah diproses dan tidak ada data Pending.');
         }
 
         // Process Data immediately (for now, later can be queued)
@@ -92,6 +93,18 @@ class ImportApprovalController extends Controller
                 $msg = 'Batch berhasil disetujui sepenuhnya dan semua data telah diproses.';
             } else {
                 $msg = 'Sebagian data berhasil disetujui. Terdapat ' . $remainingPending . ' baris yang masih perlu perbaikan dan berstatus Pending.';
+            }
+
+            // --- Send Notification to Submitter ---
+            try {
+                if ($batch->user) {
+                    $approverName = auth()->user()->display_name;
+                    $actionUrl = route('import-approval.show', $batch->id); // Can point to history or same show page
+                    $statusName = ($remainingPending === 0) ? 'Approved' : 'Partially Approved';
+                    \Illuminate\Support\Facades\Notification::send($batch->user, new \App\Notifications\ApprovalStatusNotification('Import ' . $batch->module, $statusName, $approverName, $actionUrl));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Import Approved Notification: " . $e->getMessage());
             }
 
             setLogActivity(auth()->id(), "Menyetujui dan memproses import batch #$id ({$batch->module})", [
@@ -1024,6 +1037,17 @@ class ImportApprovalController extends Controller
             'notes' => $request->notes
         ]);
 
+        // --- Send Notification to Submitter ---
+        try {
+            if ($batch->user) {
+                $approverName = auth()->user()->display_name;
+                $actionUrl = route('import-approval.show', $batch->id);
+                \Illuminate\Support\Facades\Notification::send($batch->user, new \App\Notifications\ApprovalStatusNotification('Import ' . $batch->module, 'Rejected', $approverName, $actionUrl, $request->notes));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send Import Rejected Notification: " . $e->getMessage());
+        }
+
         setLogActivity(auth()->id(), "Menolak import batch #$id ({$batch->module})", [
             'module' => 'Import Approval',
             'batch_id' => $id,
@@ -1051,6 +1075,9 @@ class ImportApprovalController extends Controller
         $data['_validation'] = $validation;
 
         $item->data = $data;
+        if ($validation['is_valid']) {
+            $item->status = 'Pending';
+        }
         $item->save();
 
         return response()->json([
@@ -1174,8 +1201,26 @@ class ImportApprovalController extends Controller
 
         // ── 5. VALIDASI POSISI BAN (P4) ──
         $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
-        if ($installDate && !empty($unitCode) && empty(trim((string)($positionCode ?? '')))) {
-            $warnings[] = "Posisi Ban tidak diisi. Ban akan dipasang tanpa info posisi.";
+        // Validasi posisi harus jalan baik untuk format Dual (pemasangan_tanggal) 
+        // MAUPUN format Single Event (movement_date + movement_type=Installation)
+        $needsPositionCheck = $installDate || $isInstallation || $hasSingleMovementDate;
+        
+        if ($needsPositionCheck && !empty($unitCode)) {
+            if (empty(trim((string)($positionCode ?? '')))) {
+                $warnings[] = "Posisi Ban tidak diisi. Ban akan dipasang tanpa info posisi.";
+            } else {
+                $vehicle = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                    ->where('kode_kendaraan', strtoupper($unitCode))
+                    ->first();
+                if ($vehicle) {
+                    $resolvedPosId = $this->resolvePositionId($positionCode, $vehicle);
+                    if (!$resolvedPosId) {
+                        $configName = \Illuminate\Support\Facades\DB::table('tyre_position_configurations')
+                            ->where('id', $vehicle->tyre_position_configuration_id)->value('name') ?? 'Unknown';
+                        $errors[] = "Posisi '{$positionCode}' tidak valid untuk unit '{$unitCode}' (Config: {$configName}). Periksa konfigurasi kendaraan.";
+                    }
+                }
+            }
         }
 
         return [
@@ -1222,6 +1267,22 @@ class ImportApprovalController extends Controller
                 if ($baseSearch) {
                     $q->orWhere('position_code', 'LIKE', $baseSearch . '/%');
                     $q->orWhere('position_code', $baseSearch); // if no seq
+                    
+                    // Handle standard config reversals (FL vs LF, FR vs RF)
+                    if ($baseSearch === 'LF') {
+                        $q->orWhere('position_code', 'FL');
+                    } elseif ($baseSearch === 'RF') {
+                        $q->orWhere('position_code', 'FR');
+                    }
+                }
+                
+                // Handle cases where they input FL/FR directly
+                if ($searchCode === 'FL') {
+                    $q->orWhere('position_code', 'LIKE', 'LF/%');
+                    $q->orWhere('position_code', 'LF');
+                } elseif ($searchCode === 'FR') {
+                    $q->orWhere('position_code', 'LIKE', 'RF/%');
+                    $q->orWhere('position_code', 'RF');
                 }
 
                 // Match by numeric display order if provided

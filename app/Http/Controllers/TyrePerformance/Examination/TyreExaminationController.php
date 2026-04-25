@@ -38,7 +38,8 @@ class TyreExaminationController extends Controller
     public function create()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
-            ->select('id', 'kode_kendaraan', 'no_polisi')
+            ->withCount('tyres')
+            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
         $locations = TyreLocation::all();
         return view('tyre-performance.examination.create', compact('kendaraans', 'locations'));
@@ -230,6 +231,20 @@ class TyreExaminationController extends Controller
 
             DB::commit();
 
+            // --- Send Notification to Approvers if Pending ---
+            if ($approvalStatus === 'Pending') {
+                try {
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Examination', 'update');
+                    if ($approvers->count() > 0) {
+                        $submitterName = auth()->user()->display_name;
+                        $actionUrl = route('examination.show', $examination->id);
+                        \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Tyre Examination', $submitterName, $actionUrl));
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send Tyre Examination Notification: " . $e->getMessage());
+                }
+            }
+
             setLogActivity($user->id, 'Membuat pemeriksaan ban: ' . $vehicleCode, [
                 'action_type' => 'create',
                 'module' => 'Examination',
@@ -319,6 +334,21 @@ class TyreExaminationController extends Controller
             }
 
             DB::commit();
+
+            // --- Send Notification to Submitter ---
+            try {
+                if ($examination->created_by) {
+                    $submitter = \App\Models\User::find($examination->created_by);
+                    if ($submitter) {
+                        $approverName = auth()->user()->display_name;
+                        $actionUrl = route('examination.show', $examination->id);
+                        \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Tyre Examination', 'Approved', $approverName, $actionUrl));
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Examination Approved Notification: " . $e->getMessage());
+            }
+
             return response()->json(['success' => true, 'message' => 'Pemeriksaan telah disetujui.']);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -335,6 +365,20 @@ class TyreExaminationController extends Controller
             'approval_status' => 'Rejected',
             'reject_reason' => $request->reason,
         ]);
+
+        // --- Send Notification to Submitter ---
+        try {
+            if ($examination->created_by) {
+                $submitter = \App\Models\User::find($examination->created_by);
+                if ($submitter) {
+                    $approverName = auth()->user()->display_name;
+                    $actionUrl = route('examination.show', $examination->id);
+                    \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Tyre Examination', 'Rejected', $approverName, $actionUrl, $request->reason));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send Examination Rejected Notification: " . $e->getMessage());
+        }
 
         return response()->json(['success' => true, 'message' => 'Pemeriksaan telah ditolak.']);
     }
@@ -367,7 +411,7 @@ class TyreExaminationController extends Controller
                 'id' => $row->id,
                 'date' => Carbon::parse($row->examination_date)->format('d/m/Y'),
                 'vehicle' => $row->vehicle->kode_kendaraan ?? '-',
-                'odometer' => number_format($row->odometer, 0),
+                'odometer' => $row->hour_meter > 0 ? number_format($row->hour_meter, 0) . ' HM' : number_format($row->odometer, 0) . ' KM',
                 'tyre_man' => $row->tyre_man ?? '-',
                 'status' => $row->approval_status ?? 'Pending',
                 'type' => $row->exam_type ?? 'Customer',
@@ -417,7 +461,10 @@ class TyreExaminationController extends Controller
             'details.tyre.pattern',
             'details.tyre.size'
         ])->findOrFail($id);
-        return view('tyre-performance.examination.show', compact('exam'));
+        
+        $images = TyreExaminationImage::where('examination_id', $id)->get()->groupBy('serial_number');
+        
+        return view('tyre-performance.examination.show', compact('exam', 'images'));
     }
 
     public function exportPdf(Request $request, $id)
@@ -432,8 +479,10 @@ class TyreExaminationController extends Controller
             'details.tyre.size'
         ])->findOrFail($id);
 
+        $images = TyreExaminationImage::where('examination_id', $id)->get()->groupBy('serial_number');
+
         if (class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
-            $pdf = Pdf::loadView('tyre-performance.examination.pdf', compact('exam'))
+            $pdf = Pdf::loadView('tyre-performance.examination.pdf', compact('exam', 'images'))
                 ->setPaper('a5', 'landscape');
 
             $filename = 'Examination-Form-' . $exam->vehicle->kode_kendaraan . '-' . $exam->examination_date . '.pdf';
@@ -445,7 +494,7 @@ class TyreExaminationController extends Controller
             return $pdf->download($filename);
         }
 
-        return view('tyre-performance.examination.pdf', compact('exam'));
+        return view('tyre-performance.examination.pdf', compact('exam', 'images'));
     }
 
     public function uploadImage(Request $request)

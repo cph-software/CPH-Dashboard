@@ -2,6 +2,32 @@
 
 @section('title', 'Review Detail Import')
 
+@php
+    $readyItems = collect();
+    $warningItems = collect();
+    $attentionItems = collect();
+    $headers = [];
+
+    if ($batch->items->count() > 0) {
+        $headers = array_diff(array_keys($batch->items->first()->data), ['_validation']);
+        
+        foreach ($batch->items as $item) {
+            $validation = $item->data['_validation'] ?? null;
+            $is_valid = $validation['is_valid'] ?? ($item->status === 'Success' || $item->status === 'Pending');
+            $has_warnings = !empty($validation['warnings'] ?? []);
+            if ($item->status === 'Failed') $is_valid = false;
+            
+            if (!$is_valid) {
+                $attentionItems->push($item);
+            } else if ($has_warnings) {
+                $warningItems->push($item);
+            } else {
+                $readyItems->push($item);
+            }
+        }
+    }
+@endphp
+
 @section('content')
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="row align-items-center mb-4 g-3">
@@ -14,7 +40,7 @@
             <p class="text-muted mb-0 small">Review data mentah sebelum memproses ke database utama.</p>
          </div>
          <div class="col-md-4 text-md-end">
-            @if ($batch->status === 'Pending' && auth()->user()->hasPermission('Import Approval', 'update'))
+            @if (($batch->status === 'Pending' || $readyItems->count() > 0 || $warningItems->count() > 0) && auth()->user()->hasPermission('Import Approval', 'update'))
                <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST" class="d-inline" id="approveForm">
                   @csrf
                   <button type="submit" class="btn btn-success me-2" id="btnApprove"
@@ -68,32 +94,7 @@
          </div>
       </div>
 
-      {{-- Data Table --}}
-      @php
-          $readyItems = collect();
-          $warningItems = collect();
-          $attentionItems = collect();
-          $headers = [];
-
-          if ($batch->items->count() > 0) {
-              $headers = array_diff(array_keys($batch->items->first()->data), ['_validation']);
-              
-              foreach ($batch->items as $item) {
-                  $validation = $item->data['_validation'] ?? null;
-                  $is_valid = $validation['is_valid'] ?? ($item->status === 'Success' || $item->status === 'Pending');
-                  $has_warnings = !empty($validation['warnings'] ?? []);
-                  if ($item->status === 'Failed') $is_valid = false;
-                  
-                  if (!$is_valid) {
-                      $attentionItems->push($item);
-                  } else if ($has_warnings) {
-                      $warningItems->push($item);
-                  } else {
-                      $readyItems->push($item);
-                  }
-              }
-          }
-      @endphp
+      {{-- Data Table Section --}}
 
       {{-- Summary Cards --}}
       <div class="row mb-4 g-3">
@@ -277,8 +278,11 @@
                                     @foreach($errors as $err)
                                        <div class="mb-1"><i class="ri-close-circle-fill me-1"></i>{{ $err }}</div>
                                     @endforeach
-                                 @else
-                                    <div><i class="ri-close-circle-fill me-1"></i>{{ $errorMsg }}</div>
+                                 @endif
+                                 @if(!empty($item->error_message))
+                                    <div class="mb-1 text-warning"><i class="ri-error-warning-fill me-1"></i>{{ $item->error_message }}</div>
+                                 @elseif(empty($errors))
+                                    <div><i class="ri-close-circle-fill me-1"></i>Kesalahan Data</div>
                                  @endif
                               </td>
                               

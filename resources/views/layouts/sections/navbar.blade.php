@@ -176,18 +176,49 @@
                   badge.style.display = 'block';
                   list.innerHTML = '';
                   data.data.forEach(notif => {
+                     // Define styling based on status
+                     let textColor = 'text-primary';
+                     let iconClass = 'ri-notification-3-line';
+                     
+                     switch(notif.status) {
+                        case 'pending':
+                           textColor = 'text-warning';
+                           iconClass = 'ri-time-line';
+                           break;
+                        case 'approved':
+                           textColor = 'text-success';
+                           iconClass = 'ri-checkbox-circle-line';
+                           break;
+                        case 'rejected':
+                           textColor = 'text-danger';
+                           iconClass = 'ri-close-circle-line';
+                           break;
+                        case 'info':
+                           textColor = 'text-info';
+                           iconClass = 'ri-information-line';
+                           break;
+                        default: // for old error notifications
+                           if (notif.module && notif.module.toLowerCase().includes('error')) {
+                              textColor = 'text-danger';
+                              iconClass = 'ri-error-warning-line';
+                           }
+                     }
+
                      // Extract warning list
                      let errorsHtml = '';
                      if (notif.details && notif.details['Pesan Error']) {
                         let errs = Array.isArray(notif.details['Pesan Error']) ? notif.details['Pesan Error'] : [notif.details['Pesan Error']];
                         errorsHtml = `<ul class="ps-3 mb-0 mt-1 small text-danger" style="font-size: 0.75rem;">` + errs.map(e => `<li>${e}</li>`).join('') + `</ul>`;
                      }
+                     if (notif.details && notif.details['reject_reason']) {
+                        errorsHtml += `<div class="mt-1 small text-danger fw-bold" style="font-size: 0.75rem;">Alasan Penolakan: <span class="fw-normal">${notif.details['reject_reason']}</span></div>`;
+                     }
 
                      list.innerHTML += `
-                        <li class="list-group-item border-bottom notification-item p-3" data-id="${notif.id}">
+                        <li class="list-group-item border-bottom notification-item p-3" data-id="${notif.id}" data-url="${notif.action_url}">
                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
-                              <h6 class="mb-0 text-danger fw-bold" style="font-size: 0.85rem;">
-                                 <i class="ri-error-warning-line me-1 align-middle"></i>${notif.module}
+                              <h6 class="mb-0 ${textColor} fw-bold" style="font-size: 0.85rem;">
+                                 <i class="${iconClass} me-1 align-middle"></i>${notif.module}
                               </h6>
                               <small class="text-muted" style="font-size: 0.7rem;">${notif.created_at}</small>
                            </div>
@@ -198,18 +229,25 @@
                      `;
                   });
                   
-                  // Add click listeners to mark as read
+                  // Add click listeners to mark as read and redirect
                   document.querySelectorAll('.notification-item').forEach(item => {
                      item.addEventListener('click', function(e) {
-                         // Prevent default if acting on children, but we want the whole surface clickable
                          const id = this.getAttribute('data-id');
+                         const url = this.getAttribute('data-url');
+                         
                          fetch(`/notifications/${id}/read`, {
                              method: 'POST',
                              headers: {
                                  'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                  'Accept': 'application/json'
                              }
-                         }).then(() => fetchNotifications());
+                         }).then(() => {
+                             if (url && url !== '#') {
+                                 window.location.href = url;
+                             } else {
+                                 fetchNotifications();
+                             }
+                         });
                      });
                   });
                } else {

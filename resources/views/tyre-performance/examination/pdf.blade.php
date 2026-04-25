@@ -193,8 +193,9 @@
                <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                <td>{{ $detail->remarks ?: '-' }}</td>
                <td class="text-center">
-                  @if ($detail->photo)
-                     <img src="{{ public_path('storage/' . $detail->photo) }}"
+                  @if (isset($images[$tyre->serial_number]) && count($images[$tyre->serial_number]) > 0)
+                     @php $photo = $images[$tyre->serial_number]->first(); @endphp
+                     <img src="{{ public_path('storage/' . $photo->image_path) }}"
                         style="width: 30px; height: 30px; object-fit: cover;">
                   @else
                      -

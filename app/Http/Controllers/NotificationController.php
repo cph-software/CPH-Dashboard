@@ -24,6 +24,8 @@ class NotificationController extends Controller
                 'message'    => $data['message'] ?? 'Notification',
                 'module'     => $data['module'] ?? '',
                 'user_name'  => $data['user_name'] ?? 'System',
+                'status'     => $data['status'] ?? 'info',
+                'action_url' => $data['action_url'] ?? '#',
                 'created_at' => $notif->created_at->diffForHumans(),
                 'time_raw'   => $notif->created_at->toIso8601String(),
                 'details'    => $data['details'] ?? []

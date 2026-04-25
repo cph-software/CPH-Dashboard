@@ -33,7 +33,7 @@
                   <tr>
                      <th>Tanggal</th>
                      <th>Unit/Kendaraan</th>
-                     <th>Odometer (KM)</th>
+                     <th>Odometer / HM</th>
                      <th>Pemeriksa (Tyre Man)</th>
                      <th>Tipe Input</th>
                      <th>Status</th>

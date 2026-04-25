@@ -72,7 +72,8 @@ class KendaraanController extends Controller
      */
     public function data(Request $request)
     {
-        $query = MasterImportKendaraan::with(['tyrePositionConfiguration', 'segment', 'company']);
+        $query = MasterImportKendaraan::with(['tyrePositionConfiguration', 'segment', 'company'])
+            ->withCount('tyres');
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {

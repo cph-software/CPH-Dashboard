@@ -242,7 +242,14 @@
                               <th style="width: 100px;">RTD 4</th>
                               <th style="width: 80px;">Docs</th>
                               <th style="width: 180px;">Kondisi</th>
-                              <th>Rekomendasi & Catatan</th>
+                              <th>
+                                 <div class="d-flex justify-content-between align-items-center">
+                                    <span>Rekomendasi & Catatan</span>
+                                    <div class="form-check form-switch m-0 ms-2" data-bs-toggle="tooltip" title="Samakan semua catatan">
+                                       <input class="form-check-input" type="checkbox" id="syncNotes">
+                                    </div>
+                                 </div>
+                              </th>
                            </tr>
                         </thead>
                         <tbody>
@@ -279,21 +286,33 @@
                                     <div class="input-group input-group-sm">
                                        <span class="input-group-text text-primary fw-bold">Act</span>
                                        <input type="number" name="checks[{{ $serial }}][psi_actual]"
-                                          class="form-control border-primary">
+                                          class="form-control border-primary @error('checks.'.$serial.'.psi_actual') is-invalid @enderror" value="{{ old('checks.'.$serial.'.psi_actual') }}">
                                     </div>
                                  </td>
-                                 <td><input type="number" name="checks[{{ $serial }}][rtd_1]"
-                                       class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth }}"></td>
-                                 <td><input type="number" name="checks[{{ $serial }}][rtd_2]"
-                                       class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth }}"></td>
-                                 <td><input type="number" name="checks[{{ $serial }}][rtd_3]"
-                                       class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth }}"></td>
-                                 <td><input type="number" name="checks[{{ $serial }}][rtd_4]"
-                                       class="form-control rtd-input" step="0.1"
-                                       value="{{ $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth }}"></td>
+                                 <td>
+                                    <input type="number" name="checks[{{ $serial }}][rtd_1]"
+                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_1') is-invalid @enderror" step="0.1"
+                                       value="{{ old('checks.'.$serial.'.rtd_1', $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth) }}">
+                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth ?? '-' }}</small>
+                                 </td>
+                                 <td>
+                                    <input type="number" name="checks[{{ $serial }}][rtd_2]"
+                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_2') is-invalid @enderror" step="0.1"
+                                       value="{{ old('checks.'.$serial.'.rtd_2', $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth) }}">
+                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth ?? '-' }}</small>
+                                 </td>
+                                 <td>
+                                    <input type="number" name="checks[{{ $serial }}][rtd_3]"
+                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_3') is-invalid @enderror" step="0.1"
+                                       value="{{ old('checks.'.$serial.'.rtd_3', $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth) }}">
+                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth ?? '-' }}</small>
+                                 </td>
+                                 <td>
+                                    <input type="number" name="checks[{{ $serial }}][rtd_4]"
+                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_4') is-invalid @enderror" step="0.1"
+                                       value="{{ old('checks.'.$serial.'.rtd_4', $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth) }}">
+                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth ?? '-' }}</small>
+                                 </td>
                                  <td class="text-center">
                                     <button type="button" class="btn btn-icon btn-outline-info tyre-doc-btn"
                                        data-serial="{{ $serial }}"
@@ -302,17 +321,17 @@
                                     </button>
                                  </td>
                                  <td>
-                                    <select name="checks[{{ $serial }}][condition]" class="form-select fw-bold">
-                                       <option value="ok" class="text-success">OK</option>
-                                       <option value="warning" class="text-warning">Warning</option>
-                                       <option value="critical" class="text-danger">Critical</option>
+                                    <select name="checks[{{ $serial }}][condition]" class="form-select fw-bold @error('checks.'.$serial.'.condition') is-invalid @enderror">
+                                       <option value="ok" class="text-success" {{ old('checks.'.$serial.'.condition') == 'ok' ? 'selected' : '' }}>OK</option>
+                                       <option value="warning" class="text-warning" {{ old('checks.'.$serial.'.condition') == 'warning' ? 'selected' : '' }}>Warning</option>
+                                       <option value="critical" class="text-danger" {{ old('checks.'.$serial.'.condition') == 'critical' ? 'selected' : '' }}>Critical</option>
                                     </select>
                                  </td>
                                  <td>
                                     <input type="text" name="checks[{{ $serial }}][recommendation]"
-                                       class="form-control form-control-sm mb-1" placeholder="Rekomendasi...">
+                                       class="form-control form-control-sm mb-1 rec-input @error('checks.'.$serial.'.recommendation') is-invalid @enderror" placeholder="Rekomendasi..." value="{{ old('checks.'.$serial.'.recommendation') }}">
                                     <input type="text" name="checks[{{ $serial }}][notes]"
-                                       class="form-control form-control-sm" placeholder="Catatan...">
+                                       class="form-control form-control-sm notes-input @error('checks.'.$serial.'.notes') is-invalid @enderror" placeholder="Catatan..." value="{{ old('checks.'.$serial.'.notes') }}">
                                  </td>
                               </tr>
                            @endforeach
@@ -433,6 +452,43 @@
          // Initial sync for PSI
          if (globalRetase.val()) globalRetase.trigger('input');
 
+         // Auto-sync notes and recommendations
+         function syncNotesAndRecommendations() {
+            if ($('#syncNotes').is(':checked')) {
+               const $firstRow = $('#check-table tbody tr').first();
+               const recValue = $firstRow.find('.rec-input').val();
+               const notesValue = $firstRow.find('.notes-input').val();
+               
+               $('#check-table tbody tr').not(':first').each(function() {
+                  if (recValue !== undefined) $(this).find('.rec-input').val(recValue);
+                  if (notesValue !== undefined) $(this).find('.notes-input').val(notesValue);
+               });
+            }
+         }
+
+         // Sinkronisasi saat toggle baru saja dicentang
+         $('#syncNotes').on('change', function() {
+            syncNotesAndRecommendations();
+         });
+
+         // Sinkronisasi saat ada input langsung
+         $(document).on('input', '.notes-input, .rec-input', function() {
+            if ($('#syncNotes').is(':checked')) {
+               const $row = $(this).closest('tr');
+               // Hanya copy jika user mengetik di baris pertama (index 0)
+               if ($row.index() === 0) {
+                  const isNotes = $(this).hasClass('notes-input');
+                  const fieldClass = isNotes ? '.notes-input' : '.rec-input';
+                  const value = $(this).val();
+                  
+                  // Update seluruh baris di bawahnya
+                  $('#check-table tbody tr').not(':first').each(function() {
+                     $(this).find(fieldClass).val(value);
+                  });
+               }
+            }
+         });
+
          // --- IMAGE UPLOAD LOGIC ---
          let currentTarget = null; // { type, serial }
          const uploadedLog = {}; // Track what's uploaded: { serial: { type: url } }
@@ -547,7 +603,8 @@
             for (const type of generalPhotosMandatory) {
                const preview = $(`#preview-${type} img`);
                if (preview.length === 0) {
-                  alert(`[BUKTI KEHADIRAN WAJIB]\nSilakan upload Foto KM (Odometer) unit ini terlebih dahulu di bagian atas.`);
+                  const requiredPhotoLabel = measurementMode === 'HM' ? 'Foto HM (Hour Meter)' : 'Foto KM (Odometer)';
+                  alert(`[BUKTI KEHADIRAN WAJIB]\nSilakan upload ${requiredPhotoLabel} unit ini terlebih dahulu di bagian atas.`);
                   e.preventDefault();
                   return false;
                }

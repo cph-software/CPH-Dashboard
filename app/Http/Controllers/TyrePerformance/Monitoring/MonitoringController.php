@@ -56,7 +56,7 @@ class MonitoringController extends Controller
             $q->where('status', 'active');
         }])->latest()->get();
 
-        $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')->get();
+        $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')->withCount('tyres')->get();
         $measurementMode = $this->getMeasurementMode();
         
         return view('tyre-performance.monitoring.index', compact('vehicles', 'masterVehicles', 'measurementMode'));
@@ -386,8 +386,8 @@ class MonitoringController extends Controller
         $rules = [
             'vehicle_id' => 'required|exists:tyre_monitoring_vehicle,vehicle_id',
             'install_date' => 'required|date',
-            'tyre_size' => 'required|string',
-            'original_rtd' => 'required|numeric',
+            'tyre_size' => 'nullable|string',
+            'original_rtd' => 'nullable|numeric',
         ];
 
         // Conditional validation based on measurement mode
@@ -407,6 +407,20 @@ class MonitoringController extends Controller
         $vehicle = TyreMonitoringVehicle::findOrFail($request->vehicle_id);
         $data = $request->except('checks');
         
+        // Ensure non-null defaults for DB columns that don't allow NULL
+        $data['original_rtd'] = $data['original_rtd'] ?? 0;
+        
+        // Auto-detect tyre_size from installed tyres if not provided
+        if (empty($data['tyre_size']) || $data['tyre_size'] === '-') {
+            $firstTyreWithSize = Tyre::where('current_vehicle_id', $vehicle->master_vehicle_id)
+                ->whereHas('size')
+                ->with('size')
+                ->first();
+            $data['tyre_size'] = $firstTyreWithSize && $firstTyreWithSize->size 
+                ? $firstTyreWithSize->size->size 
+                : '-';
+        }
+
         DB::beginTransaction();
         try {
             $session = TyreMonitoringSession::create($data);
@@ -434,15 +448,31 @@ class MonitoringController extends Controller
                         $tyreSnapshot = Tyre::with(['brand', 'pattern', 'size'])->find($tyreId);
                     }
 
-                    $r1 = (float) ($c['rtd_1'] ?? $request->original_rtd);
-                    $r2 = (float) ($c['rtd_2'] ?? $request->original_rtd);
-                    $r3 = (float) ($c['rtd_3'] ?? $request->original_rtd);
-                    $r4 = (float) ($c['rtd_4'] ?? $request->original_rtd);
+                    // Determine per-tyre original RTD for this monitoring session:
+                    // Priority: current_tread_depth (actual condition NOW) > initial_tread_depth (brand new) > global input
+                    $perTyreOrigRtd = 0;
+                    if ($tyreSnapshot) {
+                        if ($tyreSnapshot->current_tread_depth > 0) {
+                            // Use current depth = tyre's actual condition when this session starts
+                            $perTyreOrigRtd = $tyreSnapshot->current_tread_depth;
+                        } elseif ($tyreSnapshot->initial_tread_depth > 0) {
+                            // Fallback to brand-new depth (for tyres that never had a check)
+                            $perTyreOrigRtd = $tyreSnapshot->initial_tread_depth;
+                        }
+                    }
+                    if ($perTyreOrigRtd == 0) {
+                        $perTyreOrigRtd = $request->original_rtd ?: 0;
+                    }
+
+                    $r1 = (float) ($c['rtd_1'] ?? $perTyreOrigRtd);
+                    $r2 = (float) ($c['rtd_2'] ?? $perTyreOrigRtd);
+                    $r3 = (float) ($c['rtd_3'] ?? $perTyreOrigRtd);
+                    $r4 = (float) ($c['rtd_4'] ?? $perTyreOrigRtd);
                     $rtdCount = ($r4 > 0) ? 4 : 3;
                     $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
 
-                    // Analytics for Check 1 (Initial = 0 KM operation)
-                    $wornPct = ($request->original_rtd > 0) ? (($request->original_rtd - $avgRtd) / $request->original_rtd * 100) : 0;
+                    // Analytics for Check 1 (Initial = 0 KM operation) — using per-tyre OTD
+                    $wornPct = ($perTyreOrigRtd > 0) ? (($perTyreOrigRtd - $avgRtd) / $perTyreOrigRtd * 100) : 0;
 
                     // 1. Create Installation Record
                     TyreMonitoringInstallation::create([
@@ -457,7 +487,7 @@ class MonitoringController extends Controller
                         'brand' => $tyreSnapshot ? ($tyreSnapshot->brand->brand_name ?? '-') : ($c['brand'] ?? '-'),
                         'pattern' => $tyreSnapshot ? ($tyreSnapshot->pattern->name ?? '-') : ($c['pattern'] ?? '-'),
                         'size' => $tyreSnapshot ? ($tyreSnapshot->size->size ?? '-') : ($request->tyre_size ?? '-'),
-                        'original_rtd' => $request->original_rtd,
+                        'original_rtd' => $perTyreOrigRtd,
                         'rtd_1' => $r1,
                         'rtd_2' => $r2,
                         'rtd_3' => $r3,
@@ -472,7 +502,7 @@ class MonitoringController extends Controller
 
                     // 2. Initial Check (Cek 1) if serial exists
                     if ($serial) {
-                        TyreMonitoringCheck::create([
+                        $check = TyreMonitoringCheck::create([
                             'session_id' => $session->session_id,
                             'check_number' => 1,
                             'serial_number' => $serial,
@@ -499,6 +529,18 @@ class MonitoringController extends Controller
                             'recommendation' => $c['recommendation'] ?? null,
                             'notes' => $c['notes'] ?? 'Cek 1 (Start Session)',
                         ]);
+
+                        // Link images to this check
+                        TyreMonitoringImage::where('session_id', $session->session_id)
+                            ->where(function($q) use ($serial, $request) {
+                                $q->where('serial_number', $serial)
+                                  ->orWhere(function($sub) use ($request) {
+                                      $sub->whereNull('serial_number')
+                                          ->where('notes', $request->temp_id); // Using notes as temp session identifier
+                                  });
+                            })
+                            ->whereNull('check_id')
+                            ->update(['check_id' => $check->check_id, 'uploaded_by' => \Auth::id()]);
 
                         // Sync Master Tyre
                         if ($tyreId) {
@@ -538,8 +580,8 @@ class MonitoringController extends Controller
                                     'rtd_2' => $rtdData["rtd2"] ?? null,
                                     'rtd_3' => $rtdData["rtd3"] ?? null,
                                     'rtd_4' => $rtdData["rtd4"] ?? null,
-                                    'start_time' => $request->install_date,
-                                    'end_time' => $request->install_date,
+                                    'start_time' => now()->format('H:i:s'),
+                                    'end_time' => now()->format('H:i:s'),
                                     'notes' => $isNewInstallation ? "Monitoring Sesi Start - New Installation" : "Monitoring Sesi Start - Periodic Check #1",
                                     'tyre_company_id' => $tyre->tyre_company_id,
                                     'created_by' => \Auth::id()
@@ -670,8 +712,8 @@ class MonitoringController extends Controller
                 'rtd_2' => $request->rtd_2,
                 'rtd_3' => $request->rtd_3,
                 'rtd_4' => clone($request)->rtd_4 ?? null,
-                'start_time' => $session->install_date . ' 00:00:00',
-                'end_time' => $session->install_date . ' 00:00:00',
+                'start_time' => now()->format('H:i:s'),
+                'end_time' => now()->format('H:i:s'),
                 'work_location_id' => $tyre->current_location_id,
                 'notes' => 'Monitoring Installation Session #' . $session->session_id,
                 'tyre_company_id' => $tyre->tyre_company_id,
@@ -830,10 +872,10 @@ class MonitoringController extends Controller
                 $r4 = (float)($c['rtd_4'] ?? 0);
 
                 // Validation: RTD cannot be greater than original
-                if ($r1 > $origRtd) return redirect()->back()->with('error', "RTD 1 ({$r1}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
-                if ($r2 > $origRtd) return redirect()->back()->with('error', "RTD 2 ({$r2}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
-                if ($r3 > $origRtd) return redirect()->back()->with('error', "RTD 3 ({$r3}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
-                if ($r4 > $origRtd) return redirect()->back()->with('error', "RTD 4 ({$r4}) untuk ban {$serial} tidak boleh lebih besar dari RTD Original ({$origRtd}).")->withInput();
+                if ($r1 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_1" => "RTD 1 ({$r1}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
+                if ($r2 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_2" => "RTD 2 ({$r2}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
+                if ($r3 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_3" => "RTD 3 ({$r3}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
+                if ($r4 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_4" => "RTD 4 ({$r4}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
 
                 $rtdCount = $r4 > 0 ? 4 : 3;
                 $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
@@ -850,7 +892,9 @@ class MonitoringController extends Controller
                 // Only calculate performance if wear >= 0.1mm to avoid unrealistic numbers
                 if ($lossRtd >= 0.1) {
                     $kmPerMm = $opMileage / $lossRtd;
-                    $projLife = $kmPerMm * ($origRtd - 3);
+                    // REMAINING life = rate × usable tread left (avgRtd - 3mm safety limit)
+                    $remainingTread = max(0, $avgRtd - 3);
+                    $projLife = $kmPerMm * $remainingTread;
                 } else {
                     $kmPerMm = 0;
                     $projLife = 0;
@@ -880,7 +924,7 @@ class MonitoringController extends Controller
                     'worn_percentage' => $wornPct,
                     'km_per_mm' => $kmPerMm,
                     'projected_life_km' => $projLife,
-                    'condition' => $this->determineCondition($wornPct, $c['psi_actual'], $request->retase),
+                    'condition' => $c['condition'] ?? 'ok',
                     'recommendation' => $c['recommendation'] ?? null,
                     'notes' => $c['notes'] ?? null,
                     'is_sales_input' => $request->has('is_sales_input'),
@@ -937,8 +981,8 @@ class MonitoringController extends Controller
                             'rtd_3' => $r3,
                             'rtd_4' => $r4,
                             'rtd_reading' => $avgRtd,
-                            'start_time' => $request->check_date . ' 00:00:00',
-                            'end_time' => $request->check_date . ' 00:00:00',
+                            'start_time' => now()->format('H:i:s'),
+                            'end_time' => now()->format('H:i:s'),
                             'notes' => "Periodic Check #{$newCheckNumber} (Session #{$session->session_id}) - ADMIN",
                             'tyre_company_id' => $tyre->tyre_company_id,
                             'created_by' => \Auth::id()
@@ -959,6 +1003,21 @@ class MonitoringController extends Controller
             $session->update(['retase' => $request->retase]);
 
             DB::commit();
+
+            // --- Send Notification to Approvers if Pending ---
+            if (!$isAdmin) {
+                try {
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    if ($approvers->count() > 0) {
+                        $submitterName = auth()->user()->display_name;
+                        $actionUrl = route('monitoring.sessions.show', $session->session_id);
+                        \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Monitoring Check', $submitterName, $actionUrl));
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check Notification: " . $e->getMessage());
+                }
+            }
+
             return redirect()->route('monitoring.vehicle.show', $session->vehicle_id)
                 ->with('success', "Periodic Check #{$newCheckNumber} recorded successfully.");
         } catch (\Exception $e) {
@@ -1099,7 +1158,7 @@ class MonitoringController extends Controller
             'notes'  => $request->notes
         ]);
         
-        return redirect()->back()->with('success', 'Session status updated to ' . $statusToSave);
+        return redirect()->back()->with('success', 'Session berhasil diubah ke status: ' . ucfirst($dbStatus));
     }
 
     public function destroySession($id)
@@ -1291,8 +1350,8 @@ class MonitoringController extends Controller
                         'rtd_3' => $c->rtd_3,
                         'rtd_4' => $c->rtd_4,
                         'rtd_reading' => $avgRtd,
-                        'start_time' => $c->check_date . ' 00:00:00',
-                        'end_time' => $c->check_date . ' 00:00:00',
+                        'start_time' => now()->format('H:i:s'),
+                        'end_time' => now()->format('H:i:s'),
                         'notes' => "Periodic Check #{$checkNumber} (Session #{$sessionId}) - Approved",
                         'tyre_company_id' => $tyre->tyre_company_id,
                         'created_by' => auth()->id()
@@ -1310,6 +1369,22 @@ class MonitoringController extends Controller
             }
 
             DB::commit();
+
+            // --- Send Notification to Submitter ---
+            try {
+                $firstCheck = $checks->first();
+                if ($firstCheck && $firstCheck->created_by) {
+                    $submitter = \App\Models\User::find($firstCheck->created_by);
+                    if ($submitter) {
+                        $approverName = auth()->user()->display_name;
+                        $actionUrl = route('monitoring.sessions.show', $sessionId);
+                        \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Monitoring Check #' . $checkNumber, 'Approved', $approverName, $actionUrl));
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check Approved Notification: " . $e->getMessage());
+            }
+
             return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' disetujui, dan master ban telah tersinkron.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1321,12 +1396,31 @@ class MonitoringController extends Controller
     {
         $request->validate(['reason' => 'required|string']);
 
-        TyreMonitoringCheck::where('session_id', $sessionId)
+        $checks = TyreMonitoringCheck::where('session_id', $sessionId)
             ->where('check_number', $checkNumber)
-            ->update([
+            ->get();
+
+        foreach ($checks as $check) {
+            $check->update([
                 'approval_status' => 'Rejected',
                 'rejection_reason' => $request->reason
             ]);
+        }
+
+        // --- Send Notification to Submitter ---
+        try {
+            $firstCheck = $checks->first();
+            if ($firstCheck && $firstCheck->created_by) {
+                $submitter = \App\Models\User::find($firstCheck->created_by);
+                if ($submitter) {
+                    $approverName = auth()->user()->display_name;
+                    $actionUrl = route('monitoring.sessions.show', $sessionId);
+                    \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Monitoring Check #' . $checkNumber, 'Rejected', $approverName, $actionUrl, $request->reason));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check Rejected Notification: " . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Pemeriksaan #' . $checkNumber . ' telah ditolak.');
     }

@@ -90,7 +90,7 @@
    {{-- Spacer --}}
    <tr></tr>
    {{-- Removal Details Table --}}
-   <tr style="background-color: #8B0000; color: #ffffff;">
+   <tr style="background-color: #c0392b; color: #ffffff;">
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Brand</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Pattern</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Pos</th>

@@ -94,4 +94,33 @@ class User extends Authenticatable
 
         return $this->name ?: 'User #' . $this->id;
     }
+
+    /**
+     * Get all approvers for a specific company and module.
+     * Excludes Super Admin (role_id = 1) unless they belong to that exact company.
+     * 
+     * @param int $companyId
+     * @param string $menuName e.g. 'Import Approval' or 'Tyre Monitoring'
+     * @param string|null $permission e.g. 'approve'
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getApprovers($companyId, $menuName, $permission = null)
+    {
+        // 1. Dapatkan semua user di perusahaan tersebut
+        $usersInCompany = self::where('tyre_company_id', $companyId)->get();
+        
+        $approvers = collect();
+        
+        foreach ($usersInCompany as $u) {
+            // Kita tidak otomatis memasukkan role_id = 1 (Super Admin) dari perusahaan lain.
+            // Karena query di atas sudah difilter by tyre_company_id, maka kalau ada Super Admin 
+            // yg terdaftar di company ini, dia akan otomatis masuk (karena hasPermission akan return true).
+            
+            if ($u->hasPermission($menuName, $permission)) {
+                $approvers->push($u);
+            }
+        }
+        
+        return $approvers;
+    }
 }

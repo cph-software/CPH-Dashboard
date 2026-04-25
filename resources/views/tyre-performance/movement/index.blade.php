@@ -98,7 +98,7 @@
                         <select id="vehicle_select" class="form-select select2">
                            <option value="">-- Cari Unit --</option>
                            @foreach ($kendaraans as $unit)
-                              <option value="{{ $unit->id }}">{{ $unit->kode_kendaraan }} ({{ $unit->no_polisi }})
+                              <option value="{{ $unit->id }}">{{ $unit->kode_kendaraan }} ({{ $unit->no_polisi }}) - {{ $unit->tyre_capacity_label }}
                               </option>
                            @endforeach
                         </select>

@@ -84,7 +84,7 @@
    {{-- Spacer --}}
    <tr></tr>
    {{-- Table Header Row 1 (Merged headers) --}}
-   <tr style="background-color: #333333; color: #ffffff;">
+   <tr style="background-color: #c0392b; color: #ffffff;">
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Brand</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Pattern</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Pos</th>
@@ -98,7 +98,7 @@
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Notes</th>
    </tr>
    {{-- Table Header Row 2 (Sub-columns) --}}
-   <tr style="background-color: #555555; color: #ffffff;">
+   <tr style="background-color: #2c3e50; color: #ffffff;">
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Serial</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Size</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Rcmd</th>

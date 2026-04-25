@@ -264,7 +264,21 @@ class DashboardController extends Controller
         // ========================================
         $fleetHealthData = $this->getFleetHealthData();
 
-        // 5a. Axle Analysis (Scrap Frequency by Position) - Filtered
+        // ========================================
+        // 5b. Monitoring Summary (Live Session Data for Dashboard)
+        // ========================================
+        $activeMonitoringSessions = \App\Models\TyreMonitoringSession::where('status', 'active')->count();
+        $pendingChecks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')->count();
+        
+        // Tyres overdue for inspection (last check > 30 days ago)
+        $overdueInspection = Tyre::where('status', 'Installed')
+            ->where(function($q) {
+                $q->whereNull('last_inspection_date')
+                  ->orWhere('last_inspection_date', '<', Carbon::now()->subDays(30));
+            })
+            ->count();
+
+        // 5c. Axle Analysis (Scrap Frequency by Position) - Filtered
         $axleAnalysis = $this->getScrapByPositionData($startDate, $endDate);
 
         // ========================================
@@ -311,6 +325,10 @@ class DashboardController extends Controller
             // Fleet Health (Percentage)
             'fleetHealthData',
             'axleAnalysis',
+            // Monitoring Summary
+            'activeMonitoringSessions',
+            'pendingChecks',
+            'overdueInspection',
             // Filter Options
             'filterSizes',
             'filterPatterns',

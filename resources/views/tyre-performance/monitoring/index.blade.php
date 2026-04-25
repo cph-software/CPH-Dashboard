@@ -213,7 +213,7 @@
                                     <option value="{{ $m->id }}" data-no="{{ $m->no_polisi }}"
                                        data-kode="{{ $m->kode_kendaraan }}" data-payload="{{ $m->payload_capacity }}"
                                        data-pos="{{ $m->total_tyre_position }}">
-                                       {{ $m->no_polisi }} ({{ $m->kode_kendaraan }})
+                                       {{ $m->no_polisi }} ({{ $m->kode_kendaraan }}) - {{ $m->tyre_capacity_label }}
                                     </option>
                                  @endforeach
                               </select>
@@ -305,7 +305,7 @@
                                     <option value="{{ $m->id }}" data-no="{{ $m->no_polisi }}"
                                        data-kode="{{ $m->kode_kendaraan }}" data-payload="{{ $m->payload_capacity }}"
                                        data-pos="{{ $m->total_tyre_position }}">
-                                       {{ $m->no_polisi }} ({{ $m->kode_kendaraan }})
+                                       {{ $m->no_polisi }} ({{ $m->kode_kendaraan }}) - {{ $m->tyre_capacity_label }}
                                     </option>
                                  @endforeach
                               </select>

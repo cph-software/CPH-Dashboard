@@ -221,6 +221,24 @@ class ImportController extends Controller
 
             setLogActivity(auth()->id(), "Import Excel {$module} Selesai Diunggah", $logOptions);
 
+            // --- Send Notification to Approvers ---
+            try {
+                // Cari semua user yang bisa approve import sesuai perusahaan uploader (termasuk Super Admin global)
+                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'update');
+                
+                if ($approvers->count() > 0) {
+                    $uploaderName = auth()->user()->display_name ?? auth()->user()->name;
+                    $actionUrl = route('import-approval.show', $batch->id);
+                    \Illuminate\Support\Facades\Notification::send($approvers, 
+                        new \App\Notifications\ApprovalRequiredNotification(
+                            'Import ' . $module, $uploaderName, $actionUrl
+                        )
+                    );
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Import Upload Notification: " . $e->getMessage());
+            }
+
             return redirect()->back()->with('success',
                 "Data berhasil diupload ({$imported} data movement) dan menunggu persetujuan (ID: #{$batch->id}).");
         } catch (\Exception $e) {
@@ -288,11 +306,90 @@ class ImportController extends Controller
             $warnings[] = "Odometer anomali: KM Lepas ({$removeKm}) < KM Pasang ({$installKm}).";
         }
 
+        // 5. Validasi Posisi Ban — harus cocok dengan konfigurasi kendaraan
+        $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
+        $needsPositionCheck = $installDate || $isInstallation || $hasSingleMovementDate;
+        
+        if ($needsPositionCheck && !empty($unitCode)) {
+            if (empty(trim((string)($positionCode ?? '')))) {
+                $warnings[] = "Posisi Ban tidak diisi. Ban akan dipasang tanpa info posisi.";
+            } else {
+                $vehicle = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                    ->where('kode_kendaraan', strtoupper($unitCode))
+                    ->first();
+                if ($vehicle && $vehicle->tyre_position_configuration_id) {
+                    $resolvedPos = $this->resolvePositionForValidation($vehicle->tyre_position_configuration_id, $positionCode);
+                    if (!$resolvedPos) {
+                        $configName = \DB::table('tyre_position_configurations')
+                            ->where('id', $vehicle->tyre_position_configuration_id)->value('name') ?? 'Unknown';
+                        $errors[] = "Posisi '{$positionCode}' tidak valid untuk unit '{$unitCode}' (Config: {$configName}). Periksa konfigurasi kendaraan.";
+                    }
+                }
+            }
+        }
+
         return [
             'is_valid' => empty($errors),
             'errors' => $errors,
             'warnings' => $warnings,
         ];
+    }
+
+    /**
+     * Resolve posisi ban terhadap konfigurasi kendaraan (untuk validasi saat upload).
+     */
+    private function resolvePositionForValidation($configId, $positionCode)
+    {
+        $searchCode = strtoupper(trim($positionCode));
+        $numericPos = preg_replace('/[^0-9]/', '', $positionCode);
+        
+        $aliasMap = [
+            'LM-IN' => 'LMI', 'LM-OUT' => 'LMO', 'LMI' => 'LMI', 'LMO' => 'LMO',
+            'RM-IN' => 'RMI', 'RM-OUT' => 'RMO', 'RMI' => 'RMI', 'RMO' => 'RMO',
+            'LR-IN' => 'LRI', 'LR-OUT' => 'LRO', 'LRI' => 'LRI', 'LRO' => 'LRO',
+            'RR-IN' => 'RRI', 'RR-OUT' => 'RRO', 'RRI' => 'RRI', 'RRO' => 'RRO',
+            'LF-IN' => 'LFI', 'LF-OUT' => 'LFO', 'LFI' => 'LFI', 'LFO' => 'LFO',
+            'RF-IN' => 'RFI', 'RF-OUT' => 'RFO', 'RFI' => 'RFI', 'RFO' => 'RFO',
+            'LF' => 'LF', 'RF' => 'RF', 'SP' => 'SP',
+            'LM IN' => 'LMI', 'LM OUT' => 'LMO', 'RM IN' => 'RMI', 'RM OUT' => 'RMO',
+            'LR IN' => 'LRI', 'LR OUT' => 'LRO', 'RR IN' => 'RRI', 'RR OUT' => 'RRO',
+        ];
+
+        $baseSearch = $aliasMap[$searchCode] ?? null;
+        if (!$baseSearch) {
+            $textOnly = trim(preg_replace('/[0-9]/', '', $searchCode));
+            $baseSearch = $aliasMap[$textOnly] ?? $textOnly;
+        }
+
+        return \App\Models\TyrePositionDetail::where('configuration_id', $configId)
+            ->where(function($q) use ($positionCode, $searchCode, $baseSearch, $numericPos) {
+                $q->where('position_code', $searchCode)
+                  ->orWhere('position_name', $positionCode);
+
+                if ($baseSearch) {
+                    $q->orWhere('position_code', 'LIKE', $baseSearch . '/%');
+                    $q->orWhere('position_code', $baseSearch);
+                    
+                    if ($baseSearch === 'LF') {
+                        $q->orWhere('position_code', 'FL');
+                    } elseif ($baseSearch === 'RF') {
+                        $q->orWhere('position_code', 'FR');
+                    }
+                }
+
+                if ($searchCode === 'FL') {
+                    $q->orWhere('position_code', 'LIKE', 'LF/%');
+                    $q->orWhere('position_code', 'LF');
+                } elseif ($searchCode === 'FR') {
+                    $q->orWhere('position_code', 'LIKE', 'RF/%');
+                    $q->orWhere('position_code', 'RF');
+                }
+
+                if ($numericPos !== '') {
+                    $q->orWhere('display_order', $numericPos);
+                }
+            })
+            ->first();
     }
 
     /**
@@ -595,7 +692,7 @@ class ImportController extends Controller
                             'code' => $code,
                             'total_positions' => $totalWheels + 1, // +1 for spare
                             'total_spare' => 1,
-                            'config_type' => 'Standard',
+                            'config_type' => 'Rigid',
                             'status' => 'Active',
                         ]);
                         
@@ -643,6 +740,20 @@ class ImportController extends Controller
             }
 
             \DB::commit();
+
+            // --- Send Notification to Approvers ---
+            try {
+                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'update'); 
+                // 'update' is typically the permission needed to approve/reject
+                
+                if ($approvers->count() > 0) {
+                    $submitterName = auth()->user()->display_name;
+                    $actionUrl = route('import-approval.show', $batch->id);
+                    \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Import ' . $module, $submitterName, $actionUrl));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Import Approval Notification: " . $e->getMessage());
+            }
 
             setLogActivity(auth()->id(), "Import Excel ({$module}): {$imported} baris", [
                 'module' => 'Import', 'batch_id' => $batch->id, 'filename' => $batch->filename

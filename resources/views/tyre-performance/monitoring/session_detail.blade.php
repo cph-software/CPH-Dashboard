@@ -156,9 +156,40 @@
 @section('content')
    @php
       use App\Services\TyreMonitoringCalculator;
-      $lastCheck = $session->checks->sortByDesc('check_number')->first();
-      $runningKm = $lastCheck ? $lastCheck->operation_mileage : 0;
       $checkGroups = $session->checks->groupBy('check_number')->sortKeys();
+      $lastCheckGroup = $checkGroups->last();
+      
+      $runningKm = $lastCheckGroup ? $lastCheckGroup->first()->operation_mileage : 0;
+      $runningHm = $lastCheckGroup ? $lastCheckGroup->first()->operation_hm : 0;
+
+      // Hitung Global Average RTD dari seluruh ban di Pengecekan Terakhir
+      $globalAvgRtd = 0;
+      if ($lastCheckGroup && $lastCheckGroup->count() > 0) {
+          $sumAvgRtd = 0;
+          foreach($lastCheckGroup as $chk) {
+              $rtds = array_filter([$chk->rtd_1, $chk->rtd_2, $chk->rtd_3, $chk->rtd_4], fn($v) => $v > 0);
+              $sumAvgRtd += count($rtds) > 0 ? array_sum($rtds) / count($rtds) : 0;
+          }
+          $globalAvgRtd = round($sumAvgRtd / $lastCheckGroup->count(), 2);
+      }
+
+      // Buat data mock untuk dimasukkan ke Calculator agar menghasilkan metrik rata-rata global
+      $mockCheckData = [
+          'rtd_1' => $globalAvgRtd,
+          'rtd_2' => $globalAvgRtd,
+          'rtd_3' => $globalAvgRtd,
+          'rtd_4' => $globalAvgRtd,
+          'check_date' => $lastCheckGroup ? $lastCheckGroup->first()->check_date : $session->install_date,
+          'operation_mileage' => $runningKm,
+          'operation_hm' => $runningHm,
+          'date_assembly' => null
+      ];
+      
+      // Dynamic Baseline (Rata-rata OTD dari seluruh ban yang terpasang)
+      $installedOtds = $session->installations->pluck('original_rtd')->filter(fn($v) => $v > 0);
+      $dynamicBaseline = $installedOtds->count() > 0 ? round($installedOtds->avg(), 2) : $session->original_rtd;
+
+      $summary = TyreMonitoringCalculator::calculate($dynamicBaseline, $session->install_date, $mockCheckData, $measurementMode);
    @endphp
 
    {{-- Page Header --}}
@@ -193,7 +224,7 @@
          <div class="card h-100 border-start border-primary border-3">
             <div class="card-body py-3">
                <p class="text-muted small mb-1">Baseline RTD</p>
-               <h4 class="mb-0 text-primary fw-bold">{{ $session->original_rtd }} mm</h4>
+               <h4 class="mb-0 text-primary fw-bold">{{ $dynamicBaseline }} mm</h4>
             </div>
          </div>
       </div>
@@ -209,7 +240,7 @@
          <div class="card h-100">
             <div class="card-body py-3">
                <p class="text-muted small mb-1">{{ $measurementMode === 'HM' ? 'Running HM' : 'Running Mileage' }}</p>
-               <h4 class="mb-0 fw-bold">{{ number_format($runningKm) }} <small class="text-muted fw-normal">{{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small></h4>
+               <h4 class="mb-0 fw-bold">{{ number_format($measurementMode === 'HM' ? $runningHm : $runningKm) }} <small class="text-muted fw-normal">{{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small></h4>
             </div>
          </div>
       </div>
@@ -228,8 +259,7 @@
    </div>
 
    {{-- Wear Calculation Summary --}}
-   @if ($lastCheck)
-      @php $summary = TyreMonitoringCalculator::calculate($session->original_rtd, $session->install_date, $lastCheck, $measurementMode); @endphp
+   @if ($lastCheckGroup)
       <div class="card mb-4 bg-primary text-white shadow-sm overflow-hidden">
          <div class="card-body py-4 position-relative">
             <i class="ri ri-line-chart-line position-absolute opacity-25"
@@ -245,19 +275,19 @@
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh setiap penipisan ban 1 mm' : 'Rata-rata KM yang ditempuh setiap penipisan ban 1 mm' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_mm'] > 0 ? number_format($summary['km_per_mm']) : 'N/A' }}</h4>
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh per harinya' : 'Rata-rata KM yang ditempuh per harinya' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_day'] > 0 ? number_format($summary['km_per_day']) : 'N/A' }}</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Proyeksi total umur pakai ban dalam HM hingga batas aman tapak (3mm)' : 'Proyeksi total umur pakai ban dalam KM hingga batas aman tapak (3mm)' }}">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $measurementMode === 'HM' ? 'Proj. HM' : 'Proj. KM' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }}</h4>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Estimasi SISA HM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' : 'Estimasi SISA KM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' }}">
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $measurementMode === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</p>
+                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_km'] > 0 ? number_format($summary['proj_life_km']) : 'N/A' }}</h4>
                </div>
                <div class="col-md-2 col-6" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estimasi sisa umur pakai ban dalam bulan dengan ritme pemakaian saat ini">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-calendar-check-line me-1"></i>Remaining</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_month'] }} <small>Mo</small></h4>
+                  <h4 class="mb-0 text-white fw-bold">{!! $summary['proj_life_month'] > 0 ? $summary['proj_life_month'] . ' <small>Mo</small>' : 'N/A' !!}</h4>
                </div>
             </div>
          </div>
@@ -608,7 +638,7 @@
                                     <th>Avg</th>
                                     <th>Worn%</th>
                                     <th>{{ $measurementMode === 'HM' ? 'HM/mm' : 'KM/mm' }}</th>
-                                    <th>{{ $measurementMode === 'HM' ? 'Proj.HM' : 'Proj.KM' }}</th>
+                                    <th>{{ $measurementMode === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</th>
                                     <th>Condition</th>
                                  </tr>
                               </thead>
@@ -624,8 +654,8 @@
                                        </td>
                                        <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
                                        <td>{{ number_format($c->worn_percentage, 0) }}%</td>
-                                       <td>{{ number_format($c->km_per_mm, 0) }}</td>
-                                       <td class="fw-bold text-primary">{{ number_format($c->projected_life_km, 0) }}
+                                       <td>{{ $c->km_per_mm > 0 ? number_format($c->km_per_mm, 0) : 'N/A' }}</td>
+                                       <td class="fw-bold text-primary">{{ $c->projected_life_km > 0 ? number_format($c->projected_life_km, 0) : 'N/A' }}
                                        </td>
                                        <td>
                                           <span

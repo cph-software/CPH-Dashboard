@@ -156,7 +156,7 @@
                               <option value="">-- Pilih Unit --</option>
                               @foreach ($kendaraans as $v)
                                  <option value="{{ $v->id }}">{{ $v->kode_kendaraan }}
-                                    {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }}
+                                    {{ $v->no_polisi ? '[' . $v->no_polisi . ']' : '' }} - {{ $v->tyre_capacity_label }}
                                  </option>
                               @endforeach
                            </select>

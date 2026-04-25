@@ -385,6 +385,61 @@
          </div>
       </div>
 
+      {{-- MONITORING SUMMARY MINI-CARDS --}}
+      <div class="row g-4 mb-4">
+         <div class="col-12">
+            <div class="section-label"><i class="ri-eye-line me-1"></i> MONITORING OVERVIEW</div>
+         </div>
+         <div class="col-xl-4 col-lg-4 col-sm-6">
+            <div class="card kpi-card card-border-shadow-info h-100">
+               <div class="card-body py-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                     <div>
+                        <span class="kpi-sub d-block mb-1">Sesi Monitoring Aktif</span>
+                        <div class="kpi-number text-info">{{ $activeMonitoringSessions }}</div>
+                        <div class="kpi-sub mt-1">Kendaraan sedang dipantau</div>
+                     </div>
+                     <div class="avatar avatar-md">
+                        <span class="avatar-initial rounded-3 bg-label-info"><i class="icon-base ri ri-radar-line ri-24px"></i></span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="col-xl-4 col-lg-4 col-sm-6">
+            <div class="card kpi-card card-border-shadow-warning h-100">
+               <div class="card-body py-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                     <div>
+                        <span class="kpi-sub d-block mb-1">Pending Approval</span>
+                        <div class="kpi-number text-warning">{{ $pendingChecks }}</div>
+                        <div class="kpi-sub mt-1">Check menunggu persetujuan</div>
+                     </div>
+                     <div class="avatar avatar-md">
+                        <span class="avatar-initial rounded-3 bg-label-warning"><i class="icon-base ri ri-time-line ri-24px"></i></span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="col-xl-4 col-lg-4 col-sm-6">
+            <div class="card kpi-card card-border-shadow-danger h-100">
+               <div class="card-body py-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                     <div>
+                        <span class="kpi-sub d-block mb-1">Overdue Inspeksi (> 30 hari)</span>
+                        <div class="kpi-number text-danger">{{ $overdueInspection }}</div>
+                        <div class="kpi-sub mt-1">Ban belum diperiksa ulang</div>
+                     </div>
+                     <div class="avatar avatar-md">
+                        <span class="avatar-initial rounded-3 bg-label-danger"><i class="icon-base ri ri-alarm-warning-line ri-24px"></i></span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
       {{-- CHARTS ROW --}}
       <div class="row g-4 mb-4">
          {{-- 2a. Tyre Status Distribution (Donut) --}}

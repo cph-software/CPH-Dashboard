@@ -348,6 +348,19 @@
       </div>
    </div>
 
+   <div class="offcanvas offcanvas-end" tabindex="-1" id="tyreDetailPanel" style="width: 480px;">
+      <div class="offcanvas-header border-bottom bg-light py-3">
+         <h5 class="offcanvas-title fw-bold mb-0">
+            <i class="ri ri-circle-fill text-success me-2" style="font-size: 10px;"></i>
+            <span id="td_title">Detail Ban</span>
+         </h5>
+         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body p-0" id="td_body">
+         <!-- Content loaded dynamically -->
+      </div>
+   </div>
+
    <form id="deleteForm" method="POST" style="display: none;">
       @csrf
       @method('DELETE')
@@ -474,8 +487,26 @@
                },
                {
                   data: 'total_tyre_position',
-                  render: function(data) {
-                     return `${data} Wheels`;
+                  render: function(data, type, row) {
+                     const installed = row.tyres_count || 0;
+                     const total = data || 0;
+                     const empty = total - installed;
+                     
+                     let badgeClass = 'bg-label-success';
+                     if (total > 0) {
+                        if (installed === 0) badgeClass = 'bg-label-danger';
+                        else if (installed < total) badgeClass = 'bg-label-warning';
+                     } else {
+                        badgeClass = 'bg-label-secondary';
+                     }
+                     
+                     return `<div class="d-flex flex-column">
+                        <span class="fw-bold mb-1">${total} Wheels</span>
+                        <div class="d-flex gap-1 align-items-center" style="font-size: 0.7rem;">
+                           <span class="badge ${badgeClass} px-2 py-1"><i class="ri ri-checkbox-circle-line me-1"></i>Isi: ${installed}</span>
+                           ${empty > 0 ? `<span class="badge bg-label-secondary px-2 py-1"><i class="ri ri-spam-line me-1"></i>Kosong: ${empty}</span>` : ''}
+                        </div>
+                     </div>`;
                   }
                },
                {
@@ -501,7 +532,8 @@
                                                                   <button type="button"
                                                                      class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 view-layout"
                                                                      data-bs-toggle="modal" data-bs-target="#viewLayoutModal"
-                                                                     data-config-name="${row.tyre_position_configuration ? row.tyre_position_configuration.name : ''}"
+                                                                     data-vehicle-id="${row.id}"
+                                                                     data-config-name="${row.kode_kendaraan} ${row.no_polisi ? '['+row.no_polisi+']' : ''}"
                                                                      data-config-id="${row.tyre_position_configuration_id}" title="View Layout">
                                                                      <i class="icon-base ri ri-layout-6-line text-primary"></i>
                                                                   </button>
@@ -687,7 +719,7 @@
          });
 
          $(document).on('click', '.view-layout', function() {
-            const configId = $(this).data('config-id');
+            const vehicleId = $(this).data('vehicle-id');
             const configName = $(this).data('config-name');
             const layoutContainer = $('#layoutContainer');
             const layoutModalTitle = $('#layoutModalTitle');
@@ -697,15 +729,241 @@
                '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
             );
 
-            fetch(`/master_position/${configId}/layout`)
+            fetch(`{{ url('master_kendaraan') }}/${vehicleId}/layout`)
                .then(response => response.text())
                .then(html => {
                   layoutContainer.html(html);
+                  setTimeout(() => {
+                      bindTyreNodeClicks(vehicleId);
+                  }, 100);
                })
                .catch(err => {
                   layoutContainer.html('<div class="alert alert-danger">Gagal memuat layout.</div>');
                });
          });
+
+         function bindTyreNodeClicks(vehicleId) {
+            const nodes = document.querySelectorAll('.m-tyre-node');
+            nodes.forEach(node => {
+               node.style.cursor = 'pointer';
+               node.addEventListener('click', function() {
+                  const positionId = this.getAttribute('data-position-id');
+                  const tyreSerial = this.getAttribute('data-sn');
+
+                  if (!tyreSerial) {
+                     Swal.fire('Informasi', 'Posisi ini kosong (tidak ada ban terpasang).', 'info');
+                     return;
+                  }
+
+                  const tdBody = document.getElementById('td_body');
+                  tdBody.innerHTML =
+                     '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Memuat data ban...</p></div>';
+
+                  const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('tyreDetailPanel'));
+                  bsOffcanvas.show();
+
+                  fetch(`{{ route('tyre-kendaraan.tyre-detail') }}?position_id=${positionId}&vehicle_id=${vehicleId}`)
+                     .then(r => r.json())
+                     .then(data => {
+                        if (!data.success) {
+                           tdBody.innerHTML = `<div class="alert alert-warning m-4">${data.message}</div>`;
+                           return;
+                        }
+
+                        const t = data.tyre;
+                        const m = data.movements;
+
+                        // Status badge color
+                        const statusColors = {
+                           'Installed': 'success',
+                           'New': 'primary',
+                           'Repaired': 'warning',
+                           'Scrap': 'danger'
+                        };
+                        const statusColor = statusColors[t.status] || 'secondary';
+
+                        // Movement type badge
+                        const movBadge = (type) => {
+                           const c = {
+                              'Installation': 'primary',
+                              'Removal': 'danger',
+                              'Rotation': 'info'
+                           };
+                           return `bg-label-${c[type] || 'secondary'}`;
+                        };
+
+                        // RTD Progress bar
+                        let rtdBar = '';
+                        if (t.rtd_wear_pct !== null) {
+                           const barColor = t.rtd_wear_pct > 75 ? 'danger' : (t.rtd_wear_pct > 50 ? 'warning' : 'success');
+                           rtdBar = `
+                              <div class="mt-2">
+                                 <div class="d-flex justify-content-between mb-1">
+                                    <small class="fw-bold">RTD Wear</small>
+                                    <small class="fw-bold text-${barColor}">${t.rtd_wear_pct}%</small>
+                                 </div>
+                                 <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-${barColor}" style="width: ${t.rtd_wear_pct}%"></div>
+                                 </div>
+                                 <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">OTD: ${t.initial_rtd ?? '-'}mm</small>
+                                    <small class="text-muted">Now: ${t.current_rtd ?? '-'}mm</small>
+                                 </div>
+                              </div>`;
+                        }
+
+                        let mode = data.measurement_mode || 'BOTH';
+                        let isHmMode = mode === 'HM';
+
+                        // Movement history rows
+                        let movRows = '';
+                        let runHeader = isHmMode ? 'Run HM' : 'Run KM';
+                        if (m.length > 0) {
+                           m.forEach(mv => {
+                              let runVal = isHmMode ? (mv.running_hm || 0) : (mv.running_km || 0);
+                              movRows += `
+                              <tr>
+                                 <td><small>${mv.date}</small></td>
+                                 <td><span class="badge ${movBadge(mv.type_raw)} badge-sm">${mv.type}</span></td>
+                                 <td class="text-end"><small>${runVal.toLocaleString()}</small></td>
+                                 <td class="text-end"><small>${mv.rtd ?? '-'}</small></td>
+                              </tr>`;
+                           });
+                        } else {
+                           movRows = '<tr><td colspan="4" class="text-center text-muted py-3">Belum ada riwayat</td></tr>';
+                        }
+
+                        // Layout Logic
+                        let statKm = (mode === 'KM' || mode === 'BOTH') ? `
+                                 <div class="col-6">
+                                    <div class="p-2 rounded bg-light text-center">
+                                       <i class="ri ri-road-map-line text-primary d-block mb-1" style="font-size: 1.3rem;"></i>
+                                       <div class="fw-bold">${t.total_lifetime_km.toLocaleString()}</div>
+                                       <small class="text-muted">Total KM</small>
+                                    </div>
+                                 </div>` : '';
+                                 
+                        let statHm = (mode === 'HM' || mode === 'BOTH') ? `
+                                 <div class="col-6">
+                                    <div class="p-2 rounded bg-light text-center">
+                                       <i class="ri ri-time-line text-warning d-block mb-1" style="font-size: 1.3rem;"></i>
+                                       <div class="fw-bold">${t.total_lifetime_hm.toLocaleString()}</div>
+                                       <small class="text-muted">Total HM</small>
+                                    </div>
+                                 </div>` : '';
+
+                        let cpkTitle = isHmMode ? 'Cost/HM' : 'Cost/KM';
+                        let cpkText = '-';
+                        if (t.price) {
+                           if (isHmMode && t.total_lifetime_hm > 0) {
+                              cpkText = 'Rp ' + Math.round(t.price / t.total_lifetime_hm).toLocaleString();
+                           } else if (!isHmMode && t.total_lifetime_km > 0) {
+                              cpkText = 'Rp ' + Math.round(t.price / t.total_lifetime_km).toLocaleString();
+                           }
+                        }
+
+                        let costHtml = `
+                                 <div class="col-6">
+                                    <div class="p-2 rounded bg-light text-center">
+                                       <i class="ri ri-money-dollar-circle-line text-success d-block mb-1" style="font-size: 1.3rem;"></i>
+                                       <div class="fw-bold">${cpkText}</div>
+                                       <small class="text-muted">${cpkTitle}</small>
+                                    </div>
+                                 </div>`;
+
+                        let startLabel = isHmMode ? 'HM Saat Pasang' : 'KM Saat Pasang';
+                        let startVal = isHmMode ? 
+                              (t.install_hm !== null ? t.install_hm.toLocaleString() : '-') : 
+                              (t.install_odo !== null ? t.install_odo.toLocaleString() : '-');
+
+                        tdBody.innerHTML = `
+                           <!-- Header Card -->
+                           <div class="p-3 border-bottom" style="background: linear-gradient(135deg, #f8f7ff 0%, #eef2ff 100%);">
+                              <div class="d-flex align-items-start">
+                                 <div class="flex-grow-1">
+                                    <h5 class="mb-1 fw-bold">${t.serial_number}</h5>
+                                    <span class="badge bg-${statusColor} mb-2">${t.status}</span>
+                                    <div class="text-muted small">
+                                       <i class="ri ri-price-tag-3-line me-1"></i>${t.brand} · ${t.pattern} · ${t.size}
+                                    </div>
+                                 </div>
+                                 <div class="text-end">
+                                    <small class="text-muted d-block">Retread</small>
+                                    <span class="badge bg-label-secondary fs-6">${t.retread_count}x</span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <!-- Stats Grid -->
+                           <div class="p-3 border-bottom">
+                              <div class="row g-2">
+                                 ${statKm}
+                                 ${statHm}
+                                 ${costHtml}
+                                 <div class="col-6">
+                                    <div class="p-2 rounded bg-light text-center">
+                                       <i class="ri ri-calendar-check-line text-info d-block mb-1" style="font-size: 1.3rem;"></i>
+                                       <div class="fw-bold">${t.days_since_install !== null ? t.days_since_install + ' hari' : '-'}</div>
+                                       <small class="text-muted">Sejak Pasang</small>
+                                    </div>
+                                 </div>
+                              </div>
+                              ${rtdBar}
+                           </div>
+
+                           <!-- Installation Info -->
+                           <div class="p-3 border-bottom">
+                              <h6 class="fw-bold text-uppercase small text-muted mb-2">
+                                 <i class="ri ri-pushpin-line me-1"></i>Info Pemasangan Terakhir
+                              </h6>
+                              <div class="d-flex gap-4">
+                                 <div>
+                                    <small class="text-muted d-block">Tanggal Pasang</small>
+                                    <span class="fw-bold">${t.install_date || '-'}</span>
+                                 </div>
+                                 <div>
+                                    <small class="text-muted d-block">${startLabel}</small>
+                                    <span class="fw-bold">${startVal}</span>
+                                 </div>
+                                 <div>
+                                    <small class="text-muted d-block">Total Transaksi</small>
+                                    <span class="fw-bold">${t.total_movements}x</span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <!-- Movement History -->
+                           <div class="p-3">
+                              <h6 class="fw-bold text-uppercase small text-muted mb-2">
+                                 <i class="ri ri-history-line me-1"></i>Riwayat Pergerakan (Last 10)
+                              </h6>
+                              <div class="table-responsive">
+                                 <table class="table table-sm table-borderless mb-0">
+                                    <thead>
+                                       <tr class="text-muted">
+                                          <th><small>Tanggal</small></th>
+                                          <th><small>Tipe</small></th>
+                                          <th class="text-end"><small>${runHeader}</small></th>
+                                          <th class="text-end"><small>RTD</small></th>
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       ${movRows}
+                                    </tbody>
+                                 </table>
+                              </div>
+                           </div>
+                        `;
+
+                        document.getElementById('td_title').textContent = 'Detail: ' + t.serial_number;
+                     })
+                     .catch(err => {
+                        console.error('Tyre detail error:', err);
+                        tdBody.innerHTML = '<div class="alert alert-danger m-3">Gagal memuat detail ban.</div>';
+                     });
+               });
+            });
+         }
 
          // Auto-detect Total Positions based on Configuration
          $(document).on('change', '.config-selector', function() {

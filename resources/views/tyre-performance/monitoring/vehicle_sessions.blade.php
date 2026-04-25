@@ -384,7 +384,21 @@
                @foreach ($sessions as $session)
                   <tr>
                      <td>{{ \Carbon\Carbon::parse($session->install_date)->format('d/m/Y') }}</td>
-                     <td>{{ $session->tyre_size }}</td>
+                     <td>
+                        @if ($session->tyre_size && $session->tyre_size !== '-')
+                           {{ $session->tyre_size }}
+                        @else
+                           @php
+                              $instTyre = $session->installations->first();
+                              $tyreSizeDisplay = '-';
+                              if ($instTyre) {
+                                 $tyreObj = \App\Models\Tyre::where('serial_number', $instTyre->serial_number)->with('size')->first();
+                                 $tyreSizeDisplay = $tyreObj && $tyreObj->size ? $tyreObj->size->size : '-';
+                              }
+                           @endphp
+                           {{ $tyreSizeDisplay }}
+                        @endif
+                     </td>
                      <td>{{ $measurementMode === 'HM' ? number_format($session->hm_start) . ' HM' : number_format($session->odometer_start) . ' KM' }}</td>
                      <td>
                         <div class="d-flex align-items-center gap-1">

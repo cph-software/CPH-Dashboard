@@ -23,6 +23,16 @@ class MasterImportKendaraan extends Model
         return $this->hasMany(Tyre::class, 'current_vehicle_id');
     }
 
+    public function getTyreCapacityLabelAttribute()
+    {
+        $installed = $this->tyres_count ?? $this->tyres()->count();
+        $total = $this->total_tyre_position ?? 0;
+        
+        if ($total == 0) return "[0/0]";
+        if ($installed >= $total) return "[Full]";
+        return "[$installed/$total]";
+    }
+
     public function segment()
     {
         return $this->belongsTo(TyreSegment::class, 'operational_segment_id');

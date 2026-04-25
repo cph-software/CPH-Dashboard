@@ -116,11 +116,17 @@
             <a href="{{ route('examination.index') }}" class="btn btn-label-secondary">
                <i class="ri ri-arrow-left-line me-1"></i> Kembali
             </a>
-            <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
-               class="btn btn-primary" target="_blank">
-               <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
-            </a>
-            @if ($exam->approval_status === 'Pending' && auth()->user()->role_id == 1)
+            @if ($exam->approval_status === 'Approved')
+               <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
+                  class="btn btn-primary" target="_blank">
+                  <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
+               </a>
+            @else
+               <button class="btn btn-secondary disabled" title="Menunggu Approval" data-bs-toggle="tooltip">
+                  <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
+               </button>
+            @endif
+            @if ($exam->approval_status === 'Pending' && auth()->user()->hasPermission('Examination', 'update'))
                <button type="button" class="btn btn-success" id="btnApprove">
                   <i class="ri ri-check-line me-1"></i> Approve
                </button>
@@ -211,7 +217,7 @@
                      <th class="text-center" width="100">RTD #3</th>
                      <th class="text-center" width="100">RTD #4</th>
                      <th>REMARKS</th>
-                     {{-- <th class="text-center" width="80">FOTO</th> --}}
+                     <th class="text-center" width="80">FOTO</th>
                   </tr>
                </thead>
                <tbody>
@@ -231,16 +237,17 @@
                         <td class="text-center">{{ $detail->rtd_3 ?: '-' }}</td>
                         <td class="text-center">{{ $detail->rtd_4 ?: '-' }}</td>
                         <td>{{ $detail->remarks ?: '-' }}</td>
-                        {{-- <td class="text-center">
-                           @if ($detail->photo)
-                              <a href="{{ asset('storage/' . $detail->photo) }}" target="_blank">
-                                 <img src="{{ asset('storage/' . $detail->photo) }}" class="rounded shadow-sm"
+                        <td class="text-center">
+                           @if (isset($images[$tyre->serial_number]) && count($images[$tyre->serial_number]) > 0)
+                              @php $photo = $images[$tyre->serial_number]->first(); @endphp
+                              <a href="{{ asset('storage/' . $photo->image_path) }}" target="_blank">
+                                 <img src="{{ asset('storage/' . $photo->image_path) }}" class="rounded shadow-sm"
                                     style="width: 40px; height: 40px; object-fit: cover;">
                               </a>
                            @else
                               -
                            @endif
-                        </td> --}}
+                        </td>
                      </tr>
                   @endforeach
                </tbody>

@@ -144,6 +144,23 @@ class UserController extends Controller
             'foto' => ''
         ]);
 
+        // --- Send Notification to Super Admin if created by Company Admin ---
+        if (!$isSuperAdmin && $companyId) {
+            try {
+                $superAdmins = \App\Models\User::where('role_id', 1)->get();
+                if ($superAdmins->count() > 0) {
+                    $company = \App\Models\TyreCompany::find($companyId);
+                    $companyName = $company ? $company->company_name : 'Unknown Company';
+                    $creatorName = $currentUser->display_name;
+                    $actionUrl = route('users.index'); // or wherever user management is
+                    
+                    \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\NewUserCreatedNotification($request->name, $companyName, $creatorName, $actionUrl));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send New User Notification: " . $e->getMessage());
+            }
+        }
+
         setLogActivity(auth()->id(), 'Menambah user baru (Employee: ' . $request->master_karyawan_id . ')', [
             'action_type' => 'create',
             'module' => 'Users',

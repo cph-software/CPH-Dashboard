@@ -24,6 +24,9 @@
    // Calculate total columns
    // Brand, Pattern, Pos, Serial, Size, Rcmd, Actl, DateAsm, DateInsp, mm1..mmN, AvgRTD, OpMileage, Worn%, KM/mm, ProjLife, Day, Moon, Condition, Recommendation
    $totalCols = 3 + 2 + 2 + 2 + $rtdCount + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1; // = 14 + rtdCount + 4 extra analysis cols
+
+   $measurementMode = auth()->check() && auth()->user()->tyreCompany ? (auth()->user()->tyreCompany->measurement_mode ?? 'BOTH') : 'BOTH';
+   $isHm = ($measurementMode === 'HM');
 @endphp
 <table>
    {{-- Row 1: VEHICLE INFORMATION | TYRE MONITORING FORM | TYRE INFORMATION --}}
@@ -102,7 +105,7 @@
    {{-- Spacer --}}
    <tr></tr>
    {{-- Table Header Row 1 (Merged headers) --}}
-   <tr style="background-color: #333333; color: #ffffff;">
+   <tr style="background-color: #c0392b; color: #ffffff;">
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Brand</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Pattern</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Pos</th>
@@ -113,17 +116,17 @@
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" colspan="{{ $rtdCount }}">Tread
          Depth</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Avg RTD</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Op. Mileage (KM)</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Op. {{ $isHm ? 'HM' : 'Mileage (KM)' }}</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Worn%</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">KM/mm</th>
-      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Proj.Life 3mm (KM)</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">{{ $isHm ? 'HM/mm' : 'KM/mm' }}</th>
+      <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">{{ $isHm ? 'Sisa HM' : 'Proj.Life 3mm (KM)' }}</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Day</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Month</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Condition</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;" rowspan="2">Recommendation</th>
    </tr>
    {{-- Table Header Row 2 (Sub-columns) --}}
-   <tr style="background-color: #555555; color: #ffffff;">
+   <tr style="background-color: #2c3e50; color: #ffffff;">
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Serial</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Size</th>
       <th style="font-weight: bold; border: 1px solid #000; text-align: center;">Rcmd</th>
@@ -179,9 +182,9 @@
          <td style="border: 1px solid #000; text-align: center;">{{ number_format($check->operation_mileage) }}</td>
          <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['worn_pct'] }}%</td>
          <td style="border: 1px solid #000; text-align: center;">
-            {{ number_format($check->calculated['km_per_mm'], 1) }}</td>
-         <td style="border: 1px solid #000; text-align: center; font-weight: bold;">
-            {{ number_format($check->calculated['proj_life_km']) }}</td>
+            {{ $check->calculated['km_per_mm'] > 0 ? number_format($check->calculated['km_per_mm'], 0) : 'N/A' }}</td>
+         <td style="border: 1px solid #000; text-align: center; font-weight: bold; color: {{ $check->calculated['proj_life_km'] > 0 ? '#000000' : '#c0392b' }};">
+            {{ $check->calculated['proj_life_km'] > 0 ? number_format($check->calculated['proj_life_km'], 0) : 'N/A' }}</td>
          <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['days_elapsed'] }}</td>
          <td style="border: 1px solid #000; text-align: center;">{{ $check->calculated['months_elapsed'] }}</td>
          <td style="border: 1px solid #000; text-align: center;">{{ strtoupper($check->condition) }}</td>

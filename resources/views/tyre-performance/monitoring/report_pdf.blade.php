@@ -1,206 +1,336 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+   <meta charset="utf-8">
    <title>Monitoring Report - {{ $vehicle->vehicle_number }}</title>
    <style>
-      @page { margin: 25px 30px; size: a4 landscape; }
-      body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; color: #333; }
-      
-      .header, .footer { width: 100%; border-bottom: 2px solid #e74c3c; padding-bottom: 5px; margin-bottom: 10px; }
-      .footer { border-bottom: none; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 10px; text-align: center; font-size: 9px; color: #777; position: fixed; bottom: -15px; }
-      
-      .title { font-size: 18px; font-weight: bold; color: #2c3e50; text-transform: uppercase; float: right; margin-top: 10px; }
+      body {
+         font-family: 'Helvetica', 'Arial', sans-serif;
+         font-size: 11px;
+         color: #333;
+         margin: 0;
+         padding: 0;
+      }
 
-      .section-title { background: #34495e; color: #fff; padding: 5px 10px; font-weight: bold; margin: 10px 0 5px 0; font-size: 13px; text-transform: uppercase; }
-      .row { width: 100%; clear: both; margin-bottom: 5px; }
-      .col-6 { width: 49%; float: left; }
-      .col-6:last-child { float: right; }
-      .col-3 { width: 24.25%; float: left; margin-right: 1%; }
+      @page {
+         margin: 25px 30px;
+         size: a4 landscape;
+      }
 
-      /* Tables */
-      table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-      th, td { border: 1px solid #bdc3c7; padding: 4px 6px; vertical-align: top; }
-      th { background-color: #ecf0f1; font-weight: bold; font-size: 10px; }
-      td { font-size: 10px; }
-      
-      .company-info table td.label { font-weight: bold; width: 35%; background: #f9f9f9; }
-      
-      /* Images */
-      .photo-box { background: #fff; border: 1px solid #ddd; text-align: center; height: 140px; overflow: hidden; padding: 3px; }
-      .photo-box img { max-height: 130px; max-width: 100%; object-fit: contain; }
-      .photo-label { background: #ecf0f1; border: 1px solid #ddd; border-top: none; text-align: center; font-size: 9px; font-weight: bold; padding: 3px; }
-      .img-placeholder { color: #999; line-height: 140px; font-size: 10px; font-weight: bold; }
+      .header {
+         text-align: center;
+         margin-bottom: 20px;
+         border-bottom: 2px solid #c0392b;
+         padding-bottom: 10px;
+      }
 
-      .page-break { page-break-after: always; }
-      .avoid-break { page-break-inside: avoid; }
+      .header h2 {
+         margin: 0;
+         color: #000;
+         font-size: 18px;
+         text-transform: uppercase;
+      }
+
+      .info-table {
+         width: 100%;
+         border-collapse: collapse;
+         margin-bottom: 20px;
+      }
+
+      .info-table td {
+         padding: 5px;
+         vertical-align: top;
+         border: 1px solid #eee;
+      }
+
+      .label {
+         color: #666;
+         font-size: 9px;
+         text-transform: uppercase;
+         display: block;
+         margin-bottom: 2px;
+      }
+
+      .value {
+         font-weight: bold;
+         font-size: 11px;
+      }
+
+      .details-table {
+         width: 100%;
+         border-collapse: collapse;
+         margin-bottom: 20px;
+      }
+
+      .details-table th {
+         background-color: #2c3e50;
+         color: #fff;
+         padding: 6px 4px;
+         text-align: center;
+         font-size: 9px;
+         border: 1px solid #000;
+      }
+
+      .details-table td {
+         padding: 6px 4px;
+         border: 1px solid #ccc;
+         font-size: 10px;
+         text-align: center;
+         vertical-align: middle;
+      }
+
+      .details-table td.text-left {
+         text-align: left;
+      }
+
+      .bg-light {
+         background-color: #f9f9f9;
+      }
+
+      .footer {
+         position: fixed;
+         bottom: -15px;
+         width: 100%;
+         font-size: 8px;
+         color: #999;
+         text-align: right;
+         border-top: 1px solid #ddd;
+         padding-top: 5px;
+      }
+
+      .photo-box {
+         background: #fff;
+         border: 1px solid #ddd;
+         text-align: center;
+         height: 120px;
+         overflow: hidden;
+         padding: 3px;
+      }
+
+      .photo-box img {
+         max-height: 110px;
+         max-width: 100%;
+         object-fit: contain;
+      }
+
+      .photo-label {
+         background: #ecf0f1;
+         border: 1px solid #ddd;
+         border-top: none;
+         text-align: center;
+         font-size: 9px;
+         font-weight: bold;
+         padding: 4px;
+         color: #c0392b;
+      }
+
+      .img-placeholder {
+         color: #999;
+         line-height: 110px;
+         font-size: 10px;
+         font-weight: bold;
+      }
+
+      .row {
+         width: 100%;
+         clear: both;
+         margin-bottom: 5px;
+      }
+
+      .col-3 {
+         width: 24.25%;
+         float: left;
+         margin-right: 1%;
+      }
+
+      .col-3:last-child {
+         margin-right: 0;
+      }
+
+      .clearfix::after {
+         content: "";
+         clear: both;
+         display: table;
+      }
+
+      .section-title {
+         background: #c0392b;
+         color: #fff;
+         padding: 5px 10px;
+         font-weight: bold;
+         margin: 10px 0 10px 0;
+         font-size: 12px;
+         text-transform: uppercase;
+      }
       
-      .text-center { text-align: center; }
-      .bold { font-weight: bold; }
-      .mb-10 { margin-bottom: 10px; }
-      .mt-10 { margin-top: 10px; }
-      .clearfix::after { content: ""; clear: both; display: table; }
+      .page-break {
+         page-break-before: always;
+      }
    </style>
 </head>
+
 <body>
+   @php 
+      $firstTyre = $session->installations->first();
+      $firstCheck = $checks->first();
+      $measurementMode = $masterVehicle->operation_measurement ?? 'HM';
+   @endphp
 
-@php $firstTyre = $session->installations->first(); @endphp
+   <div class="header">
+      <h2>TYRE MONITORING REPORT (CHECK #{{ $checkNumber }})</h2>
+      <div style="font-size: 10px; margin-top: 5px;">CPH Dashboard - Tyre Performance Module</div>
+   </div>
 
-<!-- HEADER & PAGE 1 -->
-<div class="header clearfix">
-   <div style="float: left; width: 50%;">
-      <h2 style="margin: 0; color: #e74c3c;">CPH TYRE PERFORMANCE</h2>
-      <div style="font-size: 10px; color: #7f8c8d;">Trusted Monitoring Dashboard</div>
-   </div>
-   <div class="title">MONITORING REPORT</div>
-</div>
+   <table class="info-table">
+      <tr>
+         <td width="25%">
+            <span class="label">DATE</span>
+            <span class="value">{{ \Carbon\Carbon::parse($date)->format('d F Y') }}</span>
+            <br><br>
+            <span class="label">COMPANY</span>
+            <span class="value">{{ $masterVehicle->company->name ?? 'PT ABC' }}</span>
+         </td>
+         <td width="25%">
+            <span class="label">UNIT / NO. POLISI</span>
+            <span class="value" style="color: #c0392b; font-size: 12px;">{{ $vehicle->vehicle_number }} / {{ $vehicle->no_polisi ?? '-' }}</span>
+            <br><br>
+            <span class="label">VEHICLE TYPE</span>
+            <span class="value">{{ $vehicle->jenis_kendaraan ?? '-' }}</span>
+         </td>
+         <td width="25%">
+            <span class="label">ODOMETER (KM)</span>
+            <span class="value">{{ number_format($firstCheck->odometer_reading ?? $session->odometer_start, 0) }}</span>
+            <br><br>
+            <span class="label">HOUR METER (HM)</span>
+            <span class="value">{{ number_format($firstCheck->hm_reading ?? $session->hm_start, 0) }}</span>
+         </td>
+         <td width="25%">
+            <span class="label">INSPECTOR</span>
+            <span class="value">{{ $firstCheck->driver_name ?? $vehicle->driver_name ?? '-' }}</span>
+            <br><br>
+            <span class="label">LOAD AVG / RETASE</span>
+            <span class="value">{{ $session->retase ?? '-' }} Ton</span>
+         </td>
+      </tr>
+   </table>
 
-<div class="section-title">A. EXECUTIVE SUMMARY & COMPANY PROFILE</div>
-<div class="row">
-   <div class="col-6">
-      <table class="company-info">
-         <tbody>
-            <tr><td class="label">Company Name</td><td>{{ $masterVehicle->company->name ?? 'PT ABC' }}</td></tr>
-            <tr><td class="label">Address</td><td>{{ $masterVehicle->company->address ?? '-' }}</td></tr>
-            <tr><td class="label">PIC / Contact</td><td>{{ $checks->first()->driver_name ?? $vehicle->driver_name }} ({{ $vehicle->phone_number ?? '-' }})</td></tr>
-            <tr><td class="label">Vehicle Number</td><td class="bold" style="font-size: 12px; color: #e74c3c;">{{ $vehicle->vehicle_number }}</td></tr>
-            <tr><td class="label">Vehicle Tonnage</td><td>{{ $vehicle->load_capacity ?? '-' }} Ton</td></tr>
-            <tr><td class="label">Load Average / Retase</td><td>{{ $session->retase ?? '-' }} Ton</td></tr>
-            <tr><td class="label">Route / Condition</td><td>{{ $vehicle->application ?? '-' }}</td></tr>
-         </tbody>
-      </table>
-   </div>
-   <div class="col-6">
-       <table class="company-info">
-          <tbody>
-             <tr><td class="label">Tyre Brand used</td><td>{{ $firstTyre->brand ?? '-' }}</td></tr>
-             <tr><td class="label">Size / Pattern</td><td>{{ $firstTyre->size ?? '-' }} / {{ $firstTyre->pattern ?? '-' }}</td></tr>
-             <tr><td class="label">Recommended PSI</td><td>{{ $checks->first()->inf_press_recommended ?? '-' }} PSI</td></tr>
-             <tr><td class="label">Original Tread (OTD)</td><td>{{ number_format($firstTyre->original_rtd ?? 0, 1) }} mm</td></tr>
-             <tr><td class="label">Target Lifetime</td><td>{{ $checks->max('projected_life_km') ? number_format($checks->max('projected_life_km'), 0) : '-' }} KM</td></tr>
-             <tr><td class="label">Total Inspect Date</td><td>{{ $date }}</td></tr>
-             <tr><td class="label">Actual Reading ODO</td><td class="bold">{{ number_format($checks->first()->odometer_reading ?? 0, 0) }} KM</td></tr>
-          </tbody>
-       </table>
-   </div>
-</div>
-
-<div class="section-title mt-10">B. UNIT PHOTOS & EVIDENCE</div>
-<div class="row">
-   <div class="col-3">
-       <div class="photo-box">
-          @if (isset($generalImages['map']))
-             <img src="{{ public_path('storage/' . $generalImages['map']->image_path) }}">
-          @else
-             <div class="img-placeholder">NO SCREENSHOT</div>
-          @endif
-       </div>
-       <div class="photo-label">Route Map Screenshot</div>
-   </div>
-   <div class="col-3">
-       <div class="photo-box">
-          @if (isset($generalImages['fleet']))
-             <img src="{{ public_path('storage/' . $generalImages['fleet']->image_path) }}">
-          @else
-             <div class="img-placeholder">NO PHOTO</div>
-          @endif
-       </div>
-       <div class="photo-label">Fleet Photo</div>
-   </div>
-   <div class="col-3">
-       <div class="photo-box">
-          @if (isset($generalImages['vehicle']))
-             <img src="{{ public_path('storage/' . $generalImages['vehicle']->image_path) }}">
-          @else
-             <div class="img-placeholder">NO PHOTO</div>
-          @endif
-       </div>
-       <div class="photo-label">Vehicle Identity</div>
-   </div>
-   <div class="col-3" style="margin-right: 0;">
-       <div class="photo-box">
-          @if (isset($generalImages['odometer_km']))
-             <img src="{{ public_path('storage/' . $generalImages['odometer_km']->image_path) }}">
-          @else
-             <div class="img-placeholder">NO PHOTO</div>
-          @endif
-       </div>
-       <div class="photo-label" style="color: #e74c3c">Actual ODO: {{ number_format($checks->first()->odometer_reading ?? 0, 0) }} KM</div>
-   </div>
-</div>
-
-<!-- PAGE BREAK FOR TYRES GALLERY -->
-<div class="page-break"></div>
-
-<div class="header clearfix">
-   <div style="float: left; width: 50%;">
-      <h2 style="margin: 0; color: #e74c3c;">CPH TYRE PERFORMANCE</h2>
-      <div style="font-size: 10px; color: #7f8c8d;">Trusted Monitoring Dashboard</div>
-   </div>
-   <div class="title">TYRE INSPECTION GALLERY</div>
-</div>
-
-@php $counter = 0; @endphp
-@foreach ($checks as $index => $check)
-   @if ($counter > 0 && $counter % 2 == 0)
-      <div class="page-break"></div>
-      <div class="header clearfix">
-         <div style="float: left; width: 50%;">
-            <h2 style="margin: 0; color: #e74c3c;">CPH TYRE PERFORMANCE</h2>
-            <div style="font-size: 10px; color: #7f8c8d;">Trusted Monitoring Dashboard</div>
-         </div>
-         <div class="title">TYRE INSPECTION GALLERY</div>
-      </div>
-   @endif
-
-   <div class="avoid-break mb-10" style="padding: 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 4px;">
-      <div class="section-title" style="margin-top:0; background: #2c3e50;">Position: {{ $check->position }} | Serial: {{ $check->serial_number }}</div>
-      
-      <!-- Stats mini table -->
-      <table>
+   <div class="section-title">A. TYRE INSPECTION DETAILS</div>
+   <table class="details-table">
+      <thead>
          <tr>
-             <th>Brand</th><td>{{ $check->tyre->brand->brand_name ?? '-' }}</td>
-             <th>Size</th><td>{{ $check->tyre->size->size ?? '-' }}</td>
-             <th>Avg RTD</th><td class="bold">{{ number_format(($check->rtd_1+$check->rtd_2+$check->rtd_3+$check->rtd_4)/4, 1) }} mm</td>
-             <th>Pressure</th><td class="bold">{{ $check->inf_press_actual }} PSI</td>
-             <th>Condition</th><td class="bold" style="text-transform:uppercase;">{{ $check->condition }}</td>
+            <th width="30">POS</th>
+            <th>SERIAL NUMBER</th>
+            <th>BRAND / SIZE</th>
+            <th width="45">PSI (R/A)</th>
+            <th width="80">RTD (1-4)</th>
+            <th width="30">AVG</th>
+            <th width="35">WORN%</th>
+            <th width="40">{{ $measurementMode === 'HM' ? 'HM/mm' : 'KM/mm' }}</th>
+            <th width="45">{{ $measurementMode === 'HM' ? 'SISA HM' : 'SISA KM' }}</th>
+            <th width="50">CONDITION</th>
+            <th>REMARKS</th>
+            <th width="35">FOTO</th>
          </tr>
-      </table>
-
-      <!-- Photos block -->
-      <div class="row" style="margin-top: 8px;">
-         @php
-            $tyrePhotos = $images->get($check->serial_number, collect())->take(6);
-            $cols = 0;
-         @endphp
-         
-         @foreach ($tyrePhotos as $img)
-            <div style="width: 15.6%; float: left; margin-right: 1.1%; <?php if($cols==5) echo 'margin-right:0;'; ?>">
-               <div class="photo-box" style="height: 110px; background: #fff;">
-                  <img src="{{ public_path('storage/' . $img->image_path) }}" style="max-height: 104px;">
-               </div>
-               <div class="photo-label" style="font-size:8px; border-bottom: 2px solid #34495e;">{{ ucwords(str_replace(['tyre_', '_'], ' ', $img->image_type)) }}</div>
-            </div>
-            @php $cols++; @endphp
+      </thead>
+      <tbody>
+         @foreach ($checks as $c)
+            @php 
+               $avgVal = ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + ($c->rtd_4 ?? 0)) / ($c->rtd_4 ? 4 : 3);
+            @endphp
+            <tr>
+               <td class="bg-light"><strong>{{ $c->position }}</strong></td>
+               <td><strong>{{ $c->serial_number }}</strong></td>
+               <td>
+                  {{ $c->tyre->brand->brand_name ?? '-' }}<br>
+                  <span style="font-size: 8px; color:#666;">{{ $c->tyre->size->size ?? '-' }}</span>
+               </td>
+               <td>{{ $c->inf_press_recommended ?? '-' }} / {{ $c->inf_press_actual ?? '-' }}</td>
+               <td style="font-size: 9px;">
+                  {{ $c->rtd_1 }}/{{ $c->rtd_2 }}/{{ $c->rtd_3 }}{{ $c->rtd_4 ? '/' . $c->rtd_4 : '' }}
+               </td>
+               <td><strong>{{ number_format($avgVal, 1) }}</strong></td>
+               <td>{{ number_format($c->worn_percentage, 0) }}%</td>
+               <td>{{ $c->km_per_mm > 0 ? number_format($c->km_per_mm, 0) : 'N/A' }}</td>
+               <td style="color: #c0392b; font-weight: bold;">
+                  {{ $c->projected_life_km > 0 ? number_format($c->projected_life_km, 0) : 'N/A' }}
+               </td>
+               <td style="text-transform: uppercase;">
+                  <span style="color: {{ $c->condition == 'ok' ? '#27ae60' : ($c->condition == 'warning' ? '#f39c12' : '#c0392b') }}; font-weight: bold;">
+                     {{ $c->condition }}
+                  </span>
+               </td>
+               <td class="text-left" style="font-size: 9px;">
+                  {{ $c->recommendation ?? '-' }}<br>
+                  <span style="color: #666;">{{ $c->notes ?? '' }}</span>
+               </td>
+               <td>
+                  @if (isset($images[$c->serial_number]) && count($images[$c->serial_number]) > 0)
+                     @php $photo = $images[$c->serial_number]->first(); @endphp
+                     <img src="{{ public_path('storage/' . $photo->image_path) }}" style="width: 25px; height: 25px; object-fit: cover; border: 1px solid #ccc;">
+                  @else
+                     -
+                  @endif
+               </td>
+            </tr>
          @endforeach
+      </tbody>
+   </table>
 
-         @for ($i = $cols; $i < 6; $i++)
-            <div style="width: 15.6%; float: left; margin-right: 1.1%; <?php if($i==5) echo 'margin-right:0;'; ?>">
-               <div class="photo-box" style="height: 110px; background: #eee;">
-                  <div class="img-placeholder" style="line-height:110px; color:#bbb;">NO PHOTO</div>
-               </div>
-               <div class="photo-label" style="font-size:8px; border-bottom: 2px solid #bdc3c7; color:#bbb;">NOT RECORDED</div>
-            </div>
-         @endfor
+   <div class="page-break"></div>
+   <div class="header">
+      <h2>GENERAL EVIDENCE & PHOTOS</h2>
+      <div style="font-size: 10px; margin-top: 5px;">CPH Dashboard - Tyre Performance Module</div>
+   </div>
+
+   <div class="row clearfix" style="margin-top: 20px;">
+      <div class="col-3">
+          <div class="photo-box">
+             @if (isset($generalImages['vehicle']))
+                <img src="{{ public_path('storage/' . $generalImages['vehicle']->image_path) }}">
+             @else
+                <div class="img-placeholder">NO PHOTO</div>
+             @endif
+          </div>
+          <div class="photo-label">Vehicle Identity</div>
+      </div>
+      <div class="col-3">
+          <div class="photo-box">
+             @if (isset($generalImages['odometer_km']))
+                <img src="{{ public_path('storage/' . $generalImages['odometer_km']->image_path) }}">
+             @elseif (isset($generalImages['hm']))
+                <img src="{{ public_path('storage/' . $generalImages['hm']->image_path) }}">
+             @else
+                <div class="img-placeholder">NO PHOTO</div>
+             @endif
+          </div>
+          <div class="photo-label">Odometer (KM/HM)</div>
+      </div>
+      <div class="col-3">
+          <div class="photo-box">
+             @if (isset($generalImages['fleet']))
+                <img src="{{ public_path('storage/' . $generalImages['fleet']->image_path) }}">
+             @else
+                <div class="img-placeholder">NO PHOTO</div>
+             @endif
+          </div>
+          <div class="photo-label">Fleet / Unit Status</div>
+      </div>
+      <div class="col-3">
+          <div class="photo-box">
+             @if (isset($generalImages['map']))
+                <img src="{{ public_path('storage/' . $generalImages['map']->image_path) }}">
+             @else
+                <div class="img-placeholder">NO PHOTO</div>
+             @endif
+          </div>
+          <div class="photo-label">Map / Location Map</div>
       </div>
    </div>
 
-   @php $counter++; @endphp
-@endforeach
-
-<div class="footer">
-   CPH Dashboard Monitoring System &copy; {{ date('Y') }} - Printed on {{ date('d M Y H:i:s') }}
-</div>
-
+   <div class="footer">
+      Generated on: {{ date('d/m/Y H:i:s') }} | CPH Dashboard Monitoring System
+   </div>
 </body>
+
 </html>
