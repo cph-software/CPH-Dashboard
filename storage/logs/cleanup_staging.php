@@ -86,7 +86,7 @@ try {
         DB::table('tyre_monitoring_installation')->whereIn('serial_number', $tyreSerials)->delete();
         DB::table('tyre_monitoring_removal')->whereIn('serial_number', $tyreSerials)->delete();
         DB::table('tyre_examination_images')->whereIn('serial_number', $tyreSerials)->delete();
-        DB::table('tyre_examination_details')->whereIn('tyre_id', clone(App\Models\Tyre::withoutGlobalScopes()->where('tyre_company_id', $companyId))->pluck('id')->toArray())->delete();
+        DB::table('tyre_examination_details')->whereIn('tyre_id', $tyreIds)->delete();
         
         $examIds = DB::table('tyre_examinations')->where('tyre_company_id', $companyId)->pluck('id')->toArray();
         if(!empty($examIds)){
