@@ -1221,7 +1221,7 @@
                   var bodyHtml = '';
                   res.data.forEach(function(row) {
                      if (row.id) {
-                        bodyHtml += '<tr style="cursor:pointer" onclick="window.open(\'/master_tyre/' + row.id + '\', \'_blank\')" title="Klik untuk buka detail">';
+                        bodyHtml += '<tr style="cursor:pointer" onclick="window.location.href=\'/master_tyre/' + row.id + '\'" title="Klik untuk buka detail">';
                      } else {
                         bodyHtml += '<tr>';
                      }
@@ -1241,7 +1241,7 @@
                      });
                      if (row.id) {
                         bodyHtml += '<td><a href="/master_tyre/' + row.id +
-                           '" class="btn btn-sm btn-icon btn-text-primary" target="_blank" onclick="event.stopPropagation()"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                           '" class="btn btn-sm btn-icon btn-text-primary" onclick="event.stopPropagation()"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
                   });
@@ -2034,7 +2034,7 @@
                   dataArr.forEach(function(row) {
                      var rowUrl = row._url || null;
                      if (rowUrl) {
-                        bodyHtml += '<tr style="cursor:pointer" onclick="window.open(\'' + rowUrl + '\', \'_blank\')" title="Klik untuk buka detail">';
+                        bodyHtml += '<tr style="cursor:pointer" onclick="window.location.href=\'' + rowUrl + '\'" title="Klik untuk buka detail">';
                      } else {
                         bodyHtml += '<tr>';
                      }
