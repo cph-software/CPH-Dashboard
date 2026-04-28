@@ -27,22 +27,63 @@
    <div class="container-xxl flex-grow-1 container-p-y">
       <div class="row align-items-center mb-4 g-3">
          <div class="col-md-6">
-            <h4 class="fw-bold mb-1"><i class="icon-base ri ri-history-line me-2 text-primary"></i>Log Aktivitas</h4>
-            <p class="text-muted mb-0 small">Memantau seluruh jejak aktivitas pengguna di dalam sistem.</p>
+            <h4 class="fw-bold mb-1"><i class="icon-base ri ri-history-line me-2 text-primary"></i>{{ isset($pageTitle) ? $pageTitle : 'Log Aktivitas' }}</h4>
+            <p class="text-muted mb-0 small">{{ isset($pageDescription) ? $pageDescription : 'Memantau seluruh jejak aktivitas pengguna di dalam sistem.' }}</p>
          </div>
-         <div class="col-md-6">
-            <form action="{{ url()->current() }}" method="GET">
-               <div class="input-group input-group-merge shadow-sm">
-                  <span class="input-group-text border-0"><i class="icon-base ri ri-search-line"></i></span>
-                  <input type="text" name="search" class="form-control border-0"
-                     placeholder="Cari aktivitas, modul, atau user..." value="{{ request('search') }}">
-                  <button type="submit" class="btn btn-primary">Cari</button>
-                  @if (request('search'))
-                     <a href="{{ url()->current() }}" class="btn btn-outline-secondary"><i
-                           class="icon-base ri ri-refresh-line"></i></a>
-                  @endif
-               </div>
-            </form>
+         <div class="col-md-6 text-md-end">
+            <button type="button" class="btn btn-outline-primary shadow-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+               <i class="icon-base ri ri-filter-3-line me-1"></i> Advanced Filter
+            </button>
+            <a href="{{ request()->fullUrlWithQuery(['export' => 'true']) }}" class="btn btn-success shadow-sm ms-2">
+               <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export CSV
+            </a>
+         </div>
+      </div>
+
+      <!-- Advanced Filter Collapse -->
+      <div class="collapse {{ request()->except('page') ? 'show' : '' }} mb-4" id="filterCollapse">
+         <div class="card shadow-sm border-0">
+            <div class="card-body">
+               <form action="{{ url()->current() }}" method="GET" class="row g-3 align-items-end">
+                  <div class="col-md-4">
+                     <label class="form-label text-muted small text-uppercase fw-bold">Pencarian Umum</label>
+                     <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="icon-base ri ri-search-line"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Cari aktivitas, user..." value="{{ request('search') }}">
+                     </div>
+                  </div>
+                  <div class="col-md-2">
+                     <label class="form-label text-muted small text-uppercase fw-bold">Modul</label>
+                     <select name="module" class="form-select select2">
+                        <option value="">Semua Modul</option>
+                        @foreach($modules as $mod)
+                           <option value="{{ $mod }}" {{ request('module') == $mod ? 'selected' : '' }}>{{ $mod }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="col-md-2">
+                     <label class="form-label text-muted small text-uppercase fw-bold">Tipe Aksi</label>
+                     <select name="action_type" class="form-select select2">
+                        <option value="">Semua Aksi</option>
+                        @foreach($actionTypes as $type)
+                           <option value="{{ $type }}" {{ request('action_type') == $type ? 'selected' : '' }}>{{ ucfirst($type) }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="col-md-3">
+                     <label class="form-label text-muted small text-uppercase fw-bold">Rentang Tanggal</label>
+                     <div class="input-group">
+                        <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                        <span class="input-group-text">s/d</span>
+                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                     </div>
+                  </div>
+                  <div class="col-md-1 d-flex">
+                     <button type="submit" class="btn btn-primary w-100 me-2"><i class="icon-base ri ri-search-line"></i></button>
+                     <a href="{{ url()->current() }}" class="btn btn-outline-secondary w-100"><i class="icon-base ri ri-refresh-line"></i></a>
+                  </div>
+               </form>
+            </div>
          </div>
       </div>
 

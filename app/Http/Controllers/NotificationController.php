@@ -7,6 +7,28 @@ use Illuminate\Http\Request;
 class NotificationController extends Controller
 {
     /**
+     * Display a listing of all notifications for the authenticated user.
+     */
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        $query = $user->notifications();
+
+        // Optional filter by read status
+        if ($request->has('status')) {
+            if ($request->status == 'unread') {
+                $query->whereNull('read_at');
+            } elseif ($request->status == 'read') {
+                $query->whereNotNull('read_at');
+            }
+        }
+
+        $notifications = $query->paginate(20)->withQueryString();
+
+        return view('notifications.index', compact('notifications'));
+    }
+
+    /**
      * Get unread notifications for the authenticated user.
      */
     public function getUnread(Request $request)

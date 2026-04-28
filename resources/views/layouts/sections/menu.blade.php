@@ -28,8 +28,25 @@
                     $cleanUrl = ltrim($url, '/');
                     $fullUrl = $appPrefix ? $appPrefix . '/' . $cleanUrl : $cleanUrl;
 
-                    $isActive = request()->is($fullUrl . '*');
+                    $currentPath = request()->path();
+                    $isActive = ($currentPath === $fullUrl);
                     $isOpen = $isActive;
+
+                    if (!$isActive && $fullUrl !== '/' && $fullUrl !== '#') {
+                        if (str_starts_with($currentPath, $fullUrl . '/')) {
+                            // Check if currentPath exactly matches another menu's URL
+                            $isAnotherMenuExact = $allRoleMenus->contains(function($rm) use ($currentPath, $appPrefix) {
+                                $otherUrl = ltrim($rm->menu->url, '/');
+                                $otherFullUrl = $appPrefix ? $appPrefix . '/' . $otherUrl : $otherUrl;
+                                return $otherFullUrl === $currentPath;
+                            });
+
+                            if (!$isAnotherMenuExact) {
+                                $isActive = true;
+                                $isOpen = true;
+                            }
+                        }
+                    }
 
                     // If not active, check if any children are active
                     if (!$isActive && $menuId) {

@@ -90,6 +90,11 @@
                      </li>
                   </ul>
                </li>
+               <li class="dropdown-menu-footer border-top">
+                  <a href="{{ route('notifications.index') }}" class="dropdown-item d-flex justify-content-center p-3 text-primary">
+                     <span class="fw-medium">Lihat Semua Notifikasi</span>
+                  </a>
+               </li>
             </ul>
          </li>
          @endif

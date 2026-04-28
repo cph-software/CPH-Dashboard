@@ -430,9 +430,6 @@
 
 
       <div class="row g-4 mb-4">
-         <div class="col-12">
-            <div class="section-label"><i class="ri-eye-line me-1"></i> MONITORING OVERVIEW</div>
-         </div>
          <div class="col-xl-4 col-lg-4 col-sm-6">
             <div class="card kpi-card card-border-shadow-info h-100" data-kpi-type="monitoring_active">
                <div class="card-body py-3">
@@ -651,7 +648,7 @@
                   <div style="width: 200px;">
                      <select id="brandDetailSelector" class="form-select select2">
                         <option value="">Pilih Brand</option>
-                        @foreach ($filterBrands as $b)
+                        @foreach ($internalBrandOptions as $b)
                            <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
                         @endforeach
                      </select>
@@ -1115,45 +1112,37 @@
          // ===========================================
          // Cascading Dropdown Helper
          // ===========================================
-         function updateCascadingDropdowns(sizeSelector, brandSelector, patternSelector, callback) {
+         function updateCascadingDropdowns(sizeSelector, brandSelector, patternSelector, chartType, callback) {
             var size = $(sizeSelector).val();
             var brandId = $(brandSelector).val();
+            var pattern = $(patternSelector).val();
 
             $.ajax({
                url: filterOptionsUrl,
-               data: { size: size, brand_id: brandId },
+               data: { size: size, brand_id: brandId, pattern: pattern, chart_type: chartType },
                success: function(res) {
                   if (!res.success) {
                      if (callback) callback();
                      return;
                   }
 
-                  // Repopulate Brand dropdown (keep current selection if still valid)
-                  var currentBrand = $(brandSelector).val();
-                  $(brandSelector).empty().append('<option value="">Semua Brand</option>');
-                  res.brands.forEach(function(b) {
-                     $(brandSelector).append('<option value="' + b.id + '">' + b.brand_name + '</option>');
-                  });
-                  // Restore selection if still available
-                  if (currentBrand && $(brandSelector).find('option[value="' + currentBrand + '"]').length) {
-                     $(brandSelector).val(currentBrand);
-                  } else {
-                     $(brandSelector).val('');
+                  function updateSelect(selector, options, valueKey, textKey, defaultText) {
+                     var currentVal = $(selector).val();
+                     $(selector).empty().append('<option value="">' + defaultText + '</option>');
+                     options.forEach(function(item) {
+                        $(selector).append('<option value="' + item[valueKey] + '">' + item[textKey] + '</option>');
+                     });
+                     if (currentVal && $(selector).find('option[value="' + currentVal + '"]').length) {
+                        $(selector).val(currentVal);
+                     } else {
+                        $(selector).val('');
+                     }
+                     $(selector).trigger('change.select2');
                   }
-                  $(brandSelector).trigger('change.select2');
 
-                  // Repopulate Pattern dropdown
-                  var currentPattern = $(patternSelector).val();
-                  $(patternSelector).empty().append('<option value="">Semua Pattern</option>');
-                  res.patterns.forEach(function(p) {
-                     $(patternSelector).append('<option value="' + p.name + '">' + p.name + '</option>');
-                  });
-                  if (currentPattern && $(patternSelector).find('option[value="' + currentPattern + '"]').length) {
-                     $(patternSelector).val(currentPattern);
-                  } else {
-                     $(patternSelector).val('');
-                  }
-                  $(patternSelector).trigger('change.select2');
+                  updateSelect(sizeSelector, res.sizes, 'size', 'size', 'Semua Size');
+                  updateSelect(brandSelector, res.brands, 'id', 'brand_name', 'Semua Brand');
+                  updateSelect(patternSelector, res.patterns, 'name', 'name', 'Semua Pattern');
 
                   if (callback) callback();
                },
@@ -1510,35 +1499,9 @@
                }
             });
          }
-         $('#brandFilterSize').on('change', function() {
-            updateCascadingDropdowns('#brandFilterSize', '#brandFilterBrand', '#brandFilterPattern', triggerBrandPerformanceAjax);
+         $('#brandFilterSize, #brandFilterBrand, #brandFilterPattern').on('change', function() {
+            updateCascadingDropdowns('#brandFilterSize', '#brandFilterBrand', '#brandFilterPattern', 'performance', triggerBrandPerformanceAjax);
          });
-         $('#brandFilterBrand').on('change', function() {
-            // Only refresh patterns (not brands)
-            var size = $('#brandFilterSize').val();
-            var brandId = $(this).val();
-            $.ajax({
-               url: filterOptionsUrl,
-               data: { size: size, brand_id: brandId },
-               success: function(res) {
-                  if (!res.success) { triggerBrandPerformanceAjax(); return; }
-                  var currentPattern = $('#brandFilterPattern').val();
-                  $('#brandFilterPattern').empty().append('<option value="">Semua Pattern</option>');
-                  res.patterns.forEach(function(p) {
-                     $('#brandFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
-                  });
-                  if (currentPattern && $('#brandFilterPattern').find('option[value="' + currentPattern + '"]').length) {
-                     $('#brandFilterPattern').val(currentPattern);
-                  } else {
-                     $('#brandFilterPattern').val('');
-                  }
-                  $('#brandFilterPattern').trigger('change.select2');
-                  triggerBrandPerformanceAjax();
-               },
-               error: function() { triggerBrandPerformanceAjax(); }
-            });
-         });
-         $('#brandFilterPattern').on('change', triggerBrandPerformanceAjax);
 
 
          var cpkChartInst = null;
@@ -1629,34 +1592,9 @@
                }
             });
          }
-         $('#cpkFilterSize').on('change', function() {
-            updateCascadingDropdowns('#cpkFilterSize', '#cpkFilterBrand', '#cpkFilterPattern', triggerCpkAjax);
+         $('#cpkFilterSize, #cpkFilterBrand, #cpkFilterPattern').on('change', function() {
+            updateCascadingDropdowns('#cpkFilterSize', '#cpkFilterBrand', '#cpkFilterPattern', 'cpk', triggerCpkAjax);
          });
-         $('#cpkFilterBrand').on('change', function() {
-            var size = $('#cpkFilterSize').val();
-            var brandId = $(this).val();
-            $.ajax({
-               url: filterOptionsUrl,
-               data: { size: size, brand_id: brandId },
-               success: function(res) {
-                  if (!res.success) { triggerCpkAjax(); return; }
-                  var currentPattern = $('#cpkFilterPattern').val();
-                  $('#cpkFilterPattern').empty().append('<option value="">Semua Pattern</option>');
-                  res.patterns.forEach(function(p) {
-                     $('#cpkFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
-                  });
-                  if (currentPattern && $('#cpkFilterPattern').find('option[value="' + currentPattern + '"]').length) {
-                     $('#cpkFilterPattern').val(currentPattern);
-                  } else {
-                     $('#cpkFilterPattern').val('');
-                  }
-                  $('#cpkFilterPattern').trigger('change.select2');
-                  triggerCpkAjax();
-               },
-               error: function() { triggerCpkAjax(); }
-            });
-         });
-         $('#cpkFilterPattern').on('change', triggerCpkAjax);
 
          // --- Brand Detail Section Logic ---
          var brandDetailUrl = '{{ route('master_data.brand-detail-performance') }}';
@@ -1879,33 +1817,9 @@
                }
             });
          }
-         $('#axleFilterSize').on('change', function() {
-            updateCascadingDropdowns('#axleFilterSize', '#axleFilterBrand', '#axleFilterPattern', triggerAxleAjax);
+         $('#axleFilterSize, #axleFilterBrand, #axleFilterPattern').on('change', function() {
+            updateCascadingDropdowns('#axleFilterSize', '#axleFilterBrand', '#axleFilterPattern', 'axle', triggerAxleAjax);
          });
-         $('#axleFilterBrand').on('change', function() {
-            var size = $('#axleFilterSize').val();
-            var brandId = $(this).val();
-            $.ajax({
-               url: filterOptionsUrl,
-               data: { size: size, brand_id: brandId },
-               success: function(res) {
-                  if (!res.success) return;
-                  var currentPattern = $('#axleFilterPattern').val();
-                  $('#axleFilterPattern').empty().append('<option value="">Semua Pattern</option>');
-                  res.patterns.forEach(function(p) {
-                     $('#axleFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
-                  });
-                  if (currentPattern && $('#axleFilterPattern').find('option[value="' + currentPattern + '"]').length) {
-                     $('#axleFilterPattern').val(currentPattern);
-                  } else {
-                     $('#axleFilterPattern').val('');
-                  }
-                  $('#axleFilterPattern').trigger('change.select2');
-                  triggerAxleAjax();
-               }
-            });
-         });
-         $('#axleFilterPattern').on('change', triggerAxleAjax);
 
          var failureData = @json($failureDistribution);
          if (failureData.length > 0) {

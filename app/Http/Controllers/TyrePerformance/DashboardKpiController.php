@@ -354,9 +354,9 @@ class DashboardKpiController extends Controller
 
     private function kpiMonitoringActive()
     {
-        $sessions = \App\Models\TyreMonitoringSession::where('status', 'active')->with('vehicle')->get();
+        $sessions = \App\Models\TyreMonitoringSession::where('status', 'active')->with(['vehicle', 'masterVehicle'])->get();
         $table = $sessions->map(fn($s) => [
-            'vehicle' => $s->vehicle->kode_kendaraan ?? '-', 'status' => $s->status,
+            'vehicle' => $s->masterVehicle?->kode_kendaraan ?? $s->vehicle?->fleet_name ?? $s->vehicle?->vehicle_number ?? '-', 'status' => $s->status,
             'created' => $s->created_at ? $s->created_at->format('d/m/Y') : '-',
             '_url' => route('monitoring.sessions.show', $s->session_id),
         ]);
@@ -371,9 +371,9 @@ class DashboardKpiController extends Controller
     private function kpiPendingChecks()
     {
         $checks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')
-            ->with('session.vehicle')->limit(200)->get();
+            ->with(['session.vehicle', 'session.masterVehicle'])->limit(200)->get();
         $table = $checks->map(fn($c) => [
-            'vehicle' => $c->session->vehicle->kode_kendaraan ?? '-',
+            'vehicle' => $c->session?->masterVehicle?->kode_kendaraan ?? $c->session?->vehicle?->fleet_name ?? $c->session?->vehicle?->vehicle_number ?? '-',
             'check_no' => 'Check #'.$c->check_number,
             'date' => $c->check_date ? Carbon::parse($c->check_date)->format('d/m/Y') : '-',
             '_url' => $c->session ? route('monitoring.sessions.show', $c->session->session_id) : '#',

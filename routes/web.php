@@ -37,6 +37,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::post('/eula/accept', [LoginController::class, 'acceptEula'])->name('eula.accept');
 
     // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/unread', [\App\Http\Controllers\NotificationController::class, 'getUnread'])->name('notifications.unread');
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
@@ -214,8 +215,9 @@ Route::middleware(['auth', 'eula'])->group(function () {
         ->middleware('tyre.permission:Import Approval,create');
 
     // Activity Logs
-    Route::get('activity-logs', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('tyre.permission:All Activity');
-    Route::get('activity-logs/{id}', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'show'])->name('activity-logs.show')->middleware('tyre.permission:All Activity');
+    Route::get('/activity-logs/import-export', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'importExportLogs'])->name('activity-logs.import-export');
+    Route::get('/activity-logs/edit-history', [\App\Http\Controllers\UserManagement\ActivityLogController::class, 'editHistoryLogs'])->name('activity-logs.edit-history');
+    Route::resource('activity-logs', \App\Http\Controllers\UserManagement\ActivityLogController::class)->only(['index', 'show'])->middleware('tyre.permission:All Activity');
 
    // Onboarding Management (Internal)
    Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->middleware('tyre.permission:Onboarding Manager');

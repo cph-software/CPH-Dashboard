@@ -284,9 +284,19 @@ class DashboardController extends Controller
         // ========================================
         // Filter Options for Brand Performance & CPK Charts
         // ========================================
-        $filterSizes = TyreSize::select('size')->whereNotNull('size')->distinct()->orderBy('size')->get();
-        $filterPatterns = TyrePattern::select('name')->where('status', 'Active')->whereNotNull('name')->distinct()->orderBy('name')->get();
-        $filterBrands = TyreBrand::select('id', 'brand_name')->orderBy('brand_name')->get();
+        $existingSizeIds = Tyre::whereNotNull('tyre_size_id')->distinct()->pluck('tyre_size_id');
+        $filterSizes = TyreSize::whereIn('id', $existingSizeIds)->select('size')->whereNotNull('size')->distinct()->orderBy('size')->get();
+
+        $existingPatternIds = Tyre::whereNotNull('tyre_pattern_id')->distinct()->pluck('tyre_pattern_id');
+        $filterPatterns = TyrePattern::whereIn('id', $existingPatternIds)->select('name')->whereNotNull('name')->distinct()->orderBy('name')->get();
+
+        $existingBrandIds = Tyre::whereNotNull('tyre_brand_id')->distinct()->pluck('tyre_brand_id');
+        $filterBrands = TyreBrand::whereIn('id', $existingBrandIds)->select('id', 'brand_name')->orderBy('brand_name')->get();
+
+        $performanceBrandIds = Tyre::where(function($q) {
+            $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
+        })->whereNotNull('tyre_brand_id')->distinct()->pluck('tyre_brand_id');
+        $internalBrandOptions = TyreBrand::whereIn('id', $performanceBrandIds)->select('id', 'brand_name')->orderBy('brand_name')->get();
 
         // ========================================
         // 6. Data Quality Score
@@ -353,6 +363,7 @@ class DashboardController extends Controller
             'filterSizes',
             'filterPatterns',
             'filterBrands',
+            'internalBrandOptions',
             // New Features
             'dataQuality'
         ));
@@ -665,39 +676,66 @@ class DashboardController extends Controller
     {
         $size = $request->input('size');
         $brandId = $request->input('brand_id');
+        $pattern = $request->input('pattern');
+        $chartType = $request->input('chart_type');
 
-        $tyreQuery = Tyre::query();
+        $baseQuery = Tyre::query();
 
-        // Filter by size string if provided
-        if ($size) {
-            $tyreQuery->whereHas('size', function ($q) use ($size) {
-                $q->where('size', $size);
-            });
+        $user = auth()->user();
+        $companyId = $user->tyre_company_id ?? 0;
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+            $companyId = session('active_company_id');
+        }
+        $company = \App\Models\TyreCompany::find($companyId);
+        $measurementMode = $company->measurement_mode ?? 'BOTH';
+
+        if ($chartType === 'cpk') {
+            $baseQuery->whereNotNull('price')->where('price', '>', 0);
+            if ($measurementMode === 'HM') {
+                $baseQuery->where('total_lifetime_hm', '>', 0);
+            } elseif ($measurementMode === 'KM') {
+                $baseQuery->where('total_lifetime_km', '>', 0);
+            } else {
+                $baseQuery->where(function($q) {
+                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
+                });
+            }
+        } elseif ($chartType === 'performance') {
+            if ($measurementMode === 'HM') {
+                $baseQuery->where('total_lifetime_hm', '>', 0);
+            } elseif ($measurementMode === 'KM') {
+                $baseQuery->where('total_lifetime_km', '>', 0);
+            } else {
+                $baseQuery->where(function($q) {
+                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
+                });
+            }
         }
 
-        // Get brands matching the current size filter
-        $brandsQuery = (clone $tyreQuery);
-        $brandIds = $brandsQuery->whereNotNull('tyre_brand_id')
-            ->distinct()
-            ->pluck('tyre_brand_id');
-        $brands = TyreBrand::whereIn('id', $brandIds)
-            ->orderBy('brand_name')
-            ->get(['id', 'brand_name']);
+        // 1. Get valid Sizes (apply brand and pattern, ignore size)
+        $qSizes = (clone $baseQuery);
+        if ($brandId) $qSizes->where('tyre_brand_id', $brandId);
+        if ($pattern) $qSizes->whereHas('pattern', fn($q) => $q->where('name', $pattern));
+        $sizeIds = $qSizes->whereNotNull('tyre_size_id')->distinct()->pluck('tyre_size_id');
+        $sizes = TyreSize::whereIn('id', $sizeIds)->select('size')->distinct()->orderBy('size')->get();
 
-        // Get patterns matching current size + brand filter
-        $patternsQuery = (clone $tyreQuery);
-        if ($brandId) {
-            $patternsQuery->where('tyre_brand_id', $brandId);
-        }
-        $patternIds = $patternsQuery->whereNotNull('tyre_pattern_id')
-            ->distinct()
-            ->pluck('tyre_pattern_id');
-        $patterns = TyrePattern::whereIn('id', $patternIds)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        // 2. Get valid Brands (apply size and pattern, ignore brand)
+        $qBrands = (clone $baseQuery);
+        if ($size) $qBrands->whereHas('size', fn($q) => $q->where('size', $size));
+        if ($pattern) $qBrands->whereHas('pattern', fn($q) => $q->where('name', $pattern));
+        $brandIds = $qBrands->whereNotNull('tyre_brand_id')->distinct()->pluck('tyre_brand_id');
+        $brands = TyreBrand::whereIn('id', $brandIds)->orderBy('brand_name')->get(['id', 'brand_name']);
+
+        // 3. Get valid Patterns (apply size and brand, ignore pattern)
+        $qPatterns = (clone $baseQuery);
+        if ($size) $qPatterns->whereHas('size', fn($q) => $q->where('size', $size));
+        if ($brandId) $qPatterns->where('tyre_brand_id', $brandId);
+        $patternIds = $qPatterns->whereNotNull('tyre_pattern_id')->distinct()->pluck('tyre_pattern_id');
+        $patterns = TyrePattern::whereIn('id', $patternIds)->orderBy('name')->distinct()->get(['id', 'name']);
 
         return response()->json([
             'success' => true,
+            'sizes' => $sizes,
             'brands' => $brands,
             'patterns' => $patterns,
         ]);
