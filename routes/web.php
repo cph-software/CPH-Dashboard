@@ -69,6 +69,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::get('tyre-dashboard/brand-detail-performance', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'brandDetailPerformanceAjax'])->name('master_data.brand-detail-performance')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/cpk-by-brand', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'cpkByBrandAjax'])->name('master_data.cpk-by-brand')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/scrap-by-position', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'scrapByPositionAjax'])->name('master_data.scrap-by-position')->middleware('tyre.permission:Dashboard');
+    Route::get('tyre-dashboard/filter-options', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'filterOptionsAjax'])->name('master_data.filter-options')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/export', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'export'])->name('master_data.export')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/download-template', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'downloadTemplate'])->name('master_data.download-template')->middleware('tyre.permission:Dashboard');
 

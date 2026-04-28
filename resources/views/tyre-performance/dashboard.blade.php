@@ -504,23 +504,33 @@
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="brandFilterSize" class="form-select select2">
                               <option value="">Semua Size</option>
                               @foreach ($filterSizes as $s)
-                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                                 <option value="{{ $s->size }}">{{ $s->size }}</option>
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-price-tag-3-line me-1"></i>
+                              Brand</label>
+                           <select id="brandFilterBrand" class="form-select select2">
+                              <option value="">Semua Brand</option>
+                              @foreach ($filterBrands as $b)
+                                 <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="brandFilterPattern" class="form-select select2">
                               <option value="">Semua Pattern</option>
                               @foreach ($filterPatterns as $p)
-                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                 <option value="{{ $p->name }}">{{ $p->name }}</option>
                               @endforeach
                            </select>
                         </div>
@@ -541,23 +551,33 @@
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="cpkFilterSize" class="form-select select2">
                               <option value="">Semua Size</option>
                               @foreach ($filterSizes as $s)
-                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                                 <option value="{{ $s->size }}">{{ $s->size }}</option>
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-price-tag-3-line me-1"></i>
+                              Brand</label>
+                           <select id="cpkFilterBrand" class="form-select select2">
+                              <option value="">Semua Brand</option>
+                              @foreach ($filterBrands as $b)
+                                 <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="cpkFilterPattern" class="form-select select2">
                               <option value="">Semua Pattern</option>
                               @foreach ($filterPatterns as $p)
-                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                 <option value="{{ $p->name }}">{{ $p->name }}</option>
                               @endforeach
                            </select>
                         </div>
@@ -693,23 +713,33 @@
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-danger"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="axleFilterSize" class="form-select select2">
                               <option value="">Semua Size</option>
                               @foreach ($filterSizes as $s)
-                                 <option value="{{ $s->id }}">{{ $s->size }}</option>
+                                 <option value="{{ $s->size }}">{{ $s->size }}</option>
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                           <label class="filter-label mb-1 d-block text-danger"><i class="ri-price-tag-3-line me-1"></i>
+                              Brand</label>
+                           <select id="axleFilterBrand" class="form-select select2">
+                              <option value="">Semua Brand</option>
+                              @foreach ($filterBrands as $b)
+                                 <option value="{{ $b->id }}">{{ $b->brand_name }}</option>
+                              @endforeach
+                           </select>
+                        </div>
+                        <div class="col-md-4">
                            <label class="filter-label mb-1 d-block text-danger"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="axleFilterPattern" class="form-select select2">
                               <option value="">Semua Pattern</option>
                               @foreach ($filterPatterns as $p)
-                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                 <option value="{{ $p->name }}">{{ $p->name }}</option>
                               @endforeach
                            </select>
                         </div>
@@ -985,7 +1015,53 @@
          var brandPerformanceUrl = '{{ route('master_data.brand-performance') }}';
          var cpkByBrandUrl = '{{ route('master_data.cpk-by-brand') }}';
          var axleAnalysisUrl = '{{ route('master_data.scrap-by-position') }}';
+         var filterOptionsUrl = '{{ route('master_data.filter-options') }}';
          var drillDownDT = null;
+
+         // ===========================================
+         // Cascading Dropdown Helper
+         // ===========================================
+         function updateCascadingDropdowns(sizeSelector, brandSelector, patternSelector, callback) {
+            var size = $(sizeSelector).val();
+            var brandId = $(brandSelector).val();
+
+            $.ajax({
+               url: filterOptionsUrl,
+               data: { size: size, brand_id: brandId },
+               success: function(res) {
+                  if (!res.success) return;
+
+                  // Repopulate Brand dropdown (keep current selection if still valid)
+                  var currentBrand = $(brandSelector).val();
+                  $(brandSelector).empty().append('<option value="">Semua Brand</option>');
+                  res.brands.forEach(function(b) {
+                     $(brandSelector).append('<option value="' + b.id + '">' + b.brand_name + '</option>');
+                  });
+                  // Restore selection if still available
+                  if (currentBrand && $(brandSelector).find('option[value="' + currentBrand + '"]').length) {
+                     $(brandSelector).val(currentBrand);
+                  } else {
+                     $(brandSelector).val('');
+                  }
+                  $(brandSelector).trigger('change.select2');
+
+                  // Repopulate Pattern dropdown
+                  var currentPattern = $(patternSelector).val();
+                  $(patternSelector).empty().append('<option value="">Semua Pattern</option>');
+                  res.patterns.forEach(function(p) {
+                     $(patternSelector).append('<option value="' + p.name + '">' + p.name + '</option>');
+                  });
+                  if (currentPattern && $(patternSelector).find('option[value="' + currentPattern + '"]').length) {
+                     $(patternSelector).val(currentPattern);
+                  } else {
+                     $(patternSelector).val('');
+                  }
+                  $(patternSelector).trigger('change.select2');
+
+                  if (callback) callback();
+               }
+            });
+         }
 
          // Global dates from PHP
          var globalStartDate = '{{ $startDate->format('Y-m-d') }}';
@@ -1244,37 +1320,44 @@
             }
          }).render();
 
+         var brandChartInst = null;
          function renderBrandChart(data) {
             var container = document.querySelector('#brandPerformanceChart');
+            if (brandChartInst) {
+               brandChartInst.destroy();
+               brandChartInst = null;
+            }
             if (!data || data.length === 0) {
                container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
-            new ApexCharts(container, {
+            var hasBrand = $('#brandFilterBrand').val();
+            brandChartInst = new ApexCharts(container, {
                chart: {
                   type: 'bar',
                   height: 280,
                   events: {
                      dataPointSelection: function(e, c, cfg) {
-                        openDrillDown('brand_performance', data[cfg.dataPointIndex].brand, {
-                           size_id: $('#brandFilterSize').val(),
-                           pattern_id: $('#brandFilterPattern').val()
+                        openDrillDown('brand_performance', data[cfg.dataPointIndex].label, {
+                           size: $('#brandFilterSize').val(),
+                           brand_id: $('#brandFilterBrand').val(),
+                           pattern: $('#brandFilterPattern').val()
                         });
                      }
                   }
                },
                series: [{
-                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
+                  name: hasBrand ? 'Avg by Pattern' : 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
                   data: data.map(function(b) {
                      return b.avg_km;
                   })
                }],
                xaxis: {
                   categories: data.map(function(b) {
-                     return b.brand;
+                     return b.label;
                   })
                },
-               colors: [colors.primary],
+               colors: [hasBrand ? colors.info : colors.primary],
                plotOptions: {
                   bar: {
                      horizontal: true,
@@ -1290,27 +1373,66 @@
                      return v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }} (' + data[o.dataPointIndex].count + ' ban)';
                   }
                }
-            }).render();
+            });
+            brandChartInst.render();
          }
          renderBrandChart(@json($brandPerformance));
 
-         $('#brandFilterSize, #brandFilterPattern').on('change', function() {
+         function triggerBrandPerformanceAjax() {
+            if (brandChartInst) {
+               brandChartInst.destroy();
+               brandChartInst = null;
+            }
             showChartLoading('#brandPerformanceChart', 'Memuat performa brand...');
             $.ajax({
                url: brandPerformanceUrl,
                data: {
-                  size_id: $('#brandFilterSize').val(),
-                  pattern_id: $('#brandFilterPattern').val()
+                  size: $('#brandFilterSize').val(),
+                  brand_id: $('#brandFilterBrand').val(),
+                  pattern: $('#brandFilterPattern').val()
                },
                success: function(res) {
                   if (res.success) renderBrandChart(res.data);
                }
             });
+         }
+         $('#brandFilterSize').on('change', function() {
+            updateCascadingDropdowns('#brandFilterSize', '#brandFilterBrand', '#brandFilterPattern', triggerBrandPerformanceAjax);
          });
+         $('#brandFilterBrand').on('change', function() {
+            // Only refresh patterns (not brands)
+            var size = $('#brandFilterSize').val();
+            var brandId = $(this).val();
+            $.ajax({
+               url: filterOptionsUrl,
+               data: { size: size, brand_id: brandId },
+               success: function(res) {
+                  if (!res.success) return;
+                  var currentPattern = $('#brandFilterPattern').val();
+                  $('#brandFilterPattern').empty().append('<option value="">Semua Pattern</option>');
+                  res.patterns.forEach(function(p) {
+                     $('#brandFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
+                  });
+                  if (currentPattern && $('#brandFilterPattern').find('option[value="' + currentPattern + '"]').length) {
+                     $('#brandFilterPattern').val(currentPattern);
+                  } else {
+                     $('#brandFilterPattern').val('');
+                  }
+                  $('#brandFilterPattern').trigger('change.select2');
+                  triggerBrandPerformanceAjax();
+               }
+            });
+         });
+         $('#brandFilterPattern').on('change', triggerBrandPerformanceAjax);
 
 
+         var cpkChartInst = null;
          function renderCpkChart(data) {
             var container = document.querySelector('#cpkByBrandChart');
+            if (cpkChartInst) {
+               cpkChartInst.destroy();
+               cpkChartInst = null;
+            }
             if (!data || data.length === 0) {
                container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
@@ -1318,31 +1440,33 @@
             data.sort(function(a, b) {
                return a.cpk - b.cpk;
             });
-            new ApexCharts(container, {
+            var hasBrand = $('#cpkFilterBrand').val();
+            cpkChartInst = new ApexCharts(container, {
                chart: {
                   type: 'bar',
                   height: 280,
                   events: {
                      dataPointSelection: function(e, c, cfg) {
-                        openDrillDown('brand_cpk', data[cfg.dataPointIndex].brand, {
-                           size_id: $('#cpkFilterSize').val(),
-                           pattern_id: $('#cpkFilterPattern').val()
+                        openDrillDown('brand_cpk', data[cfg.dataPointIndex].label, {
+                           size: $('#cpkFilterSize').val(),
+                           brand_id: $('#cpkFilterBrand').val(),
+                           pattern: $('#cpkFilterPattern').val()
                         });
                      }
                   }
                },
                series: [{
-                  name: 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }}',
+                  name: hasBrand ? 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }} by Pattern' : 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }}',
                   data: data.map(function(b) {
                      return b.cpk;
                   })
                }],
                xaxis: {
                   categories: data.map(function(b) {
-                     return b.brand;
+                     return b.label;
                   })
                },
-               colors: [colors.warning],
+               colors: [hasBrand ? colors.info : colors.warning],
                plotOptions: {
                   bar: {
                      horizontal: true,
@@ -1358,23 +1482,56 @@
                      return 'Rp ' + v.toLocaleString() + ' (' + data[o.dataPointIndex].count + ' ban)';
                   }
                }
-            }).render();
+            });
+            cpkChartInst.render();
          }
          renderCpkChart(@json($cpkByBrand));
 
-         $('#cpkFilterSize, #cpkFilterPattern').on('change', function() {
+         function triggerCpkAjax() {
+            if (cpkChartInst) {
+               cpkChartInst.destroy();
+               cpkChartInst = null;
+            }
             showChartLoading('#cpkByBrandChart', 'Memuat data CPK...');
             $.ajax({
                url: cpkByBrandUrl,
                data: {
-                  size_id: $('#cpkFilterSize').val(),
-                  pattern_id: $('#cpkFilterPattern').val()
+                  size: $('#cpkFilterSize').val(),
+                  brand_id: $('#cpkFilterBrand').val(),
+                  pattern: $('#cpkFilterPattern').val()
                },
                success: function(res) {
                   if (res.success) renderCpkChart(res.data);
                }
             });
+         }
+         $('#cpkFilterSize').on('change', function() {
+            updateCascadingDropdowns('#cpkFilterSize', '#cpkFilterBrand', '#cpkFilterPattern', triggerCpkAjax);
          });
+         $('#cpkFilterBrand').on('change', function() {
+            var size = $('#cpkFilterSize').val();
+            var brandId = $(this).val();
+            $.ajax({
+               url: filterOptionsUrl,
+               data: { size: size, brand_id: brandId },
+               success: function(res) {
+                  if (!res.success) return;
+                  var currentPattern = $('#cpkFilterPattern').val();
+                  $('#cpkFilterPattern').empty().append('<option value="">Semua Pattern</option>');
+                  res.patterns.forEach(function(p) {
+                     $('#cpkFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
+                  });
+                  if (currentPattern && $('#cpkFilterPattern').find('option[value="' + currentPattern + '"]').length) {
+                     $('#cpkFilterPattern').val(currentPattern);
+                  } else {
+                     $('#cpkFilterPattern').val('');
+                  }
+                  $('#cpkFilterPattern').trigger('change.select2');
+                  triggerCpkAjax();
+               }
+            });
+         });
+         $('#cpkFilterPattern').on('change', triggerCpkAjax);
 
          // --- Brand Detail Section Logic ---
          var brandDetailUrl = '{{ route('master_data.brand-detail-performance') }}';
@@ -1551,6 +1708,7 @@
             var container = document.querySelector('#axleAnalysisChart');
             if (axleChart) {
                axleChart.destroy();
+               axleChart = null;
             }
             if (!data || data.length === 0) {
                container.innerHTML = '<div class="text-center py-5">Belum ada data scrap</div>';
@@ -1589,21 +1747,53 @@
          }
          renderAxleChart(@json($axleAnalysis));
 
-         $('#axleFilterSize, #axleFilterPattern').on('change', function() {
+         function triggerAxleAjax() {
+            if (axleChart) {
+               axleChart.destroy();
+               axleChart = null;
+            }
             showChartLoading('#axleAnalysisChart', 'Memuat data posisi...');
             $.ajax({
                url: axleAnalysisUrl,
                data: {
                   start_date: globalStartDate,
                   end_date: globalEndDate,
-                  size_id: $('#axleFilterSize').val(),
-                  pattern_id: $('#axleFilterPattern').val()
+                  size: $('#axleFilterSize').val(),
+                  brand_id: $('#axleFilterBrand').val(),
+                  pattern: $('#axleFilterPattern').val()
                },
                success: function(res) {
                   if (res.success) renderAxleChart(res.data);
                }
             });
+         }
+         $('#axleFilterSize').on('change', function() {
+            updateCascadingDropdowns('#axleFilterSize', '#axleFilterBrand', '#axleFilterPattern', triggerAxleAjax);
          });
+         $('#axleFilterBrand').on('change', function() {
+            var size = $('#axleFilterSize').val();
+            var brandId = $(this).val();
+            $.ajax({
+               url: filterOptionsUrl,
+               data: { size: size, brand_id: brandId },
+               success: function(res) {
+                  if (!res.success) return;
+                  var currentPattern = $('#axleFilterPattern').val();
+                  $('#axleFilterPattern').empty().append('<option value="">Semua Pattern</option>');
+                  res.patterns.forEach(function(p) {
+                     $('#axleFilterPattern').append('<option value="' + p.name + '">' + p.name + '</option>');
+                  });
+                  if (currentPattern && $('#axleFilterPattern').find('option[value="' + currentPattern + '"]').length) {
+                     $('#axleFilterPattern').val(currentPattern);
+                  } else {
+                     $('#axleFilterPattern').val('');
+                  }
+                  $('#axleFilterPattern').trigger('change.select2');
+                  triggerAxleAjax();
+               }
+            });
+         });
+         $('#axleFilterPattern').on('change', triggerAxleAjax);
 
          var failureData = @json($failureDistribution);
          if (failureData.length > 0) {

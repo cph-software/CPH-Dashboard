@@ -284,8 +284,8 @@ class DashboardController extends Controller
         // ========================================
         // Filter Options for Brand Performance & CPK Charts
         // ========================================
-        $filterSizes = TyreSize::select('id', 'size')->distinct()->orderBy('size')->get();
-        $filterPatterns = TyrePattern::select('id', 'name')->where('status', 'Active')->orderBy('name')->get();
+        $filterSizes = TyreSize::select('size')->whereNotNull('size')->distinct()->orderBy('size')->get();
+        $filterPatterns = TyrePattern::select('name')->where('status', 'Active')->whereNotNull('name')->distinct()->orderBy('name')->get();
         $filterBrands = TyreBrand::select('id', 'brand_name')->orderBy('brand_name')->get();
 
         return view('tyre-performance.dashboard', compact(
@@ -404,7 +404,7 @@ class DashboardController extends Controller
     /**
      * Get Brand Performance data with optional filters (Cached)
      */
-    private function getBrandPerformanceData($sizeId = null, $type = null, $patternId = null)
+    private function getBrandPerformanceData($size = null, $type = null, $pattern = null, $brandId = null)
     {
         $user = auth()->user();
         $companyId = $user->tyre_company_id ?? 0;
@@ -414,15 +414,10 @@ class DashboardController extends Controller
         $company = \App\Models\TyreCompany::find($companyId);
         $measurementMode = $company->measurement_mode ?? 'BOTH';
 
-        $cacheKey = "brand_perf_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}_mode{$measurementMode}";
+        $cacheKey = "brand_perf_comp_{$companyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId, $measurementMode) {
-            $query = Tyre::select(
-                'tyre_brand_id',
-                DB::raw('AVG(total_lifetime_km) as avg_km'),
-                DB::raw('AVG(total_lifetime_hm) as avg_hm'),
-                DB::raw('COUNT(*) as tyre_count')
-            );
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
+            $query = Tyre::query();
             
             if ($measurementMode === 'HM') {
                 $query->where('total_lifetime_hm', '>', 0);
@@ -431,32 +426,64 @@ class DashboardController extends Controller
             }
 
             // Apply filters
-            if ($sizeId) {
-                $query->where('tyre_size_id', $sizeId);
+            if ($size) {
+                $query->whereHas('size', function ($q) use ($size) {
+                    $q->where('size', $size);
+                });
             }
             if ($type) {
                 $query->whereHas('size', function ($q) use ($type) {
                     $q->where('type', $type);
                 });
             }
-            if ($patternId) {
-                $query->where('tyre_pattern_id', $patternId);
+            if ($pattern) {
+                $query->whereHas('pattern', function ($q) use ($pattern) {
+                    $q->where('name', $pattern);
+                });
             }
 
-            return $query->groupBy('tyre_brand_id')
-                ->with('brand:id,brand_name')
-                ->get()
-                ->map(function ($item) use ($measurementMode) {
+            if ($brandId) {
+                // Group by Pattern instead of Brand
+                $query->where('tyre_brand_id', $brandId)
+                    ->select(
+                        'tyre_pattern_id',
+                        DB::raw('AVG(total_lifetime_km) as avg_km'),
+                        DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+                        DB::raw('COUNT(*) as tyre_count')
+                    )
+                    ->groupBy('tyre_pattern_id')
+                    ->with('pattern:id,name');
+
+                return $query->get()->map(function ($item) use ($measurementMode) {
                     return [
-                        'brand' => $item->brand->brand_name ?? 'Unknown',
+                        'label' => $item->pattern->name ?? 'Unknown',
                         'avg_km' => $measurementMode === 'HM' ? round($item->avg_hm, 0) : round($item->avg_km, 0),
                         'count' => $item->tyre_count,
                     ];
                 });
+            } else {
+                // Group by Brand
+                $query->select(
+                        'tyre_brand_id',
+                        DB::raw('AVG(total_lifetime_km) as avg_km'),
+                        DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+                        DB::raw('COUNT(*) as tyre_count')
+                    )
+                    ->groupBy('tyre_brand_id')
+                    ->with('brand:id,brand_name');
+
+                return $query->get()->map(function ($item) use ($measurementMode) {
+                    return [
+                        'label' => $item->brand->brand_name ?? 'Unknown',
+                        'avg_km' => $measurementMode === 'HM' ? round($item->avg_hm, 0) : round($item->avg_km, 0),
+                        'count' => $item->tyre_count,
+                    ];
+                });
+            }
         });
     }
 
-    private function getCpkByBrandData($sizeId = null, $type = null, $patternId = null)
+    private function getCpkByBrandData($size = null, $type = null, $pattern = null, $brandId = null)
     {
         $user = auth()->user();
         $companyId = $user->tyre_company_id ?? 0;
@@ -466,17 +493,10 @@ class DashboardController extends Controller
         $company = \App\Models\TyreCompany::find($companyId);
         $measurementMode = $company->measurement_mode ?? 'BOTH';
         
-        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$sizeId}_ty{$type}_pat{$patternId}_mode{$measurementMode}";
+        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($sizeId, $type, $patternId, $measurementMode) {
-            $query = Tyre::select(
-                'tyre_brand_id',
-                DB::raw('SUM(price) as total_price'),
-                DB::raw('SUM(total_lifetime_km) as total_km'),
-                DB::raw('SUM(total_lifetime_hm) as total_hm'),
-                DB::raw('COUNT(*) as tyre_count')
-            )
-                ->whereNotNull('price')
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
+            $query = Tyre::whereNotNull('price')
                 ->where('price', '>', 0);
             
             if ($measurementMode === 'HM') {
@@ -486,30 +506,64 @@ class DashboardController extends Controller
             }
 
             // Apply filters
-            if ($sizeId) {
-                $query->where('tyre_size_id', $sizeId);
+            if ($size) {
+                $query->whereHas('size', function ($q) use ($size) {
+                    $q->where('size', $size);
+                });
             }
             if ($type) {
                 $query->whereHas('size', function ($q) use ($type) {
                     $q->where('type', $type);
                 });
             }
-            if ($patternId) {
-                $query->where('tyre_pattern_id', $patternId);
+            if ($pattern) {
+                $query->whereHas('pattern', function ($q) use ($pattern) {
+                    $q->where('name', $pattern);
+                });
             }
 
-            return $query->groupBy('tyre_brand_id')
-                ->with('brand:id,brand_name')
-                ->get()
-                ->map(function ($item) use ($measurementMode) {
+            if ($brandId) {
+                $query->where('tyre_brand_id', $brandId)
+                    ->select(
+                        'tyre_pattern_id',
+                        DB::raw('SUM(price) as total_price'),
+                        DB::raw('SUM(total_lifetime_km) as total_km'),
+                        DB::raw('SUM(total_lifetime_hm) as total_hm'),
+                        DB::raw('COUNT(*) as tyre_count')
+                    )
+                    ->groupBy('tyre_pattern_id')
+                    ->with('pattern:id,name');
+
+                return $query->get()->map(function ($item) use ($measurementMode) {
                     $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
                     $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
                     return [
-                        'brand' => $item->brand->brand_name ?? 'Unknown',
+                        'label' => $item->pattern->name ?? 'Unknown',
                         'cpk' => $measurementMode === 'HM' ? $cpH : $cpK,
                         'count' => $item->tyre_count,
                     ];
                 });
+            } else {
+                $query->select(
+                        'tyre_brand_id',
+                        DB::raw('SUM(price) as total_price'),
+                        DB::raw('SUM(total_lifetime_km) as total_km'),
+                        DB::raw('SUM(total_lifetime_hm) as total_hm'),
+                        DB::raw('COUNT(*) as tyre_count')
+                    )
+                    ->groupBy('tyre_brand_id')
+                    ->with('brand:id,brand_name');
+
+                return $query->get()->map(function ($item) use ($measurementMode) {
+                    $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
+                    $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
+                    return [
+                        'label' => $item->brand->brand_name ?? 'Unknown',
+                        'cpk' => $measurementMode === 'HM' ? $cpH : $cpK,
+                        'count' => $item->tyre_count,
+                    ];
+                });
+            }
         });
     }
 
@@ -518,11 +572,12 @@ class DashboardController extends Controller
      */
     public function brandPerformanceAjax(Request $request)
     {
-        $sizeId = $request->input('size_id');
+        $size = $request->input('size');
         $type = $request->input('type');
-        $patternId = $request->input('pattern_id');
+        $pattern = $request->input('pattern');
+        $brandId = $request->input('brand_id');
 
-        $data = $this->getBrandPerformanceData($sizeId, $type, $patternId);
+        $data = $this->getBrandPerformanceData($size, $type, $pattern, $brandId);
 
         return response()->json([
             'success' => true,
@@ -535,15 +590,61 @@ class DashboardController extends Controller
      */
     public function cpkByBrandAjax(Request $request)
     {
-        $sizeId = $request->input('size_id');
+        $size = $request->input('size');
         $type = $request->input('type');
-        $patternId = $request->input('pattern_id');
+        $pattern = $request->input('pattern');
+        $brandId = $request->input('brand_id');
 
-        $data = $this->getCpkByBrandData($sizeId, $type, $patternId);
+        $data = $this->getCpkByBrandData($size, $type, $pattern, $brandId);
 
         return response()->json([
             'success' => true,
             'data' => $data,
+        ]);
+    }
+
+    /**
+     * AJAX: Cascading filter options for dashboard chart dropdowns
+     */
+    public function filterOptionsAjax(Request $request)
+    {
+        $size = $request->input('size');
+        $brandId = $request->input('brand_id');
+
+        $tyreQuery = Tyre::query();
+
+        // Filter by size string if provided
+        if ($size) {
+            $tyreQuery->whereHas('size', function ($q) use ($size) {
+                $q->where('size', $size);
+            });
+        }
+
+        // Get brands matching the current size filter
+        $brandsQuery = (clone $tyreQuery);
+        $brandIds = $brandsQuery->whereNotNull('tyre_brand_id')
+            ->distinct()
+            ->pluck('tyre_brand_id');
+        $brands = TyreBrand::whereIn('id', $brandIds)
+            ->orderBy('brand_name')
+            ->get(['id', 'brand_name']);
+
+        // Get patterns matching current size + brand filter
+        $patternsQuery = (clone $tyreQuery);
+        if ($brandId) {
+            $patternsQuery->where('tyre_brand_id', $brandId);
+        }
+        $patternIds = $patternsQuery->whereNotNull('tyre_pattern_id')
+            ->distinct()
+            ->pluck('tyre_pattern_id');
+        $patterns = TyrePattern::whereIn('id', $patternIds)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'brands' => $brands,
+            'patterns' => $patterns,
         ]);
     }
 
@@ -617,11 +718,12 @@ class DashboardController extends Controller
     {
         $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date'))->startOfDay() : null;
         $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date'))->endOfDay() : null;
-        $sizeId = $request->get('size_id');
+        $size = $request->get('size');
         $type = $request->get('type');
-        $patternId = $request->get('pattern_id');
+        $pattern = $request->get('pattern');
+        $brandId = $request->get('brand_id');
 
-        $data = $this->getScrapByPositionData($startDate, $endDate, $sizeId, $type, $patternId);
+        $data = $this->getScrapByPositionData($startDate, $endDate, $size, $type, $pattern, $brandId);
 
         return response()->json([
             'success' => true,
@@ -632,7 +734,7 @@ class DashboardController extends Controller
     /**
      * Helper method to fetch scrap by position data
      */
-    private function getScrapByPositionData($startDate = null, $endDate = null, $sizeId = null, $type = null, $patternId = null)
+    private function getScrapByPositionData($startDate = null, $endDate = null, $size = null, $type = null, $pattern = null, $brandId = null)
     {
         $query = TyreMovement::where('movement_type', 'Removal')
             ->where('target_status', 'Scrap')
@@ -643,17 +745,23 @@ class DashboardController extends Controller
             $query->whereBetween('tyre_movements.movement_date', [$startDate, $endDate]);
         }
 
-        if ($sizeId) {
-            $query->where('tyres.tyre_size_id', $sizeId);
+        if ($size || $type) {
+            $query->join('tyre_sizes', 'tyres.tyre_size_id', '=', 'tyre_sizes.id');
+            if ($size) {
+                $query->where('tyre_sizes.size', $size);
+            }
+            if ($type) {
+                $query->where('tyre_sizes.type', $type);
+            }
         }
 
-        if ($type) {
-            $query->join('tyre_sizes', 'tyres.tyre_size_id', '=', 'tyre_sizes.id')
-                ->where('tyre_sizes.type', $type);
+        if ($pattern) {
+            $query->join('tyre_patterns', 'tyres.tyre_pattern_id', '=', 'tyre_patterns.id')
+                  ->where('tyre_patterns.name', $pattern);
         }
 
-        if ($patternId) {
-            $query->where('tyres.tyre_pattern_id', $patternId);
+        if ($brandId) {
+            $query->where('tyres.tyre_brand_id', $brandId);
         }
 
         return $query->select('tyre_position_details.position_name', DB::raw('count(*) as total'))
