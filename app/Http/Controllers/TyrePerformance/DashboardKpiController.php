@@ -76,6 +76,7 @@ class DashboardKpiController extends Controller
                 'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
             ], DAS::lifetimeData($t, $mode), [
                 'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
+                '_url' => route('tyre-master.show', $t->id),
             ]));
 
         return response()->json([
@@ -124,7 +125,9 @@ class DashboardKpiController extends Controller
             'position' => $t->currentPosition->position_name ?? '-',
             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth.' mm' : '-',
             'rtd' => $t->current_tread_depth ? $t->current_tread_depth.' mm' : '-',
-        ], DAS::lifetimeData($t, $mode)));
+        ], DAS::lifetimeData($t, $mode), [
+            '_url' => route('tyre-master.show', $t->id),
+        ]));
 
         return response()->json([
             'success' => true, 'title' => 'Detail Ban Terpasang',
@@ -166,6 +169,7 @@ class DashboardKpiController extends Controller
             'size' => $t->size->size ?? '-', 'pattern' => $t->pattern->name ?? '-',
             'status' => $t->status, 'location' => $t->location->location_name ?? '-',
             'price' => $t->price ? 'Rp '.number_format($t->price, 0, ',', '.') : '-',
+            '_url' => route('tyre-master.show', $t->id),
         ]);
 
         return response()->json([
@@ -215,6 +219,7 @@ class DashboardKpiController extends Controller
         ], DAS::lifetimeData($t, $mode), [
             'status' => $t->status, 'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
             'price' => $t->price ? 'Rp '.number_format($t->price, 0, ',', '.') : '-',
+            '_url' => route('tyre-master.show', $t->id),
         ]));
 
         $sortField = $tyres->avg('total_lifetime_hm') > $tyres->avg('total_lifetime_km') ? 'total_lifetime_hm' : 'total_lifetime_km';
@@ -325,7 +330,9 @@ class DashboardKpiController extends Controller
             'serial_number' => $t->serial_number, 'brand' => $t->brand->brand_name ?? '-',
             'size' => $t->size->size ?? '-', 'pattern' => $t->pattern->name ?? '-',
             'location' => $t->location->location_name ?? '-',
-        ], DAS::lifetimeData($t, $mode)));
+        ], DAS::lifetimeData($t, $mode), [
+            '_url' => route('tyre-master.show', $t->id),
+        ]));
 
         return response()->json([
             'success' => true, 'title' => 'Detail Scrap Rate',
@@ -351,6 +358,7 @@ class DashboardKpiController extends Controller
         $table = $sessions->map(fn($s) => [
             'vehicle' => $s->vehicle->kode_kendaraan ?? '-', 'status' => $s->status,
             'created' => $s->created_at ? $s->created_at->format('d/m/Y') : '-',
+            '_url' => route('monitoring.sessions.show', $s->session_id),
         ]);
         return response()->json([
             'success' => true, 'title' => 'Sesi Monitoring Aktif',
@@ -368,6 +376,7 @@ class DashboardKpiController extends Controller
             'vehicle' => $c->session->vehicle->kode_kendaraan ?? '-',
             'check_no' => 'Check #'.$c->check_number,
             'date' => $c->check_date ? Carbon::parse($c->check_date)->format('d/m/Y') : '-',
+            '_url' => $c->session ? route('monitoring.sessions.show', $c->session->session_id) : '#',
         ]);
         return response()->json([
             'success' => true, 'title' => 'Pending Approval',
@@ -389,6 +398,7 @@ class DashboardKpiController extends Controller
             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
             'last_inspection' => $t->last_inspection_date ? Carbon::parse($t->last_inspection_date)->format('d/m/Y') : 'Belum pernah',
             'days' => $t->last_inspection_date ? Carbon::parse($t->last_inspection_date)->diffInDays(now()).' hari' : '∞',
+            '_url' => route('tyre-master.show', $t->id),
         ]);
         return response()->json([
             'success' => true, 'title' => 'Overdue Inspeksi (> 30 Hari)',

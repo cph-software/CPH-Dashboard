@@ -1220,7 +1220,11 @@
 
                   var bodyHtml = '';
                   res.data.forEach(function(row) {
-                     bodyHtml += '<tr>';
+                     if (row.id) {
+                        bodyHtml += '<tr style="cursor:pointer" onclick="window.open(\'/master_tyre/' + row.id + '\', \'_blank\')" title="Klik untuk buka detail">';
+                     } else {
+                        bodyHtml += '<tr>';
+                     }
                      res.keys.forEach(function(key) {
                         var val = (row[key] !== null) ? row[key] : '-';
                         if (key === 'status') {
@@ -1237,7 +1241,7 @@
                      });
                      if (row.id) {
                         bodyHtml += '<td><a href="/master_tyre/' + row.id +
-                           '" class="btn btn-sm btn-icon btn-text-primary"><i class="icon-base ri ri-eye-line"></i></a></td>';
+                           '" class="btn btn-sm btn-icon btn-text-primary" target="_blank" onclick="event.stopPropagation()"><i class="icon-base ri ri-eye-line"></i></a></td>';
                      }
                      bodyHtml += '</tr>';
                   });
@@ -2028,7 +2032,12 @@
                   var bodyHtml = '';
                   var dataArr = Array.isArray(res.data) ? res.data : Object.values(res.data);
                   dataArr.forEach(function(row) {
-                     bodyHtml += '<tr>';
+                     var rowUrl = row._url || null;
+                     if (rowUrl) {
+                        bodyHtml += '<tr style="cursor:pointer" onclick="window.open(\'' + rowUrl + '\', \'_blank\')" title="Klik untuk buka detail">';
+                     } else {
+                        bodyHtml += '<tr>';
+                     }
                      (res.keys || []).forEach(function(k) { bodyHtml += '<td class="small">' + (row[k] ?? '-') + '</td>'; });
                      bodyHtml += '</tr>';
                   });
