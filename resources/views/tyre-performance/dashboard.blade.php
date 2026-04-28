@@ -12,6 +12,7 @@
    <style>
       .kpi-card {
          transition: transform 0.2s ease, box-shadow 0.2s ease;
+         cursor: pointer;
       }
 
       .kpi-card:hover {
@@ -246,7 +247,7 @@
       <div class="row g-4 mb-4">
          {{-- Total Tyres --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-primary h-100">
+            <div class="card kpi-card card-border-shadow-primary h-100" data-kpi-type="total_tyres">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -265,7 +266,7 @@
 
          {{-- Installed --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-success h-100">
+            <div class="card kpi-card card-border-shadow-success h-100" data-kpi-type="installed">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -284,7 +285,7 @@
 
          {{-- In Stock --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-info h-100">
+            <div class="card kpi-card card-border-shadow-info h-100" data-kpi-type="stock">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -301,7 +302,7 @@
 
          {{-- Avg Lifetime --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-warning h-100">
+            <div class="card kpi-card card-border-shadow-warning h-100" data-kpi-type="avg_lifetime">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -334,7 +335,7 @@
 
          {{-- Avg Cost --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-secondary h-100">
+            <div class="card kpi-card card-border-shadow-secondary h-100" data-kpi-type="cost_per">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -369,7 +370,7 @@
 
          {{-- Scrap Rate --}}
          <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-danger h-100">
+            <div class="card kpi-card card-border-shadow-danger h-100" data-kpi-type="scrap_rate">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center mb-2">
                      <div class="avatar avatar-sm me-2">
@@ -385,13 +386,55 @@
          </div>
       </div>
 
-      {{-- MONITORING SUMMARY MINI-CARDS --}}
+      {{-- DATA QUALITY SCORE --}}
+      <div class="row g-4 mb-4">
+         <div class="col-12">
+            <div class="card">
+               <div class="card-body py-3">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                     <div class="d-flex align-items-center gap-2">
+                        <i class="ri-shield-check-line text-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }} ri-24px"></i>
+                        <div>
+                           <h6 class="mb-0 fw-bold">Data Quality Score</h6>
+                           <small class="text-muted">Kelengkapan data mempengaruhi akurasi analitik</small>
+                        </div>
+                     </div>
+                     <span class="badge bg-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }} fs-6">{{ $dataQuality['score'] }}%</span>
+                  </div>
+                  <div class="progress mb-3" style="height: 8px;">
+                     <div class="progress-bar bg-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }}"
+                        role="progressbar" style="width: {{ $dataQuality['score'] }}%"></div>
+                  </div>
+                  <div class="row g-3 text-center">
+                     <div class="col-md-3 col-6">
+                        <div class="small text-muted">Ban Terpasang</div>
+                        <div class="fw-bold {{ $dataQuality['installed'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['installed']) }} / {{ number_format($totalTyres) }}</div>
+                     </div>
+                     <div class="col-md-3 col-6">
+                        <div class="small text-muted">Pernah Beroperasi <i class="ri-information-line" data-bs-toggle="tooltip" title="Ban yang punya data jarak tempuh (KM/HM > 0), dari semua status"></i></div>
+                        <div class="fw-bold {{ $dataQuality['with_lifetime'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['with_lifetime']) }} / {{ number_format($totalTyres) }}</div>
+                     </div>
+                     <div class="col-md-3 col-6">
+                        <div class="small text-muted">Punya Harga</div>
+                        <div class="fw-bold {{ $dataQuality['with_price'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['with_price']) }} / {{ number_format($totalTyres) }}</div>
+                     </div>
+                     <div class="col-md-3 col-6">
+                        <div class="small text-muted">Unit Punya Ban</div>
+                        <div class="fw-bold {{ $dataQuality['vehicles_with_tyres'] > 0 ? 'text-success' : 'text-danger' }}">{{ $dataQuality['vehicles_with_tyres'] }} / {{ $totalVehicles }}</div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+
       <div class="row g-4 mb-4">
          <div class="col-12">
             <div class="section-label"><i class="ri-eye-line me-1"></i> MONITORING OVERVIEW</div>
          </div>
          <div class="col-xl-4 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-info h-100">
+            <div class="card kpi-card card-border-shadow-info h-100" data-kpi-type="monitoring_active">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center justify-content-between">
                      <div>
@@ -407,7 +450,7 @@
             </div>
          </div>
          <div class="col-xl-4 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-warning h-100">
+            <div class="card kpi-card card-border-shadow-warning h-100" data-kpi-type="pending_checks">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center justify-content-between">
                      <div>
@@ -423,7 +466,7 @@
             </div>
          </div>
          <div class="col-xl-4 col-lg-4 col-sm-6">
-            <div class="card kpi-card card-border-shadow-danger h-100">
+            <div class="card kpi-card card-border-shadow-danger h-100" data-kpi-type="overdue_inspection">
                <div class="card-body py-3">
                   <div class="d-flex align-items-center justify-content-between">
                      <div>
@@ -620,6 +663,8 @@
                      <p class="text-muted mb-0">Silakan pilih brand untuk melihat perbandingan pattern dan size.</p>
                   </div>
                   <div id="brandDetailContent" style="display: none;">
+                     {{-- Summary Stats --}}
+                     <div class="row g-3 mb-4" id="brandSummaryRow"></div>
                      <div class="row g-4">
                         <div class="col-xl-6 col-lg-6">
                            <h6 class="text-center mb-3 fw-bold"><i
@@ -632,6 +677,11 @@
                                  class="icon-base ri ri-ruler-2-line me-1 text-primary"></i> Avg
                               Lifetime per Size</h6>
                            <div id="brandSizeChart" style="min-height: 300px;"></div>
+                        </div>
+                        <div class="col-12">
+                           <h6 class="text-center mb-3 fw-bold"><i
+                                 class="icon-base ri ri-map-pin-line me-1 text-success"></i> Performa per Lokasi</h6>
+                           <div id="brandLocationChart" style="min-height: 280px;"></div>
                         </div>
                      </div>
                   </div>
@@ -978,6 +1028,50 @@
          </div>
       </div>
    </div>
+
+   {{-- KPI DETAIL MODAL --}}
+   <div class="modal fade" id="kpiDetailModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+         <div class="modal-content">
+            <div class="modal-header border-bottom">
+               <h5 class="modal-title fw-bold" id="kpiDetailTitle"><i class="ri-bar-chart-box-line me-2 text-primary"></i>Detail</h5>
+               <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-label-primary rounded-pill" id="kpiDetailTotal"></span>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+               </div>
+            </div>
+            <div class="modal-body p-4">
+               {{-- Loading --}}
+               <div id="kpiDetailLoading" class="text-center py-5">
+                  <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;"></div>
+                  <p class="text-muted mt-2 mb-0 small">Memuat data analitik...</p>
+               </div>
+               {{-- Content --}}
+               <div id="kpiDetailContent" style="display:none;">
+                  {{-- Summary Cards --}}
+                  <div class="row g-3 mb-4" id="kpiSummaryCards"></div>
+                  {{-- Charts --}}
+                  <div class="row g-3 mb-4" id="kpiChartsRow">
+                     <div class="col-md-6"><div class="card shadow-none border"><div class="card-header py-2"><h6 class="mb-0 small fw-bold" id="kpiChart1Title"></h6></div><div class="card-body p-2"><div id="kpiChart1" style="min-height:250px;"></div></div></div></div>
+                     <div class="col-md-6"><div class="card shadow-none border"><div class="card-header py-2"><h6 class="mb-0 small fw-bold" id="kpiChart2Title"></h6></div><div class="card-body p-2"><div id="kpiChart2" style="min-height:250px;"></div></div></div></div>
+                  </div>
+                  {{-- Table --}}
+                  <div class="card shadow-none border">
+                     <div class="card-header py-2"><h6 class="mb-0 small fw-bold"><i class="ri-table-line me-1"></i>Data Detail</h6></div>
+                     <div class="card-body p-0">
+                        <div class="table-responsive">
+                           <table class="table table-sm table-hover table-striped mb-0" id="kpiDetailTable" style="width:100%">
+                              <thead class="table-light" id="kpiDetailHead"></thead>
+                              <tbody id="kpiDetailBody"></tbody>
+                           </table>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
 @endsection
 
 @section('vendor-script')
@@ -1029,7 +1123,10 @@
                url: filterOptionsUrl,
                data: { size: size, brand_id: brandId },
                success: function(res) {
-                  if (!res.success) return;
+                  if (!res.success) {
+                     if (callback) callback();
+                     return;
+                  }
 
                   // Repopulate Brand dropdown (keep current selection if still valid)
                   var currentBrand = $(brandSelector).val();
@@ -1058,6 +1155,10 @@
                   }
                   $(patternSelector).trigger('change.select2');
 
+                  if (callback) callback();
+               },
+               error: function() {
+                  console.error('Filter options AJAX failed');
                   if (callback) callback();
                }
             });
@@ -1331,6 +1432,7 @@
                container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
+            container.innerHTML = ''; // Clear loading spinner
             var hasBrand = $('#brandFilterBrand').val();
             brandChartInst = new ApexCharts(container, {
                chart: {
@@ -1392,7 +1494,15 @@
                   pattern: $('#brandFilterPattern').val()
                },
                success: function(res) {
-                  if (res.success) renderBrandChart(res.data);
+                  if (res.success && res.data && res.data.length > 0) {
+                     renderBrandChart(res.data);
+                  } else {
+                     document.querySelector('#brandPerformanceChart').innerHTML = '<div class="text-center py-5 text-muted">Belum ada data untuk filter ini</div>';
+                  }
+               },
+               error: function(xhr) {
+                  console.error('Brand performance AJAX error:', xhr.status, xhr.responseText);
+                  document.querySelector('#brandPerformanceChart').innerHTML = '<div class="text-center py-5 text-danger"><i class="ri-error-warning-line ri-lg me-1"></i>Gagal memuat data</div>';
                }
             });
          }
@@ -1407,7 +1517,7 @@
                url: filterOptionsUrl,
                data: { size: size, brand_id: brandId },
                success: function(res) {
-                  if (!res.success) return;
+                  if (!res.success) { triggerBrandPerformanceAjax(); return; }
                   var currentPattern = $('#brandFilterPattern').val();
                   $('#brandFilterPattern').empty().append('<option value="">Semua Pattern</option>');
                   res.patterns.forEach(function(p) {
@@ -1420,7 +1530,8 @@
                   }
                   $('#brandFilterPattern').trigger('change.select2');
                   triggerBrandPerformanceAjax();
-               }
+               },
+               error: function() { triggerBrandPerformanceAjax(); }
             });
          });
          $('#brandFilterPattern').on('change', triggerBrandPerformanceAjax);
@@ -1437,6 +1548,7 @@
                container.innerHTML = '<div class="text-center py-5">Belum ada data</div>';
                return;
             }
+            container.innerHTML = ''; // Clear loading spinner
             data.sort(function(a, b) {
                return a.cpk - b.cpk;
             });
@@ -1501,7 +1613,15 @@
                   pattern: $('#cpkFilterPattern').val()
                },
                success: function(res) {
-                  if (res.success) renderCpkChart(res.data);
+                  if (res.success && res.data && res.data.length > 0) {
+                     renderCpkChart(res.data);
+                  } else {
+                     document.querySelector('#cpkByBrandChart').innerHTML = '<div class="text-center py-5 text-muted">Belum ada data untuk filter ini</div>';
+                  }
+               },
+               error: function(xhr) {
+                  console.error('CPK AJAX error:', xhr.status, xhr.responseText);
+                  document.querySelector('#cpkByBrandChart').innerHTML = '<div class="text-center py-5 text-danger"><i class="ri-error-warning-line ri-lg me-1"></i>Gagal memuat data</div>';
                }
             });
          }
@@ -1515,7 +1635,7 @@
                url: filterOptionsUrl,
                data: { size: size, brand_id: brandId },
                success: function(res) {
-                  if (!res.success) return;
+                  if (!res.success) { triggerCpkAjax(); return; }
                   var currentPattern = $('#cpkFilterPattern').val();
                   $('#cpkFilterPattern').empty().append('<option value="">Semua Pattern</option>');
                   res.patterns.forEach(function(p) {
@@ -1528,81 +1648,71 @@
                   }
                   $('#cpkFilterPattern').trigger('change.select2');
                   triggerCpkAjax();
-               }
+               },
+               error: function() { triggerCpkAjax(); }
             });
          });
          $('#cpkFilterPattern').on('change', triggerCpkAjax);
 
          // --- Brand Detail Section Logic ---
          var brandDetailUrl = '{{ route('master_data.brand-detail-performance') }}';
-         var brandPatternChart = null;
-         var brandSizeChart = null;
+         var brandPatternChart = null, brandSizeChart = null, brandLocationChart = null;
+
+         function buildBrandSeries(items, mode) {
+            var series = [];
+            if (mode !== 'HM') series.push({ name: 'Avg KM', data: items.map(i => i.avg_km || 0) });
+            if (mode !== 'KM') series.push({ name: 'Avg HM', data: items.map(i => i.avg_hm || 0) });
+            return series;
+         }
+
+         function brandBarOpts(items, mode, height) {
+            return {
+               chart: { type: 'bar', height: height || 300 },
+               series: buildBrandSeries(items, mode),
+               xaxis: { categories: items.map(i => i.label) },
+               colors: [colors.primary, colors.info, colors.warning],
+               plotOptions: { bar: { borderRadius: 4, dataLabels: { position: 'top' }, columnWidth: mode === 'BOTH' ? '60%' : '40%' } },
+               dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '10px' }, formatter: v => v ? v.toLocaleString() : '0' },
+               tooltip: { y: { formatter: v => v ? v.toLocaleString() : '0' } }
+            };
+         }
 
          function renderBrandDetailCharts(data) {
             $('#brandDetailPlaceholder').hide();
             $('#brandDetailContent').show();
+            var mode = data.mode || 'KM';
+            var s = data.summary || {};
 
-            // 1. Pattern Chart
+            // Summary cards
+            var sh = '';
+            sh += '<div class="col-sm-6 col-md-3"><div class="card shadow-none bg-label-primary"><div class="card-body py-3 text-center"><div class="small fw-bold text-uppercase opacity-75">Total Ban</div><div class="fw-bold fs-5">' + (s.total || 0) + '</div></div></div></div>';
+            if (s.avg_km !== undefined) sh += '<div class="col-sm-6 col-md-3"><div class="card shadow-none bg-label-warning"><div class="card-body py-3 text-center"><div class="small fw-bold text-uppercase opacity-75">Avg KM</div><div class="fw-bold fs-5">' + (s.avg_km || 0).toLocaleString() + '</div></div></div></div>';
+            if (s.avg_hm !== undefined) sh += '<div class="col-sm-6 col-md-3"><div class="card shadow-none bg-label-info"><div class="card-body py-3 text-center"><div class="small fw-bold text-uppercase opacity-75">Avg HM</div><div class="fw-bold fs-5">' + (s.avg_hm || 0).toLocaleString() + '</div></div></div></div>';
+            if (s.cpk !== undefined) sh += '<div class="col-sm-6 col-md-3"><div class="card shadow-none bg-label-success"><div class="card-body py-3 text-center"><div class="small fw-bold text-uppercase opacity-75">CPK</div><div class="fw-bold fs-5">Rp ' + (s.cpk || 0).toLocaleString() + '</div></div></div></div>';
+            if (s.cph !== undefined) sh += '<div class="col-sm-6 col-md-3"><div class="card shadow-none bg-label-secondary"><div class="card-body py-3 text-center"><div class="small fw-bold text-uppercase opacity-75">CPH</div><div class="fw-bold fs-5">Rp ' + (s.cph || 0).toLocaleString() + '</div></div></div></div>';
+            $('#brandSummaryRow').html(sh);
+
+            var pItems = Array.isArray(data.by_pattern) ? data.by_pattern : Object.values(data.by_pattern);
+            var sItems = Array.isArray(data.by_size) ? data.by_size : Object.values(data.by_size);
+            var lItems = Array.isArray(data.by_location) ? data.by_location : Object.values(data.by_location);
+
             if (brandPatternChart) brandPatternChart.destroy();
-            brandPatternChart = new ApexCharts(document.querySelector('#brandPatternChart'), {
-               chart: {
-                  type: 'bar',
-                  height: 300
-               },
-               series: [{
-                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
-                  data: data.by_pattern.map(p => p.avg_km)
-               }],
-               xaxis: {
-                  categories: data.by_pattern.map(p => p.label)
-               },
-               colors: [colors.primary],
-               plotOptions: {
-                  bar: {
-                     borderRadius: 4,
-                     dataLabels: {
-                        position: 'top'
-                     }
-                  }
-               },
-               dataLabels: {
-                  enabled: true,
-                  offsetY: -20,
-                  formatter: v => v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }}'
-               }
-            });
+            brandPatternChart = new ApexCharts(document.querySelector('#brandPatternChart'), brandBarOpts(pItems, mode, 300));
             brandPatternChart.render();
 
-            // 2. Size Chart
             if (brandSizeChart) brandSizeChart.destroy();
-            brandSizeChart = new ApexCharts(document.querySelector('#brandSizeChart'), {
-               chart: {
-                  type: 'bar',
-                  height: 300
-               },
-               series: [{
-                  name: 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
-                  data: data.by_size.map(s => s.avg_km)
-               }],
-               xaxis: {
-                  categories: data.by_size.map(s => s.label)
-               },
-               colors: [colors.info],
-               plotOptions: {
-                  bar: {
-                     borderRadius: 4,
-                     dataLabels: {
-                        position: 'top'
-                     }
-                  }
-               },
-               dataLabels: {
-                  enabled: true,
-                  offsetY: -20,
-                  formatter: v => v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }}'
-               }
-            });
+            brandSizeChart = new ApexCharts(document.querySelector('#brandSizeChart'), brandBarOpts(sItems, mode, 300));
             brandSizeChart.render();
+
+            if (brandLocationChart) brandLocationChart.destroy();
+            if (lItems.length > 0) {
+               var locOpts = brandBarOpts(lItems, mode, 280);
+               locOpts.plotOptions.bar.horizontal = true;
+               locOpts.dataLabels.offsetY = 0;
+               locOpts.dataLabels.offsetX = 15;
+               brandLocationChart = new ApexCharts(document.querySelector('#brandLocationChart'), locOpts);
+               brandLocationChart.render();
+            }
          }
 
          $('#brandDetailSelector').on('change', function() {
@@ -1614,9 +1724,7 @@
             }
             $.ajax({
                url: brandDetailUrl,
-               data: {
-                  brand_id: brandId
-               },
+               data: { brand_id: brandId },
                success: function(res) {
                   if (res.success) renderBrandDetailCharts(res);
                }
@@ -1830,6 +1938,131 @@
                }
             }).render();
          }
+
+         // =============================================
+         // KPI DETAIL MODAL — Click handler
+         // =============================================
+         var kpiDetailUrl = '{{ route('master_data.kpi-detail') }}';
+         var kpiChart1Inst = null, kpiChart2Inst = null, kpiDT = null;
+         var kpiColors = [colors.primary, colors.success, colors.info, colors.warning, colors.danger, colors.secondary, '#9b59b6', '#1abc9c', '#e67e22', '#2c3e50'];
+
+         $('.kpi-card[data-kpi-type]').on('click', function() {
+            var type = $(this).data('kpi-type');
+            var modal = new bootstrap.Modal($('#kpiDetailModal')[0]);
+            $('#kpiDetailLoading').show();
+            $('#kpiDetailContent').hide();
+            $('#kpiChartsRow').hide();
+            modal.show();
+
+            // Cleanup previous
+            if (kpiChart1Inst) { kpiChart1Inst.destroy(); kpiChart1Inst = null; }
+            if (kpiChart2Inst) { kpiChart2Inst.destroy(); kpiChart2Inst = null; }
+            if (kpiDT) { kpiDT.destroy(); kpiDT = null; }
+
+            $.ajax({
+               url: kpiDetailUrl,
+               data: { type: type },
+               success: function(res) {
+                  if (!res.success) { $('#kpiDetailLoading').html('<p class="text-danger">Gagal memuat data</p>'); return; }
+                  $('#kpiDetailTitle').html('<i class="ri-bar-chart-box-line me-2 text-primary"></i>' + res.title);
+                  $('#kpiDetailTotal').text(res.total + ' data');
+
+                  // Summary Cards
+                  var scHtml = '';
+                  (res.summary || []).forEach(function(s) {
+                     scHtml += '<div class="col-sm-6 col-md-3"><div class="card shadow-none border-0 bg-label-' + s.color + ' bg-opacity-10"><div class="card-body py-3 px-3 text-center">';
+                     scHtml += '<div class="fw-bold" style="font-size:0.7rem;text-transform:uppercase;opacity:0.7;">' + s.label + '</div>';
+                     scHtml += '<div class="fw-bold mt-1" style="font-size:1.25rem;">' + s.value + '</div>';
+                     if (s.pct) scHtml += '<div class="small text-muted">' + s.pct + '</div>';
+                     scHtml += '</div></div></div>';
+                  });
+                  $('#kpiSummaryCards').html(scHtml);
+
+                  // Charts
+                  if (res.charts && res.charts.length > 0) {
+                     $('#kpiChartsRow').show();
+                     res.charts.forEach(function(c, idx) {
+                        var elId = idx === 0 ? '#kpiChart1' : '#kpiChart2';
+                        var titleId = idx === 0 ? '#kpiChart1Title' : '#kpiChart2Title';
+                        $(titleId).text(c.title);
+                        $(elId).empty();
+
+                        var opts = { chart: { height: 250 }, colors: kpiColors };
+                        if (c.type === 'donut') {
+                           opts.chart.type = 'donut';
+                           opts.labels = Array.isArray(c.labels) ? c.labels : Object.values(c.labels);
+                           opts.series = Array.isArray(c.series) ? c.series.map(Number) : Object.values(c.series).map(Number);
+                           opts.plotOptions = { pie: { donut: { size: '60%', labels: { show: true, total: { show: true, label: 'Total' } } } } };
+                        } else if (c.type === 'stacked_bar') {
+                           opts.chart.type = 'bar';
+                           opts.chart.stacked = true;
+                           opts.xaxis = { categories: Array.isArray(c.labels) ? c.labels : Object.values(c.labels) };
+                           opts.series = [
+                              { name: 'New', data: Array.isArray(c.series_new) ? c.series_new.map(Number) : Object.values(c.series_new).map(Number) },
+                              { name: 'Repaired', data: Array.isArray(c.series_repaired) ? c.series_repaired.map(Number) : Object.values(c.series_repaired).map(Number) }
+                           ];
+                           opts.plotOptions = { bar: { horizontal: true, borderRadius: 4 } };
+                        } else {
+                           opts.chart.type = 'bar';
+                           opts.xaxis = { categories: Array.isArray(c.labels) ? c.labels : Object.values(c.labels) };
+                           opts.series = [{ name: c.title, data: Array.isArray(c.series) ? c.series.map(Number) : Object.values(c.series).map(Number) }];
+                           opts.plotOptions = { bar: { horizontal: true, borderRadius: 4, dataLabels: { position: 'center' } } };
+                           opts.dataLabels = { enabled: true, formatter: function(v) { return v.toLocaleString(); } };
+                        }
+
+                        var inst = new ApexCharts(document.querySelector(elId), opts);
+                        inst.render();
+                        if (idx === 0) kpiChart1Inst = inst; else kpiChart2Inst = inst;
+                     });
+                     if (res.charts.length < 2) { $('#kpiChartsRow .col-md-6:last').hide(); } else { $('#kpiChartsRow .col-md-6:last').show(); }
+                  } else {
+                     $('#kpiChartsRow').hide();
+                  }
+
+                  // Table
+                  var headHtml = '<tr>';
+                  (res.columns || []).forEach(function(col) { headHtml += '<th>' + col + '</th>'; });
+                  headHtml += '</tr>';
+                  $('#kpiDetailHead').html(headHtml);
+
+                  var bodyHtml = '';
+                  var dataArr = Array.isArray(res.data) ? res.data : Object.values(res.data);
+                  dataArr.forEach(function(row) {
+                     bodyHtml += '<tr>';
+                     (res.keys || []).forEach(function(k) { bodyHtml += '<td class="small">' + (row[k] ?? '-') + '</td>'; });
+                     bodyHtml += '</tr>';
+                  });
+                  $('#kpiDetailBody').html(bodyHtml);
+
+                  if (dataArr.length > 0) {
+                     kpiDT = $('#kpiDetailTable').DataTable({
+                        pageLength: 15,
+                        order: [],
+                        language: { search: 'Cari:', lengthMenu: 'Tampil _MENU_', info: '_START_-_END_ dari _TOTAL_', paginate: { previous: '‹', next: '›' } },
+                        dom: '<"d-flex justify-content-between align-items-center mb-2"lf>t<"d-flex justify-content-between align-items-center mt-2"ip>'
+                     });
+                  }
+
+                  $('#kpiDetailLoading').hide();
+                  $('#kpiDetailContent').show();
+               },
+               error: function() {
+                  $('#kpiDetailLoading').html('<p class="text-danger">Terjadi kesalahan saat memuat data</p>');
+               }
+            });
+         });
+
+         // Cleanup on modal close
+         $('#kpiDetailModal').on('hidden.bs.modal', function() {
+            if (kpiChart1Inst) { kpiChart1Inst.destroy(); kpiChart1Inst = null; }
+            if (kpiChart2Inst) { kpiChart2Inst.destroy(); kpiChart2Inst = null; }
+            if (kpiDT) { kpiDT.destroy(); kpiDT = null; }
+            $('#kpiSummaryCards').empty();
+            $('#kpiDetailHead').empty();
+            $('#kpiDetailBody').empty();
+            $('#kpiChart1').empty();
+            $('#kpiChart2').empty();
+         });
       });
    </script>
 @endsection

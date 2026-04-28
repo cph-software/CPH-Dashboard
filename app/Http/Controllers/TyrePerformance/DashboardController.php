@@ -288,6 +288,26 @@ class DashboardController extends Controller
         $filterPatterns = TyrePattern::select('name')->where('status', 'Active')->whereNotNull('name')->distinct()->orderBy('name')->get();
         $filterBrands = TyreBrand::select('id', 'brand_name')->orderBy('brand_name')->get();
 
+        // ========================================
+        // 6. Data Quality Score
+        // ========================================
+        $dqInstalled = $installedTyres;
+        $dqWithLifetime = Tyre::where(function($q) { $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0); })->count();
+        $dqWithPrice = Tyre::where('price', '>', 0)->count();
+        $dqVehiclesWithTyres = MasterImportKendaraan::whereIn('id', Tyre::where('status', 'Installed')->whereNotNull('current_vehicle_id')->distinct()->pluck('current_vehicle_id'))->count();
+        $dqScoreRaw = $totalTyres > 0
+            ? (($dqInstalled / max($totalTyres,1)) * 30 + ($dqWithLifetime / max($totalTyres,1)) * 40 + ($dqWithPrice / max($totalTyres,1)) * 30)
+            : 0;
+        $dataQuality = [
+            'score' => round(min($dqScoreRaw, 100)),
+            'installed' => $dqInstalled,
+            'with_lifetime' => $dqWithLifetime,
+            'without_lifetime' => $totalTyres - $dqWithLifetime,
+            'with_price' => $dqWithPrice,
+            'vehicles_with_tyres' => $dqVehiclesWithTyres,
+            'vehicles_without' => $totalVehicles - $dqVehiclesWithTyres,
+        ];
+
         return view('tyre-performance.dashboard', compact(
             // Filters
             'startDate',
@@ -332,7 +352,9 @@ class DashboardController extends Controller
             // Filter Options
             'filterSizes',
             'filterPatterns',
-            'filterBrands'
+            'filterBrands',
+            // New Features
+            'dataQuality'
         ));
     }
 
@@ -421,8 +443,13 @@ class DashboardController extends Controller
             
             if ($measurementMode === 'HM') {
                 $query->where('total_lifetime_hm', '>', 0);
-            } else {
+            } elseif ($measurementMode === 'KM') {
                 $query->where('total_lifetime_km', '>', 0);
+            } else {
+                // BOTH: show tyres that have ANY lifetime data
+                $query->where(function($q) {
+                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
+                });
             }
 
             // Apply filters
@@ -455,9 +482,19 @@ class DashboardController extends Controller
                     ->with('pattern:id,name');
 
                 return $query->get()->map(function ($item) use ($measurementMode) {
+                    // Pick the metric that has data
+                    if ($measurementMode === 'HM') {
+                        $val = round($item->avg_hm, 0);
+                    } elseif ($measurementMode === 'KM') {
+                        $val = round($item->avg_km, 0);
+                    } else {
+                        // BOTH: prefer HM if available, fallback to KM
+                        $val = $item->avg_hm > 0 ? round($item->avg_hm, 0) : round($item->avg_km, 0);
+                    }
                     return [
                         'label' => $item->pattern->name ?? 'Unknown',
-                        'avg_km' => $measurementMode === 'HM' ? round($item->avg_hm, 0) : round($item->avg_km, 0),
+                        'avg_km' => $val,
+                        'avg_hm' => round($item->avg_hm, 0),
                         'count' => $item->tyre_count,
                     ];
                 });
@@ -473,9 +510,17 @@ class DashboardController extends Controller
                     ->with('brand:id,brand_name');
 
                 return $query->get()->map(function ($item) use ($measurementMode) {
+                    if ($measurementMode === 'HM') {
+                        $val = round($item->avg_hm, 0);
+                    } elseif ($measurementMode === 'KM') {
+                        $val = round($item->avg_km, 0);
+                    } else {
+                        $val = $item->avg_hm > 0 ? round($item->avg_hm, 0) : round($item->avg_km, 0);
+                    }
                     return [
                         'label' => $item->brand->brand_name ?? 'Unknown',
-                        'avg_km' => $measurementMode === 'HM' ? round($item->avg_hm, 0) : round($item->avg_km, 0),
+                        'avg_km' => $val,
+                        'avg_hm' => round($item->avg_hm, 0),
                         'count' => $item->tyre_count,
                     ];
                 });
@@ -501,8 +546,12 @@ class DashboardController extends Controller
             
             if ($measurementMode === 'HM') {
                 $query->where('total_lifetime_hm', '>', 0);
-            } else {
+            } elseif ($measurementMode === 'KM') {
                 $query->where('total_lifetime_km', '>', 0);
+            } else {
+                $query->where(function($q) {
+                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
+                });
             }
 
             // Apply filters
@@ -537,9 +586,12 @@ class DashboardController extends Controller
                 return $query->get()->map(function ($item) use ($measurementMode) {
                     $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
                     $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
+                    if ($measurementMode === 'HM') { $cpVal = $cpH; }
+                    elseif ($measurementMode === 'KM') { $cpVal = $cpK; }
+                    else { $cpVal = $cpH > 0 ? $cpH : $cpK; }
                     return [
                         'label' => $item->pattern->name ?? 'Unknown',
-                        'cpk' => $measurementMode === 'HM' ? $cpH : $cpK,
+                        'cpk' => $cpVal,
                         'count' => $item->tyre_count,
                     ];
                 });
@@ -557,9 +609,12 @@ class DashboardController extends Controller
                 return $query->get()->map(function ($item) use ($measurementMode) {
                     $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
                     $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
+                    if ($measurementMode === 'HM') { $cpVal = $cpH; }
+                    elseif ($measurementMode === 'KM') { $cpVal = $cpK; }
+                    else { $cpVal = $cpH > 0 ? $cpH : $cpK; }
                     return [
                         'label' => $item->brand->brand_name ?? 'Unknown',
-                        'cpk' => $measurementMode === 'HM' ? $cpH : $cpK,
+                        'cpk' => $cpVal,
                         'count' => $item->tyre_count,
                     ];
                 });
@@ -654,63 +709,46 @@ class DashboardController extends Controller
     public function brandDetailPerformanceAjax(Request $request)
     {
         $brandId = $request->input('brand_id');
-        if (!$brandId) {
-            return response()->json(['success' => false, 'message' => 'Brand ID is required']);
-        }
+        if (!$brandId) return response()->json(['success' => false]);
 
         $user = auth()->user();
         $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
+        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id'))
             $companyId = session('active_company_id');
-        }
         $company = \App\Models\TyreCompany::find($companyId);
-        $measurementMode = $company->measurement_mode ?? 'BOTH';
-        $useHm = ($measurementMode === 'HM');
-        $lifetimeCol = $useHm ? 'total_lifetime_hm' : 'total_lifetime_km';
-        $avgAlias = $useHm ? 'avg_hm' : 'avg_km';
+        $mode = $company->measurement_mode ?? 'BOTH';
 
-        // 1. Comparison by Pattern
-        $byPattern = Tyre::select(
-            'tyre_pattern_id',
-            DB::raw("AVG({$lifetimeCol}) as {$avgAlias}"),
-            DB::raw('COUNT(*) as tyre_count')
-        )
-            ->where('tyre_brand_id', $brandId)
-            ->where($lifetimeCol, '>', 0)
-            ->groupBy('tyre_pattern_id')
-            ->with('pattern:id,name')
-            ->get()
-            ->map(function ($item) use ($avgAlias) {
-                return [
-                    'label' => $item->pattern->name ?? 'Unknown',
-                    'avg_km' => round($item->$avgAlias, 0),
-                    'count' => $item->tyre_count,
-                ];
-            });
+        $query = Tyre::where('tyre_brand_id', $brandId)->with(['pattern', 'size', 'location']);
+        if ($mode === 'BOTH') {
+            $query->where(fn($q) => $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0));
+        } elseif ($mode === 'HM') {
+            $query->where('total_lifetime_hm', '>', 0);
+        } else {
+            $query->where('total_lifetime_km', '>', 0);
+        }
+        $tyres = $query->get();
 
-        // 2. Comparison by Size
-        $bySize = Tyre::select(
-            'tyre_size_id',
-            DB::raw("AVG({$lifetimeCol}) as {$avgAlias}"),
-            DB::raw('COUNT(*) as tyre_count')
-        )
-            ->where('tyre_brand_id', $brandId)
-            ->where($lifetimeCol, '>', 0)
-            ->groupBy('tyre_size_id')
-            ->with('size:id,size')
-            ->get()
-            ->map(function ($item) use ($avgAlias) {
-                return [
-                    'label' => $item->size->size ?? 'Unknown',
-                    'avg_km' => round($item->$avgAlias, 0),
-                    'count' => $item->tyre_count,
-                ];
-            });
+        $mapFn = function($g, $k) use ($mode) {
+            $r = ['label' => $k, 'count' => $g->count()];
+            if ($mode !== 'HM') $r['avg_km'] = round($g->where('total_lifetime_km', '>', 0)->avg('total_lifetime_km') ?? 0);
+            if ($mode !== 'KM') $r['avg_hm'] = round($g->where('total_lifetime_hm', '>', 0)->avg('total_lifetime_hm') ?? 0);
+            return $r;
+        };
+
+        $byPattern = $tyres->groupBy(fn($t) => $t->pattern->name ?? '-')->map($mapFn)->sortByDesc(fn($i) => $i['avg_hm'] ?? $i['avg_km'] ?? 0)->values();
+        $bySize = $tyres->groupBy(fn($t) => $t->size->size ?? '-')->map($mapFn)->sortByDesc(fn($i) => $i['avg_hm'] ?? $i['avg_km'] ?? 0)->values();
+        $byLocation = $tyres->groupBy(fn($t) => $t->location->location_name ?? '-')->map($mapFn)->sortByDesc(fn($i) => $i['avg_hm'] ?? $i['avg_km'] ?? 0)->values();
+
+        $summary = ['total' => $tyres->count()];
+        if ($mode !== 'HM') $summary['avg_km'] = round($tyres->where('total_lifetime_km', '>', 0)->avg('total_lifetime_km') ?? 0);
+        if ($mode !== 'KM') $summary['avg_hm'] = round($tyres->where('total_lifetime_hm', '>', 0)->avg('total_lifetime_hm') ?? 0);
+        $wp = $tyres->where('price', '>', 0);
+        if ($mode !== 'HM') { $s1 = $wp->where('total_lifetime_km', '>', 0); $summary['cpk'] = $s1->sum('total_lifetime_km') > 0 ? round($s1->sum('price')/$s1->sum('total_lifetime_km')) : 0; }
+        if ($mode !== 'KM') { $s2 = $wp->where('total_lifetime_hm', '>', 0); $summary['cph'] = $s2->sum('total_lifetime_hm') > 0 ? round($s2->sum('price')/$s2->sum('total_lifetime_hm')) : 0; }
 
         return response()->json([
-            'success' => true,
-            'by_pattern' => $byPattern,
-            'by_size' => $bySize,
+            'success' => true, 'mode' => $mode, 'summary' => $summary,
+            'by_pattern' => $byPattern, 'by_size' => $bySize, 'by_location' => $byLocation,
         ]);
     }
 
@@ -775,6 +813,9 @@ class DashboardController extends Controller
                 ];
             });
     }
+
+    // KPI Detail methods moved to DashboardKpiController.php
+    // KPI Detail methods moved to DashboardKpiController.php
 
     /**
      * Drill-down AJAX endpoint for dashboard charts
