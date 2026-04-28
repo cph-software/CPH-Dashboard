@@ -1146,8 +1146,12 @@ class DashboardController extends Controller
                 if (!$brand)
                     return response()->json(['data' => [], 'total' => 0]);
 
-                $query = Tyre::where('tyre_brand_id', $brand->id)
-                    ->where('total_lifetime_km', '>', 0);
+                $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+                $mode = $ctx['mode'];
+                [$ltCols, $ltKeys] = \App\Services\DashboardAnalyticsService::lifetimeCols($mode);
+
+                $query = Tyre::where('tyre_brand_id', $brand->id);
+                \App\Services\DashboardAnalyticsService::applyLifetimeFilter($query, $mode);
 
                 // Apply same filters as chart
                 if ($sizeId) {
@@ -1176,8 +1180,8 @@ class DashboardController extends Controller
 
                 $tyres = $query->with(['size', 'pattern', 'location', 'currentVehicle'])
                     ->get()
-                    ->map(function ($t) {
-                        return [
+                    ->map(function ($t) use ($mode) {
+                        return array_merge([
                             'id' => $t->id,
                             'serial_number' => $t->serial_number,
                             'status' => $t->status,
@@ -1187,16 +1191,15 @@ class DashboardController extends Controller
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                             'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
-                            'lifetime_hm' => $t->total_lifetime_hm ? number_format($t->total_lifetime_hm, 0) : '-',
+                        ], \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode), [
                             'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
-                        ];
+                        ]);
                     });
 
                 return response()->json([
                     'title' => "Brand Performance: {$value}{$filterLabel}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
+                    'columns' => array_merge(['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD'], $ltCols, ['Harga']),
+                    'keys' => array_merge(['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd'], $ltKeys, ['price']),
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -1209,10 +1212,17 @@ class DashboardController extends Controller
                 if (!$brand)
                     return response()->json(['data' => [], 'total' => 0]);
 
+                $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+                $mode = $ctx['mode'];
+                [$ltCols, $ltKeys] = \App\Services\DashboardAnalyticsService::lifetimeCols($mode);
+                $cpLabel = $mode === 'HM' ? 'CPH' : ($mode === 'KM' ? 'CPK' : 'CPK/CPH');
+                $cpCols = $mode === 'BOTH' ? ['CPK','CPH'] : [$cpLabel];
+                $cpKeys = $mode === 'BOTH' ? ['cpk','cph'] : ['cpk'];
+
                 $query = Tyre::where('tyre_brand_id', $brand->id)
-                    ->where('total_lifetime_km', '>', 0)
                     ->whereNotNull('price')
                     ->where('price', '>', 0);
+                \App\Services\DashboardAnalyticsService::applyLifetimeFilter($query, $mode);
 
                 // Apply same filters as chart
                 if ($sizeId) {
@@ -1241,9 +1251,11 @@ class DashboardController extends Controller
 
                 $tyres = $query->with(['size', 'pattern', 'location', 'currentVehicle'])
                     ->get()
-                    ->map(function ($t) {
+                    ->map(function ($t) use ($mode) {
                         $cpkVal = ($t->total_lifetime_km > 0) ? round($t->price / $t->total_lifetime_km, 0) : 0;
-                        return [
+                        $cphVal = ($t->total_lifetime_hm > 0) ? round($t->price / $t->total_lifetime_hm, 0) : 0;
+
+                        $row = array_merge([
                             'id' => $t->id,
                             'serial_number' => $t->serial_number,
                             'status' => $t->status,
@@ -1251,16 +1263,25 @@ class DashboardController extends Controller
                             'pattern' => $t->pattern->name ?? '-',
                             'location' => $t->location->location_name ?? '-',
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
-                            'lifetime_km' => number_format($t->total_lifetime_km, 0),
+                        ], \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode), [
                             'price' => 'Rp ' . number_format($t->price, 0, ',', '.'),
-                            'cpk' => 'Rp ' . number_format($cpkVal, 0, ',', '.') . '/km',
-                        ];
+                        ]);
+
+                        if ($mode === 'BOTH') {
+                            $row['cpk'] = 'Rp ' . number_format($cpkVal, 0, ',', '.');
+                            $row['cph'] = 'Rp ' . number_format($cphVal, 0, ',', '.');
+                        } elseif ($mode === 'HM') {
+                            $row['cpk'] = 'Rp ' . number_format($cphVal, 0, ',', '.');
+                        } else {
+                            $row['cpk'] = 'Rp ' . number_format($cpkVal, 0, ',', '.');
+                        }
+                        return $row;
                     });
 
                 return response()->json([
-                    'title' => "CPK Brand: {$value}{$filterLabel}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'Lifetime KM', 'Harga', 'CPK'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'lifetime_km', 'price', 'cpk'],
+                    'title' => "Cost Per: {$value}{$filterLabel}",
+                    'columns' => array_merge(['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan'], $ltCols, ['Harga'], $cpCols),
+                    'keys' => array_merge(['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle'], $ltKeys, ['price'], $cpKeys),
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
