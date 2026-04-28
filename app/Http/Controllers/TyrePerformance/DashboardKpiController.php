@@ -356,7 +356,7 @@ class DashboardKpiController extends Controller
     {
         $sessions = \App\Models\TyreMonitoringSession::where('status', 'active')->with(['vehicle', 'masterVehicle'])->get();
         $table = $sessions->map(fn($s) => [
-            'vehicle' => $s->masterVehicle?->kode_kendaraan ?? $s->vehicle?->fleet_name ?? $s->vehicle?->vehicle_number ?? '-', 'status' => $s->status,
+            'vehicle' => optional($s->masterVehicle)->kode_kendaraan ?? optional($s->vehicle)->fleet_name ?? optional($s->vehicle)->vehicle_number ?? '-', 'status' => $s->status,
             'created' => $s->created_at ? $s->created_at->format('d/m/Y') : '-',
             '_url' => route('monitoring.sessions.show', $s->session_id),
         ]);
@@ -373,7 +373,7 @@ class DashboardKpiController extends Controller
         $checks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')
             ->with(['session.vehicle', 'session.masterVehicle'])->limit(200)->get();
         $table = $checks->map(fn($c) => [
-            'vehicle' => $c->session?->masterVehicle?->kode_kendaraan ?? $c->session?->vehicle?->fleet_name ?? $c->session?->vehicle?->vehicle_number ?? '-',
+            'vehicle' => optional(optional($c->session)->masterVehicle)->kode_kendaraan ?? optional(optional($c->session)->vehicle)->fleet_name ?? optional(optional($c->session)->vehicle)->vehicle_number ?? '-',
             'check_no' => 'Check #'.$c->check_number,
             'date' => $c->check_date ? Carbon::parse($c->check_date)->format('d/m/Y') : '-',
             '_url' => $c->session ? route('monitoring.sessions.show', $c->session->session_id) : '#',

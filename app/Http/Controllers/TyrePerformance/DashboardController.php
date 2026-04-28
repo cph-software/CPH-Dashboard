@@ -687,7 +687,7 @@ class DashboardController extends Controller
             $companyId = session('active_company_id');
         }
         $company = \App\Models\TyreCompany::find($companyId);
-        $measurementMode = $company?->measurement_mode ?? 'BOTH';
+        $measurementMode = optional($company)->measurement_mode ?? 'BOTH';
 
         if ($chartType === 'cpk') {
             $baseQuery->whereNotNull('price')->where('price', '>', 0);
