@@ -19,7 +19,7 @@ class DashboardAnalyticsService
             $companyId = session('active_company_id');
         }
         $company = TyreCompany::find($companyId);
-        $mode = $company->measurement_mode ?? 'BOTH';
+        $mode = $company?->measurement_mode ?? 'BOTH';
 
         return ['mode' => $mode, 'companyId' => $companyId, 'company' => $company];
     }
