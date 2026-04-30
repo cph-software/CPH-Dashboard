@@ -1644,6 +1644,43 @@ class DashboardController extends Controller
             ];
         }
 
+        // --- Fetch Unassigned / Global Data (Super Admin) ---
+        $globalVehiclesCount = MasterImportKendaraan::withoutGlobalScope('company')
+            ->whereNull('tyre_company_id')
+            ->count();
+
+        $globalTyres = Tyre::withoutGlobalScope('company')
+            ->whereNull('tyre_company_id')
+            ->get();
+
+        if ($globalVehiclesCount > 0 || $globalTyres->count() > 0) {
+            $totalTyres = $globalTyres->count();
+            $installedCount = $globalTyres->where('status', 'Installed')->count();
+            $inStockCount = $globalTyres->whereIn('status', ['New', 'Repaired'])->count();
+            $scrapCount = $globalTyres->where('status', 'Scrap')->count();
+            $investment = $globalTyres->sum('price');
+
+            $totalSystemTyres += $totalTyres;
+            $totalSystemVehicles += $globalVehiclesCount;
+            $totalSystemInvestment += $investment;
+
+            $globalCompany = new \App\Models\TyreCompany();
+            $globalCompany->id = 0; // Virtual ID for global
+            $globalCompany->company_name = 'Global (Super Admin)';
+            $globalCompany->measurement_mode = 'BOTH';
+
+            // Unshift to put it at the very top of the list
+            array_unshift($companyStats, [
+                'company' => $globalCompany,
+                'vehicles_count' => $globalVehiclesCount,
+                'total_tyres' => $totalTyres,
+                'installed_count' => $installedCount,
+                'in_stock_count' => $inStockCount,
+                'scrap_count' => $scrapCount,
+                'investment' => $investment
+            ]);
+        }
+
         return view('tyre-performance.dashboard.super_admin_index', compact(
             'companyStats', 
             'totalSystemTyres', 
@@ -1655,14 +1692,21 @@ class DashboardController extends Controller
     public function superAdminCompanyDetailAjax(Request $request)
     {
         $companyId = $request->input('company_id');
-        if (!$companyId) {
+        if (!isset($companyId) || $companyId === '') {
             return response()->json(['error' => 'Company ID is required'], 400);
         }
 
-        $tyres = Tyre::withoutGlobalScope('company')
-            ->where('tyre_company_id', $companyId)
-            ->with(['brand', 'size', 'pattern'])
-            ->get();
+        if ($companyId == 0) { // Global Data
+            $tyres = Tyre::withoutGlobalScope('company')
+                ->whereNull('tyre_company_id')
+                ->with(['brand', 'size', 'pattern'])
+                ->get();
+        } else {
+            $tyres = Tyre::withoutGlobalScope('company')
+                ->where('tyre_company_id', $companyId)
+                ->with(['brand', 'size', 'pattern'])
+                ->get();
+        }
 
         // Aggregate by Brand
         $byBrand = $tyres->groupBy('tyre_brand_id')->map(function ($group) {
