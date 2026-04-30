@@ -57,6 +57,7 @@
                      @endif
                      <th>Brand</th>
                      <th>Size</th>
+                     <th>Pattern</th>
                      <th>Segment</th>
                      <th>Warehouse / Stock Status</th>
                      <th>Status</th>
@@ -495,6 +496,10 @@
                },
                {
                   data: 'size.size',
+                  defaultContent: '-'
+               },
+               {
+                  data: 'pattern.name',
                   defaultContent: '-'
                },
                {

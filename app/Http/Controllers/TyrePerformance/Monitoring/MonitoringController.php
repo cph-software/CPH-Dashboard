@@ -56,7 +56,9 @@ class MonitoringController extends Controller
             $q->where('status', 'active');
         }])->latest()->get();
 
-        $masterVehicles = MasterImportKendaraan::select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')->withCount('tyres')->get();
+        $masterVehicles = MasterImportKendaraan::where('tyre_unit_status', 'Active')
+            ->select('id', 'no_polisi', 'kode_kendaraan', 'payload_capacity', 'total_tyre_position')
+            ->withCount('tyres')->get();
         $measurementMode = $this->getMeasurementMode();
         
         return view('tyre-performance.monitoring.index', compact('vehicles', 'masterVehicles', 'measurementMode'));

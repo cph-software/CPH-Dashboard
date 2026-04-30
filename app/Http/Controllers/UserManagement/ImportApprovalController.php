@@ -131,8 +131,8 @@ class ImportApprovalController extends Controller
 
         $successCount = $batch->processed_rows ?? 0;
         
-        // [P7] Ambil ID Perusahaan dari user yang MENGUPLOAD (bukan yang approve)
-        $uploaderCompanyId = $batch->user->tyre_company_id;
+        // [P7] Ambil ID Perusahaan dari batch (saat diupload) atau fallback ke user
+        $uploaderCompanyId = $batch->tyre_company_id ?? $batch->user->tyre_company_id;
 
         // Gunakan chunkById(200) agar RAM tidak membengkak + aman dari bug "skipped rows" 
         $batch->items()->where('status', 'Pending')->chunkById(200, function ($items) use ($batch, $uploaderCompanyId, &$successCount) {
@@ -310,17 +310,33 @@ class ImportApprovalController extends Controller
         if (!empty($brandName)) {
             $brand = \App\Models\TyreBrand::firstOrCreate(['brand_name' => strtoupper(trim($brandName))], ['status' => 'Active']);
             $brandId = $brand->id;
+            if ($uploaderCompanyId) {
+                $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
         // 2. Resolve Size
         $sizeId = null;
         $sizeName = $data['size'] ?? $data['size_name'] ?? null;
         if (!empty($sizeName)) {
+            $sizeStdOtd = (float)($data['std_otd'] ?? $data['initial_rtd'] ?? $data['otd'] ?? 0);
+            $sizePlyRating = (int)($data['ply_rating'] ?? 0);
+
             $size = \App\Models\TyreSize::firstOrCreate(
                 ['size' => strtoupper(trim($sizeName)), 'tyre_brand_id' => $brandId],
-                ['std_otd' => 0, 'ply_rating' => 0]
+                ['std_otd' => $sizeStdOtd, 'ply_rating' => $sizePlyRating]
             );
+            
+            if (!$size->wasRecentlyCreated && ($size->std_otd == 0 || $size->ply_rating == 0)) {
+                if ($size->std_otd == 0 && $sizeStdOtd > 0) $size->std_otd = $sizeStdOtd;
+                if ($size->ply_rating == 0 && $sizePlyRating > 0) $size->ply_rating = $sizePlyRating;
+                if ($size->isDirty()) $size->save();
+            }
+            
             $sizeId = $size->id;
+            if ($uploaderCompanyId) {
+                $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
         // 3. Resolve Pattern
@@ -331,6 +347,9 @@ class ImportApprovalController extends Controller
                 ['name' => strtoupper(trim($patternName)), 'tyre_brand_id' => $brandId]
             );
             $patternId = $pattern->id;
+            if ($uploaderCompanyId) {
+                $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
+            }
         }
 
         $initialRtd = (float)($data['initial_rtd'] ?? $data['otd'] ?? 0);
@@ -348,7 +367,7 @@ class ImportApprovalController extends Controller
         }
 
         $tyre = \App\Models\Tyre::updateOrCreate(
-            ['serial_number' => $sn],
+            ['serial_number' => $sn, 'tyre_company_id' => $uploaderCompanyId],
             [
                 'tyre_brand_id' => $brandId,
                 'tyre_size_id' => $sizeId,
@@ -433,7 +452,7 @@ class ImportApprovalController extends Controller
         }
 
         \App\Models\MasterImportKendaraan::updateOrCreate(
-            ['kode_kendaraan' => $code],
+            ['kode_kendaraan' => $code, 'tyre_company_id' => $uploaderCompanyId],
             [
                 'no_polisi' => $data['no_polisi'] ?? null,
                 'jenis_kendaraan' => $data['model_kendaraan'] ?? $data['type'] ?? 'Unknown',
@@ -480,13 +499,14 @@ class ImportApprovalController extends Controller
             }
         }
 
-        // Check Tyre Cache first
-        if (array_key_exists($sn, $this->tyreCache)) {
-            $tyre = $this->tyreCache[$sn];
+        if (array_key_exists($sn . '_' . $uploaderCompanyId, $this->tyreCache)) {
+            $tyre = $this->tyreCache[$sn . '_' . $uploaderCompanyId];
         } else {
-            $tyre = \App\Models\Tyre::where('serial_number', $sn)->first();
+            $tyre = \App\Models\Tyre::where('serial_number', $sn)
+                ->where('tyre_company_id', $uploaderCompanyId)
+                ->first();
             if ($tyre) {
-                $this->tyreCache[$sn] = $tyre;
+                $this->tyreCache[$sn . '_' . $uploaderCompanyId] = $tyre;
             }
         }
 
@@ -495,17 +515,20 @@ class ImportApprovalController extends Controller
                 ['brand_name' => 'UNKNOWN'],
                 ['status' => 'Active']
             );
+            if ($uploaderCompanyId) $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
             $this->brandCache['UNKNOWN'] = $brand;
 
             $size = $this->sizeCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyreSize::firstOrCreate(
                 ['size' => 'UNKNOWN', 'tyre_brand_id' => $brand->id],
                 ['std_otd' => 0, 'ply_rating' => 0]
             );
+            if ($uploaderCompanyId) $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
             $this->sizeCache["UNKNOWN_{$brand->id}"] = $size;
 
             $pattern = $this->patternCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyrePattern::firstOrCreate(
                 ['name' => 'UNKNOWN', 'tyre_brand_id' => $brand->id]
             );
+            if ($uploaderCompanyId) $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
             $this->patternCache["UNKNOWN_{$brand->id}"] = $pattern;
 
             // Auto-create tyre with minimal data
@@ -534,10 +557,12 @@ class ImportApprovalController extends Controller
 
         $vehicle = null;
         if ($unitCode) {
-            if (array_key_exists($unitCode, $this->vehicleCache)) {
-                $vehicle = $this->vehicleCache[$unitCode];
+            if (array_key_exists($unitCode . '_' . $uploaderCompanyId, $this->vehicleCache)) {
+                $vehicle = $this->vehicleCache[$unitCode . '_' . $uploaderCompanyId];
             } else {
-                $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)->first();
+                $vehicle = \App\Models\MasterImportKendaraan::where('kode_kendaraan', $unitCode)
+                    ->where('tyre_company_id', $uploaderCompanyId)
+                    ->first();
                 if (!$vehicle) {
                     $vehicle = \App\Models\MasterImportKendaraan::create([
                         'kode_kendaraan'      => $unitCode,
@@ -549,7 +574,7 @@ class ImportApprovalController extends Controller
                         'tyre_unit_status'    => 'Active',
                     ]);
                 }
-                $this->vehicleCache[$unitCode] = $vehicle;
+                $this->vehicleCache[$unitCode . '_' . $uploaderCompanyId] = $vehicle;
             }
         }
 
@@ -686,7 +711,7 @@ class ImportApprovalController extends Controller
 
             // [P6] Refresh cache agar baris berikutnya pakai data terbaru
             $tyre->refresh();
-            $this->tyreCache[$sn] = $tyre;
+            $this->tyreCache[$sn . '_' . $companyId] = $tyre;
 
         } else if ($installDate && $vehicle) {
             // Only installation, no removal yet — tyre currently installed on vehicle
@@ -704,7 +729,7 @@ class ImportApprovalController extends Controller
 
             // [P6] Refresh cache
             $tyre->refresh();
-            $this->tyreCache[$sn] = $tyre;
+            $this->tyreCache[$sn . '_' . $companyId] = $tyre;
 
         } else if (!$installDate && !$removeDate && $targetStatus === 'Scrap') {
             // SCRAP-ONLY: No movement dates, just status update
@@ -715,7 +740,7 @@ class ImportApprovalController extends Controller
 
             // [P6] Refresh cache
             $tyre->refresh();
-            $this->tyreCache[$sn] = $tyre;
+            $this->tyreCache[$sn . '_' . $companyId] = $tyre;
         }
     }
 

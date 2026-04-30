@@ -38,6 +38,7 @@ class TyreMovementController extends Controller
     public function index()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->where('tyre_unit_status', 'Active')
             ->withCount('tyres')
             ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
@@ -47,6 +48,7 @@ class TyreMovementController extends Controller
     public function pemasangan()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->where('tyre_unit_status', 'Active')
             ->withCount('tyres')
             ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();
@@ -96,6 +98,7 @@ class TyreMovementController extends Controller
     public function pelepasan()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->where('tyre_unit_status', 'Active')
             ->whereHas('tyres') // Only vehicles with tyres
             ->withCount('tyres')
             ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
@@ -109,6 +112,7 @@ class TyreMovementController extends Controller
     public function rotasi()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->where('tyre_unit_status', 'Active')
             ->whereHas('tyres')
             ->withCount('tyres')
             ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')

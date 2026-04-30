@@ -38,6 +38,7 @@ class TyreExaminationController extends Controller
     public function create()
     {
         $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+            ->where('tyre_unit_status', 'Active')
             ->withCount('tyres')
             ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
             ->get();

@@ -10,7 +10,7 @@ class ImportBatch extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'module', 'filename', 'status', 
+        'user_id', 'tyre_company_id', 'module', 'filename', 'status', 
         'approved_by', 'approved_at', 'total_rows', 
         'processed_rows', 'notes'
     ];

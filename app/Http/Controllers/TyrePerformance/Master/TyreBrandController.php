@@ -10,13 +10,26 @@ class TyreBrandController extends Controller
 {
     public function index()
     {
-        $brands = TyreBrand::latest()->get();
+        $query = TyreBrand::latest();
+        
+        if (auth()->user()->role_id != 1) {
+            $companyId = auth()->user()->tyre_company_id;
+            $query->whereHas('companies', function($q) use ($companyId) {
+                $q->where('tyre_company_id', $companyId);
+            });
+        }
+        
+        $brands = $query->get();
 
         return view('tyre-performance.master.brands.index', compact('brands'));
     }
 
     public function store(Request $request)
     {
+        if (auth()->user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menambah Data Master Global.');
+        }
+
         $request->validate([
             'brand_name' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',

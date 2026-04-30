@@ -45,12 +45,22 @@
                            <span class="float-end">{{ $tyre->size->size ?? '-' }}</span>
                         </li>
                         <li class="mb-2">
+                           <span class="fw-medium text-muted">Pattern:</span>
+                           <span class="float-end">{{ $tyre->pattern->name ?? '-' }}</span>
+                        </li>
+                        <li class="mb-2">
                            <span class="fw-medium text-muted">Segment:</span>
-                           <span class="float-end">{{ $tyre->segment->segment_name ?? '-' }}</span>
+                           <span class="float-end">{{ $tyre->segment_name ?? '-' }}</span>
                         </li>
                         <li class="mb-2">
                            <span class="fw-medium text-muted">Location:</span>
-                           <span class="float-end">{{ $tyre->location->location_name ?? '-' }}</span>
+                           <span class="float-end">
+                              @if($tyre->location)
+                                 {{ $tyre->location->location_name }}
+                              @else
+                                 {{ $tyre->is_in_warehouse ? 'Gudang' : 'Terpasang' }}
+                              @endif
+                           </span>
                         </li>
                      </ul>
 

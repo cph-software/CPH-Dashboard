@@ -19,11 +19,13 @@
             <small class="text-muted">Manajemen pola kembangan (pattern) ban berdasarkan brand</small>
          </div>
          <div class="d-flex gap-2">
+            @if (hasPermission('Patterns', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'patterns', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Import Approval', 'create'))
+            @endif
+            @if (hasPermission('Patterns', 'import') || auth()->user()->role_id == 1)
                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import

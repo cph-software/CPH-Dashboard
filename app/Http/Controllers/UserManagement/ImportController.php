@@ -40,17 +40,33 @@ class ImportController extends Controller
         // Parse Excel file
         $rawData = \Maatwebsite\Excel\Facades\Excel::toArray(new \stdClass(), $file)[0];
 
+        $companyId = auth()->user()->tyre_company_id;
+        
+        // Strict Validation for Super Admin: Require active company for company-scoped data
+        if (auth()->user()->role_id == 1 || auth()->user()->tyre_company_id == 1) {
+            $activeCompanyId = $request->input('target_company_id') ?: session('active_company_id');
+            $companyScopedModules = ['Tyre Master', 'Master Tyre', 'Vehicle Master', 'Master Vehicle', 'Movement History', 'Tyre Examination'];
+            
+            if (empty($activeCompanyId) && in_array($module, $companyScopedModules)) {
+                return redirect()->back()->with('error', "Validasi Super Admin: Modul '{$module}' mewajibkan Anda untuk memilih Perusahaan (Company) yang spesifik di form modal sebelum melakukan Import. Data ini tidak dapat diimpor pada mode Global untuk mencegah konflik data antar perusahaan.");
+            }
+            
+            if (!empty($activeCompanyId)) {
+                $companyId = $activeCompanyId;
+            }
+        }
+
         // ============================================================
         // MOVEMENT HISTORY: Special handling for wide format
         // ============================================================
         if (in_array($module, ['Movement History'])) {
-            return $this->handleMovementImport($rawData, $module, $file);
+            return $this->handleMovementImport($rawData, $module, $file, $companyId);
         }
 
         // ============================================================
         // OTHER MODULES: Standard import flow
         // ============================================================
-        return $this->handleStandardImport($rawData, $module, $file);
+        return $this->handleStandardImport($rawData, $module, $file, $companyId);
     }
 
     /**
@@ -58,7 +74,7 @@ class ImportController extends Controller
      * WIDE: Each row = 1 tyre, columns = 8 installation/removal cycles.
      * NARROW: Each row = 1 movement event.
      */
-    private function handleMovementImport($rawData, $module, $file)
+    private function handleMovementImport($rawData, $module, $file, $companyId)
     {
         // Step 1: Find the actual data start row (skip merged headers)
         $dataStartIdx = null;
@@ -169,6 +185,7 @@ class ImportController extends Controller
         try {
             $batch = \App\Models\ImportBatch::create([
                 'user_id' => auth()->id(),
+                'tyre_company_id' => $companyId,
                 'module' => $module,
                 'filename' => $file->getClientOriginalName(),
                 'status' => 'Pending',
@@ -184,7 +201,7 @@ class ImportController extends Controller
                 $rowData = array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), ''));
 
                 // Perform pre-validation to tag valid vs invalid rows
-                $rowData['_validation'] = $this->validateMovementRow($rowData);
+                $rowData['_validation'] = $this->validateMovementRow($rowData, $companyId);
                 if (!$rowData['_validation']['is_valid']) {
                     $invalidCount++;
                 }
@@ -247,7 +264,7 @@ class ImportController extends Controller
         }
     }
 
-    private function validateMovementRow($data)
+    private function validateMovementRow($data, $companyId)
     {
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
         $sn = strtoupper(trim((string)$sn));
@@ -259,7 +276,10 @@ class ImportController extends Controller
             $errors[] = "Nomor Seri kosong.";
         } else {
             // Cek apakah SN terdaftar di database
-            $tyreExists = \App\Models\Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
+            $tyreExists = \App\Models\Tyre::withoutGlobalScopes()
+                ->where('serial_number', $sn)
+                ->where('tyre_company_id', $companyId)
+                ->exists();
             if (!$tyreExists) {
                 $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre.";
             }
@@ -293,6 +313,7 @@ class ImportController extends Controller
         if (!empty($unitCode)) {
             $vehicleExists = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
                 ->where('kode_kendaraan', strtoupper($unitCode))
+                ->where('tyre_company_id', $companyId)
                 ->exists();
             if (!$vehicleExists) {
                 $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
@@ -316,6 +337,7 @@ class ImportController extends Controller
             } else {
                 $vehicle = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
                     ->where('kode_kendaraan', strtoupper($unitCode))
+                    ->where('tyre_company_id', $companyId)
                     ->first();
                 if ($vehicle && $vehicle->tyre_position_configuration_id) {
                     $resolvedPos = $this->resolvePositionForValidation($vehicle->tyre_position_configuration_id, $positionCode);
@@ -590,7 +612,7 @@ class ImportController extends Controller
     /**
      * Standard import handler for non-Movement modules.
      */
-    private function handleStandardImport($rawData, $module, $file)
+    private function handleStandardImport($rawData, $module, $file, $companyId)
     {
         // Filter empty rows
         $data = array_filter($rawData, function($row) {
@@ -635,7 +657,11 @@ class ImportController extends Controller
                 $unitArray = array_unique($unitArray);
                 $existingUnits = [];
                 foreach(array_chunk($unitArray, 1000) as $chunk) {
-                    $foundUnits = \App\Models\MasterImportKendaraan::withoutGlobalScopes()->whereIn('kode_kendaraan', $chunk)->pluck('kode_kendaraan')->toArray();
+                    $foundUnits = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                        ->where('tyre_company_id', $companyId)
+                        ->whereIn('kode_kendaraan', $chunk)
+                        ->pluck('kode_kendaraan')
+                        ->toArray();
                     $existingUnits = array_merge($existingUnits, array_map('strtoupper', $foundUnits));
                 }
                 $missingUnits = array_diff($unitArray, $existingUnits);
@@ -717,6 +743,7 @@ class ImportController extends Controller
 
             $batch = \App\Models\ImportBatch::create([
                 'user_id' => auth()->id(),
+                'tyre_company_id' => $companyId,
                 'module' => $module,
                 'filename' => $file->getClientOriginalName(),
                 'status' => 'Pending',

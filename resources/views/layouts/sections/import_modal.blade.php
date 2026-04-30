@@ -62,6 +62,19 @@
                      <div class="form-text small">Gunakan format <strong>.xlsx</strong> (Microsoft Excel). Pastikan
                         format kolom sesuai panduan.</div>
                   </div>
+
+                  @if(auth()->user()->role_id == 1 || auth()->user()->tyre_company_id == 1)
+                  <div class="mb-3" id="companySelectContainer" style="display: none;">
+                     <label class="form-label fw-bold text-danger">3. Pilih Perusahaan Tujuan (Khusus Super Admin)</label>
+                     <select name="target_company_id" id="targetCompanySelect" class="form-select">
+                        <option value="" selected>-- Gunakan Global / Default --</option>
+                        @foreach(\App\Models\TyreCompany::all() as $company)
+                           <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                        @endforeach
+                     </select>
+                     <div class="form-text small text-muted">Untuk modul tertentu (seperti Tyre/Vehicle Master), Anda diwajibkan memilih perusahaan spesifik.</div>
+                  </div>
+                  @endif
                </div>
                <div class="col-md-5 bg-light p-3">
                   <h6 class="fw-bold mb-2"><i class="ri-guide-line me-1"></i> Panduan Upload:</h6>
@@ -160,9 +173,27 @@
                   `{{ route('master_data.download-template') }}?module=${encodeURIComponent(selected)}`;
                downloadBtn.setAttribute('href', templateUrl);
                downloadBtn.setAttribute('target', '_blank');
+
+               // Tampilkan dropdown perusahaan jika modul membutuhkan spesifik perusahaan
+               const companyContainer = document.getElementById('companySelectContainer');
+               const companySelect = document.getElementById('targetCompanySelect');
+               if (companyContainer && companySelect) {
+                  const scopedModules = ['Tyre Master', 'Master Tyre', 'Vehicle Master', 'Master Vehicle', 'Movement History', 'Tyre Examination'];
+                  if (scopedModules.includes(selected)) {
+                     companyContainer.style.display = 'block';
+                     companySelect.setAttribute('required', 'required');
+                  } else {
+                     companyContainer.style.display = 'block'; // Tetap tampil untuk opsional
+                     companySelect.removeAttribute('required');
+                  }
+               }
+
             } else {
                downloadArea.classList.add('d-none');
                downloadBtn.setAttribute('href', '#');
+               
+               const companyContainer = document.getElementById('companySelectContainer');
+               if (companyContainer) companyContainer.style.display = 'none';
             }
          });
       }

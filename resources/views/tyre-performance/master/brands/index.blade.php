@@ -15,11 +15,13 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Brands</h4>
          <div class="d-flex gap-2">
+            @if (hasPermission('Brands', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'brands', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
-            @if (hasPermission('Import Approval', 'create'))
+            @endif
+            @if (hasPermission('Brands', 'import') || auth()->user()->role_id == 1)
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">
                   <i class="ri-upload-2-line me-1"></i> Import

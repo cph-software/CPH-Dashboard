@@ -12,8 +12,23 @@ class TyreSizeController extends Controller
 {
     public function index()
     {
-        $sizes = TyreSize::with(['brand', 'pattern'])->latest()->get();
-        $brands = TyreBrand::where('status', 'Active')->get();
+        $sizeQuery = TyreSize::with(['brand', 'pattern'])->latest();
+        $brandQuery = TyreBrand::where('status', 'Active');
+
+        if (auth()->user()->role_id != 1) {
+            $companyId = auth()->user()->tyre_company_id;
+            
+            $sizeQuery->whereHas('companies', function($q) use ($companyId) {
+                $q->where('tyre_company_id', $companyId);
+            });
+            
+            $brandQuery->whereHas('companies', function($q) use ($companyId) {
+                $q->where('tyre_company_id', $companyId);
+            });
+        }
+
+        $sizes = $sizeQuery->get();
+        $brands = $brandQuery->get();
 
 
         return view('tyre-performance.master.sizes.index', compact('sizes', 'brands'));
@@ -21,6 +36,10 @@ class TyreSizeController extends Controller
 
     public function store(Request $request)
     {
+        if (auth()->user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menambah Data Master Global.');
+        }
+
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',

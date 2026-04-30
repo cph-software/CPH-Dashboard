@@ -10,13 +10,26 @@ class TyrePatternController extends Controller
 {
     public function index()
     {
-        $patterns = TyrePattern::with('brand')->latest()->get();
+        $query = TyrePattern::with('brand')->latest();
+        
+        if (auth()->user()->role_id != 1) {
+            $companyId = auth()->user()->tyre_company_id;
+            $query->whereHas('companies', function($q) use ($companyId) {
+                $q->where('tyre_company_id', $companyId);
+            });
+        }
+        
+        $patterns = $query->get();
 
         return view('tyre-performance.master.patterns.index', compact('patterns'));
     }
 
     public function store(Request $request)
     {
+        if (auth()->user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menambah Data Master Global.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',

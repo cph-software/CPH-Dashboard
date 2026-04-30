@@ -47,6 +47,12 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+        $user = auth()->user();
+        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
+        if ($isInternal && !session()->has('active_company_id')) {
+            return $this->superAdminIndex($request);
+        }
+
         // ========================================
         // Filters
         // ========================================
@@ -1593,5 +1599,103 @@ class DashboardController extends Controller
             new \App\Exports\ImportTemplateExport($module),
             $filename
         );
+    }
+
+    private function superAdminIndex(Request $request)
+    {
+        // Get all active companies
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->get();
+
+        $companyStats = [];
+        $totalSystemTyres = 0;
+        $totalSystemVehicles = 0;
+        $totalSystemInvestment = 0;
+
+        foreach ($companies as $company) {
+            // Count vehicles without global scope so we can force specific company
+            $vehiclesCount = MasterImportKendaraan::withoutGlobalScope('company')
+                ->where('tyre_company_id', $company->id)
+                ->count();
+
+            // Tyres summary
+            $tyres = Tyre::withoutGlobalScope('company')
+                ->where('tyre_company_id', $company->id)
+                ->get();
+            
+            $totalTyres = $tyres->count();
+            $installedCount = $tyres->where('status', 'Installed')->count();
+            $inStockCount = $tyres->whereIn('status', ['New', 'Repaired'])->count();
+            $scrapCount = $tyres->where('status', 'Scrap')->count();
+            $investment = $tyres->sum('price');
+
+            // Accumulate global stats
+            $totalSystemTyres += $totalTyres;
+            $totalSystemVehicles += $vehiclesCount;
+            $totalSystemInvestment += $investment;
+
+            $companyStats[] = [
+                'company' => $company,
+                'vehicles_count' => $vehiclesCount,
+                'total_tyres' => $totalTyres,
+                'installed_count' => $installedCount,
+                'in_stock_count' => $inStockCount,
+                'scrap_count' => $scrapCount,
+                'investment' => $investment
+            ];
+        }
+
+        return view('tyre-performance.dashboard.super_admin_index', compact(
+            'companyStats', 
+            'totalSystemTyres', 
+            'totalSystemVehicles', 
+            'totalSystemInvestment'
+        ));
+    }
+
+    public function superAdminCompanyDetailAjax(Request $request)
+    {
+        $companyId = $request->input('company_id');
+        if (!$companyId) {
+            return response()->json(['error' => 'Company ID is required'], 400);
+        }
+
+        $tyres = Tyre::withoutGlobalScope('company')
+            ->where('tyre_company_id', $companyId)
+            ->with(['brand', 'size', 'pattern'])
+            ->get();
+
+        // Aggregate by Brand
+        $byBrand = $tyres->groupBy('tyre_brand_id')->map(function ($group) {
+            $brand = $group->first()->brand;
+            return [
+                'name' => $brand ? $brand->brand_name : 'Unknown',
+                'count' => $group->count()
+            ];
+        })->sortByDesc('count')->values();
+
+        // Aggregate by Size
+        $bySize = $tyres->groupBy('tyre_size_id')->map(function ($group) {
+            $size = $group->first()->size;
+            return [
+                'name' => $size ? $size->size : 'Unknown',
+                'count' => $group->count()
+            ];
+        })->sortByDesc('count')->values();
+
+        // Aggregate by Pattern
+        $byPattern = $tyres->groupBy('tyre_pattern_id')->map(function ($group) {
+            $pattern = $group->first()->pattern;
+            return [
+                'name' => $pattern ? $pattern->name : 'Unknown',
+                'count' => $group->count()
+            ];
+        })->sortByDesc('count')->values();
+
+        return response()->json([
+            'by_brand' => $byBrand,
+            'by_size' => $bySize,
+            'by_pattern' => $byPattern,
+            'total' => $tyres->count()
+        ]);
     }
 }
