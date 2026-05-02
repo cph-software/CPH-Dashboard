@@ -72,10 +72,10 @@ class FixRolePermissionsSeeder extends Seeder
                 $supervisorPerms = ['view'];
             }
 
-            // Sync untuk Manajerial (View Only rata-rata + Update di import)
+            // Sync untuk Manajerial (View Only rata-rata + Update di import, monitoring, dan examination)
             if ($manajerial) {
                 $manajerialPerms = ['view'];
-                if ($menu->name === 'Import Approval') {
+                if (in_array($menu->name, ['Import Approval', 'Tyre Monitoring', 'Examination'])) {
                     $manajerialPerms[] = 'update'; // Bisa approve
                 }
                 $manajerial->menus()->syncWithoutDetaching([
