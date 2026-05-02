@@ -68,7 +68,18 @@ class TyreMovementController extends Controller
             ->where('is_in_warehouse', true);
 
         if ($search) {
-            $query->where('serial_number', 'like', "%$search%");
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%$search%")
+                  ->orWhereHas('brand', function($qBrand) use ($search) {
+                      $qBrand->where('brand_name', 'like', "%$search%");
+                  })
+                  ->orWhereHas('size', function($qSize) use ($search) {
+                      $qSize->where('size', 'like', "%$search%");
+                  })
+                  ->orWhereHas('pattern', function($qPattern) use ($search) {
+                      $qPattern->where('name', 'like', "%$search%");
+                  });
+            });
         }
 
         $tyres = $query->with(['brand', 'size', 'pattern', 'latestInstallation'])

@@ -530,6 +530,8 @@ class MonitoringController extends Controller
                             'condition' => $c['condition'] ?? 'ok',
                             'recommendation' => $c['recommendation'] ?? null,
                             'notes' => $c['notes'] ?? 'Cek 1 (Start Session)',
+                            'approval_status' => (auth()->user()->role_id == 1) ? 'Approved' : 'Pending',
+                            'approved_by' => (auth()->user()->role_id == 1) ? auth()->id() : null,
                         ]);
 
                         // Link images to this check
@@ -603,6 +605,20 @@ class MonitoringController extends Controller
                             }
                         }
                     }
+                }
+            }
+
+            // --- Kirim Notifikasi untuk Cek 1 jika Submitter bukan SuperAdmin ---
+            if (auth()->user()->role_id != 1) {
+                try {
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    if ($approvers->count() > 0) {
+                        $submitterName = auth()->user()->display_name;
+                        $actionUrl = route('monitoring.sessions.show', $session->session_id);
+                        \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Monitoring Check', $submitterName, $actionUrl));
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check 1 Notification: " . $e->getMessage());
                 }
             }
 

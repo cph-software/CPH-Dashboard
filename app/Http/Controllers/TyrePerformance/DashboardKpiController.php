@@ -372,7 +372,13 @@ class DashboardKpiController extends Controller
     {
         $checks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')
             ->with(['session.vehicle', 'session.masterVehicle'])->limit(200)->get();
-        $table = $checks->map(fn($c) => [
+            
+        // Filter duplikasi: setiap ban di check yang sama akan menghasilkan row yang sama, jadi ambil unique per check_number
+        $uniqueChecks = $checks->unique(function ($item) {
+            return $item->session_id . '-' . $item->check_number;
+        })->values();
+
+        $table = $uniqueChecks->map(fn($c) => [
             'vehicle' => optional(optional($c->session)->masterVehicle)->kode_kendaraan ?? optional(optional($c->session)->vehicle)->fleet_name ?? optional(optional($c->session)->vehicle)->vehicle_number ?? '-',
             'check_no' => 'Check #'.$c->check_number,
             'date' => $c->check_date ? Carbon::parse($c->check_date)->format('d/m/Y') : '-',
@@ -380,9 +386,9 @@ class DashboardKpiController extends Controller
         ]);
         return response()->json([
             'success' => true, 'title' => 'Pending Approval',
-            'summary' => [['label' => 'Total Pending', 'value' => $checks->count(), 'color' => 'warning']],
+            'summary' => [['label' => 'Total Pending', 'value' => $uniqueChecks->count(), 'color' => 'warning']],
             'charts' => [], 'columns' => ['Kendaraan','Check','Tanggal'],
-            'keys' => ['vehicle','check_no','date'], 'data' => $table, 'total' => $checks->count(),
+            'keys' => ['vehicle','check_no','date'], 'data' => $table, 'total' => $uniqueChecks->count(),
         ]);
     }
 
