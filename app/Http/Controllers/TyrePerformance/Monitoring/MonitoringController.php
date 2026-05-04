@@ -612,11 +612,22 @@ class MonitoringController extends Controller
             if (auth()->user()->role_id != 1) {
                 try {
                     $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    $submitterName = auth()->user()->display_name ?? auth()->user()->name;
+                    $actionUrl = route('monitoring.sessions.show', $session->session_id);
+                    
                     if ($approvers->count() > 0) {
-                        $submitterName = auth()->user()->display_name;
-                        $actionUrl = route('monitoring.sessions.show', $session->session_id);
                         \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Monitoring Check', $submitterName, $actionUrl));
                     }
+
+                    // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
+                    \Illuminate\Support\Facades\Notification::send(auth()->user(), 
+                        new \App\Notifications\ApprovalStatusNotification(
+                            'Monitoring Check', 
+                            'Pending', 
+                            'Sistem (Menunggu Approver)', 
+                            $actionUrl
+                        )
+                    );
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check 1 Notification: " . $e->getMessage());
                 }
@@ -1026,11 +1037,22 @@ class MonitoringController extends Controller
             if (!$isAdmin) {
                 try {
                     $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    $submitterName = auth()->user()->display_name ?? auth()->user()->name;
+                    $actionUrl = route('monitoring.sessions.show', $session->session_id);
+
                     if ($approvers->count() > 0) {
-                        $submitterName = auth()->user()->display_name;
-                        $actionUrl = route('monitoring.sessions.show', $session->session_id);
                         \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Monitoring Check', $submitterName, $actionUrl));
                     }
+
+                    // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
+                    \Illuminate\Support\Facades\Notification::send(auth()->user(), 
+                        new \App\Notifications\ApprovalStatusNotification(
+                            'Monitoring Check', 
+                            'Pending', 
+                            'Sistem (Menunggu Approver)', 
+                            $actionUrl
+                        )
+                    );
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check Notification: " . $e->getMessage());
                 }
@@ -1394,7 +1416,7 @@ class MonitoringController extends Controller
                 if ($firstCheck && $firstCheck->created_by) {
                     $submitter = \App\Models\User::find($firstCheck->created_by);
                     if ($submitter) {
-                        $approverName = auth()->user()->display_name;
+                        $approverName = auth()->user()->display_name ?? auth()->user()->name;
                         $actionUrl = route('monitoring.sessions.show', $sessionId);
                         \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Monitoring Check #' . $checkNumber, 'Approved', $approverName, $actionUrl));
                     }
@@ -1431,7 +1453,7 @@ class MonitoringController extends Controller
             if ($firstCheck && $firstCheck->created_by) {
                 $submitter = \App\Models\User::find($firstCheck->created_by);
                 if ($submitter) {
-                    $approverName = auth()->user()->display_name;
+                    $approverName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('monitoring.sessions.show', $sessionId);
                     \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Monitoring Check #' . $checkNumber, 'Rejected', $approverName, $actionUrl, $request->reason));
                 }

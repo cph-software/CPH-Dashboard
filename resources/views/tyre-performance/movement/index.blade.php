@@ -64,10 +64,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Transaksi /</span> Pergerakan Ban</h4>
          <div class="d-flex gap-2">
+            @if (hasPermission('Movement History', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel']) }}"
                class="btn btn-outline-primary btn-sm">
                <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
+            @endif
 
             @if (hasPermission('Pemasangan (Install)', 'create'))
                <a href="{{ route('tyre-movement.pemasangan') }}" class="btn btn-primary btn-sm">

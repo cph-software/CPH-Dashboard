@@ -27,10 +27,12 @@
                   </button>
                </div>
             </div>
+            @if (hasPermission('Master Tyre', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
+            @endif
             @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">

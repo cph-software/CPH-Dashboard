@@ -116,15 +116,17 @@
             <a href="{{ route('examination.index') }}" class="btn btn-label-secondary">
                <i class="ri ri-arrow-left-line me-1"></i> Kembali
             </a>
-            @if ($exam->approval_status === 'Approved')
-               <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
-                  class="btn btn-primary" target="_blank">
-                  <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
-               </a>
-            @else
-               <button class="btn btn-secondary disabled" title="Menunggu Approval" data-bs-toggle="tooltip">
-                  <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
-               </button>
+            @if (hasPermission('Examination', 'export') || auth()->user()->role_id == 1)
+               @if ($exam->approval_status === 'Approved')
+                  <a href="{{ route('examination.export-pdf', ['id' => $exam->id, 'action' => 'stream']) }}"
+                     class="btn btn-primary" target="_blank">
+                     <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
+                  </a>
+               @else
+                  <button class="btn btn-secondary disabled" title="Menunggu Approval" data-bs-toggle="tooltip">
+                     <i class="ri ri-printer-line me-1"></i> Cetak Form (PDF)
+                  </button>
+               @endif
             @endif
             @if ($exam->approval_status === 'Pending' && auth()->user()->hasPermission('Examination', 'update'))
                <button type="button" class="btn btn-success" id="btnApprove">

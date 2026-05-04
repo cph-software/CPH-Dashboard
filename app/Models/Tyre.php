@@ -22,6 +22,7 @@ class Tyre extends Model
         'last_inspection_date', 'current_vehicle_id', 'current_position_id',
         'created_by', 'updated_by', 'last_hm_reading',
         'deleted_by', 'permanent_deleted_at',
+        'import_batch_id',
     ];
 
     protected $casts = [

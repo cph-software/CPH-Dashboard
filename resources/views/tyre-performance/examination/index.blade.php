@@ -14,10 +14,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Tyre Performance /</span> Examination</h4>
          <div class="d-flex gap-2">
+            @if (hasPermission('Examination', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'examinations', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
             </a>
+            @endif
             @if (hasPermission('Examination', 'create'))
                <a href="{{ route('examination.create') }}" class="btn btn-primary shadow-sm">
                   <i class="icon-base ri ri-add-line me-1"></i> Input Pemeriksaan Baru

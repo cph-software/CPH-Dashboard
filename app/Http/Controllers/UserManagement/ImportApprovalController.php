@@ -70,7 +70,7 @@ class ImportApprovalController extends Controller
         $batch = $this->scopedQuery()->findOrFail($id);
         
         $pendingCount = $batch->items()->where('status', 'Pending')->count();
-        if ($batch->status !== 'Pending' && $pendingCount === 0) {
+        if (!in_array($batch->status, ['Pending', 'Rolled Back']) && $pendingCount === 0) {
             return redirect()->back()->with('error', 'Batch ini sudah diproses dan tidak ada data Pending.');
         }
 
@@ -98,7 +98,7 @@ class ImportApprovalController extends Controller
             // --- Send Notification to Submitter ---
             try {
                 if ($batch->user) {
-                    $approverName = auth()->user()->display_name;
+                    $approverName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('import-approval.show', $batch->id); // Can point to history or same show page
                     $statusName = ($remainingPending === 0) ? 'Approved' : 'Partially Approved';
                     \Illuminate\Support\Facades\Notification::send($batch->user, new \App\Notifications\ApprovalStatusNotification('Import ' . $batch->module, $statusName, $approverName, $actionUrl));
@@ -162,7 +162,7 @@ class ImportApprovalController extends Controller
                             $this->processVehicleMaster($data, $uploaderCompanyId);
                             break;
                         case 'Movement History':
-                            $this->processMovementHistory($data, $uploaderCompanyId);
+                            $this->processMovementHistory($data, $uploaderCompanyId, $batch);
                             break;
                         case 'Tyre Examination':
                             $this->processTyreExamination($data, $uploaderCompanyId);
@@ -469,8 +469,14 @@ class ImportApprovalController extends Controller
         );
     }
 
-    private function processMovementHistory($data, $uploaderCompanyId)
+    private function processMovementHistory($data, $uploaderCompanyId, $batch = null)
     {
+        // ============================================================
+        // STEP 0: Read legacy metadata from batch (if available)
+        // ============================================================
+        $legacyMeta = $batch ? ($batch->legacy_meta ?? null) : null;
+        $batchId = $batch ? $batch->id : null;
+
         // ============================================================
         // STEP 1: Resolve Serial Number — Auto-Create if not found
         // ============================================================
@@ -511,19 +517,29 @@ class ImportApprovalController extends Controller
         }
 
         if (!$tyre) {
-            $brand = $this->brandCache['UNKNOWN'] ?? \App\Models\TyreBrand::firstOrCreate(
-                ['brand_name' => 'UNKNOWN'],
+            // Use legacy_meta Brand/Size if available, otherwise fallback to UNKNOWN
+            $legacyBrand = $legacyMeta['brand'] ?? null;
+            $legacySize = $legacyMeta['size'] ?? null;
+
+            $brandName = $legacyBrand ? strtoupper($legacyBrand) : 'UNKNOWN';
+            $brandCacheKey = $brandName;
+
+            $brand = $this->brandCache[$brandCacheKey] ?? \App\Models\TyreBrand::firstOrCreate(
+                ['brand_name' => $brandName],
                 ['status' => 'Active']
             );
             if ($uploaderCompanyId) $brand->companies()->syncWithoutDetaching([$uploaderCompanyId]);
-            $this->brandCache['UNKNOWN'] = $brand;
+            $this->brandCache[$brandCacheKey] = $brand;
 
-            $size = $this->sizeCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyreSize::firstOrCreate(
-                ['size' => 'UNKNOWN', 'tyre_brand_id' => $brand->id],
+            $sizeName = $legacySize ? strtoupper($legacySize) : 'UNKNOWN';
+            $sizeCacheKey = "{$sizeName}_{$brand->id}";
+
+            $size = $this->sizeCache[$sizeCacheKey] ?? \App\Models\TyreSize::firstOrCreate(
+                ['size' => $sizeName, 'tyre_brand_id' => $brand->id],
                 ['std_otd' => 0, 'ply_rating' => 0]
             );
             if ($uploaderCompanyId) $size->companies()->syncWithoutDetaching([$uploaderCompanyId]);
-            $this->sizeCache["UNKNOWN_{$brand->id}"] = $size;
+            $this->sizeCache[$sizeCacheKey] = $size;
 
             $pattern = $this->patternCache["UNKNOWN_{$brand->id}"] ?? \App\Models\TyrePattern::firstOrCreate(
                 ['name' => 'UNKNOWN', 'tyre_brand_id' => $brand->id]
@@ -531,7 +547,7 @@ class ImportApprovalController extends Controller
             if ($uploaderCompanyId) $pattern->companies()->syncWithoutDetaching([$uploaderCompanyId]);
             $this->patternCache["UNKNOWN_{$brand->id}"] = $pattern;
 
-            // Auto-create tyre with minimal data
+            // Auto-create tyre with legacy metadata
             $tyre = \App\Models\Tyre::create([
                 'serial_number'       => $sn,
                 'tyre_company_id'     => $uploaderCompanyId,
@@ -545,8 +561,9 @@ class ImportApprovalController extends Controller
                 'original_tread_depth'=> 0,
                 'price'               => 0,
                 'ply_rating'          => 0,
+                'import_batch_id'     => $batchId,
             ]);
-            $this->tyreCache[$sn] = $tyre;
+            $this->tyreCache[$sn . '_' . $uploaderCompanyId] = $tyre;
         }
 
         // ============================================================
@@ -564,14 +581,22 @@ class ImportApprovalController extends Controller
                     ->where('tyre_company_id', $uploaderCompanyId)
                     ->first();
                 if (!$vehicle) {
+                    // Use legacy_meta for vehicle config if available
+                    $detectedVehicles = $legacyMeta['detected_vehicles'] ?? [];
+                    $vehicleMeta = $detectedVehicles[$unitCode] ?? null;
+                    $configId = $vehicleMeta['config_id'] ?? null;
+                    $maxPos = $vehicleMeta['max_position'] ?? 0;
+
                     $vehicle = \App\Models\MasterImportKendaraan::create([
                         'kode_kendaraan'      => $unitCode,
                         'no_polisi'           => '-',
                         'tyre_company_id'     => $uploaderCompanyId,
                         'jenis_kendaraan'     => 'Unknown',
                         'area'                => 'Unknown',
-                        'total_tyre_position' => 0,
+                        'total_tyre_position' => $maxPos,
+                        'tyre_position_configuration_id' => $configId,
                         'tyre_unit_status'    => 'Active',
+                        'import_batch_id'     => $batchId,
                     ]);
                 }
                 $this->vehicleCache[$unitCode . '_' . $uploaderCompanyId] = $vehicle;
@@ -584,16 +609,28 @@ class ImportApprovalController extends Controller
         $isDualFormat = isset($data['pemasangan_tanggal']) || isset($data['pelepasan_tanggal']);
 
         if ($isDualFormat) {
-            $this->processDualMovement($data, $tyre, $vehicle, $uploaderCompanyId);
+            $this->processDualMovement($data, $tyre, $vehicle, $uploaderCompanyId, $batchId);
         } else {
-            $this->processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId);
+            $this->processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId, $batchId);
         }
     }
 
-    private function processDualMovement($data, $tyre, $vehicle, $companyId)
+    private function processDualMovement($data, $tyre, $vehicle, $companyId, $batchId = null)
     {
         $positionCode = $data['position_code'] ?? $data['posisi_ban'] ?? $data['posisi'] ?? null;
-        $positionId = $this->resolvePositionId($positionCode, $vehicle);
+        // Try numeric position mapping via display_order if vehicle has config
+        $positionId = null;
+        if ($vehicle && $vehicle->tyre_position_configuration_id && $positionCode) {
+            $posNum = (int) preg_replace('/\D/', '', $positionCode);
+            if ($posNum > 0) {
+                $posDetail = \App\Models\TyrePositionDetail::where('configuration_id', $vehicle->tyre_position_configuration_id)
+                    ->where('display_order', $posNum)->first();
+                if ($posDetail) $positionId = $posDetail->id;
+            }
+        }
+        if (!$positionId) {
+            $positionId = $this->resolvePositionId($positionCode, $vehicle);
+        }
 
         // [P4] Resolve position detail object for 2-way sync
         $posDetail = null;
@@ -608,9 +645,34 @@ class ImportApprovalController extends Controller
         $removeDate  = $this->parseFlexDate($data['pelepasan_tanggal'] ?? null);
         $removeKm    = $this->parseEuroNum($data['pelepasan_km'] ?? 0);
         $removeHm    = $this->parseEuroNum($data['pelepasan_hm'] ?? $data['pelepasan_hour_meter'] ?? 0);
+
+        // Auto-map KM to HM if company measurement mode is HM (for legacy format compatibility)
+        $companyMode = \App\Models\TyreCompany::find($companyId)->measurement_mode ?? 'BOTH';
+        if ($companyMode === 'HM') {
+            if ($installKm > 0 && $installHm == 0) { $installHm = $installKm; $installKm = 0; }
+            if ($removeKm > 0 && $removeHm == 0) { $removeHm = $removeKm; $removeKm = 0; }
+        }
         $rtd         = !empty($data['tebal_telapak']) ? (float)$data['tebal_telapak'] : null;
         $remark      = $data['penyebab'] ?? $data['remark'] ?? null;
         $keterangan  = strtoupper(trim($data['keterangan'] ?? ''));
+
+        // Auto-mirror KM↔HM for BOTH mode: if Excel only has KM, copy to HM too
+        if ($companyMode === 'BOTH') {
+            if ($installKm > 0 && $installHm == 0) $installHm = $installKm;
+            if ($removeKm > 0 && $removeHm == 0) $removeHm = $removeKm;
+            if ($installHm > 0 && $installKm == 0) $installKm = $installHm;
+            if ($removeHm > 0 && $removeKm == 0) $removeKm = $removeHm;
+        }
+
+        // Lookup failure_code from penyebab/keterangan
+        $failCodeId = null;
+        $failCodeStr = $data['penyebab'] ?? $data['failure_code'] ?? null;
+        if (!empty($failCodeStr)) {
+            $failCode = \App\Models\TyreFailureCode::where('failure_code', strtoupper(trim($failCodeStr)))
+                ->orWhere('failure_name', 'LIKE', '%' . trim($failCodeStr) . '%')
+                ->first();
+            $failCodeId = $failCode ? $failCode->id : null;
+        }
 
         // Map KETERANGAN -> target_status
         $targetStatus = 'Repaired';
@@ -644,7 +706,7 @@ class ImportApprovalController extends Controller
 
             \App\Models\TyreMovement::create([
                 'tyre_id'          => $tyre->id,
-                'tyre_company_id'  => $companyId, // [P7] Company uploader, bukan approver
+                'tyre_company_id'  => $companyId,
                 'vehicle_id'       => $vehicle->id,
                 'position_id'      => $positionId,
                 'movement_type'    => 'Installation',
@@ -652,6 +714,7 @@ class ImportApprovalController extends Controller
                 'odometer_reading' => $installKm,
                 'hour_meter_reading' => $installHm,
                 'created_by'       => auth()->id(),
+                'import_batch_id'  => $batchId,
             ]);
         }
 
@@ -678,7 +741,7 @@ class ImportApprovalController extends Controller
 
             \App\Models\TyreMovement::create([
                 'tyre_id'          => $tyre->id,
-                'tyre_company_id'  => $companyId, // [P7]
+                'tyre_company_id'  => $companyId,
                 'vehicle_id'       => $vehicle ? $vehicle->id : null,
                 'position_id'      => $positionId,
                 'movement_type'    => 'Removal',
@@ -689,8 +752,10 @@ class ImportApprovalController extends Controller
                 'running_hm'       => $runningHm,
                 'rtd_reading'      => $rtd,
                 'target_status'    => $targetStatus,
+                'failure_code_id'  => $failCodeId,
                 'remarks'          => $remark,
                 'created_by'       => auth()->id(),
+                'import_batch_id'  => $batchId,
             ]);
 
             // Update tyre state -> back to warehouse
@@ -748,7 +813,7 @@ class ImportApprovalController extends Controller
      * SINGLE-EVENT FORMAT (original/legacy): 1 baris = 1 event (Installation OR Removal)
      * Backward compatible with old import template.
      */
-    private function processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId)
+    private function processSingleMovement($data, $tyre, $vehicle, $uploaderCompanyId, $batchId = null)
     {
         // Find Position
         $positionCode = $data['position_code'] ?? $data['posisi'] ?? null;
@@ -769,6 +834,13 @@ class ImportApprovalController extends Controller
         // Cast numerical columns
         $odo = !empty($data['odometer']) ? (float)$data['odometer'] : (!empty($data['km']) ? (float)$data['km'] : 0);
         $hm = !empty($data['hm']) ? (float)$data['hm'] : 0;
+        
+        $companyMode = \App\Models\TyreCompany::find($uploaderCompanyId)->measurement_mode ?? 'BOTH';
+        if ($companyMode === 'HM' && $odo > 0 && $hm == 0) {
+            $hm = $odo;
+            $odo = 0;
+        }
+
         $rtd = !empty($data['rtd']) ? (float)$data['rtd'] : null;
         $psi = !empty($data['psi']) ? (float)$data['psi'] : null;
         $targetStatus = !empty($data['target_status']) ? ucfirst(strtolower($data['target_status'])) : 'Repaired';
@@ -876,7 +948,8 @@ class ImportApprovalController extends Controller
             'failure_code_id' => $failCodeId,
             'target_status' => ($type === 'Removal') ? $targetStatus : null,
             'remarks' => $data['remark'] ?? $data['notes'] ?? null,
-            'created_by' => auth()->id()
+            'created_by' => auth()->id(),
+            'import_batch_id' => $batchId,
         ]);
     }
 
@@ -1065,7 +1138,7 @@ class ImportApprovalController extends Controller
         // --- Send Notification to Submitter ---
         try {
             if ($batch->user) {
-                $approverName = auth()->user()->display_name;
+                $approverName = auth()->user()->display_name ?? auth()->user()->name;
                 $actionUrl = route('import-approval.show', $batch->id);
                 \Illuminate\Support\Facades\Notification::send($batch->user, new \App\Notifications\ApprovalStatusNotification('Import ' . $batch->module, 'Rejected', $approverName, $actionUrl, $request->notes));
             }
@@ -1096,7 +1169,8 @@ class ImportApprovalController extends Controller
         }
 
         // Re-validate menggunakan validasi yang diperkuat
-        $validation = $this->validateMovementRow($data, $batch->user->tyre_company_id ?? null);
+        $isLegacy = $batch->legacy_meta !== null;
+        $validation = $this->validateMovementRow($data, $batch->user->tyre_company_id ?? null, $isLegacy);
         $data['_validation'] = $validation;
 
         $item->data = $data;
@@ -1120,7 +1194,7 @@ class ImportApprovalController extends Controller
      * 
      * Mengatasi: P2 (odometer), P4 (posisi), P7 (company), P9 (duplikat)
      */
-    private function validateMovementRow($data, $uploaderCompanyId = null)
+    private function validateMovementRow($data, $uploaderCompanyId = null, $isLegacy = false)
     {
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
         $sn = strtoupper(trim((string)$sn));
@@ -1134,7 +1208,11 @@ class ImportApprovalController extends Controller
             // Cek apakah SN terdaftar di database
             $tyreExists = \App\Models\Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
             if (!$tyreExists) {
-                $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre. Daftarkan terlebih dahulu.";
+                if ($isLegacy) {
+                    $warnings[] = "Ban SN '{$sn}' belum ada, akan dibuat otomatis di Master Tyre.";
+                } else {
+                    $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre. Daftarkan terlebih dahulu.";
+                }
             }
         }
 
@@ -1210,7 +1288,11 @@ class ImportApprovalController extends Controller
                 ->where('kode_kendaraan', strtoupper($unitCode))
                 ->exists();
             if (!$vehicleExists) {
-                $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+                if ($isLegacy) {
+                    $warnings[] = "Unit '{$unitCode}' belum ada, akan dibuat otomatis di Master Vehicle.";
+                } else {
+                    $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+                }
             }
         }
 
@@ -1316,5 +1398,124 @@ class ImportApprovalController extends Controller
                 }
             })
             ->first();
+    }
+
+    // ================================================================
+    // LEGACY IMPORT: Vehicle Configuration (AJAX)
+    // ================================================================
+
+    /**
+     * Save vehicle configurations for legacy import.
+     * Called from the Import Approval show page before Approve.
+     */
+    public function saveVehicleConfig(Request $request, $id)
+    {
+        $batch = $this->scopedQuery()->findOrFail($id);
+        
+        if (!$batch->legacy_meta) {
+            return response()->json(['error' => 'Batch ini tidak memiliki metadata legacy.'], 400);
+        }
+
+        $vehicleConfigs = $request->input('vehicles', []);
+        $meta = $batch->legacy_meta;
+        $detectedVehicles = $meta['detected_vehicles'] ?? [];
+
+        foreach ($vehicleConfigs as $unitCode => $config) {
+            if (isset($detectedVehicles[$unitCode])) {
+                $detectedVehicles[$unitCode]['config_id'] = $config['config_id'] ?? null;
+            }
+        }
+
+        $meta['detected_vehicles'] = $detectedVehicles;
+        $batch->update(['legacy_meta' => $meta]);
+
+        // Count configured vs unconfigured
+        $configured = 0;
+        $total = count($detectedVehicles);
+        foreach ($detectedVehicles as $v) {
+            if (!empty($v['config_id'])) $configured++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'configured' => $configured,
+            'total' => $total,
+            'all_configured' => $configured >= $total,
+        ]);
+    }
+
+    // ================================================================
+    // ROLLBACK: Preview & Execute
+    // ================================================================
+
+    /**
+     * Get a preview count of records that will be deleted on rollback.
+     */
+    public function rollbackPreview($id)
+    {
+        $batch = $this->scopedQuery()->findOrFail($id);
+
+        return response()->json([
+            'tyres_count' => \App\Models\Tyre::withoutGlobalScopes()->where('import_batch_id', $batch->id)->count(),
+            'movements_count' => \App\Models\TyreMovement::withoutGlobalScopes()->where('import_batch_id', $batch->id)->count(),
+            'vehicles_count' => \App\Models\MasterImportKendaraan::withoutGlobalScopes()->where('import_batch_id', $batch->id)->count(),
+        ]);
+    }
+
+    /**
+     * Rollback an approved import batch — delete all records created by this batch.
+     */
+    public function rollback(Request $request, $id)
+    {
+        $batch = $this->scopedQuery()->findOrFail($id);
+
+        if (!in_array($batch->status, ['Approved', 'Failed'])) {
+            return redirect()->back()->with('error', 'Hanya batch dengan status Approved atau Failed yang bisa di-rollback.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // 1. Delete movements first (referential integrity)
+            $movementsDeleted = \App\Models\TyreMovement::withoutGlobalScopes()
+                ->where('import_batch_id', $batch->id)->delete();
+
+            // 2. Delete tyres (force delete to bypass soft delete)
+            $tyresDeleted = \App\Models\Tyre::withoutGlobalScopes()
+                ->where('import_batch_id', $batch->id)->forceDelete();
+
+            // 3. Delete vehicles
+            $vehiclesDeleted = \App\Models\MasterImportKendaraan::withoutGlobalScopes()
+                ->where('import_batch_id', $batch->id)->forceDelete();
+
+            // 4. Update batch status
+            $batch->update([
+                'status' => 'Rolled Back',
+                'notes' => "Rolled back by " . auth()->user()->name . " at " . now()->format('Y-m-d H:i:s')
+                         . ". Deleted: {$tyresDeleted} tyres, {$movementsDeleted} movements, {$vehiclesDeleted} vehicles."
+            ]);
+
+            // 5. Reset items to Pending (so re-approve is possible)
+            $batch->items()->update(['status' => 'Pending', 'error_message' => null]);
+            $batch->update(['processed_rows' => 0]);
+
+            // 6. Clear cache
+            \Illuminate\Support\Facades\Cache::flush();
+
+            DB::commit();
+
+            setLogActivity(auth()->id(), "Rollback import batch #{$id} ({$batch->module})", [
+                'module' => 'Import Approval',
+                'batch_id' => $id,
+                'tyres_deleted' => $tyresDeleted,
+                'movements_deleted' => $movementsDeleted,
+                'vehicles_deleted' => $vehiclesDeleted
+            ]);
+
+            return redirect()->route('import-approval.index')
+                ->with('success', "Rollback berhasil. {$tyresDeleted} ban, {$movementsDeleted} movement, {$vehiclesDeleted} kendaraan telah dihapus. Batch bisa di-approve ulang.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Rollback gagal: ' . $e->getMessage());
+        }
     }
 }

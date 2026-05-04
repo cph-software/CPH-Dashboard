@@ -22,6 +22,7 @@ class TyreMovement extends Model
         'odometer_reading', 'running_km', 'hour_meter_reading', 'running_hm',
         'notes', 'photo', 'photo_target', 'remarks',
         'created_by', 'updated_by',
+        'import_batch_id',
     ];
 
     protected $casts = [

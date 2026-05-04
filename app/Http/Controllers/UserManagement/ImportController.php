@@ -9,6 +9,9 @@ class ImportController extends Controller
 {
     public function storeCSV(Request $request)
     {
+        // Increase limits for processing large/wide excel files
+        set_time_limit(300); 
+        ini_set('memory_limit', '1024M');
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
             'module' => 'required'
@@ -181,6 +184,56 @@ class ImportController extends Controller
             return redirect()->back()->with('error', 'Tidak ada data movement yang valid ditemukan di file.');
         }
 
+        // ============================================================
+        // LEGACY METADATA: Parse sheet name for Brand/Size + scan unique vehicles
+        // ============================================================
+        $legacyMeta = null;
+        if ($colCount > 20) { // Only for WIDE format (legacy Excel)
+            try {
+                // Optimize: Read only sheet names instead of loading entire spreadsheet into memory
+                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
+                $sheetNames = $reader->listWorksheetNames($file->getRealPath());
+                $sheetName = $sheetNames[0] ?? '';
+                
+                // Parse "AMBERSTONE 12.00R24 - 17 OKT" → Brand: AMBERSTONE, Size: 12.00R24
+                $legacyBrand = null;
+                $legacySize = null;
+                if (preg_match('/^(\S+)\s+([\d.]+R[\d]+(?:\.\d+)?)/i', $sheetName, $matches)) {
+                    $legacyBrand = strtoupper(trim($matches[1]));
+                    $legacySize = strtoupper(trim($matches[2]));
+                }
+
+                // Scan unique vehicles and their max positions
+                $detectedVehicles = [];
+                foreach ($expandedData as $row) {
+                    $unit = strtoupper(trim($row[1] ?? ''));
+                    $posStr = trim($row[2] ?? '');
+                    $posNum = (int) preg_replace('/\D/', '', $posStr);
+
+                    if (!empty($unit) && !in_array($unit, ['', 'UNIT', 'KODE_KENDARAAN'])) {
+                        if (!isset($detectedVehicles[$unit])) {
+                            $detectedVehicles[$unit] = ['max_position' => 0, 'row_count' => 0, 'config_id' => null];
+                        }
+                        if ($posNum > 0) {
+                            $detectedVehicles[$unit]['max_position'] = max($detectedVehicles[$unit]['max_position'], $posNum);
+                        }
+                        $detectedVehicles[$unit]['row_count']++;
+                    }
+                }
+
+                if ($legacyBrand || !empty($detectedVehicles)) {
+                    $legacyMeta = [
+                        'brand' => $legacyBrand,
+                        'size' => $legacySize,
+                        'sheet_name' => $sheetName,
+                        'detected_vehicles' => $detectedVehicles,
+                    ];
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Legacy meta parse failed: " . $e->getMessage());
+            }
+        }
+
         \DB::beginTransaction();
         try {
             $batch = \App\Models\ImportBatch::create([
@@ -189,7 +242,8 @@ class ImportController extends Controller
                 'module' => $module,
                 'filename' => $file->getClientOriginalName(),
                 'status' => 'Pending',
-                'total_rows' => count($expandedData)
+                'total_rows' => count($expandedData),
+                'legacy_meta' => $legacyMeta,
             ]);
 
             $imported = 0;
@@ -201,7 +255,8 @@ class ImportController extends Controller
                 $rowData = array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), ''));
 
                 // Perform pre-validation to tag valid vs invalid rows
-                $rowData['_validation'] = $this->validateMovementRow($rowData, $companyId);
+                $isLegacy = $legacyMeta !== null;
+                $rowData['_validation'] = $this->validateMovementRow($rowData, $companyId, $isLegacy);
                 if (!$rowData['_validation']['is_valid']) {
                     $invalidCount++;
                 }
@@ -243,15 +298,27 @@ class ImportController extends Controller
                 // Cari semua user yang bisa approve import sesuai perusahaan uploader (termasuk Super Admin global)
                 $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'update');
                 
+                $uploaderName = auth()->user()->display_name ?? auth()->user()->name;
+                $actionUrl = route('import-approval.show', $batch->id);
+
                 if ($approvers->count() > 0) {
-                    $uploaderName = auth()->user()->display_name ?? auth()->user()->name;
-                    $actionUrl = route('import-approval.show', $batch->id);
                     \Illuminate\Support\Facades\Notification::send($approvers, 
                         new \App\Notifications\ApprovalRequiredNotification(
                             'Import ' . $module, $uploaderName, $actionUrl
                         )
                     );
                 }
+
+                // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
+                \Illuminate\Support\Facades\Notification::send(auth()->user(), 
+                    new \App\Notifications\ApprovalStatusNotification(
+                        'Import ' . $module, 
+                        'Pending', 
+                        'Sistem (Menunggu Approver)', 
+                        $actionUrl
+                    )
+                );
+
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to send Import Upload Notification: " . $e->getMessage());
             }
@@ -264,7 +331,7 @@ class ImportController extends Controller
         }
     }
 
-    private function validateMovementRow($data, $companyId)
+    private function validateMovementRow($data, $companyId, $isLegacy = false)
     {
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? $data['no_seri'] ?? null;
         $sn = strtoupper(trim((string)$sn));
@@ -281,7 +348,11 @@ class ImportController extends Controller
                 ->where('tyre_company_id', $companyId)
                 ->exists();
             if (!$tyreExists) {
-                $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre.";
+                if ($isLegacy) {
+                    $warnings[] = "Ban SN '{$sn}' belum ada, akan dibuat otomatis di Master Tyre.";
+                } else {
+                    $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre.";
+                }
             }
         }
 
@@ -316,7 +387,11 @@ class ImportController extends Controller
                 ->where('tyre_company_id', $companyId)
                 ->exists();
             if (!$vehicleExists) {
-                $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+                if ($isLegacy) {
+                    $warnings[] = "Unit '{$unitCode}' belum ada, akan dibuat otomatis di Master Vehicle.";
+                } else {
+                    $errors[] = "Unit '{$unitCode}' tidak ditemukan di Master Vehicle.";
+                }
             }
         }
 
@@ -628,8 +703,41 @@ class ImportController extends Controller
 
         $header = array_shift($data);
         $header = array_map(function($h) {
-            return strtolower(str_replace([' ', '-'], '_', trim($h)));
+            return strtolower(str_replace([' ', '-'], '_', trim((string)$h)));
         }, $header);
+
+        // Validasi format kolom berdasarkan modul
+        $requiredHeaders = [
+            'Tyre Master' => ['serial_number', 'brand_name'],
+            'Master Tyre' => ['serial_number', 'brand_name'],
+            'Vehicle Master' => ['kode_kendaraan'],
+            'Master Vehicle' => ['kode_kendaraan'],
+            'Tyre Brand' => ['brand_name'],
+            'Tyre Size' => ['size', 'brand_name'],
+            'Tyre Pattern' => ['pattern_name', 'brand'],
+            'Failure Codes' => ['failure_code'],
+            'Locations' => ['location_name'],
+            'Segments' => ['segment_name'],
+            'Tyre Examination' => ['kode_kendaraan', 'odometer'],
+        ];
+
+        if (isset($requiredHeaders[$module])) {
+            $missingHeaders = [];
+            foreach ($requiredHeaders[$module] as $req) {
+                if (!in_array($req, $header)) {
+                    $missingHeaders[] = $req;
+                }
+            }
+
+            if (!empty($missingHeaders)) {
+                // Deteksi jika user salah pilih modul tapi upload format Movement/Amberstone
+                if (in_array('no_seri', $header) || in_array('unit', $header) || in_array('posisi_ban', $header)) {
+                    return redirect()->back()->with('error', 'Gagal Import: Anda memilih modul "' . $module . '", tetapi file yang diunggah sepertinya menggunakan format "Movement History" (Pemasangan/Pelepasan). Silakan pilih modul yang benar saat upload.');
+                }
+                
+                return redirect()->back()->with('error', 'Gagal Import: Format kolom tidak sesuai dengan template "' . $module . '". Kolom yang tidak ditemukan: ' . implode(', ', $missingHeaders));
+            }
+        }
 
         \DB::beginTransaction();
         try {

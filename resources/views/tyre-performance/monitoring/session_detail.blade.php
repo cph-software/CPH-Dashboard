@@ -208,6 +208,7 @@
          </div>
       </div>
       <div class="d-flex gap-2">
+         @if (hasPermission('Tyre Monitoring', 'export') || auth()->user()->role_id == 1)
          <a href="{{ route('monitoring.sessions.export', $session->session_id) }}" class="btn btn-success shadow-sm">
             <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export Excel
          </a>
@@ -215,6 +216,7 @@
             target="_blank">
             <i class="icon-base ri ri-file-pdf-line me-1"></i> Export PDF
          </a>
+         @endif
       </div>
    </div>
 
@@ -612,10 +614,12 @@
                                  </div>
                               @endif
 
+                              @if (hasPermission('Tyre Monitoring', 'export') || auth()->user()->role_id == 1)
                               <a href="{{ route('monitoring.sessions.export-pdf', [$session->session_id, 'check_number' => $checkNumber]) }}"
                                  class="btn btn-sm btn-outline-danger" target="_blank">
                                  <i class="icon-base ri ri-file-pdf-line me-1"></i> Report
                               </a>
+                              @endif
                            </div>
                         </div>
                         @if ($isRejected && $rejectReason)

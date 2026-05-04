@@ -426,6 +426,7 @@
                               class="btn btn-sm btn-icon btn-outline-primary" title="View Detail">
                               <i class="ri ri-eye-line"></i>
                            </a>
+                           @if (hasPermission('Tyre Monitoring', 'export') || auth()->user()->role_id == 1)
                            <a href="{{ route('monitoring.sessions.export', $session->session_id) }}"
                               class="btn btn-sm btn-icon btn-outline-success" title="Export Excel">
                               <i class="icon-base ri ri-file-excel-2-line"></i>
@@ -434,6 +435,7 @@
                               class="btn btn-sm btn-icon btn-outline-danger" title="Export PDF" target="_blank">
                               <i class="icon-base ri ri-file-pdf-line"></i>
                            </a>
+                           @endif
                            @if ($session->status == 'active')
                               <form action="{{ route('monitoring.sessions.update', $session->session_id) }}"
                                  method="POST" class="d-inline">

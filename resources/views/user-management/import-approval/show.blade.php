@@ -40,7 +40,7 @@
             <p class="text-muted mb-0 small">Review data mentah sebelum memproses ke database utama.</p>
          </div>
          <div class="col-md-4 text-md-end">
-            @if (($batch->status === 'Pending' || $readyItems->count() > 0 || $warningItems->count() > 0) && auth()->user()->hasPermission('Import Approval', 'update'))
+            @if (($batch->status === 'Pending' || $batch->status === 'Rolled Back' || $readyItems->count() > 0 || $warningItems->count() > 0) && auth()->user()->hasPermission('Import Approval', 'update'))
                <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST" class="d-inline" id="approveForm">
                   @csrf
                   <button type="submit" class="btn btn-success me-2" id="btnApprove"
@@ -50,6 +50,11 @@
                </form>
                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
                   <i class="ri-close-line me-1"></i> Reject
+               </button>
+            @endif
+            @if (in_array($batch->status, ['Approved', 'Failed']) && auth()->user()->hasPermission('Import Approval', 'update'))
+               <button type="button" class="btn btn-warning" id="btnRollback">
+                  <i class="ri-arrow-go-back-line me-1"></i> Rollback
                </button>
             @endif
          </div>
@@ -79,12 +84,14 @@
                         <label class="small text-muted text-uppercase d-block mb-1">Status</label>
                         @php
                            $statusClass =
-                               [
-                                   'Pending' => 'bg-label-warning',
-                                   'Approved' => 'bg-label-success',
-                                   'Rejected' => 'bg-label-danger',
-                                   'Processing' => 'bg-label-info',
-                               ][$batch->status] ?? 'bg-label-secondary';
+                                [
+                                    'Pending' => 'bg-label-warning',
+                                    'Approved' => 'bg-label-success',
+                                    'Rejected' => 'bg-label-danger',
+                                    'Processing' => 'bg-label-info',
+                                    'Rolled Back' => 'bg-label-secondary',
+                                    'Failed' => 'bg-label-danger',
+                                ][$batch->status] ?? 'bg-label-secondary';
                         @endphp
                         <span class="badge {{ $statusClass }}">{{ $batch->status }}</span>
                      </div>
@@ -95,6 +102,135 @@
       </div>
 
       {{-- Data Table Section --}}
+
+      @php $legacyMeta = $batch->legacy_meta; @endphp
+
+      {{-- Legacy Import: Brand/Size Info --}}
+      @if($legacyMeta && (!empty($legacyMeta['brand']) || !empty($legacyMeta['size'])))
+      <div class="row mb-3">
+         <div class="col-md-12">
+            <div class="alert alert-info d-flex align-items-center mb-0">
+               <i class="ri-information-line ri-lg me-2"></i>
+               <div>
+                  <strong>Legacy Import Terdeteksi:</strong>
+                  Brand: <span class="badge bg-primary">{{ $legacyMeta['brand'] ?? '-' }}</span>
+                  Size: <span class="badge bg-primary">{{ $legacyMeta['size'] ?? '-' }}</span>
+                  <small class="text-muted ms-2">(dari nama sheet: {{ $legacyMeta['sheet_name'] ?? '-' }})</small>
+               </div>
+            </div>
+         </div>
+      </div>
+      @endif
+
+      {{-- Legacy Import: Vehicle Configuration --}}
+      @if($legacyMeta && !empty($legacyMeta['detected_vehicles']) && in_array($batch->status, ['Pending', 'Rolled Back']))
+      @php
+         $detectedVehicles = $legacyMeta['detected_vehicles'];
+         $configurations = \App\Models\TyrePositionConfiguration::where('status', 'Active')->orderBy('name')->get();
+         $configuredCount = collect($detectedVehicles)->filter(fn($v) => !empty($v['config_id']))->count();
+         $totalVehicles = count($detectedVehicles);
+         $allConfigured = $configuredCount >= $totalVehicles;
+      @endphp
+      <div class="card mb-4 border-start border-warning border-3">
+         <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+               <h5 class="card-title mb-1">
+                  <i class="ri-truck-line me-1"></i> Konfigurasi Kendaraan
+                  <span class="badge bg-{{ $allConfigured ? 'success' : 'warning' }} ms-2">{{ $configuredCount }}/{{ $totalVehicles }}</span>
+               </h5>
+               <p class="text-muted small mb-0">Tentukan tipe konfigurasi ban untuk setiap unit kendaraan sebelum Approve.</p>
+            </div>
+         </div>
+         <div class="card-body">
+            {{-- Bulk Action --}}
+            <div class="bg-light rounded p-3 mb-3">
+               <div class="row align-items-end g-2">
+                  <div class="col-md-6">
+                     <label class="form-label fw-bold small">Terapkan ke Semua Unit yang Belum Diatur</label>
+                     <select class="form-select" id="bulkConfigSelect">
+                        <option value="">-- Pilih Konfigurasi --</option>
+                        @foreach($configurations as $config)
+                           <option value="{{ $config->id }}" data-positions="{{ $config->total_positions }}">
+                              {{ $config->name }} ({{ $config->total_positions }} posisi)
+                           </option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="col-md-3">
+                     <button type="button" class="btn btn-outline-primary w-100" id="btnBulkApply">
+                        <i class="ri-check-double-line me-1"></i> Terapkan ke Semua
+                     </button>
+                  </div>
+                  <div class="col-md-3">
+                     <button type="button" class="btn btn-success w-100" id="btnSaveConfig">
+                        <i class="ri-save-line me-1"></i> Simpan Konfigurasi
+                     </button>
+                  </div>
+               </div>
+            </div>
+
+            {{-- Vehicle Table --}}
+            <div class="table-responsive" style="max-height: 400px">
+               <table class="table table-hover table-sm mb-0">
+                  <thead class="table-light sticky-top">
+                     <tr>
+                        <th width="40">#</th>
+                        <th>Unit</th>
+                        <th width="80">Max Pos</th>
+                        <th width="50">Rows</th>
+                        <th width="300">Konfigurasi</th>
+                        <th width="80">Status</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     @php $vi = 0; @endphp
+                     @foreach($detectedVehicles as $unitCode => $vMeta)
+                     @php $vi++; @endphp
+                     <tr>
+                        <td>{{ $vi }}</td>
+                        <td class="fw-bold">{{ $unitCode }}</td>
+                        <td><span class="badge bg-label-info">{{ $vMeta['max_position'] }}</span></td>
+                        <td>{{ $vMeta['row_count'] }}</td>
+                        <td>
+                           <select class="form-select form-select-sm vehicle-config-select"
+                                   data-unit="{{ $unitCode }}" data-max="{{ $vMeta['max_position'] }}">
+                              <option value="">-- Pilih Layout --</option>
+                              @foreach($configurations as $config)
+                                 <option value="{{ $config->id }}" {{ ($vMeta['config_id'] ?? null) == $config->id ? 'selected' : '' }}
+                                    data-positions="{{ $config->total_positions }}">
+                                    {{ $config->name }} ({{ $config->total_positions }} posisi)
+                                 </option>
+                              @endforeach
+                           </select>
+                        </td>
+                        <td>
+                           @if(!empty($vMeta['config_id']))
+                              <span class="badge bg-success"><i class="ri-check-line"></i> OK</span>
+                           @else
+                              <span class="badge bg-warning"><i class="ri-alert-line"></i> Belum</span>
+                           @endif
+                        </td>
+                     </tr>
+                     @endforeach
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </div>
+
+      <script>
+         // Disable approve button if not all vehicles configured
+         document.addEventListener('DOMContentLoaded', function() {
+            @if(!$allConfigured)
+               var approveBtn = document.getElementById('btnApprove');
+               if (approveBtn) {
+                  approveBtn.disabled = true;
+                  approveBtn.title = 'Semua unit harus dikonfigurasi terlebih dahulu';
+               }
+            @endif
+         });
+      </script>
+      @endif
 
       {{-- Summary Cards --}}
       <div class="row mb-4 g-3">
@@ -337,6 +473,57 @@
          </div>
       </div>
    </div>
+
+   {{-- Rollback Modal --}}
+   @if(in_array($batch->status, ['Approved', 'Failed']))
+   <div class="modal fade" id="rollbackModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+         <form action="{{ route('import-approval.rollback', $batch->id) }}" method="POST" class="modal-content" id="rollbackForm">
+            @csrf
+            <div class="modal-header bg-warning">
+               <h5 class="modal-title"><i class="ri-arrow-go-back-line me-1"></i> Konfirmasi Rollback</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <div class="alert alert-danger">
+                  <i class="ri-error-warning-fill me-1"></i>
+                  <strong>Perhatian!</strong> Anda akan menghapus SEMUA data yang dibuat dari import batch #{{ $batch->id }}.
+               </div>
+               <div id="rollbackPreviewLoading" class="text-center py-3">
+                  <div class="spinner-border text-warning" role="status"></div>
+                  <p class="mt-2 text-muted">Menghitung data...</p>
+               </div>
+               <div id="rollbackPreviewContent" class="d-none">
+                  <ul class="list-group mb-3">
+                     <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="ri-disc-line me-1"></i> Ban (Tyres)</span>
+                        <span class="badge bg-danger" id="rbTyresCount">0</span>
+                     </li>
+                     <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="ri-route-line me-1"></i> Movement History</span>
+                        <span class="badge bg-danger" id="rbMovementsCount">0</span>
+                     </li>
+                     <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="ri-truck-line me-1"></i> Kendaraan</span>
+                        <span class="badge bg-danger" id="rbVehiclesCount">0</span>
+                     </li>
+                  </ul>
+                  <div class="mb-3">
+                     <label class="form-label fw-bold">Ketik <code>ROLLBACK</code> untuk konfirmasi:</label>
+                     <input type="text" class="form-control" id="rollbackConfirmInput" placeholder="Ketik ROLLBACK" autocomplete="off">
+                  </div>
+               </div>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batalkan</button>
+               <button type="submit" class="btn btn-warning" id="btnConfirmRollback" disabled>
+                  <i class="ri-arrow-go-back-line me-1"></i> Rollback Sekarang
+               </button>
+            </div>
+         </form>
+      </div>
+   </div>
+   @endif
 @endsection
 
 @section('vendor-style')
@@ -350,6 +537,9 @@
 @section('page-script')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ============================================================
+    // Existing: Inline row save for attention items
+    // ============================================================
     document.querySelectorAll('.btn-save-row').forEach(btn => {
         btn.addEventListener('click', async function() {
             const rowId = this.dataset.id;
@@ -415,6 +605,121 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // ============================================================
+    // Vehicle Configuration (Legacy Import)
+    // ============================================================
+    const btnBulkApply = document.getElementById('btnBulkApply');
+    const btnSaveConfig = document.getElementById('btnSaveConfig');
+    const bulkSelect = document.getElementById('bulkConfigSelect');
+
+    if (btnBulkApply) {
+        btnBulkApply.addEventListener('click', function() {
+            const configId = bulkSelect.value;
+            if (!configId) {
+                Swal.fire({ icon: 'warning', title: 'Pilih konfigurasi terlebih dahulu.' });
+                return;
+            }
+            document.querySelectorAll('.vehicle-config-select').forEach(sel => {
+                if (!sel.value) {
+                    sel.value = configId;
+                }
+            });
+            Swal.fire({ icon: 'success', title: 'Diterapkan!', text: 'Konfigurasi diterapkan ke semua unit yang belum diatur.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+        });
+    }
+
+    if (btnSaveConfig) {
+        btnSaveConfig.addEventListener('click', async function() {
+            const vehicles = {};
+            let unconfigured = 0;
+            document.querySelectorAll('.vehicle-config-select').forEach(sel => {
+                const unit = sel.dataset.unit;
+                const configId = sel.value;
+                if (configId) {
+                    vehicles[unit] = { config_id: parseInt(configId) };
+                } else {
+                    unconfigured++;
+                }
+            });
+
+            if (Object.keys(vehicles).length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Tidak ada perubahan', text: 'Pilih konfigurasi untuk setidaknya 1 unit.' });
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i> Menyimpan...';
+
+            try {
+                const response = await fetch(`{{ route('import-approval.vehicle-config', $batch->id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ vehicles })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Konfigurasi Tersimpan!',
+                        text: `${result.configured}/${result.total} unit telah dikonfigurasi.`,
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: result.error || 'Terjadi kesalahan.' });
+                    this.disabled = false;
+                    this.innerHTML = '<i class="ri-save-line me-1"></i> Simpan Konfigurasi';
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Koneksi Gagal' });
+                this.disabled = false;
+                this.innerHTML = '<i class="ri-save-line me-1"></i> Simpan Konfigurasi';
+            }
+        });
+    }
+
+    // ============================================================
+    // Rollback
+    // ============================================================
+    const btnRollback = document.getElementById('btnRollback');
+    const rollbackConfirmInput = document.getElementById('rollbackConfirmInput');
+    const btnConfirmRollback = document.getElementById('btnConfirmRollback');
+
+    if (btnRollback) {
+        btnRollback.addEventListener('click', async function() {
+            const modal = new bootstrap.Modal(document.getElementById('rollbackModal'));
+            modal.show();
+
+            // Load preview counts
+            try {
+                const response = await fetch(`{{ route('import-approval.rollback-preview', $batch->id) }}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+
+                document.getElementById('rbTyresCount').textContent = data.tyres_count;
+                document.getElementById('rbMovementsCount').textContent = data.movements_count;
+                document.getElementById('rbVehiclesCount').textContent = data.vehicles_count;
+
+                document.getElementById('rollbackPreviewLoading').classList.add('d-none');
+                document.getElementById('rollbackPreviewContent').classList.remove('d-none');
+            } catch (error) {
+                document.getElementById('rollbackPreviewLoading').innerHTML = '<p class="text-danger">Gagal memuat preview.</p>';
+            }
+        });
+    }
+
+    if (rollbackConfirmInput) {
+        rollbackConfirmInput.addEventListener('input', function() {
+            btnConfirmRollback.disabled = this.value.trim() !== 'ROLLBACK';
+        });
+    }
 });
 </script>
 @endsection

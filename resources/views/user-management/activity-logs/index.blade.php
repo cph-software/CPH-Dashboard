@@ -34,9 +34,11 @@
             <button type="button" class="btn btn-outline-primary shadow-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                <i class="icon-base ri ri-filter-3-line me-1"></i> Advanced Filter
             </button>
+            @if (hasPermission('Activity Log', 'export') || auth()->user()->role_id == 1)
             <a href="{{ request()->fullUrlWithQuery(['export' => 'true']) }}" class="btn btn-success shadow-sm ms-2">
                <i class="icon-base ri ri-file-excel-2-line me-1"></i> Export CSV
             </a>
+            @endif
          </div>
       </div>
 

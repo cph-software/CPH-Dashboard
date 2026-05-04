@@ -16,111 +16,140 @@ class FixRolePermissionsSeeder extends Seeder
      */
     public function run()
     {
-        $this->command->info('=== Fixing Missing Role Permissions Completely ===');
+        $this->command->info('=== Standardizing Role Permissions (Manajerial, SPV, Admin Tyre) ===');
 
         $adminTyre = Role::where('name', 'Admin Tyre')->orWhere('id', 4)->first();
         $supervisor = Role::where('name', 'Supervisor')->orWhere('id', 3)->first();
         $manajerial = Role::where('name', 'Manajerial')->orWhere('name', 'Manager')->orWhere('id', 2)->first();
 
-        // Target Menus to Ensure Operational Roles Have Access To
-        $menuNames = [
-            'Dashboard',
-            'Tyre Operations', // Parent Menu (CRITICAL for sidebar rendering)
-            'Pemasangan (Install)',
-            'Pelepasan (Remove)',
-            'Rotasi (Rotate)',
-            'Tyre Monitoring',
-            'Monitoring',
-            'Movement History',
-            'Master Data', // Parent Menu
-            'Assets Management', // Parent Menu for Master Tyre and Vehicle Master
-            'Brands',
-            'Sizes',
-            'Patterns',
-            'Failure Codes',
-            'Locations',
-            'Segments',
-            'Axle Layouts',
-            'Position Layouts',
-            'Vehicle Master',
-            'Master Tyre',
-            'System Config', // Parent Menu
-            'System Settings', // Alternative Parent Menu
-            'Companies',
-            'Import Approval',
-            'Examination'
+        if (!$adminTyre || !$supervisor || !$manajerial) {
+            $this->command->error('One or more standard roles not found. Please ensure they exist.');
+            return;
+        }
+
+        // Definisi Permissions
+        $FULL_ACCESS = json_encode(['view', 'create', 'update', 'delete', 'export', 'import']);
+        $READ_WRITE = json_encode(['view', 'create', 'update', 'export']);
+        $READ_APPROVE = json_encode(['view', 'update', 'export']); // Update acts as Approve
+        $READ_ONLY = json_encode(['view', 'export']);
+        $VIEW_ONLY = json_encode(['view']);
+
+        // Matriks Konfigurasi Hak Akses (Menu Name => [Role => Permission])
+        $roleMatrix = [
+            'Dashboard' => [
+                'Admin Tyre' => $VIEW_ONLY, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            
+            // --- TYRE OPERATIONS ---
+            'Tyre Operations' => [ // Parent
+                'Admin Tyre' => $VIEW_ONLY, 'Supervisor' => $VIEW_ONLY, 'Manajerial' => $VIEW_ONLY
+            ],
+            'Pemasangan (Install)' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Pelepasan (Remove)' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Rotasi (Rotate)' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Movement History' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            
+            // --- ASSETS MANAGEMENT ---
+            'Assets Management' => [ // Parent
+                'Admin Tyre' => $VIEW_ONLY, 'Supervisor' => $VIEW_ONLY, 'Manajerial' => $VIEW_ONLY
+            ],
+            'Master Tyre' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Vehicle Master' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+
+            // --- MONITORING & EXAMINATION ---
+            'Examination' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_APPROVE, 'Manajerial' => $READ_APPROVE
+            ],
+            'Tyre Monitoring' => [
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_APPROVE, 'Manajerial' => $READ_ONLY
+            ],
+            
+            // --- SYSTEM CONFIG (MASTER DATA PENDUKUNG) ---
+            'System Config' => [ // Parent
+                'Admin Tyre' => $VIEW_ONLY, 'Supervisor' => $VIEW_ONLY, 'Manajerial' => $VIEW_ONLY
+            ],
+            'Brands' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Sizes' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Patterns' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Failure Codes' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Locations' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Segments' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            'Position Layouts' => [
+                'Admin Tyre' => $READ_ONLY, 'Supervisor' => $FULL_ACCESS, 'Manajerial' => $READ_ONLY
+            ],
+            
+            // --- APPROVAL & LOGS ---
+            'Import Approval' => [
+                // Admin tyre bisa lihat daftar requestnya sendiri, SPV/Manager bisa Approve (Update)
+                'Admin Tyre' => json_encode(['view', 'create']), 
+                'Supervisor' => $READ_APPROVE, 
+                'Manajerial' => $READ_APPROVE
+            ],
+            'Activity Logs' => [ // Parent
+                'Admin Tyre' => null, 'Supervisor' => $VIEW_ONLY, 'Manajerial' => $VIEW_ONLY
+            ],
+            'All Activity' => [
+                'Admin Tyre' => null, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Import/Export Log' => [
+                'Admin Tyre' => null, 'Supervisor' => $READ_ONLY, 'Manajerial' => $READ_ONLY
+            ],
+            'Error Notification' => [ // Menu ID 73 - Diperlukan agar icon lonceng tampil di navbar
+                'Admin Tyre' => $VIEW_ONLY, 'Supervisor' => $VIEW_ONLY, 'Manajerial' => $VIEW_ONLY
+            ],
         ];
 
-        $menuUrls = [
-            'dashboard', 'tyre-dashboard', 'monitoring', 'pemasangan', 'pelepasan', 
-            'rotasi', 'history', 'master_company', 'master_tyre', 'master_kendaraan',
-            'import-approval', 'examination'
-        ];
+        // Pertama, hapus SEMUA permission lama untuk 3 role ini agar bersih (Reset)
+        $adminTyre->menus()->detach();
+        $supervisor->menus()->detach();
+        $manajerial->menus()->detach();
 
-        // Temukan semua menu yang namanya ada di daftar di atas ATAU URL-nya cocok
-        $menus = Menu::whereIn('name', $menuNames)
-                     ->orWhereIn('url', $menuUrls)
-                     ->get();
+        $menus = Menu::all();
 
         foreach ($menus as $menu) {
-            $basePerms = ['view'];
-            
-            // Berikan hak penuh untuk Import Approval bagi Supervisor
-            if ($menu->name === 'Import Approval' || str_contains($menu->name, 'Tyre Monitoring')) {
-                $supervisorPerms = ['view', 'create', 'update', 'delete', 'export', 'import'];
-            } else {
-                $supervisorPerms = ['view'];
-            }
+            $menuName = $menu->name;
 
-            // Sync untuk Manajerial (View Only rata-rata + Update di import, monitoring, dan examination)
-            if ($manajerial) {
-                $manajerialPerms = ['view'];
-                if (in_array($menu->name, ['Import Approval', 'Tyre Monitoring', 'Examination'])) {
-                    $manajerialPerms[] = 'update'; // Bisa approve
+            // Jika menu ada di matrix, pasang permissionnya
+            if (isset($roleMatrix[$menuName])) {
+                
+                if (isset($roleMatrix[$menuName]['Admin Tyre']) && $roleMatrix[$menuName]['Admin Tyre'] !== null) {
+                    $adminTyre->menus()->attach($menu->id, ['permissions' => $roleMatrix[$menuName]['Admin Tyre']]);
                 }
-                $manajerial->menus()->syncWithoutDetaching([
-                    $menu->id => ['permissions' => json_encode($manajerialPerms)]
-                ]);
-            }
-
-            // Sync untuk Supervisor
-            if ($supervisor) {
-                $supervisor->menus()->syncWithoutDetaching([
-                    $menu->id => ['permissions' => json_encode($supervisorPerms)]
-                ]);
-            }
-
-            // Sync untuk Admin Tyre (Operasional Penuh)
-            if ($adminTyre && in_array($menu->name, ['Tyre Operations', 'Pemasangan (Install)', 'Pelepasan (Remove)', 'Rotasi (Rotate)', 'Tyre Monitoring', 'Movement History', 'Dashboard'])) {
-                $adminTyre->menus()->syncWithoutDetaching([
-                    $menu->id => ['permissions' => json_encode(['view', 'create', 'update', 'delete', 'export', 'import'])]
-                ]);
+                
+                if (isset($roleMatrix[$menuName]['Supervisor']) && $roleMatrix[$menuName]['Supervisor'] !== null) {
+                    $supervisor->menus()->attach($menu->id, ['permissions' => $roleMatrix[$menuName]['Supervisor']]);
+                }
+                
+                if (isset($roleMatrix[$menuName]['Manajerial']) && $roleMatrix[$menuName]['Manajerial'] !== null) {
+                    $manajerial->menus()->attach($menu->id, ['permissions' => $roleMatrix[$menuName]['Manajerial']]);
+                }
             }
         }
 
-        // --- CLEANUP ACCIDENTAL MENUS ---
-        // Karena '#' sebelumnya mencakup semua parent, kita hapus parent yang bukan bagian dari modul Tyre
-        $unwantedMenus = [
-            'User Management',
-            'BA Management',
-            'Berita Acara',
-            'BA Reports',
-            'Invoicing',
-            'Invoice List',
-            'Overdue Tracking',
-            'AR Aging',
-            'Lead Time',
-            'Lead Time Monitor',
-            'Lead Time Reports'
-        ];
-        $menusToHide = Menu::whereIn('name', $unwantedMenus)->get();
-
-        foreach ($menusToHide as $badMenu) {
-            if ($manajerial) $manajerial->menus()->detach($badMenu->id);
-            if ($supervisor) $supervisor->menus()->detach($badMenu->id);
-            // $adminTyre might need them, or might not. Better safe.
-        }
-
-        $this->command->info('✅ ALL Operational and Parent Menus linked perfectly, extraneous menus detached!');
+        $this->command->info('✅ Role Permissions successfully standardized!');
     }
 }

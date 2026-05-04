@@ -12,7 +12,11 @@ class ImportBatch extends Model
     protected $fillable = [
         'user_id', 'tyre_company_id', 'module', 'filename', 'status', 
         'approved_by', 'approved_at', 'total_rows', 
-        'processed_rows', 'notes'
+        'processed_rows', 'notes', 'legacy_meta'
+    ];
+
+    protected $casts = [
+        'legacy_meta' => 'array',
     ];
 
     public function user()

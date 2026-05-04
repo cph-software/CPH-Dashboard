@@ -210,6 +210,20 @@ Route::middleware(['auth', 'eula'])->group(function () {
         ->name('import-approval.reject')
         ->middleware('tyre.permission:Import Approval,update');
 
+    // Legacy Import: Vehicle Configuration (AJAX)
+    Route::post('import-approval/{id}/vehicle-config', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'saveVehicleConfig'])
+        ->name('import-approval.vehicle-config')
+        ->middleware('tyre.permission:Import Approval,update');
+
+    // Import Rollback
+    Route::get('import-approval/{id}/rollback-preview', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'rollbackPreview'])
+        ->name('import-approval.rollback-preview')
+        ->middleware('tyre.permission:Import Approval,update');
+
+    Route::post('import-approval/{id}/rollback', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'rollback'])
+        ->name('import-approval.rollback')
+        ->middleware('tyre.permission:Import Approval,update');
+
     // Import Action (Uploader)
     Route::post('import-data', [\App\Http\Controllers\UserManagement\ImportController::class, 'storeCSV'])
         ->name('import.store')

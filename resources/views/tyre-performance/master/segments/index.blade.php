@@ -16,10 +16,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
          <h4 class="fw-bold py-3 mb-0"><span class="text-muted fw-light">Master /</span> Tyre Segments</h4>
          <div class="d-flex gap-2">
+            @if (hasPermission('Segments', 'export') || auth()->user()->role_id == 1)
             <a href="{{ route('master_data.export', ['type' => 'segments', 'format' => 'excel']) }}"
                class="btn btn-outline-primary">
                <i class="ri-file-excel-2-line me-1"></i> Export Excel
             </a>
+            @endif
             @if (hasPermission('Import Approval', 'create'))
                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
                   data-bs-target="#importModal">

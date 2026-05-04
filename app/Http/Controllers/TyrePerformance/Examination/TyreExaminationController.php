@@ -236,11 +236,22 @@ class TyreExaminationController extends Controller
             if ($approvalStatus === 'Pending') {
                 try {
                     $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Examination', 'update');
+                    $submitterName = auth()->user()->display_name ?? auth()->user()->name;
+                    $actionUrl = route('examination.show', $examination->id);
+                    
                     if ($approvers->count() > 0) {
-                        $submitterName = auth()->user()->display_name;
-                        $actionUrl = route('examination.show', $examination->id);
                         \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Tyre Examination', $submitterName, $actionUrl));
                     }
+
+                    // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
+                    \Illuminate\Support\Facades\Notification::send(auth()->user(), 
+                        new \App\Notifications\ApprovalStatusNotification(
+                            'Tyre Examination', 
+                            'Pending', 
+                            'Sistem (Menunggu Approver)', 
+                            $actionUrl
+                        )
+                    );
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to send Tyre Examination Notification: " . $e->getMessage());
                 }
@@ -341,7 +352,7 @@ class TyreExaminationController extends Controller
                 if ($examination->created_by) {
                     $submitter = \App\Models\User::find($examination->created_by);
                     if ($submitter) {
-                        $approverName = auth()->user()->display_name;
+                        $approverName = auth()->user()->display_name ?? auth()->user()->name;
                         $actionUrl = route('examination.show', $examination->id);
                         \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Tyre Examination', 'Approved', $approverName, $actionUrl));
                     }
@@ -372,7 +383,7 @@ class TyreExaminationController extends Controller
             if ($examination->created_by) {
                 $submitter = \App\Models\User::find($examination->created_by);
                 if ($submitter) {
-                    $approverName = auth()->user()->display_name;
+                    $approverName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('examination.show', $examination->id);
                     \Illuminate\Support\Facades\Notification::send($submitter, new \App\Notifications\ApprovalStatusNotification('Tyre Examination', 'Rejected', $approverName, $actionUrl, $request->reason));
                 }
