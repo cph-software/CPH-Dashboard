@@ -49,4 +49,9 @@ class TyreMovement extends Model
     {
         return $this->belongsTo(TyreFailureCode::class, 'failure_code_id');
     }
+
+    public function workLocation()
+    {
+        return $this->belongsTo(TyreLocation::class, 'work_location_id');
+    }
 }

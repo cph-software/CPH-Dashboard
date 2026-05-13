@@ -1760,6 +1760,7 @@
                axleChart.destroy();
                axleChart = null;
             }
+            container.innerHTML = ''; // Clear loading spinner
             if (!data || data.length === 0) {
                container.innerHTML = '<div class="text-center py-5">Belum ada data scrap</div>';
                return;

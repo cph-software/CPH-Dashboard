@@ -274,7 +274,11 @@ class DashboardController extends Controller
         // 5b. Monitoring Summary (Live Session Data for Dashboard)
         // ========================================
         $activeMonitoringSessions = \App\Models\TyreMonitoringSession::where('status', 'active')->count();
-        $pendingChecks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')->count();
+        $pendingChecks = \App\Models\TyreMonitoringCheck::where('approval_status', 'Pending')
+            ->select('session_id', 'check_number')
+            ->distinct()
+            ->get()
+            ->count();
         
         // Tyres overdue for inspection (last check > 30 days ago)
         $overdueInspection = Tyre::where('status', 'Installed')
@@ -1186,7 +1190,14 @@ class DashboardController extends Controller
             // 8. BRAND PERFORMANCE FILTERED → Drill-down
             // ==========================================
             case 'brand_performance':
-                $brand = TyreBrand::where('brand_name', $value)->first();
+                $brandIdParam = $request->get('brand_id');
+                if ($brandIdParam) {
+                    $brand = TyreBrand::find($brandIdParam);
+                    $patternName = $value;
+                } else {
+                    $brand = TyreBrand::where('brand_name', $value)->first();
+                    $patternName = null;
+                }
                 if (!$brand)
                     return response()->json(['data' => [], 'total' => 0]);
 
@@ -1195,6 +1206,12 @@ class DashboardController extends Controller
                 [$ltCols, $ltKeys] = \App\Services\DashboardAnalyticsService::lifetimeCols($mode);
 
                 $query = Tyre::where('tyre_brand_id', $brand->id);
+                
+                if ($patternName) {
+                    $query->whereHas('pattern', function ($q) use ($patternName) {
+                        $q->where('name', $patternName);
+                    });
+                }
                 \App\Services\DashboardAnalyticsService::applyLifetimeFilter($query, $mode);
 
                 // Apply same filters as chart
@@ -1252,7 +1269,14 @@ class DashboardController extends Controller
             // 9. CPK FILTERED → Drill-down
             // ==========================================
             case 'brand_cpk':
-                $brand = TyreBrand::where('brand_name', $value)->first();
+                $brandIdParam = $request->get('brand_id');
+                if ($brandIdParam) {
+                    $brand = TyreBrand::find($brandIdParam);
+                    $patternName = $value;
+                } else {
+                    $brand = TyreBrand::where('brand_name', $value)->first();
+                    $patternName = null;
+                }
                 if (!$brand)
                     return response()->json(['data' => [], 'total' => 0]);
 
@@ -1266,6 +1290,12 @@ class DashboardController extends Controller
                 $query = Tyre::where('tyre_brand_id', $brand->id)
                     ->whereNotNull('price')
                     ->where('price', '>', 0);
+                    
+                if ($patternName) {
+                    $query->whereHas('pattern', function ($q) use ($patternName) {
+                        $q->where('name', $patternName);
+                    });
+                }
                 \App\Services\DashboardAnalyticsService::applyLifetimeFilter($query, $mode);
 
                 // Apply same filters as chart

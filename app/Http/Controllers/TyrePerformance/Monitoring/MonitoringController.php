@@ -272,6 +272,7 @@ class MonitoringController extends Controller
         $sizes = TyreSize::orderBy('size')->get();
 
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
+            ->where('is_repairing', false)
             ->with(['brand', 'size', 'pattern', 'monitoringChecks' => function($q) {
                 $q->latest();
             }])
@@ -600,7 +601,6 @@ class MonitoringController extends Controller
 
                                 // 4. Sync Position Detail
                                 if ($posId) {
-                                    TyrePositionDetail::where('id', $posId)->update(['tyre_id' => $tyre->id]);
                                 }
                             }
                         }
@@ -611,7 +611,8 @@ class MonitoringController extends Controller
             // --- Kirim Notifikasi untuk Cek 1 jika Submitter bukan SuperAdmin ---
             if (auth()->user()->role_id != 1) {
                 try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update')
+                        ->reject(function ($u) { return $u->id === auth()->id(); });
                     $submitterName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('monitoring.sessions.show', $session->session_id);
                     
@@ -751,7 +752,6 @@ class MonitoringController extends Controller
 
             // Sync with Position Detail (Secondary sync)
             if ($request->position_id) {
-                TyrePositionDetail::where('id', $request->position_id)->update(['tyre_id' => $tyre->id]);
             }
 
             // Link pending images to this installation event (using check_id as NULL, session_id + serial)
@@ -1036,7 +1036,8 @@ class MonitoringController extends Controller
             // --- Send Notification to Approvers if Pending ---
             if (!$isAdmin) {
                 try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update');
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update')
+                        ->reject(function ($u) { return $u->id === auth()->id(); });
                     $submitterName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('monitoring.sessions.show', $session->session_id);
 
@@ -1148,7 +1149,6 @@ class MonitoringController extends Controller
 
                 // Sync with Position Detail (Clear the position)
                 if ($data['position_id']) {
-                    TyrePositionDetail::where('id', $data['position_id'])->update(['tyre_id' => null]);
                 }
 
                 // Sync stock (Increment at destination location, UNLESS SCRAP)

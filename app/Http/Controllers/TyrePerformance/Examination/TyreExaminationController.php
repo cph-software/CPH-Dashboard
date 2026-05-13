@@ -295,6 +295,8 @@ class TyreExaminationController extends Controller
             'current_tread_depth' => $avgRtd ?? $tyre->current_tread_depth,
             'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
             'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+            'last_inspection_date' => $examination->examination_date,
+            'last_hm_reading' => $examination->hour_meter,
         ]);
 
         // IMPORTANT: Record this inspection in movement history with calculated diffs

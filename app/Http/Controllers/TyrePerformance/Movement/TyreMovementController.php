@@ -35,23 +35,45 @@ class TyreMovementController extends Controller
         return response()->json(['success' => true, 'message' => 'Filter aktif: ' . $company->company_name]);
     }
 
+    protected function applyCompanyScope($query)
+    {
+        $user = auth()->user();
+        if (!$user) return $query;
+        
+        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
+        if ($isInternal) {
+            if (session()->has('active_company_id')) {
+                return $query->where('tyre_company_id', session('active_company_id'));
+            }
+        } else {
+            return $query->where('tyre_company_id', $user->tyre_company_id);
+        }
+        return $query;
+    }
+
     public function index()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+        $query = MasterImportKendaraan::select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
+            ->whereNotNull('tyre_position_configuration_id')
             ->where('tyre_unit_status', 'Active')
-            ->withCount('tyres')
-            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
-            ->get();
+            ->withCount(['tyres' => function ($query) {
+                $query->whereNotNull('current_position_id');
+            }]);
+            
+        $kendaraans = $this->applyCompanyScope($query)->get();
         return view('tyre-performance.movement.index', compact('kendaraans'));
     }
 
     public function pemasangan()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+        $query = MasterImportKendaraan::select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
+            ->whereNotNull('tyre_position_configuration_id')
             ->where('tyre_unit_status', 'Active')
-            ->withCount('tyres')
-            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
-            ->get();
+            ->withCount(['tyres' => function ($query) {
+                $query->whereNotNull('current_position_id');
+            }]);
+            
+        $kendaraans = $this->applyCompanyScope($query)->get();
         // Removed eager loading of all tyres to avoid memory bloat
         // Available tyres will be fetched via AJAX search
         $availableTyres = collect();
@@ -65,7 +87,10 @@ class TyreMovementController extends Controller
         $search = $request->input('q');
 
         $query = Tyre::whereIn('status', ['New', 'Repaired'])
-            ->where('is_in_warehouse', true);
+            ->where('is_in_warehouse', true)
+            ->where('is_repairing', false);
+            
+        $query = $this->applyCompanyScope($query);
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -108,12 +133,17 @@ class TyreMovementController extends Controller
 
     public function pelepasan()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+        $query = MasterImportKendaraan::select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
+            ->whereNotNull('tyre_position_configuration_id')
             ->where('tyre_unit_status', 'Active')
-            ->whereHas('tyres') // Only vehicles with tyres
-            ->withCount('tyres')
-            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
-            ->get();
+            ->whereHas('tyres', function ($query) {
+                $query->whereNotNull('current_position_id');
+            })
+            ->withCount(['tyres' => function ($query) {
+                $query->whereNotNull('current_position_id');
+            }]);
+            
+        $kendaraans = $this->applyCompanyScope($query)->get();
         $failureCodes = TyreFailureCode::where('status', 'Active')->get();
         $locations = \App\Models\TyreLocation::all();
         $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
@@ -122,12 +152,17 @@ class TyreMovementController extends Controller
 
     public function rotasi()
     {
-        $kendaraans = MasterImportKendaraan::whereNotNull('tyre_position_configuration_id')
+        $query = MasterImportKendaraan::select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
+            ->whereNotNull('tyre_position_configuration_id')
             ->where('tyre_unit_status', 'Active')
-            ->whereHas('tyres')
-            ->withCount('tyres')
-            ->select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
-            ->get();
+            ->whereHas('tyres', function ($query) {
+                $query->whereNotNull('current_position_id');
+            })
+            ->withCount(['tyres' => function ($query) {
+                $query->whereNotNull('current_position_id');
+            }]);
+            
+        $kendaraans = $this->applyCompanyScope($query)->get();
         $locations = \App\Models\TyreLocation::all();
         $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
         return view('tyre-performance.movement.rotasi', compact('kendaraans', 'segments', 'locations'));
@@ -161,7 +196,7 @@ class TyreMovementController extends Controller
 
     public function getVehicleDetail($id)
     {
-        $vehicle = MasterImportKendaraan::with('segment')->findOrFail($id);
+        $vehicle = MasterImportKendaraan::with(['segment', 'company:id,measurement_mode'])->findOrFail($id);
 
         // Fetch latest readings via centralized Service
         $readings = VehicleReadingService::getLastVehicleReadings($id);
@@ -181,9 +216,11 @@ class TyreMovementController extends Controller
 
         if ($request->has('position_id')) {
             // For Quick Form Installation: We need list of available tyres
-            $availableTyres = Tyre::whereIn('status', ['New', 'Repaired'])
-                ->with(['brand', 'size'])
-                ->get();
+            $availableTyres = $this->applyCompanyScope(
+                Tyre::whereIn('status', ['New', 'Repaired'])
+                    ->where('is_in_warehouse', true)
+                    ->where('is_repairing', false)
+            )->with(['brand', 'size'])->limit(50)->get();
 
             return response()->json([
                 'availableTyres' => $availableTyres
@@ -219,6 +256,40 @@ class TyreMovementController extends Controller
         ]);
     }
 
+    public function getWarehouseStock(Request $request)
+    {
+        $query = Tyre::with(['brand:id,brand_name', 'size:id,size', 'pattern:id,name'])
+            ->whereIn('status', ['New', 'Repaired'])
+            ->where('is_in_warehouse', true)
+            ->where('is_repairing', false)
+            ->whereNull('current_vehicle_id');
+            
+        $query = $this->applyCompanyScope($query);
+            
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', '%' . $search . '%')
+                  ->orWhereHas('brand', function($qBrand) use ($search) {
+                      $qBrand->where('brand_name', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('size', function($qSize) use ($search) {
+                      $qSize->where('size', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('pattern', function($qPattern) use ($search) {
+                      $qPattern->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        $tyres = $query->limit(100)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tyres
+        ]);
+    }
+
     /**
      * API: Get Tyre Detail for preview modal on Movement History page
      */
@@ -240,6 +311,13 @@ class TyreMovementController extends Controller
 
         if (!$tyre) {
             return response()->json(['success' => false, 'message' => 'Ban tidak ditemukan di posisi ini.'], 404);
+        }
+
+        // Company scope validation
+        $user = auth()->user();
+        $isInternal = ($user && ($user->role_id == 1 || $user->tyre_company_id == 1));
+        if (!$isInternal && $user && $tyre->tyre_company_id != $user->tyre_company_id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Ban bukan milik perusahaan Anda.'], 403);
         }
 
         // Get movement history (last 10)
@@ -541,8 +619,8 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                         'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
-                        'current_km' => $request->odometer,
-                        'current_hm' => $request->hour_meter,
+                        'current_km' => $request->odometer ?? 0,
+                        'current_hm' => $request->hour_meter ?? 0,
                     ]);
 
                     $targetTyre->update([
@@ -550,13 +628,11 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
                         'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
                         'current_tread_depth' => $request->target_rtd_reading ?? $targetTyre->current_tread_depth,
-                        'current_km' => $request->odometer,
-                        'current_hm' => $request->hour_meter,
+                        'current_km' => $request->odometer ?? 0,
+                        'current_hm' => $request->hour_meter ?? 0,
                     ]);
 
                     // 4. Update Position Details
-                    $position->update(['tyre_id' => $targetTyre->id]);
-                    $targetPosition->update(['tyre_id' => $sourceTyre->id]);
 
                 } else {
                     // MOVE LOGIC (Target is empty)
@@ -594,13 +670,11 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                         'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
-                        'current_km' => $request->odometer,
-                        'current_hm' => $request->hour_meter,
+                        'current_km' => $request->odometer ?? 0,
+                        'current_hm' => $request->hour_meter ?? 0,
                     ]);
 
                     // 3. Update Position Details
-                    $position->update(['tyre_id' => null]);
-                    $targetPosition->update(['tyre_id' => $sourceTyre->id]);
                 }
                 
                 $tyre = $sourceTyre; // For potential use in logging below
@@ -633,10 +707,9 @@ class TyreMovementController extends Controller
 
                 // --- HANDLE REPLACEMENT (If position is already occupied) ---
                 $isReplacement = false;
-                if ($position->tyre_id) {
+                $oldTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)->where('current_position_id', $position->id)->first();
+                if ($oldTyre) {
                     $isReplacement = true;
-
-                    $oldTyre = Tyre::find($position->tyre_id);
                     if ($oldTyre) {
                         // 1. Calculate Lifetime for Old Tyre since its last recorded event
                         $lastOldMov = TyreMovement::where('tyre_id', $oldTyre->id)
@@ -672,12 +745,13 @@ class TyreMovementController extends Controller
                             'current_vehicle_id' => null,
                             'current_position_id' => null,
                             'is_in_warehouse' => true,
+                            'is_repairing' => true,
                             'current_location_id' => $request->work_location_id,
                             'status' => 'Repaired',
                             'total_lifetime_km' => ($oldTyre->total_lifetime_km ?? 0) + $kmDiff,
                             'total_lifetime_hm' => ($oldTyre->total_lifetime_hm ?? 0) + $hmDiff,
-                            'current_km' => $request->odometer,
-                            'current_hm' => $request->hour_meter,
+                            'current_km' => $request->odometer ?? 0,
+                            'current_hm' => $request->hour_meter ?? 0,
                         ]);
 
                         // 4. Increase stock at working location (Old tyre enters warehouse)
@@ -704,12 +778,11 @@ class TyreMovementController extends Controller
                     'current_location_id' => null,
                     'status' => 'Installed',
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
-                    'current_km' => $request->odometer,
-                    'current_hm' => $request->hour_meter,
+                    'current_km' => $request->odometer ?? 0,
+                    'current_hm' => $request->hour_meter ?? 0,
                 ]);
 
                 // 2. Update Position Detail (Secondary sync)
-                $position->update(['tyre_id' => $tyre->id]);
 
                 // 3. Decrease stock at old location (tyre leaving warehouse)
                 if ($oldLocationId) {
@@ -846,11 +919,14 @@ class TyreMovementController extends Controller
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
                     'is_in_warehouse' => true,
-                    'current_location_id' => $request->work_location_id, // Update lokasi fisik ban
+                    'is_repairing' => ($finalStatus === 'Repaired'),
+                    'current_location_id' => $request->work_location_id,
                     'status' => $finalStatus,
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
-                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth
+                    'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
+                    'current_km' => $request->odometer ?? 0,
+                    'current_hm' => $request->hour_meter ?? 0,
                 ]);
 
                 // 3. Increase stock at new location (tyre entering warehouse), UNLESS SCRAP
@@ -861,7 +937,6 @@ class TyreMovementController extends Controller
                 }
 
                 // 4. Clear Position Detail
-                $position->update(['tyre_id' => null]);
             }
 
             if (!empty($warnings)) {
@@ -895,6 +970,9 @@ class TyreMovementController extends Controller
 
             DB::commit();
 
+            // [FIX-SYNC-1] Clear dashboard cache so data reflects immediately
+            \Illuminate\Support\Facades\Cache::flush();
+
             $successLabels = ['Installation' => 'Pemasangan', 'Rotation' => 'Rotasi', 'Removal' => 'Pelepasan'];
             $successLabel = $successLabels[$request->movement_type] ?? $request->movement_type;
             setLogActivity(Auth::id(), $successLabel . ' ban pada kendaraan ' . $vehicleCode, [
@@ -924,11 +1002,428 @@ class TyreMovementController extends Controller
         }
     }
 
+    public function bulkStore(Request $request)
+    {
+        $request->validate([
+            'vehicle_id' => 'required',
+            'movement_date' => 'required|date',
+            'odometer' => 'nullable|numeric',
+            'hour_meter' => 'nullable|numeric',
+            'movements' => 'required|string', // JSON string from frontend
+        ]);
+
+        $user = Auth::user();
+        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
+        $companyId = $isInternal ? session('active_company_id') : $user->tyre_company_id;
+        $movements = json_decode($request->movements, true);
+        if (!is_array($movements) || empty($movements)) {
+            return response()->json(['success' => false, 'message' => 'Data pergerakan ban kosong atau tidak valid.'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Pessimistic Locking
+            $vehicle = MasterImportKendaraan::where('id', $request->vehicle_id)->lockForUpdate()->firstOrFail();
+            $vehicleCode = $vehicle->kode_kendaraan;
+            
+            if ($companyId && $vehicle->tyre_company_id != $companyId) {
+                throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+            }
+
+            $warnings = [];
+
+            // --- DETEKSI ANOMALI ODO/HM ---
+            $odoWarnings = \App\Services\VehicleReadingService::detectOdoAnomalies(
+                $request->vehicle_id, $vehicleCode,
+                $request->odometer, $request->hour_meter,
+                $request->has('is_meter_reset') ? true : false
+            );
+            $warnings = array_merge($warnings, $odoWarnings);
+
+            $allPositions = TyrePositionDetail::where('configuration_id', $vehicle->tyre_position_configuration_id)->get()->keyBy('id');
+
+            // --- VALIDASI MULTI-TENANT PADA BAN ---
+            $tyreIds = [];
+            foreach ($movements as $mov) {
+                if (!empty($mov['tyre_id'])) $tyreIds[] = $mov['tyre_id'];
+                if (!empty($mov['target_tyre_id'])) $tyreIds[] = $mov['target_tyre_id'];
+            }
+            if (!empty($tyreIds)) {
+                $checkCompanyId = $companyId ?: session('active_company_id');
+                if ($checkCompanyId) {
+                    $tyresCount = Tyre::whereIn('id', $tyreIds)->where('tyre_company_id', $checkCompanyId)->count();
+                    $uniqueTyreIds = count(array_unique($tyreIds));
+                    if ($tyresCount !== $uniqueTyreIds) {
+                        throw new \Exception("Akses Ditolak: Satu atau lebih Ban yang dipilih tidak berada dalam lingkup perusahaan Anda.");
+                    }
+                }
+            }
+
+            foreach ($movements as $index => $mov) {
+                $type = $mov['type'];
+                $position = $allPositions->get($mov['position_id']);
+                
+                if (!$position) {
+                    throw new \Exception("Posisi ban tidak valid pada transaksi baris " . ($index + 1));
+                }
+
+                // Handle Photo
+                $photoPath = null;
+                $photoKey = 'move_photo_' . $index;
+                if ($request->hasFile($photoKey)) {
+                    $photoPath = $request->file($photoKey)->store('movements/' . $vehicle->id . '/' . date('Y-m'), 'public');
+                }
+
+                if ($type === 'Installation') {
+                    // Cek jika posisi sudah ada bannya (Fitur Auto-Replace)
+                    $isReplacement = false;
+                    $oldTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)->where('current_position_id', $mov['position_id'])->first();
+                    if ($oldTyre) {
+                        $isReplacement = true;
+                        if ($oldTyre) {
+                            // Catat pelepasan ban lama
+                            $oldTyre->update([
+                                'current_vehicle_id' => null,
+                                'current_position_id' => null,
+                                'is_in_warehouse' => true,
+                                'status' => 'Repaired', 
+                                'is_repairing' => true,
+                            ]);
+
+                            TyreMovement::create([
+                                'tyre_id' => $oldTyre->id,
+                                'vehicle_id' => $request->vehicle_id,
+                                'position_id' => $mov['position_id'],
+                                'operational_segment_id' => $request->operational_segment_id ?? null,
+                                'work_location_id' => $request->work_location_id ?? null,
+                                'start_time' => $request->start_time ?? null,
+                                'movement_type' => 'Removal',
+                                'movement_date' => $request->movement_date,
+                                'odometer_reading' => $request->odometer,
+                                'hour_meter_reading' => $request->hour_meter,
+                                'created_by' => Auth::id(),
+                                'notes' => 'Auto-removed during replacement.'
+                            ]);
+                        }
+                    }
+
+                    $tyre = Tyre::findOrFail($mov['tyre_id']);
+                    $oldLocationId = $tyre->current_location_id;
+
+                    $actualCondition = 'Repair';
+                    if ($tyre->status === 'New') $actualCondition = 'New';
+
+                    // Physical check
+                    if (isset($mov['rtd']) && $mov['rtd'] !== '' && $tyre->initial_tread_depth > 0) {
+                        if ($mov['rtd'] > $tyre->initial_tread_depth) {
+                            $warnings[] = "RTD Ban ({$mov['rtd']}mm) lebih besar dari RTD Awal ({$tyre->initial_tread_depth}mm).";
+                        }
+                    }
+
+                    if ($tyre->status === 'Installed' && $tyre->current_vehicle_id != $request->vehicle_id) {
+                        $warnings[] = "Ban SN {$tyre->serial_number} masih terpasang di unit lain.";
+                    }
+                    if ($tyre->status === 'Scrap') {
+                        $warnings[] = "Ban SN {$tyre->serial_number} sudah SCRAP.";
+                    }
+
+                    // (Kode Handle Replacement dihapus karena pemasangan sekarang mewajibkan node kosong dan menggunakan Drag-to-Correct / Pelepasan eksplisit)
+
+                    $tyre->update([
+                        'current_vehicle_id' => $request->vehicle_id,
+                        'current_position_id' => $mov['position_id'],
+                        'is_in_warehouse' => false,
+                        'current_location_id' => null,
+                        'status' => 'Installed',
+                        'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
+                        'current_km' => $request->odometer ?? 0,
+                        'current_hm' => $request->hour_meter ?? 0,
+                    ]);
+
+
+                    if ($oldLocationId) {
+                        DB::table('tyre_locations')->where('id', $oldLocationId)->decrement('current_stock');
+                    }
+
+                    TyreMovement::create([
+                        'tyre_id' => $tyre->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'position_id' => $mov['position_id'],
+                        'operational_segment_id' => $request->operational_segment_id ?? null,
+                        'work_location_id' => $request->work_location_id ?? null,
+                        'start_time' => $request->start_time ?? null,
+                        'install_condition' => $actualCondition,
+                        'is_replacement' => $isReplacement,
+                        'tyreman_1' => $request->tyreman_1 ?? null,
+                        'tyreman_2' => $request->tyreman_2 ?? null,
+                        'psi_reading' => $mov['psi'] ?? null,
+                        'rtd_reading' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : null,
+                        'movement_type' => 'Installation',
+                        'movement_date' => $request->movement_date,
+                        'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
+                        'remarks' => $mov['remarks'] ?? null,
+                        'notes' => $mov['notes'] ?? null,
+                        'created_by' => Auth::id(),
+                        'photo' => $photoPath,
+                    ]);
+
+                } elseif ($type === 'Removal') {
+                    $tyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
+                        ->where('current_position_id', $mov['position_id'])
+                        ->first();
+
+                    if (!$tyre) {
+                        throw new \Exception("Gagal: Posisi {$position->position_code} sudah kosong atau ban telah dilepas oleh user lain. Harap muat ulang layout.");
+                    }
+
+                    $lastMov = TyreMovement::where('tyre_id', $tyre->id)
+                        ->where('movement_date', '<=', $request->movement_date)
+                        ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
+
+                    $kmDiff = 0; $hmDiff = 0;
+                    if ($lastMov) {
+                        $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
+                        $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
+                    }
+
+                    $finalStatus = $mov['target_status'] ?? 'Repaired';
+
+                    TyreMovement::create([
+                        'tyre_id' => $tyre->id,
+                        'vehicle_id' => $request->vehicle_id,
+                        'position_id' => $mov['position_id'],
+                        'operational_segment_id' => $request->operational_segment_id ?? null,
+                        'work_location_id' => $request->work_location_id ?? null,
+                        'start_time' => $request->start_time ?? null,
+                        'tyreman_1' => $request->tyreman_1 ?? null,
+                        'tyreman_2' => $request->tyreman_2 ?? null,
+                        'psi_reading' => $mov['psi'] ?? null,
+                        'rtd_reading' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : null,
+                        'movement_type' => 'Removal',
+                        'target_status' => $finalStatus,
+                        'failure_code_id' => $mov['failure_code_id'] ?? null,
+                        'movement_date' => $request->movement_date,
+                        'odometer_reading' => $request->odometer,
+                        'hour_meter_reading' => $request->hour_meter,
+                        'running_km' => $kmDiff,
+                        'running_hm' => $hmDiff,
+                        'remarks' => $mov['remarks'] ?? null,
+                        'notes' => $mov['notes'] ?? null,
+                        'created_by' => Auth::id(),
+                        'photo' => $photoPath,
+                    ]);
+
+                    $tyre->update([
+                        'current_vehicle_id' => null,
+                        'current_position_id' => null,
+                        'is_in_warehouse' => true,
+                        'current_location_id' => (!empty($request->work_location_id)) ? $request->work_location_id : null,
+                        'status' => $finalStatus,
+                        'is_repairing' => ($finalStatus === 'Repaired') ? true : false,
+                        'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
+                        'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
+                        'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
+                        'current_km' => $request->odometer ?? 0,
+                        'current_hm' => $request->hour_meter ?? 0,
+                    ]);
+
+                    if (!empty($request->work_location_id) && $finalStatus !== 'Scrap') {
+                        DB::table('tyre_locations')->where('id', $request->work_location_id)->increment('current_stock');
+                    }
+
+
+                } elseif ($type === 'Rotation') {
+                    $targetPosition = $allPositions->get($mov['target_position_id']);
+                    if (!$targetPosition) {
+                        throw new \Exception("Posisi target rotasi tidak valid.");
+                    }
+
+                    $sourceTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
+                        ->where('current_position_id', $mov['position_id'])
+                        ->first();
+                    
+                    if (!$sourceTyre) {
+                        throw new \Exception("Gagal: Ban sumber rotasi (Posisi {$position->position_code}) tidak ditemukan atau telah dilepas oleh user lain.");
+                    }
+
+                    $lastMovSrc = TyreMovement::where('tyre_id', $sourceTyre->id)
+                        ->where('movement_date', '<=', $request->movement_date)
+                        ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
+                    $kmDiffSrc = 0; $hmDiffSrc = 0;
+                    if ($lastMovSrc) {
+                        $kmDiffSrc = $this->calculateLifetimeDiff($request->odometer, $lastMovSrc->odometer_reading);
+                        $hmDiffSrc = $this->calculateLifetimeDiff($request->hour_meter, $lastMovSrc->hour_meter_reading);
+                    }
+
+                    $targetTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)
+                        ->where('current_position_id', $mov['target_position_id'])
+                        ->first();
+
+                    if ($targetTyre) {
+                        // SWAP
+                        $photoTargetKey = 'move_photo_target_' . $index;
+                        $photoTargetPath = null;
+                        if ($request->hasFile($photoTargetKey)) {
+                            $photoTargetPath = $request->file($photoTargetKey)->store('movements/' . $vehicle->id . '/' . date('Y-m'), 'public');
+                        }
+
+                        $lastMovTgt = TyreMovement::where('tyre_id', $targetTyre->id)
+                            ->where('movement_date', '<=', $request->movement_date)
+                            ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
+                        $kmDiffTgt = 0; $hmDiffTgt = 0;
+                        if ($lastMovTgt) {
+                            $kmDiffTgt = $this->calculateLifetimeDiff($request->odometer, $lastMovTgt->odometer_reading);
+                            $hmDiffTgt = $this->calculateLifetimeDiff($request->hour_meter, $lastMovTgt->hour_meter_reading);
+                        }
+
+                        TyreMovement::create([
+                            'tyre_id' => $sourceTyre->id,
+                            'vehicle_id' => $request->vehicle_id,
+                            'position_id' => $mov['target_position_id'],
+                            'movement_type' => 'Rotation',
+                            'movement_date' => $request->movement_date,
+                            'odometer_reading' => $request->odometer,
+                            'hour_meter_reading' => $request->hour_meter,
+                            'running_km' => $kmDiffSrc,
+                            'running_hm' => $hmDiffSrc,
+                            'psi_reading' => $mov['psi'] ?? null,
+                            'rtd_reading' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : null,
+                            'work_location_id' => $request->work_location_id ?? null,
+                            'start_time' => $request->start_time ?? null,
+                            'operational_segment_id' => $request->operational_segment_id ?? null,
+                            'tyreman_1' => $request->tyreman_1 ?? null,
+                            'tyreman_2' => $request->tyreman_2 ?? null,
+                            'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? ''),
+                            'created_by' => Auth::id(),
+                            'photo' => $photoPath,
+                        ]);
+
+                        TyreMovement::create([
+                            'tyre_id' => $targetTyre->id,
+                            'vehicle_id' => $request->vehicle_id,
+                            'position_id' => $mov['position_id'],
+                            'movement_type' => 'Rotation',
+                            'movement_date' => $request->movement_date,
+                            'odometer_reading' => $request->odometer,
+                            'hour_meter_reading' => $request->hour_meter,
+                            'running_km' => $kmDiffTgt,
+                            'running_hm' => $hmDiffTgt,
+                            'psi_reading' => $mov['target_psi'] ?? null,
+                            'rtd_reading' => isset($mov['target_rtd']) && $mov['target_rtd'] !== '' ? $mov['target_rtd'] : null,
+                            'work_location_id' => $request->work_location_id ?? null,
+                            'start_time' => $request->start_time ?? null,
+                            'operational_segment_id' => $request->operational_segment_id ?? null,
+                            'tyreman_1' => $request->tyreman_1 ?? null,
+                            'tyreman_2' => $request->tyreman_2 ?? null,
+                            'notes' => 'Rotation Swap ke ' . $position->position_code . '.',
+                            'created_by' => Auth::id(),
+                            'photo' => $photoTargetPath,
+                        ]);
+
+                        $sourceTyre->update([
+                            'current_position_id' => $mov['target_position_id'],
+                            'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
+                            'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
+                            'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $sourceTyre->current_tread_depth,
+                            'current_km' => $request->odometer ?? 0,
+                            'current_hm' => $request->hour_meter ?? 0,
+                        ]);
+
+                        $targetTyre->update([
+                            'current_position_id' => $mov['position_id'],
+                            'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
+                            'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
+                            'current_tread_depth' => isset($mov['target_rtd']) && $mov['target_rtd'] !== '' ? $mov['target_rtd'] : $targetTyre->current_tread_depth,
+                            'current_km' => $request->odometer ?? 0,
+                            'current_hm' => $request->hour_meter ?? 0,
+                        ]);
+
+
+                    } else {
+                        // MOVE
+                        TyreMovement::create([
+                            'tyre_id' => $sourceTyre->id,
+                            'vehicle_id' => $request->vehicle_id,
+                            'position_id' => $mov['target_position_id'],
+                            'movement_type' => 'Rotation',
+                            'movement_date' => $request->movement_date,
+                            'odometer_reading' => $request->odometer,
+                            'hour_meter_reading' => $request->hour_meter,
+                            'running_km' => $kmDiffSrc,
+                            'running_hm' => $hmDiffSrc,
+                            'psi_reading' => $mov['psi'] ?? null,
+                            'rtd_reading' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : null,
+                            'work_location_id' => $request->work_location_id ?? null,
+                            'start_time' => $request->start_time ?? null,
+                            'operational_segment_id' => $request->operational_segment_id ?? null,
+                            'tyreman_1' => $request->tyreman_1 ?? null,
+                            'tyreman_2' => $request->tyreman_2 ?? null,
+                            'notes' => 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? ''),
+                            'created_by' => Auth::id(),
+                            'photo' => $photoPath,
+                        ]);
+
+                        $sourceTyre->update([
+                            'current_position_id' => $mov['target_position_id'],
+                            'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
+                            'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
+                            'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $sourceTyre->current_tread_depth,
+                            'current_km' => $request->odometer ?? 0,
+                            'current_hm' => $request->hour_meter ?? 0,
+                        ]);
+
+                    }
+                }
+            }
+
+            if (!empty($warnings)) {
+                DB::rollBack();
+                setLogActivity(Auth::id(), 'Deteksi Human Error: Bulk Transaksi Ban unit ' . $vehicleCode, [
+                    'action_type' => 'error',
+                    'module' => 'Human Error',
+                    'data_after' => ['Kendaraan' => $vehicleCode, 'Pesan Error' => $warnings]
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Transaksi GAGAL DISIMPAN:\n\n" . implode("\n", $warnings)
+                ], 422);
+            }
+
+            DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
+
+            setLogActivity(Auth::id(), 'Bulk Transaksi Ban pada unit ' . $vehicleCode, [
+                'action_type' => 'create',
+                'module' => 'Tyre Movement',
+                'data_after' => ['Total Proses' => count($movements), 'Kendaraan' => $vehicleCode]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua transaksi massal berhasil disimpan.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function apiHistory(Request $request)
     {
-        $query = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode']);
+        $query = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode', 'workLocation']);
 
-        $totalRecords = TyreMovement::count();
+        // Company scope: filter movements by vehicle's company
+        $user = auth()->user();
+        $isInternal = ($user && ($user->role_id == 1 || $user->tyre_company_id == 1));
+        if ($isInternal && session()->has('active_company_id')) {
+            $query->whereHas('vehicle', fn($q) => $q->where('tyre_company_id', session('active_company_id')));
+        } elseif (!$isInternal && $user) {
+            $query->whereHas('vehicle', fn($q) => $q->where('tyre_company_id', $user->tyre_company_id));
+        }
+
+        $totalRecords = (clone $query)->count();
 
         // Search logic
         if ($request->has('search') && $request->input('search.value')) {
@@ -970,9 +1465,12 @@ class TyreMovementController extends Controller
                 'tyre_sn' => $row->tyre->serial_number ?? '-',
                 'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
+                'start_time' => $row->start_time ?? '-',
+                'tyreman' => $row->tyreman_1 ?? '-',
+                'work_location' => $row->workLocation ? $row->workLocation->location_name : '-',
                 'failure_info' => $failureInfo,
                 'action' => '<button type="button" class="btn btn-sm btn-info me-1" onclick="viewMovementDetail(' . $row->id . ')" title="Lihat Detail & Foto"><i class="icon-base ri ri-eye-line"></i> Detail</button>' . 
-                    ((auth()->user()->tyre_company_id && auth()->user()->tyre_company_id != 1) 
+                    ((!auth()->user()->tyre_company_id || auth()->user()->tyre_company_id == 1 || auth()->user()->role_id == 1) 
                     ? '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')" title="Rollback Transaksi"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
                     : '')
             ];
@@ -1010,6 +1508,17 @@ class TyreMovementController extends Controller
         DB::beginTransaction();
         try {
             $movement = TyreMovement::findOrFail($id);
+
+            // Company scope validation
+            $user = auth()->user();
+            $isInternal = ($user && ($user->role_id == 1 || $user->tyre_company_id == 1));
+            if (!$isInternal) {
+                $vehicle = MasterImportKendaraan::find($movement->vehicle_id);
+                if ($vehicle && $vehicle->tyre_company_id != $user->tyre_company_id) {
+                    throw new \Exception('Akses Ditolak: Anda tidak memiliki izin untuk rollback transaksi perusahaan lain.');
+                }
+            }
+
             $tyre = Tyre::find($movement->tyre_id);
 
             if (!$tyre) {
@@ -1046,7 +1555,6 @@ class TyreMovementController extends Controller
 
                 // 3. Free the position (if it still exists)
                 if ($position) {
-                    $position->update(['tyre_id' => null]);
                 }
             } elseif ($movement->movement_type === 'Rotation') {
                 // LOGIC: Undo Rotation
@@ -1069,18 +1577,18 @@ class TyreMovementController extends Controller
                 }
 
                 // Check for occupation at old position
-                if ($oldPos->tyre_id && $oldPos->tyre_id != $tyre->id) {
+                $occupier = Tyre::where('current_vehicle_id', $movement->vehicle_id)->where('current_position_id', $oldPos->id)->first();
+                if ($occupier && $occupier->id != $tyre->id) {
                     // Check if the occupier is a sibling rotation (Swap case)
                     $sibling = TyreMovement::where('vehicle_id', $movement->vehicle_id)
                         ->where('movement_date', $movement->movement_date)
                         ->where('odometer_reading', $movement->odometer_reading)
                         ->where('movement_type', 'Rotation')
-                        ->where('tyre_id', $oldPos->tyre_id)
+                        ->where('tyre_id', $occupier->id)
                         ->where('id', '!=', $movement->id)
                         ->first();
                     
                     if (!$sibling) {
-                        $occupier = Tyre::find($oldPos->tyre_id);
                         throw new \Exception("Posisi asal ban ({$oldPos->position_code}) sekarang sedang diisi oleh ban lain (SN: " . ($occupier->serial_number ?? '?') . "). Rollback dibatalkan.");
                     }
                     
@@ -1097,11 +1605,9 @@ class TyreMovementController extends Controller
 
                 // 2. Clear current position
                 if ($position) {
-                    $position->update(['tyre_id' => null]);
                 }
 
                 // 3. Occupy old position
-                $oldPos->update(['tyre_id' => $tyre->id]);
 
             } else {
                 // Removal
@@ -1111,12 +1617,9 @@ class TyreMovementController extends Controller
                 }
 
                 // Check if position is currently occupied by another tyre
-                if ($position->tyre_id && $position->tyre_id != $tyre->id) {
-                    // Check if the tyre occupying it is actually valid
-                    $occupier = Tyre::find($position->tyre_id);
-                    if ($occupier) {
-                        throw new \Exception("Posisi ini sekarang sedang diisi oleh ban lain (SN: {$occupier->serial_number}). Rollback dibatalkan untuk mencegah konflik.");
-                    }
+                $occupier = Tyre::where('current_vehicle_id', $movement->vehicle_id)->where('current_position_id', $position->id)->first();
+                if ($occupier && $occupier->id != $tyre->id) {
+                    throw new \Exception("Posisi ini sekarang sedang diisi oleh ban lain (SN: {$occupier->serial_number}). Rollback dibatalkan untuk mencegah konflik.");
                 }
 
                 // 1. Put Tyre back on Vehicle
@@ -1136,7 +1639,6 @@ class TyreMovementController extends Controller
                 }
 
                 // 3. Occupy the position
-                $position->update(['tyre_id' => $tyre->id]);
             }
 
             // Delete the log

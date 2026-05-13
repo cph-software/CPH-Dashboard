@@ -141,7 +141,6 @@
                   <div class="mb-3">
                      <label class="form-label fw-bold">Mode Pengukuran (Odometer/Hour Meter) <span class="text-danger">*</span></label>
                      <select name="measurement_mode" class="form-select">
-                        <option value="BOTH">Tampilkan Keduanya (KM & HM)</option>
                         <option value="KM">Hanya Kilometer (KM - Truk/Bus)</option>
                         <option value="HM">Hanya Hour Meter (HM - Alat Berat)</option>
                      </select>
@@ -200,7 +199,6 @@
                   <div class="mb-3">
                      <label class="form-label fw-bold">Mode Pengukuran <span class="text-danger">*</span></label>
                      <select name="measurement_mode" id="edit_measurement_mode" class="form-select">
-                        <option value="BOTH">Tampilkan Keduanya (KM & HM)</option>
                         <option value="KM">Hanya Kilometer (KM)</option>
                         <option value="HM">Hanya Hour Meter (HM)</option>
                      </select>
@@ -255,10 +253,10 @@
                $('#edit_max_users').val(data.max_users);
                $('#edit_status').val(data.status);
                
-               if (data.measurement_mode) {
+               if (data.measurement_mode && data.measurement_mode !== 'BOTH') {
                    $('#edit_measurement_mode').val(data.measurement_mode);
                } else {
-                   $('#edit_measurement_mode').val('BOTH');
+                   $('#edit_measurement_mode').val('KM');
                }
                
                $('#editCompanyForm').attr('action', baseUrl + '/' + id);

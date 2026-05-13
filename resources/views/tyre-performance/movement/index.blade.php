@@ -160,6 +160,9 @@
                               <th>Unit</th>
                               <th>Posisi</th>
                               <th>SN Ban</th>
+                              <th>Waktu</th>
+                              <th>Petugas</th>
+                              <th>Lokasi</th>
                               <th>Kondisi/Kerusakan</th>
                               <th>Action</th>
                            </tr>
@@ -562,6 +565,18 @@
                {
                   data: 'tyre_sn',
                   name: 'tyre_sn'
+               },
+               {
+                  data: 'start_time',
+                  name: 'start_time'
+               },
+               {
+                  data: 'tyreman',
+                  name: 'tyreman'
+               },
+               {
+                  data: 'work_location',
+                  name: 'work_location'
                },
                {
                   data: 'failure_info',

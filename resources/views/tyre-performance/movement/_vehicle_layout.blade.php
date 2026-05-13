@@ -17,12 +17,15 @@
             $leftTyre = $assignedTyres->get($left->id) ?? null;
             $rightTyre = $assignedTyres->get($right->id) ?? null;
          @endphp
-         <div class="v-tyre front m-tyre-node {{ $leftTyre ? 'filled' : 'empty' }}" data-position-id="{{ $left->id }}"
+         <div class="v-tyre front m-tyre-node {{ $leftTyre ? 'filled' : 'empty' }}" draggable="true" data-position-id="{{ $left->id }}"
             data-code="{{ $left->position_code }}" data-name="{{ $left->position_name }}"
             data-sn="{{ $leftTyre->serial_number ?? '' }}"
             data-brand="{{ optional(optional($leftTyre)->brand)->brand_name ?? '' }}"
             data-pattern="{{ optional(optional($leftTyre)->pattern)->name ?? '' }}"
             data-size="{{ optional(optional($leftTyre)->size)->size ?? '' }}"
+            data-rtd="{{ $leftTyre->current_tread_depth ?? '' }}"
+            data-km="{{ $leftTyre->total_lifetime_km ?? 0 }}"
+            data-hm="{{ $leftTyre->total_lifetime_hm ?? 0 }}"
             data-date="{{ optional(optional($leftTyre)->latestInstallation)->movement_date ?? optional(optional($leftTyre)->created_at)->format('Y-m-d') ?? '' }}"
             title="{{ $left->position_name }} {{ $leftTyre ? '[' . $leftTyre->serial_number . ']' : '(Kosong)' }}">
             <span class="v-tyre-code">{{ $left->position_code }}</span>
@@ -30,12 +33,15 @@
                <span class="v-tyre-sn-hint">{{ substr($leftTyre->serial_number, -4) }}</span>
             @endif
          </div>
-         <div class="v-tyre front m-tyre-node {{ $rightTyre ? 'filled' : 'empty' }}"
+         <div class="v-tyre front m-tyre-node {{ $rightTyre ? 'filled' : 'empty' }}" draggable="true"
             data-position-id="{{ $right->id }}" data-code="{{ $right->position_code }}"
             data-name="{{ $right->position_name }}" data-sn="{{ $rightTyre->serial_number ?? '' }}"
             data-brand="{{ optional(optional($rightTyre)->brand)->brand_name ?? '' }}"
             data-pattern="{{ optional(optional($rightTyre)->pattern)->name ?? '' }}"
             data-size="{{ optional(optional($rightTyre)->size)->size ?? '' }}"
+            data-rtd="{{ $rightTyre->current_tread_depth ?? '' }}"
+            data-km="{{ $rightTyre->total_lifetime_km ?? 0 }}"
+            data-hm="{{ $rightTyre->total_lifetime_hm ?? 0 }}"
             data-date="{{ optional(optional($rightTyre)->latestInstallation)->movement_date ?? optional(optional($rightTyre)->created_at)->format('Y-m-d') ?? '' }}"
             title="{{ $right->position_name }} {{ $rightTyre ? '[' . $rightTyre->serial_number . ']' : '(Kosong)' }}">
             <span class="v-tyre-code">{{ $right->position_code }}</span>
@@ -54,12 +60,15 @@
                @php
                   $t = $assignedTyres->get($p->id) ?? null;
                @endphp
-               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}" draggable="true"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
                   data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
                   data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
                   data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-rtd="{{ $t->current_tread_depth ?? '' }}"
+                  data-km="{{ $t->total_lifetime_km ?? 0 }}"
+                  data-hm="{{ $t->total_lifetime_hm ?? 0 }}"
                   data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
@@ -74,12 +83,15 @@
                @php
                   $t = $assignedTyres->get($p->id) ?? null;
                @endphp
-               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+               <div class="v-tyre middle m-tyre-node {{ $t ? 'filled' : 'empty' }}" draggable="true"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
                   data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
                   data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
                   data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-rtd="{{ $t->current_tread_depth ?? '' }}"
+                  data-km="{{ $t->total_lifetime_km ?? 0 }}"
+                  data-hm="{{ $t->total_lifetime_hm ?? 0 }}"
                   data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
@@ -98,12 +110,15 @@
          <div class="v-group">
             @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
                @php $t = $assignedTyres->get($p->id); @endphp
-               <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+               <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}" draggable="true"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
                   data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
                   data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
                   data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-rtd="{{ $t->current_tread_depth ?? '' }}"
+                  data-km="{{ $t->total_lifetime_km ?? 0 }}"
+                  data-hm="{{ $t->total_lifetime_hm ?? 0 }}"
                   data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
@@ -116,12 +131,15 @@
          <div class="v-group">
             @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
                @php $t = $assignedTyres->get($p->id); @endphp
-               <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}"
+               <div class="v-tyre rear m-tyre-node {{ $t ? 'filled' : 'empty' }}" draggable="true"
                   data-position-id="{{ $p->id }}" data-code="{{ $p->position_code }}"
                   data-name="{{ $p->position_name }}" data-sn="{{ $t->serial_number ?? '' }}"
                   data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
                   data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
                   data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+                  data-rtd="{{ $t->current_tread_depth ?? '' }}"
+                  data-km="{{ $t->total_lifetime_km ?? 0 }}"
+                  data-hm="{{ $t->total_lifetime_hm ?? 0 }}"
                   data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                   title="{{ $p->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                   <span class="v-tyre-code">{{ $p->position_code }}</span>
@@ -139,12 +157,15 @@
       <div class="v-spare-list">
          @foreach ($spares as $s)
             @php $t = $assignedTyres->get($s->id); @endphp
-            <div class="v-tyre spare m-tyre-node {{ $t ? 'filled' : 'empty' }}" data-position-id="{{ $s->id }}"
+            <div class="v-tyre spare m-tyre-node {{ $t ? 'filled' : 'empty' }}" draggable="true" data-position-id="{{ $s->id }}"
                data-code="{{ $s->position_code }}" data-name="{{ $s->position_name }}"
                data-sn="{{ $t->serial_number ?? '' }}"
                data-brand="{{ optional(optional($t)->brand)->brand_name ?? '' }}"
                data-pattern="{{ optional(optional($t)->pattern)->name ?? '' }}"
                data-size="{{ optional(optional($t)->size)->size ?? '' }}"
+               data-rtd="{{ $t->current_tread_depth ?? '' }}"
+               data-km="{{ $t->total_lifetime_km ?? 0 }}"
+               data-hm="{{ $t->total_lifetime_hm ?? 0 }}"
                data-date="{{ optional(optional($t)->latestInstallation)->movement_date ?? optional(optional($t)->created_at)->format('Y-m-d') ?? '' }}"
                title="{{ $s->position_name }} {{ $t ? '[' . $t->serial_number . ']' : '(Kosong)' }}">
                <span class="v-tyre-code">{{ $s->position_code }}</span>
@@ -288,6 +309,28 @@
       100% {
          box-shadow: 0 0 0 0px rgba(115, 103, 240, 0);
       }
+   }
+
+   .v-tyre.drag-over {
+      background: #e3f2fd !important;
+      border: 2px dashed #7367f0 !important;
+      transform: scale(1.15) translateY(-2px);
+      box-shadow: 0 5px 15px rgba(115, 103, 240, 0.4);
+   }
+
+   .v-tyre.drag-invalid {
+      background: #ffebee !important;
+      border: 2px dashed #ea5455 !important;
+      transform: scale(1.15) translateY(-2px);
+      box-shadow: 0 5px 15px rgba(234, 84, 85, 0.4);
+   }
+
+   .v-tyre[draggable="true"] {
+      cursor: grab;
+   }
+
+   .v-tyre[draggable="true"]:active {
+      cursor: grabbing;
    }
 
    .v-group {

@@ -87,13 +87,13 @@ class ImportApprovalController extends Controller
                     'approved_at' => now()
                 ]);
                 
-                // Clear all dashboard caches to reflect new data
-                \Illuminate\Support\Facades\Cache::flush();
-                
                 $msg = 'Batch berhasil disetujui sepenuhnya dan semua data telah diproses.';
             } else {
                 $msg = 'Sebagian data berhasil disetujui. Terdapat ' . $remainingPending . ' baris yang masih perlu perbaikan dan berstatus Pending.';
             }
+            
+            // Clear all dashboard caches to reflect new data (both full and partial approval)
+            \Illuminate\Support\Facades\Cache::flush();
 
             // --- Send Notification to Submitter ---
             try {
@@ -360,7 +360,7 @@ class ImportApprovalController extends Controller
         $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse_name'] ?? null;
         if (!empty($locationName)) {
             $location = \App\Models\TyreLocation::firstOrCreate(
-                ['location_name' => strtoupper(trim($locationName))],
+                ['location_name' => strtoupper(trim($locationName)), 'tyre_company_id' => $uploaderCompanyId],
                 ['location_type' => 'Warehouse', 'capacity' => 0]
             );
             $locationId = $location->id;
@@ -427,15 +427,19 @@ class ImportApprovalController extends Controller
         $segmentId = null;
         $segmentName = $data['segment'] ?? $data['segment_name'] ?? null;
         if (!empty($segmentName)) {
-            $segment = \App\Models\TyreSegment::where('segment_name', trim($segmentName))
-                ->orWhere('segment_id', trim($segmentName))
+            $segment = \App\Models\TyreSegment::where('tyre_company_id', $uploaderCompanyId)
+                ->where(function($q) use ($segmentName) {
+                    $q->where('segment_name', trim($segmentName))
+                      ->orWhere('segment_id', trim($segmentName));
+                })
                 ->first();
                 
             if (!$segment) {
                 $segment = \App\Models\TyreSegment::create([
                     'segment_id' => strtoupper(str_replace(' ', '_', trim($segmentName))),
                     'segment_name' => trim($segmentName),
-                    'status' => 'Active'
+                    'status' => 'Active',
+                    'tyre_company_id' => $uploaderCompanyId
                 ]);
             }
             $segmentId = $segment->id;
@@ -446,7 +450,7 @@ class ImportApprovalController extends Controller
         if ($area !== 'Unknown') {
             // Ensure location exists in tyre_locations table too for consistency
             \App\Models\TyreLocation::firstOrCreate(
-                ['location_name' => trim($area)],
+                ['location_name' => trim($area), 'tyre_company_id' => $uploaderCompanyId],
                 ['location_type' => 'Service', 'capacity' => 0]
             );
         }
@@ -647,7 +651,7 @@ class ImportApprovalController extends Controller
         $removeHm    = $this->parseEuroNum($data['pelepasan_hm'] ?? $data['pelepasan_hour_meter'] ?? 0);
 
         // Auto-map KM to HM if company measurement mode is HM (for legacy format compatibility)
-        $companyMode = \App\Models\TyreCompany::find($companyId)->measurement_mode ?? 'BOTH';
+        $companyMode = \App\Models\TyreCompany::find($companyId)->measurement_mode ?? 'KM';
         if ($companyMode === 'HM') {
             if ($installKm > 0 && $installHm == 0) { $installHm = $installKm; $installKm = 0; }
             if ($removeKm > 0 && $removeHm == 0) { $removeHm = $removeKm; $removeKm = 0; }
@@ -655,14 +659,6 @@ class ImportApprovalController extends Controller
         $rtd         = !empty($data['tebal_telapak']) ? (float)$data['tebal_telapak'] : null;
         $remark      = $data['penyebab'] ?? $data['remark'] ?? null;
         $keterangan  = strtoupper(trim($data['keterangan'] ?? ''));
-
-        // Auto-mirror KM↔HM for BOTH mode: if Excel only has KM, copy to HM too
-        if ($companyMode === 'BOTH') {
-            if ($installKm > 0 && $installHm == 0) $installHm = $installKm;
-            if ($removeKm > 0 && $removeHm == 0) $removeHm = $removeKm;
-            if ($installHm > 0 && $installKm == 0) $installKm = $installHm;
-            if ($removeHm > 0 && $removeKm == 0) $removeKm = $removeHm;
-        }
 
         // Lookup failure_code from penyebab/keterangan
         $failCodeId = null;
@@ -764,6 +760,7 @@ class ImportApprovalController extends Controller
                 'current_position_id' => null,
                 'is_in_warehouse'     => 1,
                 'status'              => $targetStatus,
+                'is_repairing'        => ($targetStatus === 'Repaired'),
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth,
                 'total_lifetime_km'   => ($tyre->total_lifetime_km ?? 0) + $runningKm,
                 'total_lifetime_hm'   => ($tyre->total_lifetime_hm ?? 0) + $runningHm,
@@ -771,7 +768,6 @@ class ImportApprovalController extends Controller
 
             // [P4] Clear posisi kendaraan saat removal (sinkronisasi 2-arah)
             if ($posDetail && $posDetail->tyre_id == $tyre->id) {
-                $posDetail->update(['tyre_id' => null]);
             }
 
             // [P6] Refresh cache agar baris berikutnya pakai data terbaru
@@ -789,7 +785,6 @@ class ImportApprovalController extends Controller
 
             // [P4] Sinkronisasi 2-arah: update posisi kendaraan
             if ($posDetail) {
-                $posDetail->update(['tyre_id' => $tyre->id]);
             }
 
             // [P6] Refresh cache
@@ -835,7 +830,7 @@ class ImportApprovalController extends Controller
         $odo = !empty($data['odometer']) ? (float)$data['odometer'] : (!empty($data['km']) ? (float)$data['km'] : 0);
         $hm = !empty($data['hm']) ? (float)$data['hm'] : 0;
         
-        $companyMode = \App\Models\TyreCompany::find($uploaderCompanyId)->measurement_mode ?? 'BOTH';
+        $companyMode = \App\Models\TyreCompany::find($uploaderCompanyId)->measurement_mode ?? 'KM';
         if ($companyMode === 'HM' && $odo > 0 && $hm == 0) {
             $hm = $odo;
             $odo = 0;
@@ -865,7 +860,6 @@ class ImportApprovalController extends Controller
                 'status' => 'Installed',
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth
             ]);
-            $posDetail->update(['tyre_id' => $tyre->id]);
         } else if ($type === 'Removal') {
             $lastInstallation = \App\Models\TyreMovement::where('tyre_id', $tyre->id)
                 ->where('movement_type', 'Installation')
@@ -888,7 +882,10 @@ class ImportApprovalController extends Controller
             $locationId = null;
             $locationName = $data['location'] ?? $data['location_name'] ?? $data['warehouse'] ?? null;
             if (!empty($locationName)) {
-                $loc = \App\Models\TyreLocation::firstOrCreate(['location_name' => strtoupper(trim($locationName))]);
+                $loc = \App\Models\TyreLocation::firstOrCreate([
+                    'location_name' => strtoupper(trim($locationName)),
+                    'tyre_company_id' => $uploaderCompanyId
+                ]);
                 $locationId = $loc->id;
                 $loc->increment('current_stock');
             }
@@ -899,13 +896,13 @@ class ImportApprovalController extends Controller
                 'is_in_warehouse' => 1,
                 'current_location_id' => $locationId,
                 'status' => $targetStatus,
+                'is_repairing' => ($targetStatus === 'Repaired'),
                 'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                 'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                 'current_tread_depth' => $rtd ?? $tyre->current_tread_depth
             ]);
 
             if ($posDetail && $posDetail->tyre_id == $tyre->id) {
-                $posDetail->update(['tyre_id' => null]);
             }
         }
 
@@ -1072,11 +1069,10 @@ class ImportApprovalController extends Controller
         $capacity = isset($data['capacity']) && $data['capacity'] !== '' ? (int) $data['capacity'] : 0;
 
         \App\Models\TyreLocation::updateOrCreate(
-            ['location_name' => trim($name)],
+            ['location_name' => trim($name), 'tyre_company_id' => $uploaderCompanyId],
             [
                 'location_type' => $type,
                 'capacity' => $capacity,
-                'tyre_company_id' => $uploaderCompanyId,
             ]
         );
     }
@@ -1094,7 +1090,7 @@ class ImportApprovalController extends Controller
         $locationId = null;
         if ($locationName) {
             $location = \App\Models\TyreLocation::firstOrCreate(
-                ['location_name' => $locationName],
+                ['location_name' => $locationName, 'tyre_company_id' => $uploaderCompanyId],
                 ['location_type' => 'Service', 'capacity' => 0]
             );
             $locationId = $location->id;
@@ -1113,13 +1109,12 @@ class ImportApprovalController extends Controller
         }
 
         \App\Models\TyreSegment::updateOrCreate(
-            ['segment_id' => $segmentId],
+            ['segment_id' => $segmentId, 'tyre_company_id' => $uploaderCompanyId],
             [
                 'segment_name' => $segmentName,
                 'tyre_location_id' => $locationId,
                 'terrain_type' => $terrain,
                 'status' => $status,
-                'tyre_company_id' => $uploaderCompanyId,
             ]
         );
     }

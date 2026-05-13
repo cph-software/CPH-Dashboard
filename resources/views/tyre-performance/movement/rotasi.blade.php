@@ -9,88 +9,74 @@
 
 @section('page-style')
    <style>
-      .select2-container {
-         width: 100% !important;
-      }
+      .select2-container { width: 100% !important; }
+      .sticky-panel { position: sticky; top: 85px; z-index: 10; transition: all 0.3s ease; }
+      .form-section-header { display: flex; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ebedef; }
+      .form-section-title { font-weight: 700; color: #5d596c; margin-bottom: 0; display: flex; align-items: center; }
+      .form-section-icon { width: 32px; height: 32px; background: rgba(115, 103, 240, 0.1); color: #7367f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.2rem; }
+      .premium-card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(165, 163, 174, 0.3); border-radius: 0.75rem; transition: transform 0.2s; }
+      .premium-card:hover { transform: translateY(-2px); }
+      .visual-layout-card { border-radius: 1rem; overflow: hidden; background: #fff; border: 1px solid #e9e9e9; }
+      .card, .card-body { overflow: visible !important; }
 
-      .sticky-panel {
-         position: sticky;
-         top: 85px;
-         z-index: 10;
+      /* Drag-Drop Rotation */
+      .rotation-dropzone {
+         border: 2px dashed #7367f0;
+         background: #f8f7ff;
+         border-radius: 10px;
+         padding: 30px;
+         text-align: center;
          transition: all 0.3s ease;
       }
-
-      .form-section-header {
-         display: flex;
-         align-items: center;
-         margin-bottom: 1.25rem;
-         padding-bottom: 0.5rem;
-         border-bottom: 1px solid #ebedef;
+      .rotation-dropzone.drag-over {
+         background: #edeaff;
+         transform: scale(1.02);
+         border-color: #5b50d6;
+      }
+      .rotation-dropzone.has-source {
+         border-color: #28c76f;
+         background: #f0fdf4;
+      }
+      .rotation-dropzone.has-source.drag-over {
+         background: #dcfce7;
+         border-color: #16a34a;
       }
 
-      .form-section-title {
-         font-weight: 700;
-         color: #5d596c;
-         margin-bottom: 0;
-         display: flex;
-         align-items: center;
-      }
-
-      .form-section-icon {
-         width: 32px;
-         height: 32px;
-         background: rgba(115, 103, 240, 0.1);
-         color: #7367f0;
-         border-radius: 8px;
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         margin-right: 12px;
-         font-size: 1.2rem;
-      }
-
-      .premium-card {
-         border: none;
-         box-shadow: 0 0.125rem 0.25rem rgba(165, 163, 174, 0.3);
-         border-radius: 0.75rem;
-         transition: transform 0.2s;
-      }
-
-      .premium-card:hover {
-         transform: translateY(-2px);
-      }
-
-      .rotation-info-box {
-         background: #f8f7ff;
+      /* Task Card */
+      .task-card {
+         background: #ffffff;
+         border: 1px solid #eef0f2;
+         border-left: 4px solid #7367f0;
          border-radius: 12px;
-         padding: 15px;
-         border: 1px solid #dcd7ff;
-         border-left: 5px solid #7367f0;
+         padding: 18px;
+         margin-bottom: 15px;
+         box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+         transition: all 0.2s;
       }
+      .task-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+      .task-card .form-label { font-weight: 600; color: #566a7f; font-size: 0.8rem; }
+      .task-card .form-control, .task-card .form-select { border-radius: 8px; border: 1px solid #d9dee3; background-color: #fcfdfd; font-size: 0.85rem; }
 
-      .visual-layout-card {
-         border-radius: 1rem;
-         overflow: hidden;
-         background: #fff;
-         border: 1px solid #e9e9e9;
-      }
-
+      .m-tyre-node.filled { cursor: grab; }
+      .m-tyre-node.filled:active { cursor: grabbing; }
       .m-tyre-node.selected-source {
          border: 3px solid #7367f0 !important;
          box-shadow: 0 0 15px rgba(115, 103, 240, 0.5);
          transform: scale(1.1);
       }
-
       .m-tyre-node.selected-target {
          border: 3px solid #28c76f !important;
          box-shadow: 0 0 15px rgba(40, 199, 111, 0.5);
          transform: scale(1.1);
       }
+      .m-tyre-node.queued-rotation {
+         opacity: 0.5;
+         border: 2px dashed #7367f0 !important;
+         pointer-events: none;
+      }
 
       @media (max-width: 991.98px) {
-         .sticky-panel {
-            position: static !important;
-         }
+         .sticky-panel { position: static !important; }
       }
    </style>
 @endsection
@@ -128,9 +114,8 @@
                            </div>
                         </div>
                      </div>
-
-                     <div id="selection_status" class="m-3 p-3 rounded-3 shadow-sm bg-light border text-center">
-                        <p class="mb-0 small fw-bold text-muted" id="status_text">PILIH UNIT TERLEBIH DAHULU</p>
+                     <div class="bg-light p-2 text-center border-top">
+                        <small class="text-muted"><i class="ri-drag-drop-line me-1"></i> Drag ban dari layout: drop ke ban lain untuk SWAP, atau drop ke dropzone untuk memilih tujuan.</small>
                      </div>
                   </div>
                </div>
@@ -141,9 +126,17 @@
                <!-- SECTION 1: Identifikasi Unit -->
                <div class="card premium-card mb-4">
                   <div class="card-body">
-                     <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri ri-steering-line"></i></div>
-                        <h5 class="form-section-title">Identifikasi Unit & Tanggal</h5>
+                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <div class="d-flex align-items-center">
+                           <div class="form-section-icon mb-0 me-2"><i class="ri ri-steering-line"></i></div>
+                           <h5 class="form-section-title mb-0">Identifikasi Unit & Waktu</h5>
+                        </div>
+                        <div class="btn-group" role="group">
+                           <input type="radio" class="btn-check" name="ui_mode" id="mode_visual" value="visual" autocomplete="off" checked>
+                           <label class="btn btn-outline-primary btn-sm" for="mode_visual"><i class="ri-drag-drop-line me-1"></i> Mode Visual</label>
+                           <input type="radio" class="btn-check" name="ui_mode" id="mode_klasik" value="klasik" autocomplete="off">
+                           <label class="btn btn-outline-primary btn-sm" for="mode_klasik"><i class="ri-list-check-2 me-1"></i> Mode Klasik</label>
+                        </div>
                      </div>
                      <div class="row">
                         <div class="col-md-6 mb-3">
@@ -162,14 +155,14 @@
                            <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}"
                               required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" id="odometer_container">
                            <label class="form-label fw-bold">KM Saat Rotasi</label>
                            <input type="number" name="odometer" id="odometer" class="form-control"
                               placeholder="KM Odometer" required>
                            <small class="text-muted extra-small d-block mt-1">Last KM: <span id="last_odo_display"
                                  class="fw-bold">-</span></small>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" id="hour_meter_container">
                            <label class="form-label fw-bold">HM Saat Rotasi</label>
                            <input type="number" name="hour_meter" id="hour_meter" class="form-control"
                               placeholder="Hour Meter" required>
@@ -192,226 +185,116 @@
                               </div>
                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
+                     </div>
+                  </div>
+               </div>
+
+               <!-- SECTION 2: Dropzone Rotasi (Visual Mode) -->
+               <div id="visual_mode_container">
+                  <div class="card premium-card mb-4 border-start border-primary border-5">
+                     <div class="card-body">
+                        <div class="form-section-header">
+                           <div class="form-section-icon"><i class="ri ri-arrow-left-right-line"></i></div>
+                           <h5 class="form-section-title">Antrean Rotasi & Inspeksi</h5>
+                        </div>
+
+                        <div id="rotation_dropzone" class="rotation-dropzone mb-3">
+                           <i class="ri-arrow-left-right-line ri-3x text-primary mb-2 d-block opacity-50"></i>
+                           <h6 class="fw-bold text-primary">Area Drop Rotasi</h6>
+                           <p class="mb-0 text-muted small">Klik ban pada layout untuk memilih Sumber (A), lalu klik ban lain untuk Tujuan (B). Atau drag & drop antar ban.</p>
+                        </div>
+
+                        <div id="task_queue_container">
+                           <!-- Task cards will be appended here -->
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Mode Klasik Container -->
+               <div id="classic_mode_container" style="display:none;" class="mb-4">
+                  <div class="card premium-card">
+                     <div class="card-body">
+                        <div class="form-section-header">
+                           <div class="form-section-icon"><i class="ri ri-list-check"></i></div>
+                           <h5 class="form-section-title">Detail Rotasi (Klasik)</h5>
+                        </div>
+                        <div class="row g-3 bg-light p-3 rounded border border-dashed">
+                           <div class="col-md-6">
+                              <label class="form-label fw-bold">Pilih Posisi Sumber (Ban A)</label>
+                              <select id="c_source_id" class="form-select select2">
+                                 <option value="">-- Pilih Posisi Sumber --</option>
+                              </select>
+                           </div>
+                           <div class="col-12 mt-1" id="c_source_info" style="display:none;"></div>
+                           <div class="col-md-6">
+                              <label class="form-label fw-bold">Pilih Posisi Tujuan (Posisi B)</label>
+                              <select id="c_target_id" class="form-select select2">
+                                 <option value="">-- Pilih Posisi Tujuan --</option>
+                              </select>
+                           </div>
+                           <div class="col-12 mt-1" id="c_target_info" style="display:none;"></div>
+                           <div class="col-md-4">
+                              <label class="form-label fw-bold">RTD Ban A (mm)</label>
+                              <input type="number" step="0.01" id="c_rtd_a" class="form-control" placeholder="Sisa RTD">
+                           </div>
+                           <div class="col-md-4">
+                              <label class="form-label fw-bold">PSI Ban A</label>
+                              <input type="number" step="0.01" id="c_psi_a" class="form-control" placeholder="Wajib">
+                           </div>
+                           <div class="col-md-4">
+                              <label class="form-label fw-bold">Catatan</label>
+                              <input type="text" id="c_notes" class="form-control" placeholder="Opsional">
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- SECTION 3: Operasional & Petugas -->
+               <div class="card premium-card mb-4">
+                  <div class="card-body">
+                     <div class="form-section-header mt-4">
+                        <div class="form-section-icon"><i class="ri ri-user-settings-line"></i></div>
+                        <h5 class="form-section-title">Operasional & Petugas</h5>
+                     </div>
+                     <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                           <label class="form-label fw-bold">Waktu Pengerjaan</label>
+                           <input type="time" name="start_time" id="start_time" class="form-control" value="{{ date('H:i') }}">
+                        </div>
+                        <div class="col-md-4">
                            <label class="form-label fw-bold">Workshop / Lokasi Kerja</label>
-                           <select name="work_location_id" id="work_location_id" class="form-select select2" required>
-                              <option value="">-- Pilih Lokasi --</option>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2">
+                              <option value=""></option>
                               @foreach ($locations as $loc)
                                  <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4">
                            <label class="form-label fw-bold">Operational Segment</label>
-                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                              required>
-                              <option value="">-- Pilih Segment --</option>
+                           <select name="operational_segment_id" id="operational_segment_id" class="form-select select2">
+                              <option value=""></option>
                               @foreach ($segments as $seg)
                                  <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
                               @endforeach
                            </select>
                         </div>
-                     </div>
-                  </div>
-               </div>
-
-               <!-- SECTION 2: Pemilihan Posisi -->
-               <div class="card premium-card mb-4 border-start border-primary border-5">
-                  <div class="card-body">
-                     <div class="form-section-header">
-                        <div class="form-section-icon" style="background: rgba(115, 103, 240, 0.1); color: #7367f0;"><i
-                              class="ri ri-arrow-left-right-line"></i></div>
-                        <h5 class="form-section-title">Konfigurasi Rotasi</h5>
-                     </div>
-
-                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold text-primary">1. Konfigurasi Sumber (Ban A)</label>
-                           <select name="position_id" id="position_id" class="form-select select2" required disabled>
-                              <option value="">-- Pilih Posisi A --</option>
-                           </select>
-                           <div id="source_tyre_info" class="mt-2 p-2 rounded bg-light border small"
-                              style="display:none;">
-                              SN: <strong id="src_sn">-</strong> | <span id="src_brand">-</span>
-                           </div>
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold text-success">2. Konfigurasi Tujuan (Ke Posisi B)</label>
-                           <select name="target_position_id" id="target_position_id" class="form-select select2"
-                              required disabled>
-                              <option value="">-- Pilih Posisi B --</option>
-                           </select>
-                           <div id="target_tyre_info" class="mt-2 p-2 rounded bg-light border small"
-                              style="display:none;">
-                              <span id="target_status_text" class="text-muted">Kosong (Hanya Pindah)</span>
-                              <div id="target_tyre_detail" style="display:none;">
-                                 SN: <strong id="tgt_sn">-</strong> | <span id="tgt_brand">-</span>
-                                 <div class="badge bg-label-warning d-block mt-1">SWAP (Tukar Posisi)</div>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div id="rotation_summary" class="rotation-info-box shadow-sm mb-3" style="display: none;">
-                        <div class="d-flex align-items-center">
-                           <div class="flex-shrink-0 text-center" style="width: 80px;">
-                              <div class="p-2 bg-white rounded border border-primary mb-1">
-                                 <strong id="sum_src_code">-</strong>
-                              </div>
-                              <small class="text-muted">Dari</small>
-                           </div>
-                           <div class="flex-grow-1 text-center px-3">
-                              <i class="ri-arrow-right-line ri-2x text-primary"></i>
-                              <div><span id="sum_type_badge" class="badge bg-label-primary">MOVE</span></div>
-                           </div>
-                           <div class="flex-shrink-0 text-center" style="width: 80px;">
-                              <div class="p-2 bg-white rounded border border-success mb-1">
-                                 <strong id="sum_tgt_code">-</strong>
-                              </div>
-                              <small class="text-muted">Ke</small>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-
-               <!-- SECTION 3: Technical Inspection (RTD for both if swap) -->
-               <div class="card premium-card mb-4" id="inspection_section" style="display:none;">
-                  <div class="card-body">
-                     <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri ri-ruler-line"></i></div>
-                        <h5 class="form-section-title">Hasil Pemeriksaan</h5>
-                     </div>
-
-                     <!-- RTD/PSI for source tyre -->
-                     <div class="p-3 border rounded mb-3 bg-light">
-                        <h6 class="fw-bold mb-3">Ban A (SN: <span id="rtd_sn_a">-</span>)</h6>
-                        <div class="row g-3">
-                           <div class="col-md-12">
-                              <label class="form-label fw-bold">Remaining Tread Depth (4 Titik)</label>
-                              <div class="row g-2">
-                                 <div class="col-3">
-                                    <input type="number" name="rtd_1"
-                                       class="form-control form-control-sm rtd-input-a" step="0.01" placeholder="P1">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="rtd_2"
-                                       class="form-control form-control-sm rtd-input-a" step="0.01" placeholder="P2">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="rtd_3"
-                                       class="form-control form-control-sm rtd-input-a" step="0.01" placeholder="P3">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="rtd_4"
-                                       class="form-control form-control-sm rtd-input-a" step="0.01" placeholder="P4">
-                                 </div>
-                              </div>
-                           </div>
-                           <div class="col-md-6 mt-3">
-                              <label class="form-label fw-bold">Sisa RTD (Avg)</label>
-                              <input type="number" name="rtd_reading" id="rtd_reading" class="form-control bg-light"
-                                 step="0.01" required readonly title="Averaged from 4 points">
-                           </div>
-                           <div class="col-md-6 mt-3">
-                              <label class="form-label fw-bold">Pressure (PSI)</label>
-                              <input type="number" name="psi_reading" id="psi_reading" class="form-control" required>
-                           </div>
-                        </div>
-                     </div>
-
-                     <!-- RTD/PSI for target tyre (only if swap) -->
-                     <div id="swap_inspection" class="p-3 border rounded mb-3 bg-light border-warning"
-                        style="display:none;">
-                        <h6 class="fw-bold mb-3 text-warning">Ban B (SN: <span id="rtd_sn_b">-</span>)</h6>
-                        <div class="row g-3">
-                           <div class="col-md-12">
-                              <label class="form-label fw-bold">Remaining Tread Depth (4 Titik)</label>
-                              <div class="row g-2">
-                                 <div class="col-3">
-                                    <input type="number" name="target_rtd_1"
-                                       class="form-control form-control-sm rtd-input-b" step="0.01" placeholder="P1">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="target_rtd_2"
-                                       class="form-control form-control-sm rtd-input-b" step="0.01" placeholder="P2">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="target_rtd_3"
-                                       class="form-control form-control-sm rtd-input-b" step="0.01" placeholder="P3">
-                                 </div>
-                                 <div class="col-3">
-                                    <input type="number" name="target_rtd_4"
-                                       class="form-control form-control-sm rtd-input-b" step="0.01" placeholder="P4">
-                                 </div>
-                              </div>
-                           </div>
-                           <div class="col-md-6 mt-3">
-                              <label class="form-label fw-bold">Sisa RTD (Avg)</label>
-                              <input type="number" name="target_rtd_reading" id="target_rtd_reading"
-                                 class="form-control bg-light" step="0.01" readonly title="Averaged from 4 points">
-                           </div>
-                           <div class="col-md-6 mt-3">
-                              <label class="form-label fw-bold">Pressure (PSI)</label>
-                              <input type="number" name="target_psi_reading" id="target_psi_reading"
-                                 class="form-control">
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-
-               <!-- SECTION 4: Team -->
-               <div class="card premium-card mb-4">
-                  <div class="card-body">
-                     <div class="form-section-header">
-                        <div class="form-section-icon"><i class="ri ri-group-line"></i></div>
-                        <h5 class="form-section-title">Petugas & Catatan</h5>
-                     </div>
-                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                            <label class="form-label fw-bold">Tyreman 1</label>
-                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama Petugas">
+                           <input type="text" name="tyreman_1" class="form-control" placeholder="Nama Petugas Utama">
                         </div>
                         <div class="col-md-6">
-                           <label class="form-label fw-bold">Tyreman 2</label>
-                           <input type="text" name="tyreman_2" class="form-control" placeholder="Helper">
+                           <label class="form-label fw-bold">Tyreman 2 (Helper)</label>
+                           <input type="text" name="tyreman_2" class="form-control" placeholder="Nama Helper">
                         </div>
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold">Waktu Mulai</label>
-                           <input type="time" name="start_time" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold">Waktu Selesai</label>
-                           <input type="time" name="end_time" class="form-control">
-                        </div>
+                     </div>
 
-                        <div class="col-md-6">
-                           <label class="form-label fw-bold"><i class="ri ri-camera-line me-1"></i>Foto Instalasi Ban
-                              A</label>
-                           <div class="p-2 border rounded bg-light">
-                              <input type="file" name="photo" class="form-control form-control-sm"
-                                 accept="image/*">
-                           </div>
-                        </div>
-                        <div class="col-md-6" id="photo_target_container">
-                           <label class="form-label fw-bold"><i class="ri ri-camera-line me-1"></i>Foto Instalasi Ban B
-                              (Swap)</label>
-                           <div class="p-2 border rounded bg-light">
-                              <input type="file" name="photo_target" class="form-control form-control-sm"
-                                 accept="image/*">
-                           </div>
-                        </div>
-                        <div class="col-md-12">
-                           <label class="form-label fw-bold">Catatan (Notes)</label>
-                           <textarea name="notes" class="form-control" rows="2" placeholder="Masukkan alasan rotasi..."></textarea>
-
-                           <div class="d-grid gap-2">
-                              <button type="submit" class="btn btn-primary btn-lg shadow" id="btn_submit">
-                                 <i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban
-                              </button>
-                           </div>
-                        </div>
+                     <div class="d-grid gap-2 mt-4">
+                        <button type="button" class="btn btn-primary btn-lg shadow" id="btn_submit">
+                           <i class="ri ri-arrow-left-right-line me-1"></i> Proses Rotasi Ban
+                        </button>
                      </div>
                   </div>
                </div>
@@ -428,292 +311,414 @@
    <script>
       $(document).ready(function() {
          const vehicleSelect = $('#vehicle_id');
-         const sourceSelect = $('#position_id');
-         const targetSelect = $('#target_position_id');
          const layoutContainer = document.getElementById('layout_container');
-         const statusText = document.getElementById('status_text');
-         let assignedTyres = {};
-         let selectionStep = 1; // 1: Select Source, 2: Select Target
+         const dropzone = document.getElementById('rotation_dropzone');
+         const taskContainer = document.getElementById('task_queue_container');
+         let taskIndex = 0;
+         let tasks = [];
+         let pendingSource = null; // For 2-click rotation
+         let allNodeData = {}; // Store node data by positionId
 
-         // Initialize Select2
          $('.select2').each(function() {
-            var $this = $(this);
-            $this.select2({
-               placeholder: $this.data('placeholder') || $this.attr('placeholder'),
-               allowClear: true
-            });
+            $(this).select2({ placeholder: $(this).attr('placeholder'), allowClear: true });
+         });
+
+         // UI Mode Toggle
+         $('input[name="ui_mode"]').change(function() {
+            if ($(this).val() === 'visual') {
+               $('#visual_mode_container').fadeIn();
+               $('#classic_mode_container').hide();
+            } else {
+               $('#visual_mode_container').hide();
+               $('#classic_mode_container').fadeIn();
+            }
          });
 
          vehicleSelect.on('change', function() {
             const vehicleId = $(this).val();
             const text = $(this).find('option:selected').text();
             document.getElementById('unit_code_display').textContent = vehicleId ? text : '-';
-
-            resetSelection();
+            pendingSource = null;
+            tasks = [];
+            taskIndex = 0;
+            taskContainer.innerHTML = '';
+            allNodeData = {};
 
             if (!vehicleId) {
-               layoutContainer.innerHTML =
-                  '<div class="text-center text-muted p-5 bg-white rounded-4 shadow-sm border w-100"><i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Kendaraan untuk memuat posisi ban.</p></div>';
-               statusText.textContent = "PILIH UNIT TERLEBIH DAHULU";
-               $('#vehicle_type_display').val('');
+               layoutContainer.innerHTML = '<div class="text-center text-muted p-5 w-100"><i class="ri ri-truck-line ri-4x mb-3 d-block opacity-25"></i><p class="mb-0">Pilih Kendaraan untuk memuat layout ban.</p></div>';
                return;
             }
 
-            statusText.textContent = "STEP 1: PILIH BAN YANG AKAN DIPINDAH";
-
-            // Fetch Vehicle Detail
             fetch(`{{ url('vehicle-detail') }}/${vehicleId}`)
-               .then(response => response.json())
+               .then(res => res.json())
                .then(res => {
                   const data = res.vehicle;
-                  $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
-
-                  const odo = res.last_odometer || 0;
-                  const hm = res.last_hour_meter || 0;
-
-                  $('#last_odo_display').text(odo.toLocaleString());
-                  $('#last_hm_display').text(hm.toLocaleString());
-
-                  // Auto-fill values
-                  $('#odometer').val(odo);
-                  $('#hour_meter').val(hm);
-
-                  $('#odometer').attr('placeholder', 'Previous: ' + odo);
-                  $('#hour_meter').attr('placeholder', 'Previous: ' + hm);
-
-                  // Auto-fill Location and Segment
-                  if (data.operational_segment_id) {
-                     $('#operational_segment_id').val(data.operational_segment_id).trigger('change');
+                  let mode = (data.company && data.company.measurement_mode) ? data.company.measurement_mode : 'BOTH';
+                  if (mode === 'HM') {
+                      $('#odometer_container').hide();
+                      $('#odometer').removeAttr('required');
+                      $('#hour_meter_container').show();
+                      $('#hour_meter').attr('required', 'required');
+                  } else if (mode === 'KM') {
+                      $('#hour_meter_container').hide();
+                      $('#hour_meter').removeAttr('required');
+                      $('#odometer_container').show();
+                      $('#odometer').attr('required', 'required');
+                  } else {
+                      $('#odometer_container').show();
+                      $('#odometer').attr('required', 'required');
+                      $('#hour_meter_container').show();
+                      $('#hour_meter').attr('required', 'required');
                   }
-
+                  $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
+                  $('#last_odo_display').text((res.last_odometer || 0).toLocaleString());
+                  $('#last_hm_display').text((res.last_hour_meter || 0).toLocaleString());
+                  $('#odometer').attr('placeholder', 'Previous: ' + (res.last_odometer || 0));
+                  $('#hour_meter').attr('placeholder', 'Previous: ' + (res.last_hour_meter || 0));
+                  $('#odometer').val(res.last_odometer || 0);
+                  $('#hour_meter').val(res.last_hour_meter || 0);
+                  if (data.operational_segment_id) $('#operational_segment_id').val(data.operational_segment_id).trigger('change');
                   if (data.area) {
                      const locOption = $('#work_location_id option').filter(function() {
                         return $(this).text().trim().toLowerCase() === data.area.toLowerCase();
                      });
-                     if (locOption.length) {
-                        $('#work_location_id').val(locOption.val()).trigger('change');
-                     }
+                     if (locOption.length) $('#work_location_id').val(locOption.val()).trigger('change');
                   }
-               })
-               .catch(err => {
-                  console.error('Error fetching vehicle detail:', err);
                });
 
-            // Load Layout
             layoutContainer.innerHTML = '<div class="spinner-border text-primary"></div>';
             fetch(`{{ url('layout') }}/${vehicleId}`)
-               .then(response => response.text())
+               .then(res => res.text())
                .then(html => {
                   layoutContainer.innerHTML = html;
-                  attachLayoutEvents();
-               });
+                  cacheNodeData();
+                  attachLayoutDragEvents();
 
-            // Load Positions for Dropdown
-            fetch(`{{ url('position-info') }}?vehicle_id=${vehicleId}&type=Removal`)
-               .then(response => response.json())
-               .then(data => {
-                  assignedTyres = data.assignedTyres;
-                  sourceSelect.empty().append('<option value="">-- Pilih Posisi A --</option>');
-                  targetSelect.empty().append('<option value="">-- Pilih Posisi B --</option>');
-
-                  // Source only shows filled positions
-                  data.positions.forEach(pos => {
-                     const tyre = assignedTyres[pos.id];
-                     if (tyre) {
-                        sourceSelect.append(
-                           `<option value="${pos.id}">${pos.position_code} - ${pos.position_name} (${tyre.serial_number})</option>`
-                        );
-                     }
-                     // Target shows all positions
-                     targetSelect.append(
-                        `<option value="${pos.id}">${pos.position_code} - ${pos.position_name} ${tyre ? '('+tyre.serial_number+')' : '[KOSONG]'}</option>`
-                     );
+                  // Populate classic dropdowns
+                  let srcOpts = '<option value="">-- Pilih Posisi Sumber --</option>';
+                  let tgtOpts = '<option value="">-- Pilih Posisi Tujuan --</option>';
+                  document.querySelectorAll('.m-tyre-node.filled').forEach(n => {
+                     srcOpts += `<option value="${n.dataset.positionId}" data-code="${n.dataset.code}" data-sn="${n.dataset.sn}" data-brand="${n.dataset.brand||'-'}" data-size="${n.dataset.size||'-'}" data-pattern="${n.dataset.pattern||'-'}" data-rtd="${n.dataset.rtd||'-'}">Posisi ${n.dataset.code} (${n.dataset.sn})</option>`;
                   });
-
-                  sourceSelect.prop('disabled', false);
-                  targetSelect.prop('disabled', false);
+                  document.querySelectorAll('.m-tyre-node').forEach(n => {
+                     const sn = n.dataset.sn;
+                     tgtOpts += `<option value="${n.dataset.positionId}" data-code="${n.dataset.code}" data-sn="${sn||''}" data-brand="${n.dataset.brand||'-'}" data-size="${n.dataset.size||'-'}" data-pattern="${n.dataset.pattern||'-'}" data-rtd="${n.dataset.rtd||'-'}">${n.dataset.code} ${sn ? '('+sn+')' : '[KOSONG]'}</option>`;
+                  });
+                  $('#c_source_id').html(srcOpts).select2({ placeholder: '-- Pilih Posisi Sumber --', allowClear: true });
+                  $('#c_target_id').html(tgtOpts).select2({ placeholder: '-- Pilih Posisi Tujuan --', allowClear: true });
                });
          });
 
-         function resetSelection() {
-            selectionStep = 1;
-            sourceSelect.val('').trigger('change');
-            targetSelect.val('').trigger('change');
-            $('#source_tyre_info').hide();
-            $('#target_tyre_info').hide();
-            $('#rotation_summary').hide();
-            $('#inspection_section').hide();
-            const nodes = document.querySelectorAll('.m-tyre-node');
-            nodes.forEach(n => n.classList.remove('selected-source', 'selected-target'));
+         function cacheNodeData() {
+            document.querySelectorAll('.m-tyre-node').forEach(n => {
+               allNodeData[n.dataset.positionId] = {
+                  posId: n.dataset.positionId,
+                  code: n.dataset.code,
+                  sn: n.dataset.sn || '',
+                  brand: n.dataset.brand || '-',
+                  size: n.dataset.size || '-',
+                  pattern: n.dataset.pattern || '-',
+                  rtd: n.dataset.rtd || '-',
+                  filled: n.classList.contains('filled')
+               };
+            });
          }
 
-         function attachLayoutEvents() {
+         function attachLayoutDragEvents() {
             const nodes = document.querySelectorAll('.m-tyre-node');
             nodes.forEach(node => {
-               node.addEventListener('click', function() {
-                  const posId = this.getAttribute('data-position-id');
+               // Drag events for filled nodes
+               if (node.classList.contains('filled')) {
+                  node.addEventListener('dragstart', function(e) {
+                     e.dataTransfer.setData('src_pos_id', this.dataset.positionId);
+                  });
+               }
 
-                  if (selectionStep === 1) {
+               // Drop target - allow dropping on any node
+               node.addEventListener('dragover', function(e) { e.preventDefault(); this.style.outline = '3px solid #28c76f'; });
+               node.addEventListener('dragleave', function() { this.style.outline = ''; });
+               node.addEventListener('drop', function(e) {
+                  e.preventDefault();
+                  this.style.outline = '';
+                  const srcPosId = e.dataTransfer.getData('src_pos_id');
+                  const tgtPosId = this.dataset.positionId;
+                  if (!srcPosId || srcPosId === tgtPosId) return;
+                  const srcData = allNodeData[srcPosId];
+                  if (!srcData || !srcData.filled) return;
+                  tryAddRotation(srcPosId, tgtPosId);
+               });
+
+               // Click handler for 2-step selection
+               node.addEventListener('click', function() {
+                  if (this.classList.contains('queued-rotation')) return;
+                  const isClassic = $('#mode_klasik').is(':checked');
+                  if (isClassic) {
+                     if (this.classList.contains('filled')) {
+                        $('#c_source_id').val(this.dataset.positionId).trigger('change');
+                     }
+                     return;
+                  }
+
+                  const posId = this.dataset.positionId;
+                  if (!pendingSource) {
                      if (!this.classList.contains('filled')) {
-                        Swal.fire('Info', 'Pilih posisi yang ada bannya untuk dipindah.', 'info');
+                        Swal.fire({toast:true, position:'top-end', icon:'info', title:'Pilih posisi berisi ban sebagai sumber.', showConfirmButton:false, timer:2000});
                         return;
                      }
-                     sourceSelect.val(posId).trigger('change');
-                     selectionStep = 2;
-                     statusText.textContent = "STEP 2: PILIH POSISI TUJUAN";
-                     statusText.className = "mb-0 small fw-bold text-success";
+                     pendingSource = posId;
+                     document.querySelectorAll('.m-tyre-node').forEach(n => n.classList.remove('selected-source','selected-target'));
+                     this.classList.add('selected-source');
+                     dropzone.innerHTML = '<i class="ri-arrow-right-s-line ri-3x text-success mb-2 d-block opacity-50"></i><h6 class="fw-bold text-success">Ban A Terpilih: ' + (allNodeData[posId]?.sn || posId) + '</h6><p class="mb-0 text-muted small">Klik posisi tujuan pada layout, atau drag ban lain ke sini.</p>';
+                     dropzone.classList.add('has-source');
                   } else {
-                     if (posId == sourceSelect.val()) {
-                        resetSelection();
-                        statusText.textContent = "STEP 1: PILIH BAN YANG AKAN DIPINDAH";
-                        statusText.className = "mb-0 small fw-bold text-muted";
+                     if (posId === pendingSource) {
+                        // Deselect
+                        pendingSource = null;
+                        document.querySelectorAll('.m-tyre-node').forEach(n => n.classList.remove('selected-source'));
+                        resetDropzone();
                         return;
                      }
-                     targetSelect.val(posId).trigger('change');
+                     this.classList.add('selected-target');
+                     tryAddRotation(pendingSource, posId);
+                     pendingSource = null;
+                     document.querySelectorAll('.m-tyre-node').forEach(n => n.classList.remove('selected-source','selected-target'));
+                     resetDropzone();
                   }
                });
             });
          }
 
-         sourceSelect.on('change', function() {
-            const posId = $(this).val();
-            const nodes = document.querySelectorAll('.m-tyre-node');
-            nodes.forEach(n => n.classList.remove('selected-source'));
+         function resetDropzone() {
+            dropzone.classList.remove('has-source');
+            dropzone.innerHTML = '<i class="ri-arrow-left-right-line ri-3x text-primary mb-2 d-block opacity-50"></i><h6 class="fw-bold text-primary">Area Drop Rotasi</h6><p class="mb-0 text-muted small">Klik ban pada layout untuk memilih Sumber (A), lalu klik ban lain untuk Tujuan (B).</p>';
+         }
 
-            if (posId && assignedTyres[posId]) {
-               const tyre = assignedTyres[posId];
-               $('#src_sn').text(tyre.serial_number);
-               $('#src_brand').text(tyre.brand ? tyre.brand.brand_name : '-');
-               $('#source_tyre_info').fadeIn();
-
-               const node = document.querySelector(`.m-tyre-node[data-position-id="${posId}"]`);
-               if (node) node.classList.add('selected-source');
-
-               // Info for inspection
-               $('#rtd_sn_a').text(tyre.serial_number);
-               $('#rtd_reading').val(tyre.current_tread_depth || '');
-               $('#inspection_section').fadeIn();
-
-               updateSummary();
-            } else {
-               $('#source_tyre_info').hide();
-            }
+         // Dropzone also accepts drops (source already dragged)
+         dropzone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+         dropzone.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+         dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            const srcPosId = e.dataTransfer.getData('src_pos_id');
+            if (!srcPosId) return;
+            // Set as pending source and wait for target click
+            pendingSource = srcPosId;
+            document.querySelectorAll('.m-tyre-node').forEach(n => n.classList.remove('selected-source'));
+            const srcNode = document.querySelector(`.m-tyre-node[data-position-id="${srcPosId}"]`);
+            if (srcNode) srcNode.classList.add('selected-source');
+            dropzone.innerHTML = '<i class="ri-arrow-right-s-line ri-3x text-success mb-2 d-block opacity-50"></i><h6 class="fw-bold text-success">Ban A: ' + (allNodeData[srcPosId]?.sn || srcPosId) + '</h6><p class="mb-0 text-muted small">Sekarang klik posisi tujuan pada layout.</p>';
+            dropzone.classList.add('has-source');
          });
 
-         targetSelect.on('change', function() {
-            const posId = $(this).val();
-            const nodes = document.querySelectorAll('.m-tyre-node');
-            nodes.forEach(n => n.classList.remove('selected-target'));
+         function tryAddRotation(srcPosId, tgtPosId) {
+            const src = allNodeData[srcPosId];
+            const tgt = allNodeData[tgtPosId];
+            if (!src || !src.filled) {
+               Swal.fire('Error', 'Posisi sumber tidak memiliki ban.', 'error');
+               return;
+            }
+            // Check not already queued
+            if (tasks.find(t => t.src === srcPosId || t.tgt === srcPosId || t.src === tgtPosId || t.tgt === tgtPosId)) {
+               Swal.fire('Info', 'Salah satu posisi ini sudah ada di antrean rotasi.', 'info');
+               return;
+            }
+            addTaskCard(srcPosId, tgtPosId, src, tgt);
+         }
 
-            if (posId) {
-               const srcId = sourceSelect.val();
-               if (posId == srcId) {
-                  $(this).val('').trigger('change');
+         function addTaskCard(srcPosId, tgtPosId, src, tgt) {
+            const isSwap = tgt && tgt.filled;
+            tasks.push({ src: srcPosId, tgt: tgtPosId, index: taskIndex });
+
+            const html = `
+               <div class="task-card" id="task_${taskIndex}">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                     <div class="d-flex align-items-center">
+                        <div class="avatar avatar-sm bg-primary me-2 d-flex align-items-center justify-content-center text-white rounded">
+                           <i class="ri-arrow-left-right-line"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold">${isSwap ? 'SWAP' : 'MOVE'}: <span class="text-primary">${src.code}</span> <i class="ri-arrow-right-line mx-1 text-muted"></i> <span class="text-primary">${tgt?.code || '?'}</span></h6>
+                     </div>
+                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRotationTask(${taskIndex}, '${srcPosId}', '${tgtPosId}')"><i class="ri-close-line"></i> Batal</button>
+                  </div>
+
+                  <div class="bg-light p-2 rounded mb-3 border border-dashed text-muted small ms-4 ps-2 border-start border-2 border-primary">
+                     <div class="d-flex gap-3 mb-1">
+                        <div><b>Ban A:</b> <span class="text-dark fw-bold">${src.sn}</span></div>
+                        <div><b class="text-dark">${src.brand}</b> | ${src.size} | ${src.pattern}</div>
+                        <div><i class="ri-ruler-line ms-2 text-primary"></i> RTD: <span class="text-dark fw-bold">${src.rtd} mm</span></div>
+                     </div>
+                     ${isSwap ? `
+                     <div class="d-flex gap-3">
+                        <div><b>Ban B:</b> <span class="text-dark fw-bold">${tgt.sn}</span></div>
+                        <div><b class="text-dark">${tgt.brand}</b> | ${tgt.size} | ${tgt.pattern}</div>
+                        <div><i class="ri-ruler-line ms-2 text-warning"></i> RTD: <span class="text-dark fw-bold">${tgt.rtd} mm</span></div>
+                     </div>
+                     ` : '<div class="fst-italic">Tujuan: Posisi Kosong (Move)</div>'}
+                  </div>
+
+                  <div class="row g-2">
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold">RTD Ban A (mm)</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm t-rtd" placeholder="Sisa RTD" value="${src.rtd !== '-' ? src.rtd : ''}">
+                     </div>
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold">PSI Ban A</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm t-psi" placeholder="Wajib">
+                     </div>
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold">Catatan</label>
+                        <input type="text" class="form-control form-control-sm t-notes">
+                     </div>
+                     ${isSwap ? `
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-warning">RTD Ban B (mm)</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm t-target-rtd" placeholder="Sisa RTD" value="${tgt.rtd !== '-' ? tgt.rtd : ''}">
+                     </div>
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-warning">PSI Ban B</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm t-target-psi" placeholder="Wajib">
+                     </div>
+                     ` : ''}
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold">Foto</label>
+                        <input type="file" class="form-control form-control-sm t-photo" accept="image/*">
+                     </div>
+                  </div>
+                  <input type="hidden" class="t-src-pos" value="${srcPosId}">
+                  <input type="hidden" class="t-tgt-pos" value="${tgtPosId}">
+                  <input type="hidden" class="t-is-swap" value="${isSwap ? 1 : 0}">
+               </div>
+            `;
+            taskContainer.insertAdjacentHTML('beforeend', html);
+
+            // Mark nodes as queued
+            const srcNode = document.querySelector(`.m-tyre-node[data-position-id="${srcPosId}"]`);
+            const tgtNode = document.querySelector(`.m-tyre-node[data-position-id="${tgtPosId}"]`);
+            if (srcNode) srcNode.classList.add('queued-rotation');
+            if (tgtNode) tgtNode.classList.add('queued-rotation');
+
+            taskIndex++;
+         }
+
+         window.removeRotationTask = function(index, srcPosId, tgtPosId) {
+            document.getElementById(`task_${index}`).remove();
+            tasks = tasks.filter(t => t.index !== index);
+            const srcNode = document.querySelector(`.m-tyre-node[data-position-id="${srcPosId}"]`);
+            const tgtNode = document.querySelector(`.m-tyre-node[data-position-id="${tgtPosId}"]`);
+            if (srcNode) srcNode.classList.remove('queued-rotation');
+            if (tgtNode) tgtNode.classList.remove('queued-rotation');
+         };
+
+         // Classic mode info
+         $('#c_source_id').on('change', function() {
+            const opt = $(this).find('option:selected');
+            if (opt.val()) {
+               $('#c_source_info').html(`<div class="bg-white p-2 rounded border border-start border-4 border-primary shadow-sm"><b>Ban A:</b> ${opt.data('sn')} | ${opt.data('brand')} | ${opt.data('size')} | ${opt.data('pattern')} | RTD: ${opt.data('rtd')} mm</div>`).slideDown();
+            } else { $('#c_source_info').slideUp(); }
+         });
+         $('#c_target_id').on('change', function() {
+            const opt = $(this).find('option:selected');
+            if (opt.val()) {
+               const sn = opt.data('sn');
+               if (sn) {
+                  $('#c_target_info').html(`<div class="bg-white p-2 rounded border border-start border-4 border-success shadow-sm"><b>Ban B (SWAP):</b> ${sn} | ${opt.data('brand')} | ${opt.data('size')} | ${opt.data('pattern')} | RTD: ${opt.data('rtd')} mm</div>`).slideDown();
+               } else {
+                  $('#c_target_info').html(`<div class="bg-white p-2 rounded border border-start border-4 border-secondary shadow-sm"><b>Tujuan:</b> Posisi Kosong (MOVE)</div>`).slideDown();
+               }
+            } else { $('#c_target_info').slideUp(); }
+         });
+
+         // Submit
+         $('#btn_submit').click(function() {
+            const isClassic = $('#mode_klasik').is(':checked');
+            let movements = [];
+            let formData = new FormData(document.getElementById('rotasi_form'));
+
+            if (!vehicleSelect.val()) {
+               Swal.fire('Peringatan', 'Unit kendaraan wajib dipilih.', 'warning');
+               return;
+            }
+
+            if (isClassic) {
+               if (!$('#c_source_id').val() || !$('#c_target_id').val()) {
+                  Swal.fire('Peringatan', 'Posisi Sumber dan Tujuan wajib dipilih.', 'warning');
+                  return;
+               }
+               if ($('#c_source_id').val() === $('#c_target_id').val()) {
+                  Swal.fire('Peringatan', 'Posisi Sumber dan Tujuan tidak boleh sama.', 'warning');
+                  return;
+               }
+               if (!$('#c_psi_a').val()) {
+                  Swal.fire('Peringatan', 'PSI Ban A wajib diisi.', 'warning');
+                  return;
+               }
+               movements.push({
+                  type: 'Rotation',
+                  position_id: $('#c_source_id').val(),
+                  target_position_id: $('#c_target_id').val(),
+                  rtd: $('#c_rtd_a').val() || '',
+                  psi: $('#c_psi_a').val(),
+                  notes: $('#c_notes').val() || ''
+               });
+            } else {
+               if (tasks.length === 0) {
+                  Swal.fire('Peringatan', 'Antrean rotasi masih kosong. Klik ban pada layout untuk menambahkan rotasi.', 'warning');
                   return;
                }
 
-               const node = document.querySelector(`.m-tyre-node[data-position-id="${posId}"]`);
-               if (node) node.classList.add('selected-target');
+               let isValid = true;
+               tasks.forEach((t, idx) => {
+                  const card = document.getElementById(`task_${t.index}`);
+                  if (!card) return;
+                  const psi = card.querySelector('.t-psi').value;
+                  if (!psi) { isValid = false; card.style.border = '2px solid red'; }
+                  else { card.style.border = ''; }
 
-               const tyreB = assignedTyres[posId];
-               if (tyreB) {
-                  $('#target_tyre_detail').show();
-                  $('#target_status_text').hide();
-                  $('#tgt_sn').text(tyreB.serial_number);
-                  $('#tgt_brand').text(tyreB.brand ? tyreB.brand.brand_name : '-');
+                  const mov = {
+                     type: 'Rotation',
+                     position_id: card.querySelector('.t-src-pos').value,
+                     target_position_id: card.querySelector('.t-tgt-pos').value,
+                     rtd: card.querySelector('.t-rtd').value || '',
+                     psi: psi,
+                     notes: card.querySelector('.t-notes').value || ''
+                  };
 
-                  $('#swap_inspection').fadeIn();
-                  $('#rtd_sn_b').text(tyreB.serial_number);
-                  $('#target_rtd_reading').val(tyreB.current_tread_depth || '').prop('required', true);
-                  $('#target_psi_reading').prop('required', true);
-               } else {
-                  $('#target_tyre_detail').hide();
-                  $('#target_status_text').show();
-                  $('#swap_inspection').hide();
-                  $('#target_rtd_reading').prop('required', false);
-                  $('#target_psi_reading').prop('required', false);
+                  if (card.querySelector('.t-is-swap').value === '1') {
+                     mov.target_rtd = card.querySelector('.t-target-rtd')?.value || '';
+                     mov.target_psi = card.querySelector('.t-target-psi')?.value || '';
+                  }
+
+                  movements.push(mov);
+
+                  const photoInput = card.querySelector('.t-photo');
+                  if (photoInput && photoInput.files.length > 0) {
+                     formData.append(`move_photo_${idx}`, photoInput.files[0]);
+                  }
+               });
+
+               if (!isValid) {
+                  Swal.fire('Peringatan', 'Lengkapi PSI wajib pada semua antrean.', 'warning');
+                  return;
                }
-               $('#target_tyre_info').fadeIn();
-               updateSummary();
-            } else {
-               $('#target_tyre_info').hide();
-               $('#rotation_summary').hide();
             }
-         });
 
-         // Calculate RTD average for A
-         $(document).on('input', '.rtd-input-a', function() {
-            let total = 0,
-               count = 0;
-            $('.rtd-input-a').each(function() {
-               let val = parseFloat($(this).val());
-               if (!isNaN(val)) {
-                  total += val;
-                  count++;
-               }
-            });
-            if (count > 0) $('#rtd_reading').val((total / count).toFixed(2));
-            else $('#rtd_reading').val('');
-         });
-
-         // Calculate RTD average for B
-         $(document).on('input', '.rtd-input-b', function() {
-            let total = 0,
-               count = 0;
-            $('.rtd-input-b').each(function() {
-               let val = parseFloat($(this).val());
-               if (!isNaN(val)) {
-                  total += val;
-                  count++;
-               }
-            });
-            if (count > 0) $('#target_rtd_reading').val((total / count).toFixed(2));
-            else $('#target_rtd_reading').val('');
-         });
-
-         function updateSummary() {
-            const srcId = sourceSelect.val();
-            const tgtId = targetSelect.val();
-
-            if (srcId && tgtId) {
-               const srcNode = document.querySelector(`.m-tyre-node[data-position-id="${srcId}"]`);
-               const tgtNode = document.querySelector(`.m-tyre-node[data-position-id="${tgtId}"]`);
-
-               $('#sum_src_code').text(srcNode ? srcNode.getAttribute('data-code') : '-');
-               $('#sum_tgt_code').text(tgtNode ? tgtNode.getAttribute('data-code') : '-');
-
-               if (assignedTyres[tgtId]) {
-                  $('#sum_type_badge').text('SWAP').removeClass('bg-label-primary').addClass('bg-label-warning');
-               } else {
-                  $('#sum_type_badge').text('MOVE').removeClass('bg-label-warning').addClass('bg-label-primary');
-               }
-
-               $('#rotation_summary').fadeIn();
-            }
-         }
-
-         $('#rotasi_form').on('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
+            formData.append('movements', JSON.stringify(movements));
 
             Swal.fire({
-               title: 'Konfirmasi Rotasi',
-               text: 'Simpan perubahan posisi ban?',
+               title: 'Proses Rotasi?',
+               text: `Memproses ${movements.length} rotasi ban. Lanjutkan?`,
                icon: 'question',
                showCancelButton: true,
-               confirmButtonText: 'Ya, Simpan',
-               customClass: {
-                  confirmButton: 'btn btn-primary me-3',
-                  cancelButton: 'btn btn-outline-secondary'
-               },
+               confirmButtonText: 'Ya, Proses',
+               customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-outline-secondary' },
                buttonsStyling: false
             }).then((result) => {
                if (result.isConfirmed) {
-                  const btn = $('#btn_submit');
-                  btn.prop('disabled', true).html(
-                     '<span class="spinner-border spinner-border-sm me-1"></span> Processing...');
+                  const btn = document.getElementById('btn_submit');
+                  btn.disabled = true;
+                  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
-                  fetch(`{{ url('tyre-store') }}`, {
+                  fetch(`{{ route('tyre-movement.bulk-store') }}`, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -722,23 +727,21 @@
                            'X-Requested-With': 'XMLHttpRequest'
                         }
                      })
-                     .then(response => response.json())
+                     .then(res => res.json())
                      .then(data => {
                         if (data.success) {
-                           Swal.fire('Berhasil!', data.message, 'success').then(() => {
-                              window.location.href = "{{ route('tyre-movement.index') }}";
-                           });
+                           Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 2000 })
+                           .then(() => window.location.href = "{{ route('tyre-movement.index') }}");
                         } else {
-                           Swal.fire('Gagal', data.message, 'error');
-                           btn.prop('disabled', false).html(
-                              '<i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban'
-                              );
+                           Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+                           btn.disabled = false;
+                           btn.innerHTML = '<i class="ri ri-arrow-left-right-line me-1"></i> Proses Rotasi Ban';
                         }
                      })
                      .catch(err => {
-                        Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
-                        btn.prop('disabled', false).html(
-                           '<i class="ri ri-arrow-left-right-line me-1"></i> Eksekusi Rotasi Ban');
+                        Swal.fire('Error', 'Kesalahan jaringan/sistem.', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="ri ri-arrow-left-right-line me-1"></i> Proses Rotasi Ban';
                      });
                }
             });
