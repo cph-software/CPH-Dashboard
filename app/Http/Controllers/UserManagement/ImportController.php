@@ -296,7 +296,7 @@ class ImportController extends Controller
             // --- Send Notification to Approvers ---
             try {
                 // Cari semua user yang bisa approve import sesuai perusahaan uploader (termasuk Super Admin global)
-                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'update');
+                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'approve');
                 
                 $uploaderName = auth()->user()->display_name ?? auth()->user()->name;
                 $actionUrl = route('import-approval.show', $batch->id);
@@ -878,7 +878,7 @@ class ImportController extends Controller
 
             // --- Send Notification to Approvers ---
             try {
-                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'update'); 
+                $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'approve'); 
                 // 'update' is typically the permission needed to approve/reject
                 
                 if ($approvers->count() > 0) {

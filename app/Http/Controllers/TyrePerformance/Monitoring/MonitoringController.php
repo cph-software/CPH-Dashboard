@@ -611,7 +611,7 @@ class MonitoringController extends Controller
             // --- Kirim Notifikasi untuk Cek 1 jika Submitter bukan SuperAdmin ---
             if (auth()->user()->role_id != 1) {
                 try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update')
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'approve')
                         ->reject(function ($u) { return $u->id === auth()->id(); });
                     $submitterName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('monitoring.sessions.show', $session->session_id);
@@ -1036,7 +1036,7 @@ class MonitoringController extends Controller
             // --- Send Notification to Approvers if Pending ---
             if (!$isAdmin) {
                 try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'update')
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'approve')
                         ->reject(function ($u) { return $u->id === auth()->id(); });
                     $submitterName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('monitoring.sessions.show', $session->session_id);

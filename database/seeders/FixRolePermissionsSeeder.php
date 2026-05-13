@@ -30,7 +30,7 @@ class FixRolePermissionsSeeder extends Seeder
         // Definisi Permissions
         $FULL_ACCESS = json_encode(['view', 'create', 'update', 'delete', 'export', 'import']);
         $READ_WRITE = json_encode(['view', 'create', 'update', 'export']);
-        $READ_APPROVE = json_encode(['view', 'update', 'export']); // Update acts as Approve
+        $READ_APPROVE = json_encode(['view', 'approve', 'export']); // Memisahkan approve agar Admin Tyre (yang punya update) tidak bisa approve
         $READ_ONLY = json_encode(['view', 'export']);
         $VIEW_ONLY = json_encode(['view']);
 
@@ -73,7 +73,7 @@ class FixRolePermissionsSeeder extends Seeder
                 'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_APPROVE, 'Manajerial' => $READ_APPROVE
             ],
             'Tyre Monitoring' => [
-                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_APPROVE, 'Manajerial' => $READ_ONLY
+                'Admin Tyre' => $FULL_ACCESS, 'Supervisor' => $READ_APPROVE, 'Manajerial' => $READ_APPROVE
             ],
             
             // --- SYSTEM CONFIG (MASTER DATA PENDUKUNG) ---

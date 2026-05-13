@@ -235,7 +235,7 @@ class TyreExaminationController extends Controller
             // --- Send Notification to Approvers if Pending ---
             if ($approvalStatus === 'Pending') {
                 try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Examination', 'update');
+                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Examination', 'approve');
                     $submitterName = auth()->user()->display_name ?? auth()->user()->name;
                     $actionUrl = route('examination.show', $examination->id);
                     

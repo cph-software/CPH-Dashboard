@@ -92,8 +92,8 @@ class CheckTyrePermission
                 'update'  => 'update',
                 'destroy' => 'delete',
                 'export'  => 'export',
-                'approve' => 'update',
-                'reject'  => 'update',
+                'approve' => 'approve',
+                'reject'  => 'approve',
             ];
 
             if (isset($actionMap[$action])) {

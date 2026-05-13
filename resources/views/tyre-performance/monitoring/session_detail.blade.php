@@ -570,19 +570,21 @@
                            </h6>
                            <div class="d-flex gap-1">
                               @if (!$isApproved && !$isRejected)
-                                 <form
-                                    action="{{ route('monitoring.sessions.approve', [$session->session_id, $checkNumber]) }}"
-                                    method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-success"
-                                       onclick="return confirm('Setujui pemeriksaan ini?')">
-                                       <i class="ri ri-check-line me-1"></i> Approve
+                                 @if (hasPermission('Tyre Monitoring', 'approve') || auth()->user()->role_id == 1)
+                                    <form
+                                       action="{{ route('monitoring.sessions.approve', [$session->session_id, $checkNumber]) }}"
+                                       method="POST" class="d-inline">
+                                       @csrf
+                                       <button type="submit" class="btn btn-sm btn-success"
+                                          onclick="return confirm('Setujui pemeriksaan ini?')">
+                                          <i class="ri ri-check-line me-1"></i> Approve
+                                       </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                       data-bs-target="#rejectModal{{ $checkNumber }}">
+                                       <i class="ri ri-close-line me-1"></i> Reject
                                     </button>
-                                 </form>
-                                 <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
-                                    data-bs-target="#rejectModal{{ $checkNumber }}">
-                                    <i class="ri ri-close-line me-1"></i> Reject
-                                 </button>
+                                 @endif
 
                                  {{-- Reject Modal --}}
                                  <div class="modal fade" id="rejectModal{{ $checkNumber }}" tabindex="-1"

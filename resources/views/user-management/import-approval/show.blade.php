@@ -40,7 +40,7 @@
             <p class="text-muted mb-0 small">Review data mentah sebelum memproses ke database utama.</p>
          </div>
          <div class="col-md-4 text-md-end">
-            @if (($batch->status === 'Pending' || $batch->status === 'Rolled Back' || $readyItems->count() > 0 || $warningItems->count() > 0) && auth()->user()->hasPermission('Import Approval', 'update'))
+            @if (($batch->status === 'Pending' || $batch->status === 'Rolled Back' || $readyItems->count() > 0 || $warningItems->count() > 0) && (auth()->user()->hasPermission('Import Approval', 'approve') || auth()->user()->role_id == 1))
                <form action="{{ route('import-approval.approve', $batch->id) }}" method="POST" class="d-inline" id="approveForm">
                   @csrf
                   <button type="submit" class="btn btn-success me-2" id="btnApprove"
@@ -52,7 +52,7 @@
                   <i class="ri-close-line me-1"></i> Reject
                </button>
             @endif
-            @if (in_array($batch->status, ['Approved', 'Failed']) && auth()->user()->hasPermission('Import Approval', 'update'))
+            @if (in_array($batch->status, ['Approved', 'Failed']) && (auth()->user()->hasPermission('Import Approval', 'approve') || auth()->user()->role_id == 1))
                <button type="button" class="btn btn-warning" id="btnRollback">
                   <i class="ri-arrow-go-back-line me-1"></i> Rollback
                </button>

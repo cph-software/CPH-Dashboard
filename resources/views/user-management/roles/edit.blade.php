@@ -87,12 +87,13 @@
                                  <th class="text-center">Delete</th>
                                  <th class="text-center">Export</th>
                                  <th class="text-center">Import</th>
+                                 <th class="text-center">Approve</th>
                               </tr>
                            </thead>
                            <tbody>
                               @foreach ($aplikasi as $app)
                                  <tr class="bg-label-primary">
-                                    <td colspan="7" class="ps-4 py-2 border-top-0">
+                                    <td colspan="8" class="ps-4 py-2 border-top-0">
                                        <div class="d-flex justify-content-between align-items-center">
                                           <span
                                              class="fw-bold text-uppercase small letter-spacing-1">{{ $app->name }}</span>
@@ -131,7 +132,7 @@
                                                 style="cursor: pointer">{{ $menu->name }}</label>
                                           </div>
                                        </td>
-                                       @foreach (['view', 'create', 'update', 'delete', 'export', 'import'] as $perm)
+                                       @foreach (['view', 'create', 'update', 'delete', 'export', 'import', 'approve'] as $perm)
                                           <td class="text-center">
                                              <div class="form-check d-inline-block">
                                                 <input
@@ -145,7 +146,7 @@
                                     </tr>
                                  @empty
                                     <tr>
-                                       <td colspan="7" class="text-center py-4 text-muted fst-italic">No menus listed in
+                                       <td colspan="8" class="text-center py-4 text-muted fst-italic">No menus listed in
                                           this application</td>
                                     </tr>
                                  @endforelse

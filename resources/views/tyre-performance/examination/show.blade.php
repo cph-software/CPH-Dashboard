@@ -128,7 +128,7 @@
                   </button>
                @endif
             @endif
-            @if ($exam->approval_status === 'Pending' && auth()->user()->hasPermission('Examination', 'update'))
+            @if ($exam->approval_status === 'Pending' && (auth()->user()->hasPermission('Examination', 'approve') || auth()->user()->role_id == 1))
                <button type="button" class="btn btn-success" id="btnApprove">
                   <i class="ri ri-check-line me-1"></i> Approve
                </button>
