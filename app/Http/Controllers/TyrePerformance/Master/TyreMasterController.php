@@ -168,6 +168,20 @@ class TyreMasterController extends Controller
             }
         }
 
+        // Set Default Tread Depths
+        if (empty($data['original_tread_depth'])) {
+            if (!empty($data['initial_tread_depth'])) {
+                $data['original_tread_depth'] = $data['initial_tread_depth'];
+            } else {
+                $size = TyreSize::find($data['tyre_size_id']);
+                $data['original_tread_depth'] = $size ? $size->std_otd : 0;
+                $data['initial_tread_depth'] = $data['original_tread_depth'];
+            }
+        }
+        if (!isset($data['current_tread_depth'])) {
+            $data['current_tread_depth'] = $data['initial_tread_depth'];
+        }
+
         $tyre = Tyre::create($data);
         $tyre->load(['brand', 'size', 'pattern', 'location']);
 
@@ -225,6 +239,19 @@ class TyreMasterController extends Controller
                 $pattern = TyrePattern::firstOrCreate(['name' => strtoupper($request->tyre_pattern_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
                 $data['tyre_pattern_id'] = $pattern->id;
             }
+        }
+
+        // Sync Tread Depths jika sebelumnya kosong
+        if (empty($tyre->original_tread_depth) && !empty($data['initial_tread_depth'])) {
+            $data['original_tread_depth'] = $data['initial_tread_depth'];
+        } elseif (empty($tyre->original_tread_depth) && empty($data['initial_tread_depth'])) {
+            $size = TyreSize::find($data['tyre_size_id']);
+            $data['original_tread_depth'] = $size ? $size->std_otd : 0;
+            $data['initial_tread_depth'] = $data['original_tread_depth'];
+        }
+
+        if (empty($tyre->current_tread_depth) && !empty($data['initial_tread_depth'])) {
+            $data['current_tread_depth'] = $data['initial_tread_depth'];
         }
 
         $dataBefore = $tyre->toArray();
