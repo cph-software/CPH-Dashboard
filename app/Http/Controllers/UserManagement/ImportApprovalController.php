@@ -383,7 +383,7 @@ class ImportApprovalController extends Controller
                 'status' => $data['status'] ?? 'New',
                 'initial_tread_depth' => $initialRtd,
                 'current_tread_depth' => (float)($data['current_rtd'] ?? $initialRtd),
-                'price' => (float)($data['price'] ?? 0),
+                'price' => $this->parseEuroNum($data['price'] ?? 0),
                 'ply_rating' => (int)($data['ply_rating'] ?? 0),
                 'original_tread_depth' => $initialRtd,
                 'tyre_company_id' => $uploaderCompanyId
