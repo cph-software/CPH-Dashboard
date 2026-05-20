@@ -708,12 +708,17 @@ class ImportController extends Controller
             return redirect()->back()->with('error', 'File kosong atau format tidak valid.');
         }
 
-        $header = array_shift($data);
-        $header = array_map(function($h) {
-            return strtolower(str_replace([' ', '-'], '_', trim((string)$h)));
-        }, $header);
-
-        // Validasi format kolom berdasarkan modul
+        // ============================================================
+        // SMART HEADER DETECTION
+        // Scan the first 15 rows to find the actual header row that
+        // contains the required columns for this module.
+        // This fixes Excel files with merged group-header rows
+        // (e.g., "VEHICLE INFORMATION", "TYRE MONITORING FORM") that
+        // sit above the real column headers ("serial_number", "brand").
+        // Without this, PhpSpreadsheet may read the merged group row
+        // as the first non-empty row, making it the "header" and
+        // causing all data to display as "-" in Import Approval.
+        // ============================================================
         $requiredHeaders = [
             'Tyre Master' => ['serial_number', ['brand_name', 'brand']],
             'Master Tyre' => ['serial_number', ['brand_name', 'brand']],
@@ -727,6 +732,55 @@ class ImportController extends Controller
             'Segments' => ['segment_name'],
             'Tyre Examination' => ['kode_kendaraan', 'odometer'],
         ];
+
+        $headerIdx = 0; // Default: first non-empty row
+        $searchCols = $requiredHeaders[$module] ?? null;
+
+        if ($searchCols) {
+            $maxScan = min(15, count($data));
+            for ($i = 0; $i < $maxScan; $i++) {
+                $rowNormalized = array_map(function($h) {
+                    return strtolower(str_replace([' ', '-'], '_', trim((string)$h)));
+                }, $data[$i]);
+
+                // Check if ALL required columns for this module exist in this row
+                $allFound = true;
+                foreach ($searchCols as $req) {
+                    if (is_array($req)) {
+                        // At least one alternative must exist (e.g., brand_name OR brand)
+                        $found = false;
+                        foreach ($req as $alt) {
+                            if (in_array($alt, $rowNormalized)) {
+                                $found = true;
+                                break;
+                            }
+                        }
+                        if (!$found) { $allFound = false; break; }
+                    } else {
+                        if (!in_array($req, $rowNormalized)) { $allFound = false; break; }
+                    }
+                }
+
+                if ($allFound) {
+                    $headerIdx = $i;
+                    break;
+                }
+            }
+
+            if ($headerIdx > 0) {
+                \Illuminate\Support\Facades\Log::info("Smart Header Detection: Skipped {$headerIdx} group-header row(s) for module '{$module}'. File: " . ($file->getClientOriginalName() ?? 'unknown'));
+            }
+        }
+
+        // Extract header row and use everything after it as data
+        $header = $data[$headerIdx];
+        $data = array_slice($data, $headerIdx + 1);
+
+        $header = array_map(function($h) {
+            return strtolower(str_replace([' ', '-'], '_', trim((string)$h)));
+        }, $header);
+
+        // Validasi format kolom berdasarkan modul (safety net)
 
         if (isset($requiredHeaders[$module])) {
             $missingHeaders = [];

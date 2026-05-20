@@ -9,7 +9,19 @@
     $headers = [];
 
     if ($batch->items->count() > 0) {
-        $headers = array_diff(array_keys($batch->items->first()->data), ['_validation']);
+        // Collect all unique keys across ALL items in this batch to handle mixed/corrupt data
+        // instead of blindly trusting the first item's keys.
+        $uniqueKeys = [];
+        foreach ($batch->items as $item) {
+            if (is_array($item->data)) {
+                foreach (array_keys($item->data) as $key) {
+                    if ($key !== '_validation' && $key !== '') {
+                        $uniqueKeys[$key] = true;
+                    }
+                }
+            }
+        }
+        $headers = array_keys($uniqueKeys);
         
         foreach ($batch->items as $item) {
             $validation = $item->data['_validation'] ?? null;
