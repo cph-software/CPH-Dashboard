@@ -463,11 +463,11 @@ class ImportApprovalController extends Controller
         \App\Models\MasterImportKendaraan::updateOrCreate(
             ['kode_kendaraan' => $code, 'tyre_company_id' => $uploaderCompanyId],
             [
-                'no_polisi' => $data['no_polisi'] ?? null,
-                'jenis_kendaraan' => $data['model_kendaraan'] ?? $data['type'] ?? 'Unknown',
-                'vehicle_brand' => $data['brand_kendaraan'] ?? $data['vehicle_brand'] ?? null,
-                'curb_weight' => $data['curb_weight'] ?? null,
-                'payload_capacity' => $data['payload_capacity'] ?? null,
+                'no_polisi' => (isset($data['no_polisi']) && trim($data['no_polisi']) !== '') ? trim($data['no_polisi']) : '',
+                'jenis_kendaraan' => (isset($data['model_kendaraan']) && trim($data['model_kendaraan']) !== '') ? trim($data['model_kendaraan']) : 'Unknown',
+                'vehicle_brand' => (isset($data['brand_kendaraan']) && trim($data['brand_kendaraan']) !== '') ? trim($data['brand_kendaraan']) : null,
+                'curb_weight' => (isset($data['curb_weight']) && is_numeric(trim($data['curb_weight']))) ? (int)trim($data['curb_weight']) : null,
+                'payload_capacity' => (isset($data['payload_capacity']) && is_numeric(trim($data['payload_capacity']))) ? (float)trim($data['payload_capacity']) : null,
                 'area' => trim($area),
                 'operational_segment_id' => $segmentId,
                 'tyre_position_configuration_id' => $layoutId,
