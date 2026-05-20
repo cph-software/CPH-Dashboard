@@ -24,12 +24,34 @@ class TyreMovementController extends Controller
     {
         $companyId = $request->input('tyre_company_id');
         
-        if ($companyId == 0) {
-            session()->forget('active_company_id');
-            return response()->json(['success' => true, 'message' => 'Filter perusahaan dibersihkan (Global View)']);
+        if ($companyId == 0 || $companyId === '0') {
+            if (\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                session()->forget('active_company_id');
+                return response()->json(['success' => true, 'message' => 'Filter perusahaan dibersihkan (Global View)']);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang bisa melihat Global View.'], 403);
+            }
+        }
+
+        if ($companyId === 'ALL_CLIENTS') {
+            if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+                // Determine all client IDs and set it to an array
+                $user = auth()->user();
+                $clientIds = $user->tyreCompany->getAllClientIds();
+                $clientIds[] = $user->tyre_company_id; // Include own company
+                session(['active_company_id' => $clientIds]);
+                return response()->json(['success' => true, 'message' => 'Global Klien (Agregat) Aktif']);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Hanya Workshop Admin yang bisa melihat Global Klien.'], 403);
+            }
         }
         
-        $company = TyreCompany::findOrFail($companyId);
+        // Cek validitas akses untuk Workshop Admin
+        if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin() && !\App\Helpers\SessionCompanyHelper::isValidClient($companyId)) {
+            return response()->json(['success' => false, 'message' => 'Akses ke perusahaan ini ditolak.'], 403);
+        }
+
+        $company = \App\Models\TyreCompany::findOrFail($companyId);
         session(['active_company_id' => $company->id]);
         
         return response()->json(['success' => true, 'message' => 'Filter aktif: ' . $company->company_name]);
@@ -37,16 +59,12 @@ class TyreMovementController extends Controller
 
     protected function applyCompanyScope($query)
     {
-        $user = auth()->user();
-        if (!$user) return $query;
-        
-        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
-        if ($isInternal) {
-            if (session()->has('active_company_id')) {
-                return $query->where('tyre_company_id', session('active_company_id'));
+        $resolvedId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        if ($resolvedId !== null) {
+            if (is_array($resolvedId)) {
+                return $query->whereIn('tyre_company_id', $resolvedId);
             }
-        } else {
-            return $query->where('tyre_company_id', $user->tyre_company_id);
+            return $query->where('tyre_company_id', $resolvedId);
         }
         return $query;
     }
@@ -90,7 +108,25 @@ class TyreMovementController extends Controller
             ->where('is_in_warehouse', true)
             ->where('is_repairing', false);
             
-        $query = $this->applyCompanyScope($query);
+        // Cross-Company Install Logic: Fetch from Active Company AND Parent Company
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $parentCompany = auth()->user()->tyre_company_id;
+            
+            $query->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
+                if (is_array($activeCompany)) {
+                    $q->whereIn('tyre_company_id', $activeCompany);
+                } elseif ($activeCompany) {
+                    $q->where('tyre_company_id', $activeCompany);
+                }
+                
+                if ($parentCompany && $parentCompany != $activeCompany) {
+                    $q->orWhere('tyre_company_id', $parentCompany);
+                }
+            });
+        } else {
+            $query = $this->applyCompanyScope($query);
+        }
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -216,11 +252,29 @@ class TyreMovementController extends Controller
 
         if ($request->has('position_id')) {
             // For Quick Form Installation: We need list of available tyres
-            $availableTyres = $this->applyCompanyScope(
-                Tyre::whereIn('status', ['New', 'Repaired'])
+            $query = Tyre::whereIn('status', ['New', 'Repaired'])
                     ->where('is_in_warehouse', true)
-                    ->where('is_repairing', false)
-            )->with(['brand', 'size'])->limit(50)->get();
+                    ->where('is_repairing', false);
+                    
+            if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+                $parentCompany = auth()->user()->tyre_company_id;
+                
+                $query->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
+                    if (is_array($activeCompany)) {
+                        $q->whereIn('tyre_company_id', $activeCompany);
+                    } elseif ($activeCompany) {
+                        $q->where('tyre_company_id', $activeCompany);
+                    }
+                    if ($parentCompany && $parentCompany != $activeCompany) {
+                        $q->orWhere('tyre_company_id', $parentCompany);
+                    }
+                });
+            } else {
+                $query = $this->applyCompanyScope($query);
+            }
+            
+            $availableTyres = $query->with(['brand', 'size'])->limit(50)->get();
 
             return response()->json([
                 'availableTyres' => $availableTyres
@@ -741,7 +795,7 @@ class TyreMovementController extends Controller
                         ]);
 
                         // 3. Update Old Tyre status to 'Repaired' (Default for auto-removal)
-                        $oldTyre->update([
+                        $updateDataOld = [
                             'current_vehicle_id' => null,
                             'current_position_id' => null,
                             'is_in_warehouse' => true,
@@ -752,7 +806,11 @@ class TyreMovementController extends Controller
                             'total_lifetime_hm' => ($oldTyre->total_lifetime_hm ?? 0) + $hmDiff,
                             'current_km' => $request->odometer ?? 0,
                             'current_hm' => $request->hour_meter ?? 0,
-                        ]);
+                        ];
+                        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                            $updateDataOld['tyre_company_id'] = auth()->user()->tyre_company_id;
+                        }
+                        $oldTyre->update($updateDataOld);
 
                         // 4. Increase stock at working location (Old tyre enters warehouse)
                         if ($request->work_location_id) {
@@ -771,7 +829,7 @@ class TyreMovementController extends Controller
                     }
                 }
 
-                $tyre->update([
+                $updateDataNew = [
                     'current_vehicle_id' => $request->vehicle_id,
                     'current_position_id' => $request->position_id,
                     'is_in_warehouse' => false,
@@ -780,7 +838,11 @@ class TyreMovementController extends Controller
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
                     'current_km' => $request->odometer ?? 0,
                     'current_hm' => $request->hour_meter ?? 0,
-                ]);
+                ];
+                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                    $updateDataNew['tyre_company_id'] = $vehicle->tyre_company_id;
+                }
+                $tyre->update($updateDataNew);
 
                 // 2. Update Position Detail (Secondary sync)
 
@@ -915,7 +977,7 @@ class TyreMovementController extends Controller
                 }
 
                 $finalStatus = $request->target_status ?? 'Repaired';
-                $tyre->update([
+                $updateDataRem = [
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
                     'is_in_warehouse' => true,
@@ -927,7 +989,11 @@ class TyreMovementController extends Controller
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
                     'current_km' => $request->odometer ?? 0,
                     'current_hm' => $request->hour_meter ?? 0,
-                ]);
+                ];
+                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                    $updateDataRem['tyre_company_id'] = auth()->user()->tyre_company_id;
+                }
+                $tyre->update($updateDataRem);
 
                 // 3. Increase stock at new location (tyre entering warehouse), UNLESS SCRAP
                 if ($request->work_location_id && $finalStatus !== 'Scrap') {
@@ -1013,8 +1079,9 @@ class TyreMovementController extends Controller
         ]);
 
         $user = Auth::user();
-        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
-        $companyId = $isInternal ? session('active_company_id') : $user->tyre_company_id;
+        $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        // For write operations, resolve to a single company ID
+        if (is_array($companyId)) $companyId = $companyId[0] ?? $user->tyre_company_id;
         $movements = json_decode($request->movements, true);
         if (!is_array($movements) || empty($movements)) {
             return response()->json(['success' => false, 'message' => 'Data pergerakan ban kosong atau tidak valid.'], 422);
@@ -1049,7 +1116,7 @@ class TyreMovementController extends Controller
                 if (!empty($mov['target_tyre_id'])) $tyreIds[] = $mov['target_tyre_id'];
             }
             if (!empty($tyreIds)) {
-                $checkCompanyId = $companyId ?: session('active_company_id');
+                $checkCompanyId = $companyId;
                 if ($checkCompanyId) {
                     $tyresCount = Tyre::whereIn('id', $tyreIds)->where('tyre_company_id', $checkCompanyId)->count();
                     $uniqueTyreIds = count(array_unique($tyreIds));
@@ -1415,12 +1482,13 @@ class TyreMovementController extends Controller
         $query = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode', 'workLocation']);
 
         // Company scope: filter movements by vehicle's company
-        $user = auth()->user();
-        $isInternal = ($user && ($user->role_id == 1 || $user->tyre_company_id == 1));
-        if ($isInternal && session()->has('active_company_id')) {
-            $query->whereHas('vehicle', fn($q) => $q->where('tyre_company_id', session('active_company_id')));
-        } elseif (!$isInternal && $user) {
-            $query->whereHas('vehicle', fn($q) => $q->where('tyre_company_id', $user->tyre_company_id));
+        $resolvedCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        if ($resolvedCompanyId !== null) {
+            if (is_array($resolvedCompanyId)) {
+                $query->whereHas('vehicle', fn($q) => $q->whereIn('tyre_company_id', $resolvedCompanyId));
+            } else {
+                $query->whereHas('vehicle', fn($q) => $q->where('tyre_company_id', $resolvedCompanyId));
+            }
         }
 
         $totalRecords = (clone $query)->count();
@@ -1470,7 +1538,7 @@ class TyreMovementController extends Controller
                 'work_location' => $row->workLocation ? $row->workLocation->location_name : '-',
                 'failure_info' => $failureInfo,
                 'action' => '<button type="button" class="btn btn-sm btn-info me-1" onclick="viewMovementDetail(' . $row->id . ')" title="Lihat Detail & Foto"><i class="icon-base ri ri-eye-line"></i> Detail</button>' . 
-                    ((!auth()->user()->tyre_company_id || auth()->user()->tyre_company_id == 1 || auth()->user()->role_id == 1) 
+                    ((!auth()->user()->tyre_company_id || auth()->user()->tyre_company_id == 1 || auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) 
                     ? '<button type="button" class="btn btn-sm btn-danger" onclick="rollbackMovement(' . $row->id . ')" title="Rollback Transaksi"><i class="icon-base ri ri-history-line"></i> Rollback</button>'
                     : '')
             ];
@@ -1513,8 +1581,14 @@ class TyreMovementController extends Controller
             $user = auth()->user();
             $isInternal = ($user && ($user->role_id == 1 || $user->tyre_company_id == 1));
             if (!$isInternal) {
-                $vehicle = MasterImportKendaraan::find($movement->vehicle_id);
-                if ($vehicle && $vehicle->tyre_company_id != $user->tyre_company_id) {
+                $vehicle = MasterImportKendaraan::withoutGlobalScope('company')->find($movement->vehicle_id);
+                $vehicleCompanyId = $vehicle ? $vehicle->tyre_company_id : null;
+                
+                $isWorkshopAdmin = \App\Helpers\SessionCompanyHelper::isWorkshopAdmin();
+                $hasAccess = ($vehicleCompanyId == $user->tyre_company_id) 
+                    || ($isWorkshopAdmin && \App\Helpers\SessionCompanyHelper::isValidClient($vehicleCompanyId));
+                
+                if (!$hasAccess) {
                     throw new \Exception('Akses Ditolak: Anda tidak memiliki izin untuk rollback transaksi perusahaan lain.');
                 }
             }

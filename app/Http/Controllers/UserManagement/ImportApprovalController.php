@@ -18,27 +18,32 @@ class ImportApprovalController extends Controller
     /**
      * Get a company-scoped query for ImportBatch.
      * Super Admin (role_id 1) sees ALL batches.
+     * Workshop Admin sees batches from their company and child companies.
      * Other roles only see batches uploaded by users from the SAME company.
      */
     private function scopedQuery()
     {
-        $user = auth()->user();
         $query = \App\Models\ImportBatch::query();
+        $resolvedId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
-        // Super Admin bypass
-        if ($user->role_id == 1 || $user->tyre_company_id == 1) {
-            // Respect company filter dropdown for Super Admin
-            if (session()->has('active_company_id')) {
-                $companyId = session('active_company_id');
-                $query->whereHas('user', function ($q) use ($companyId) {
-                    $q->where('tyre_company_id', $companyId);
-                });
+        if (\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            // Super Admin: filter if a company is selected, otherwise show all
+            if ($resolvedId !== null) {
+                $ids = is_array($resolvedId) ? $resolvedId : [$resolvedId];
+                $query->whereHas('user', fn($q) => $q->whereIn('tyre_company_id', $ids));
             }
             return $query;
         }
 
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            // Workshop Admin: show their own + children's batches
+            $ids = is_array($resolvedId) ? $resolvedId : [$resolvedId];
+            $query->whereHas('user', fn($q) => $q->whereIn('tyre_company_id', $ids));
+            return $query;
+        }
+
         // Non-admin: only see batches from same company
-        $companyId = $user->tyre_company_id;
+        $companyId = auth()->user()->tyre_company_id;
         $query->whereHas('user', function ($q) use ($companyId) {
             $q->where('tyre_company_id', $companyId);
         });

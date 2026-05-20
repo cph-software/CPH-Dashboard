@@ -13,16 +13,23 @@ class TyreCompanyController extends Controller
 {
     public function index()
     {
-        // Use withCount to get actual tyre counts from the database.
-        // We explicitly disable the 'company' global scope on the tyres subquery
-        // so that it shows the true total for each company, regardless of 
-        // current session filters or admin view context.
-        $companies = TyreCompany::withCount([
+        $query = TyreCompany::with(['parent', 'children'])->withCount([
             'users',
             'tyres' => function ($query) {
                 $query->withoutGlobalScope('company');
             }
-        ])->latest()->get();
+        ])->latest();
+
+        // Workshop Admin: only see their own company + their clients
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $ownId = auth()->user()->tyre_company_id;
+            $query->where(function($q) use ($ownId) {
+                $q->where('id', $ownId)
+                  ->orWhere('parent_company_id', $ownId);
+            });
+        }
+
+        $companies = $query->get();
 
         return view('tyre-performance.master.companies.index', compact('companies'));
     }
@@ -32,13 +39,21 @@ class TyreCompanyController extends Controller
         $request->validate([
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'parent_company_id' => 'nullable|integer|exists:tyre_companies,id',
             'total_tyre_capacity' => 'required|integer|min:0',
             'max_users' => 'required|integer|min:1',
             'measurement_mode' => 'required|in:KM,HM',
             'status' => 'required|in:Active,Inactive',
         ]);
 
-        TyreCompany::create($request->all());
+        $data = $request->all();
+        // Convert empty string to null for parent_company_id
+        if (empty($data['parent_company_id'])) $data['parent_company_id'] = null;
+        // Workshop Admin: force parent to their own company
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $data['parent_company_id'] = auth()->user()->tyre_company_id;
+        }
+        TyreCompany::create($data);
 
         setLogActivity(auth()->id(), 'Menambah instansi tyre: ' . $request->company_name, [
             'action_type' => 'create',
@@ -54,6 +69,7 @@ class TyreCompanyController extends Controller
         $request->validate([
             'company_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'parent_company_id' => 'nullable|integer|exists:tyre_companies,id',
             'total_tyre_capacity' => 'required|integer|min:0',
             'max_users' => 'required|integer|min:1',
             'measurement_mode' => 'required|in:KM,HM',
@@ -62,7 +78,9 @@ class TyreCompanyController extends Controller
 
         $company = TyreCompany::findOrFail($id);
         $dataBefore = $company->toArray();
-        $company->update($request->all());
+        $data = $request->all();
+        if (empty($data['parent_company_id'])) $data['parent_company_id'] = null;
+        $company->update($data);
 
         setLogActivity(auth()->id(), 'Memperbarui instansi tyre: ' . $request->company_name, [
             'action_type' => 'update',

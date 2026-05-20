@@ -27,6 +27,7 @@
                <thead>
                   <tr>
                      <th>Nama Instansi</th>
+                      <th>Induk / Bengkel</th>
                      <th>Keterangan</th>
                      <th class="text-center">Total Ban / Jatah</th>
                      <th class="text-center">Kuota User</th>
@@ -37,7 +38,19 @@
                <tbody>
                   @foreach ($companies as $company)
                      <tr>
-                        <td><strong>{{ $company->company_name }}</strong></td>
+                        <td>
+                            <strong>{{ $company->company_name }}</strong>
+                            @if($company->children && $company->children->count() > 0)
+                               <br><span class="badge bg-label-info mt-1" style="font-size: 0.65rem;"><i class="ri-building-line me-1"></i>Bengkel ({{ $company->children->count() }} Klien)</span>
+                            @endif
+                         </td>
+                         <td>
+                            @if($company->parent)
+                               <span class="badge bg-label-warning"><i class="ri-link me-1"></i>{{ $company->parent->company_name }}</span>
+                            @else
+                               <span class="text-muted">—</span>
+                            @endif
+                         </td>
                         <td>{{ $company->description ?: '-' }}</td>
                         <td class="text-center">
                            <div class="d-flex flex-column align-items-center">
@@ -80,6 +93,7 @@
                                  class="btn btn-sm btn-icon btn-text-secondary rounded-pill edit-company"
                                  data-id="{{ $company->id }}" data-name="{{ $company->company_name }}"
                                  data-desc="{{ $company->description }}"
+                                  data-parent="{{ $company->parent_company_id }}"
                                  data-capacity="{{ $company->total_tyre_capacity }}"
                                  data-status="{{ $company->status }}">
                                  <i class="icon-base ri ri-pencil-line"></i>
@@ -113,6 +127,18 @@
             <form action="{{ route('tyre-companies.store') }}" method="POST">
                @csrf
                <div class="modal-body">
+                   @if(\App\Helpers\SessionCompanyHelper::isSuperAdmin())
+                   <div class="mb-3">
+                      <label class="form-label fw-bold">Induk Perusahaan / Bengkel <small class="text-muted">(Opsional)</small></label>
+                      <select name="parent_company_id" class="form-select">
+                         <option value="">— Tidak Ada (Perusahaan Mandiri) —</option>
+                         @foreach(\App\Models\TyreCompany::orderBy('company_name')->get() as $parentOpt)
+                            <option value="{{ $parentOpt->id }}">🏢 {{ $parentOpt->company_name }}</option>
+                         @endforeach
+                      </select>
+                      <small class="text-muted d-block mt-1">Pilih bengkel induk jika perusahaan ini adalah pelanggan/klien.</small>
+                   </div>
+                   @endif
                   <div class="mb-3">
                      <label class="form-label fw-bold">Nama Instansi/Perusahaan <span class="text-danger">*</span></label>
                      <input type="text" name="company_name" class="form-control" required
@@ -174,6 +200,17 @@
                @csrf
                @method('PUT')
                <div class="modal-body">
+                   @if(\App\Helpers\SessionCompanyHelper::isSuperAdmin())
+                   <div class="mb-3">
+                      <label class="form-label fw-bold">Induk Perusahaan / Bengkel <small class="text-muted">(Opsional)</small></label>
+                      <select name="parent_company_id" id="edit_parent_company_id" class="form-select">
+                         <option value="">— Tidak Ada (Perusahaan Mandiri) —</option>
+                         @foreach(\App\Models\TyreCompany::orderBy('company_name')->get() as $parentOpt)
+                            <option value="{{ $parentOpt->id }}">🏢 {{ $parentOpt->company_name }}</option>
+                         @endforeach
+                      </select>
+                   </div>
+                   @endif
                   <div class="mb-3">
                      <label class="form-label fw-bold">Nama Instansi/Perusahaan</label>
                      <input type="text" name="company_name" id="edit_company_name" class="form-control" required>
@@ -259,7 +296,12 @@
                    $('#edit_measurement_mode').val('KM');
                }
                
-               $('#editCompanyForm').attr('action', baseUrl + '/' + id);
+               // Set parent company dropdown
+                if ($('#edit_parent_company_id').length) {
+                    $('#edit_parent_company_id').val(data.parent_company_id || '');
+                }
+                
+                $('#editCompanyForm').attr('action', baseUrl + '/' + id);
 
                $('#editCompanyModal').modal('show');
                btn.prop('disabled', false);

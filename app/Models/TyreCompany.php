@@ -46,5 +46,29 @@ class TyreCompany extends Model
     {
         return $this->hasMany(Tyre::class, 'tyre_company_id');
     }
+
+    /**
+     * Parent company if this company is a client managed by another company (e.g. Workshop)
+     */
+    public function parent()
+    {
+        return $this->belongsTo(TyreCompany::class, 'parent_company_id');
+    }
+
+    /**
+     * Child companies managed by this company (e.g. Clients of a Workshop)
+     */
+    public function children()
+    {
+        return $this->hasMany(TyreCompany::class, 'parent_company_id');
+    }
+
+    /**
+     * Helper to get all child company IDs for Global Agency View
+     */
+    public function getAllClientIds()
+    {
+        return $this->children()->pluck('id')->toArray();
+    }
 }
 

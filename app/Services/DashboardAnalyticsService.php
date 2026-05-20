@@ -13,11 +13,13 @@ class DashboardAnalyticsService
     public static function getCompanyContext(): array
     {
         $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 1);
-        if ($isInternal && session()->has('active_company_id')) {
-            $companyId = session('active_company_id');
+        $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId() ?? ($user->tyre_company_id ?? 0);
+
+        // Global Klien (array): use the user's own company for context settings
+        if (is_array($companyId)) {
+            $companyId = $user->tyre_company_id ?? 0;
         }
+
         $company = TyreCompany::find($companyId);
         $mode = optional($company)->measurement_mode ?? 'BOTH';
 

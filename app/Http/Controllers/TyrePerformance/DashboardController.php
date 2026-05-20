@@ -48,8 +48,10 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isInternal = ($user->role_id == 1 || $user->tyre_company_id == 1);
-        if ($isInternal && !session()->has('active_company_id')) {
+        if (
+            (\App\Helpers\SessionCompanyHelper::isSuperAdmin() && !session()->has('active_company_id')) ||
+            (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && is_array(session('active_company_id')))
+        ) {
             return $this->superAdminIndex($request);
         }
 
@@ -233,11 +235,8 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($item) {
                 $fc = $item->failureCode;
-                $user = auth()->user();
-                $companyId = $user->tyre_company_id ?? null;
-                if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
-                    $companyId = session('active_company_id');
-                }
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+                if (is_array($companyId)) $companyId = $companyId[0] ?? null;
                 
                 $displayName = $fc ? $fc->getDisplayNameByCompanyId($companyId) : 'Unknown';
                 return [
@@ -384,12 +383,8 @@ class DashboardController extends Controller
      */
     private function getFleetHealthData()
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-        $cacheKey = "fleet_health_comp_{$companyId}";
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; $cacheKey = "fleet_health_comp_{$cacheCompanyId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () {
             $installedTyres = Tyre::where('status', 'Installed')
@@ -449,15 +444,13 @@ class DashboardController extends Controller
      */
     private function getBrandPerformanceData($size = null, $type = null, $pattern = null, $brandId = null)
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-        $company = \App\Models\TyreCompany::find($companyId);
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        // Handle array for Global Agency View
+        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
+        $company = \App\Models\TyreCompany::find($firstCompanyId);
         $measurementMode = $company->measurement_mode ?? 'BOTH';
 
-        $cacheKey = "brand_perf_comp_{$companyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; $cacheKey = "brand_perf_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
             $query = Tyre::query();
@@ -551,15 +544,13 @@ class DashboardController extends Controller
 
     private function getCpkByBrandData($size = null, $type = null, $pattern = null, $brandId = null)
     {
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-        $company = \App\Models\TyreCompany::find($companyId);
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        // Handle array for Global Agency View
+        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
+        $company = \App\Models\TyreCompany::find($firstCompanyId);
         $measurementMode = $company->measurement_mode ?? 'BOTH';
         
-        $cacheKey = "cpk_brand_comp_{$companyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; $cacheKey = "cpk_brand_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
             $query = Tyre::whereNotNull('price')
@@ -691,12 +682,10 @@ class DashboardController extends Controller
 
         $baseQuery = Tyre::query();
 
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id')) {
-            $companyId = session('active_company_id');
-        }
-        $company = \App\Models\TyreCompany::find($companyId);
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        // Handle array for Global Agency View
+        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
+        $company = \App\Models\TyreCompany::find($firstCompanyId);
         $measurementMode = optional($company)->measurement_mode ?? 'BOTH';
 
         if ($chartType === 'cpk') {
@@ -759,11 +748,9 @@ class DashboardController extends Controller
         $brandId = $request->input('brand_id');
         if (!$brandId) return response()->json(['success' => false]);
 
-        $user = auth()->user();
-        $companyId = $user->tyre_company_id ?? 0;
-        if (($user->role_id == 1 || $user->tyre_company_id == 1) && session()->has('active_company_id'))
-            $companyId = session('active_company_id');
-        $company = \App\Models\TyreCompany::find($companyId);
+                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();// Handle array for Global Agency View
+        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
+        $company = \App\Models\TyreCompany::find($firstCompanyId);
         $mode = $company->measurement_mode ?? 'BOTH';
 
         $query = Tyre::where('tyre_brand_id', $brandId)->with(['pattern', 'size', 'location']);
@@ -1633,8 +1620,15 @@ class DashboardController extends Controller
 
     private function superAdminIndex(Request $request)
     {
-        // Get all active companies
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->get();
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $parent_id = auth()->user()->tyre_company_id;
+            $companies = \App\Models\TyreCompany::where('status', 'Active')
+                ->where(function($q) use ($parent_id) {
+                    $q->where('id', $parent_id)->orWhere('parent_company_id', $parent_id);
+                })->get();
+        } else {
+            $companies = \App\Models\TyreCompany::where('status', 'Active')->get();
+        }
 
         $companyStats = [];
         $totalSystemTyres = 0;
@@ -1675,13 +1669,18 @@ class DashboardController extends Controller
         }
 
         // --- Fetch Unassigned / Global Data (Super Admin) ---
-        $globalVehiclesCount = MasterImportKendaraan::withoutGlobalScope('company')
-            ->whereNull('tyre_company_id')
-            ->count();
+        if (\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $globalVehiclesCount = MasterImportKendaraan::withoutGlobalScope('company')
+                ->whereNull('tyre_company_id')
+                ->count();
 
-        $globalTyres = Tyre::withoutGlobalScope('company')
-            ->whereNull('tyre_company_id')
-            ->get();
+            $globalTyres = Tyre::withoutGlobalScope('company')
+                ->whereNull('tyre_company_id')
+                ->get();
+        } else {
+            $globalVehiclesCount = 0;
+            $globalTyres = collect();
+        }
 
         if ($globalVehiclesCount > 0 || $globalTyres->count() > 0) {
             $totalTyres = $globalTyres->count();

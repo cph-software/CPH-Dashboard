@@ -186,10 +186,17 @@
                     </div>
                 </div>
                 <div class="card-footer border-top bg-transparent py-2">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <small class="text-muted">Asset Value</small>
                         <span class="fw-semibold text-dark">Rp {{ number_format($stat['investment'], 0, ',', '.') }}</span>
                     </div>
+                    @if($stat['company']->id != 0)
+                    <div class="d-grid mt-2">
+                        <button class="btn btn-sm btn-primary btn-masuk-dashboard" data-id="{{ $stat['company']->id }}">
+                            <i class="icon-base ri-dashboard-line me-1"></i> Masuk Dashboard
+                        </button>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -313,6 +320,40 @@
                 error: function() {
                     $('#modalLoading').html('<p class="text-danger"><i class="icon-base ri-error-warning-line mb-2 fs-3 d-block"></i>Failed to fetch data.</p>');
                 }
+            });
+        });
+
+        $('.btn-masuk-dashboard').on('click', function(e) {
+            e.preventDefault();
+            let companyId = $(this).data('id');
+            let btn = $(this);
+            let originalText = btn.html();
+            btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading...');
+            btn.prop('disabled', true);
+
+            fetch("{{ route('tyre-movement.set-active-company') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({ tyre_company_id: companyId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    window.location.href = "{{ route('master_data.dashboard') }}";
+                } else {
+                    btn.html(originalText);
+                    btn.prop('disabled', false);
+                    alert('Gagal berganti perusahaan.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btn.html(originalText);
+                btn.prop('disabled', false);
+                alert('Terjadi kesalahan sistem.');
             });
         });
 

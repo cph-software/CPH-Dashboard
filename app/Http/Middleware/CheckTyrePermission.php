@@ -43,6 +43,11 @@ class CheckTyrePermission
             return $next($request);
         }
 
+        // 1b. Workshop Admin bypass for Companies menu
+        if ($menuName === 'Companies' && \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            return $next($request);
+        }
+
         // 2. Cek apakah user punya akses ke menu ini sama sekali
         if (!$user->hasPermission($menuName)) {
             abort(403, 'Anda tidak memiliki akses ke menu ini.');

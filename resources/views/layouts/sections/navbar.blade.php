@@ -17,25 +17,50 @@
       </div>
       <!-- /Search -->
 
-      @if (Auth::user() && Auth::user()->role_id == 1)
+      @if (\App\Helpers\SessionCompanyHelper::isSuperAdmin() || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
          @php
-            $activeCompanies = \App\Models\TyreCompany::orderBy('company_name', 'asc')->get();
+            $isSuperAdmin = \App\Helpers\SessionCompanyHelper::isSuperAdmin();
             $currentActiveCompany = session('active_company_id');
+            $isGlobalClient = is_array($currentActiveCompany);
+            if ($isSuperAdmin) {
+                $activeCompanies = \App\Models\TyreCompany::orderBy('company_name', 'asc')->get();
+                $globalLabel = "🏢 All Companies (Sistem)";
+                $globalValue = '0';
+                $isGlobalSelected = !$currentActiveCompany;
+            } else {
+                $userCompany = Auth::user()->tyreCompany;
+                $activeCompanies = $userCompany->children()->orderBy('company_name', 'asc')->get();
+                $activeCompanies->prepend($userCompany); // Add own company at top
+                $globalLabel = "🌐 Global Klien (Agregat)";
+                $globalValue = 'ALL_CLIENTS';
+                $isGlobalSelected = $isGlobalClient || !$currentActiveCompany;
+            }
          @endphp
          <div class="navbar-nav align-items-center ms-4">
             <div class="nav-item">
                <select class="form-select border-0 shadow-none bg-transparent fw-bold text-primary"
                   id="admin_company_filter" style="cursor: pointer;">
-                  <option value="0" {{ !$currentActiveCompany ? 'selected' : '' }}>🏢 All Companies (Global View)
+                  <option value="{{ $globalValue }}" {{ $isGlobalSelected ? 'selected' : '' }}>
+                     {{ $globalLabel }}
                   </option>
                   @foreach ($activeCompanies as $comp)
-                     <option value="{{ $comp->id }}" {{ $currentActiveCompany == $comp->id ? 'selected' : '' }}>
-                        🏢 {{ $comp->company_name }}
+                     @php
+                        $isSelected = !$isGlobalClient && $currentActiveCompany == $comp->id;
+                        $labelSuffix = (!$isSuperAdmin && $comp->id == Auth::user()->tyre_company_id) ? '(Bengkel Anda)' : '';
+                     @endphp
+                     <option value="{{ $comp->id }}" {{ $isSelected ? 'selected' : '' }}>
+                        🏢 {{ $comp->company_name }} {{ $labelSuffix }}
                      </option>
                   @endforeach
                </select>
             </div>
          </div>
+         
+         @if(!$isSuperAdmin && !$isGlobalClient && $currentActiveCompany && $currentActiveCompany != Auth::user()->tyre_company_id)
+            <span class="badge bg-label-warning fw-bold ms-2 px-3 py-2" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                <i class="ri-eye-line me-1"></i> Melihat Data: {{ \App\Models\TyreCompany::find($currentActiveCompany)->company_name ?? 'Klien' }}
+            </span>
+         @endif
 
          <script>
             document.addEventListener('DOMContentLoaded', function() {

@@ -12,22 +12,15 @@ trait BelongsToCompany
         // 1. GLOBAL SCOPE: Filtering data
         static::addGlobalScope('company', function (Builder $builder) {
             if (Auth::check()) {
-                $user = Auth::user();
-                
-                // Pengecualian untuk Superadmin atau Internal Staff (CPH)
-                // Role 1 = Administrator
-                // Company ID 4 = Catur Putra Bahagia (CPH)
-                $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 1);
+                $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
                 $table = $builder->getModel()->getTable();
 
-                if ($isInternal) {
-                    // Admin can see everything, unless a specific company filter is set in session
-                    if (session()->has('active_company_id')) {
-                        $builder->where($table . '.tyre_company_id', session('active_company_id'));
+                if ($activeCompanyId !== null) {
+                    if (is_array($activeCompanyId)) {
+                        $builder->whereIn($table . '.tyre_company_id', $activeCompanyId);
+                    } else {
+                        $builder->where($table . '.tyre_company_id', $activeCompanyId);
                     }
-                } else if ($user->tyre_company_id) {
-                    // Regular user: Sees only their company data (Strict Isolation)
-                    $builder->where($table . '.tyre_company_id', $user->tyre_company_id);
                 }
             }
         });
@@ -40,8 +33,19 @@ trait BelongsToCompany
                 // Isi company_id otomatis jika belum diisi manual
                 if (!$model->tyre_company_id) {
                     $isInternal = ($user->role_id == 1) || ($user->tyre_company_id == 1);
+                    $isWorkshopAdmin = \App\Helpers\SessionCompanyHelper::isWorkshopAdmin();
+
                     if ($isInternal && session()->has('active_company_id')) {
-                        $model->tyre_company_id = session('active_company_id');
+                        $sessionVal = session('active_company_id');
+                        $model->tyre_company_id = is_array($sessionVal) ? $user->tyre_company_id : $sessionVal;
+                    } elseif ($isWorkshopAdmin && session()->has('active_company_id')) {
+                        $sessionCompany = session('active_company_id');
+                        // Jika mode Global Klien (array), data masuk ke perusahaan induk
+                        if (is_array($sessionCompany)) {
+                            $model->tyre_company_id = $user->tyre_company_id;
+                        } else {
+                            $model->tyre_company_id = $sessionCompany;
+                        }
                     } else {
                         $model->tyre_company_id = $user->tyre_company_id;
                     }

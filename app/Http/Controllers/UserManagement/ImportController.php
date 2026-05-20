@@ -45,16 +45,23 @@ class ImportController extends Controller
 
         $companyId = auth()->user()->tyre_company_id;
         
-        // Strict Validation for Super Admin: Require active company for company-scoped data
-        if (auth()->user()->role_id == 1 || auth()->user()->tyre_company_id == 1) {
-            $activeCompanyId = $request->input('target_company_id') ?: session('active_company_id');
+        // Strict Validation for Super Admin / Workshop Admin: Require active company for company-scoped data
+        if (\App\Helpers\SessionCompanyHelper::isSuperAdmin() || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            $activeCompanyId = $request->input('target_company_id') ?: \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            // If array (Global Klien), resolve to first for write operations
+            if (is_array($activeCompanyId)) $activeCompanyId = null;
+            
             $companyScopedModules = ['Tyre Master', 'Master Tyre', 'Vehicle Master', 'Master Vehicle', 'Movement History', 'Tyre Examination'];
             
             if (empty($activeCompanyId) && in_array($module, $companyScopedModules)) {
-                return redirect()->back()->with('error', "Validasi Super Admin: Modul '{$module}' mewajibkan Anda untuk memilih Perusahaan (Company) yang spesifik di form modal sebelum melakukan Import. Data ini tidak dapat diimpor pada mode Global untuk mencegah konflik data antar perusahaan.");
+                return redirect()->back()->with('error', "Validasi: Modul '{$module}' mewajibkan Anda untuk memilih Perusahaan (Company) yang spesifik di form modal sebelum melakukan Import. Data ini tidak dapat diimpor pada mode Global untuk mencegah konflik data antar perusahaan.");
             }
             
             if (!empty($activeCompanyId)) {
+                // Validate that Workshop Admin can only import to their own clients
+                if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin() && !\App\Helpers\SessionCompanyHelper::isValidClient($activeCompanyId)) {
+                    return redirect()->back()->with('error', 'Akses Ditolak: Anda tidak memiliki izin untuk import ke perusahaan ini.');
+                }
                 $companyId = $activeCompanyId;
             }
         }
