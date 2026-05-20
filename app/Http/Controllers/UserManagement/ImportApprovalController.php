@@ -843,7 +843,24 @@ class ImportApprovalController extends Controller
 
         $rtd = !empty($data['rtd']) ? (float)$data['rtd'] : null;
         $psi = !empty($data['psi']) ? (float)$data['psi'] : null;
-        $targetStatus = !empty($data['target_status']) ? ucfirst(strtolower($data['target_status'])) : 'Repaired';
+        $rawStatus = !empty($data['target_status']) ? strtoupper(trim($data['target_status'])) : '';
+        $targetStatus = 'Repaired';
+        if (in_array($rawStatus, ['SCRAP', 'AFKIR', 'DISPOSAL', 'BUANG', 'RUSAK'])) {
+            $targetStatus = 'Scrap';
+        } elseif (in_array($rawStatus, ['NEW', 'STOCK', 'BAGUS'])) {
+            $targetStatus = 'New';
+        } elseif (in_array($rawStatus, ['SPARE', 'REPAIR', 'REPAIRED', 'GUDANG', 'BISA DIPAKAI'])) {
+            $targetStatus = 'Repaired';
+        } elseif (in_array($rawStatus, ['RETREAD', 'VULKANISIR'])) {
+            $targetStatus = 'Retread';
+        } else {
+            if (!empty($rawStatus)) {
+                $statusFormatted = ucfirst(strtolower(trim($data['target_status'])));
+                if (in_array($statusFormatted, ['Installed', 'New', 'Scrap', 'Repaired', 'Retread'])) {
+                    $targetStatus = $statusFormatted;
+                }
+            }
+        }
 
         $kmDiff = 0;
         $hmDiff = 0;
