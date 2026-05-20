@@ -253,6 +253,15 @@ class ImportController extends Controller
                 'legacy_meta' => $legacyMeta,
             ]);
 
+            // ==========================================================
+            // FIX GHOST DATA: Hapus data yatim piatu (orphaned data)
+            // Jika auto-increment import_batches pernah di-reset/dihapus 
+            // namun tabel import_items tidak ikut dihapus, batch_id baru 
+            // akan menabrak batch_id lama yang masih ada datanya.
+            // Kita bersihkan dulu import_items untuk batch_id ini.
+            // ==========================================================
+            \App\Models\ImportItem::where('batch_id', $batch->id)->delete();
+
             $imported = 0;
             $invalidCount = 0;
             $insertData = [];
