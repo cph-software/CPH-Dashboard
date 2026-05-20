@@ -53,6 +53,11 @@ class SessionCompanyHelper
                 if (self::isValidClient($sessionCompanyId)) {
                     return $sessionCompanyId;
                 }
+            } else {
+                // Default mode for Workshop Admin: Global Klien (Array of all clients + own)
+                $clientIds = $user->tyreCompany->getAllClientIds();
+                $clientIds[] = $userCompanyId;
+                return $clientIds;
             }
         }
 

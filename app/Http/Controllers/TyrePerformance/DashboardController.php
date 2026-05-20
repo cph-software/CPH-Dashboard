@@ -48,9 +48,13 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        $isSuperAdmin = \App\Helpers\SessionCompanyHelper::isSuperAdmin();
+        $isWorkshopAdmin = \App\Helpers\SessionCompanyHelper::isWorkshopAdmin();
+        $sessionCompany = session('active_company_id');
+
         if (
-            (\App\Helpers\SessionCompanyHelper::isSuperAdmin() && !session()->has('active_company_id')) ||
-            (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && is_array(session('active_company_id')))
+            ($isSuperAdmin && !$sessionCompany) ||
+            ($isWorkshopAdmin && (!$sessionCompany || is_array($sessionCompany)))
         ) {
             return $this->superAdminIndex($request);
         }
