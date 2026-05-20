@@ -715,12 +715,12 @@ class ImportController extends Controller
 
         // Validasi format kolom berdasarkan modul
         $requiredHeaders = [
-            'Tyre Master' => ['serial_number', 'brand_name'],
-            'Master Tyre' => ['serial_number', 'brand_name'],
+            'Tyre Master' => ['serial_number', ['brand_name', 'brand']],
+            'Master Tyre' => ['serial_number', ['brand_name', 'brand']],
             'Vehicle Master' => ['kode_kendaraan'],
             'Master Vehicle' => ['kode_kendaraan'],
-            'Tyre Brand' => ['brand_name'],
-            'Tyre Size' => ['size', 'brand_name'],
+            'Tyre Brand' => [['brand_name', 'brand']],
+            'Tyre Size' => ['size', ['brand_name', 'brand']],
             'Tyre Pattern' => ['pattern_name', 'brand'],
             'Failure Codes' => ['failure_code'],
             'Locations' => ['location_name'],
@@ -731,8 +731,22 @@ class ImportController extends Controller
         if (isset($requiredHeaders[$module])) {
             $missingHeaders = [];
             foreach ($requiredHeaders[$module] as $req) {
-                if (!in_array($req, $header)) {
-                    $missingHeaders[] = $req;
+                if (is_array($req)) {
+                    // One of the headers in the array must exist
+                    $found = false;
+                    foreach ($req as $alt) {
+                        if (in_array($alt, $header)) {
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $missingHeaders[] = implode(' atau ', $req);
+                    }
+                } else {
+                    if (!in_array($req, $header)) {
+                        $missingHeaders[] = $req;
+                    }
                 }
             }
 
