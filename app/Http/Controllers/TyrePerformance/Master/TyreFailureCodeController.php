@@ -10,7 +10,21 @@ class TyreFailureCodeController extends Controller
 {
     public function index()
     {
-        $failureCodes = TyreFailureCode::with('aliases.company')->latest()->get();
+        $query = TyreFailureCode::query();
+        if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $query->where(function ($q) use ($activeCompanyId) {
+                $q->whereNull('tyre_company_id');
+                if ($activeCompanyId) {
+                    if (is_array($activeCompanyId)) {
+                        $q->orWhereIn('tyre_company_id', $activeCompanyId);
+                    } else {
+                        $q->orWhere('tyre_company_id', $activeCompanyId);
+                    }
+                }
+            });
+        }
+        $failureCodes = $query->with('aliases.company')->latest()->get();
         $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
         return view('tyre-performance.master.failure-codes.index', compact('failureCodes', 'companies'));
     }
@@ -35,6 +49,15 @@ class TyreFailureCodeController extends Controller
         ]);
 
         $data = $request->except(['image_1', 'image_2']);
+
+        if (!isset($data['tyre_company_id'])) {
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            if ($activeCompanyId && !is_array($activeCompanyId)) {
+                $data['tyre_company_id'] = $activeCompanyId;
+            } else {
+                $data['tyre_company_id'] = auth()->user()->tyre_company_id;
+            }
+        }
 
         if ($request->hasFile('image_1')) {
             $data['image_1'] = $request->file('image_1')->store('tyre-failures', 'public');

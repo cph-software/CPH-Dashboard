@@ -237,7 +237,7 @@
                               <select id="c_failure_code_id" class="form-select select2">
                                  <option value="">-- Opsional --</option>
                                  @foreach($failureCodes as $fc)
-                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->failure_name }}</option>
+                                 <option value="{{ $fc->id }}">{{ $fc->failure_code }} - {{ $fc->getDisplayNameByCompanyId(auth()->user()->tyre_company_id) }}</option>
                                  @endforeach
                               </select>
                            </div>

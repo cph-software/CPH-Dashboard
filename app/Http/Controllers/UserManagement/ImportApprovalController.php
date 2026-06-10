@@ -227,11 +227,19 @@ class ImportApprovalController extends Controller
         $code = $data['failure_code'] ?? null;
         if (!$code) throw new \Exception("Failure Code kosong");
 
+        $category = ucfirst(strtolower($data['default_category'] ?? 'Repair'));
+        if (!in_array($category, ['Scrap', 'Repair', 'Claim'])) {
+            $category = 'Repair';
+        }
+
         \App\Models\TyreFailureCode::updateOrCreate(
-            ['failure_code' => $code],
+            [
+                'failure_code' => $code,
+                'tyre_company_id' => $uploaderCompanyId
+            ],
             [
                 'failure_name' => $data['failure_name'] ?? 'Unknown',
-                'default_category' => $data['default_category'] ?? 'Other'
+                'default_category' => $category
             ]
         );
     }
@@ -669,9 +677,37 @@ class ImportApprovalController extends Controller
         $failCodeId = null;
         $failCodeStr = $data['penyebab'] ?? $data['failure_code'] ?? null;
         if (!empty($failCodeStr)) {
-            $failCode = \App\Models\TyreFailureCode::where('failure_code', strtoupper(trim($failCodeStr)))
-                ->orWhere('failure_name', 'LIKE', '%' . trim($failCodeStr) . '%')
+            $failCode = \App\Models\TyreFailureCode::where(function ($q) use ($companyId) {
+                    $q->whereNull('tyre_company_id')
+                      ->orWhere('tyre_company_id', $companyId);
+                })
+                ->where(function ($q) use ($failCodeStr) {
+                    $q->where('failure_code', strtoupper(trim($failCodeStr)))
+                      ->orWhere('failure_name', 'LIKE', '%' . trim($failCodeStr) . '%');
+                })
                 ->first();
+                
+            if (!$failCode && $companyId) {
+                $cleanCode = strtoupper(substr(str_replace(' ', '', $failCodeStr), 0, 10));
+                if (empty($cleanCode)) {
+                    $cleanCode = 'FAIL';
+                }
+                
+                $exists = \App\Models\TyreFailureCode::where('failure_code', $cleanCode)
+                    ->where('tyre_company_id', $companyId)
+                    ->first();
+                if ($exists) {
+                    $failCode = $exists;
+                } else {
+                    $failCode = \App\Models\TyreFailureCode::create([
+                        'failure_code' => $cleanCode,
+                        'failure_name' => $failCodeStr,
+                        'default_category' => 'Repair',
+                        'tyre_company_id' => $companyId,
+                        'status' => 'Active'
+                    ]);
+                }
+            }
             $failCodeId = $failCode ? $failCode->id : null;
         }
 
@@ -933,10 +969,40 @@ class ImportApprovalController extends Controller
         $this->tyreCache[strtoupper($tyre->serial_number)] = $tyre;
 
         // Find Failure Code
-        $failCodeStr = $data['failure_code'] ?? null;
+        $failCodeStr = $data['failure_code'] ?? $data['penyebab'] ?? null;
         $failCodeId = null;
         if (!empty($failCodeStr)) {
-            $failCode = \App\Models\TyreFailureCode::where('failure_code', $failCodeStr)->first();
+            $failCode = \App\Models\TyreFailureCode::where(function ($q) use ($uploaderCompanyId) {
+                    $q->whereNull('tyre_company_id')
+                      ->orWhere('tyre_company_id', $uploaderCompanyId);
+                })
+                ->where(function ($q) use ($failCodeStr) {
+                    $q->where('failure_code', strtoupper(trim($failCodeStr)))
+                      ->orWhere('failure_name', 'LIKE', '%' . trim($failCodeStr) . '%');
+                })
+                ->first();
+                
+            if (!$failCode && $uploaderCompanyId) {
+                $cleanCode = strtoupper(substr(str_replace(' ', '', $failCodeStr), 0, 10));
+                if (empty($cleanCode)) {
+                    $cleanCode = 'FAIL';
+                }
+                
+                $exists = \App\Models\TyreFailureCode::where('failure_code', $cleanCode)
+                    ->where('tyre_company_id', $uploaderCompanyId)
+                    ->first();
+                if ($exists) {
+                    $failCode = $exists;
+                } else {
+                    $failCode = \App\Models\TyreFailureCode::create([
+                        'failure_code' => $cleanCode,
+                        'failure_name' => $failCodeStr,
+                        'default_category' => 'Repair',
+                        'tyre_company_id' => $uploaderCompanyId,
+                        'status' => 'Active'
+                    ]);
+                }
+            }
             $failCodeId = $failCode ? $failCode->id : null;
         }
 
@@ -966,7 +1032,7 @@ class ImportApprovalController extends Controller
             'running_hm' => $hmDiff,
             'failure_code_id' => $failCodeId,
             'target_status' => ($type === 'Removal') ? $targetStatus : null,
-            'remarks' => $data['remark'] ?? $data['notes'] ?? null,
+            'remarks' => $data['penyebab'] ?? $data['remark'] ?? $data['notes'] ?? null,
             'created_by' => auth()->id(),
             'import_batch_id' => $batchId,
         ]);

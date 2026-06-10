@@ -1509,7 +1509,21 @@ class DashboardController extends Controller
         } elseif ($type === 'failure_codes') {
             $headers = ['Failure Code', 'Failure Name', 'Category'];
             
-            $failureCodes = \App\Models\TyreFailureCode::orderBy('failure_code')->get();
+            $query = \App\Models\TyreFailureCode::query();
+            if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+                $query->where(function ($q) use ($activeCompanyId) {
+                    $q->whereNull('tyre_company_id');
+                    if ($activeCompanyId) {
+                        if (is_array($activeCompanyId)) {
+                            $q->orWhereIn('tyre_company_id', $activeCompanyId);
+                        } else {
+                            $q->orWhere('tyre_company_id', $activeCompanyId);
+                        }
+                    }
+                });
+            }
+            $failureCodes = $query->orderBy('failure_code')->get();
 
             foreach ($failureCodes as $row) {
                 $data[] = [

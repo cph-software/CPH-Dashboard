@@ -222,7 +222,20 @@ class TyreMovementController extends Controller
             }]);
             
         $kendaraans = $this->applyCompanyScope($query)->get();
-        $failureCodes = TyreFailureCode::where('status', 'Active')->get();
+
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $failureCodes = TyreFailureCode::where('status', 'Active')
+            ->where(function ($query) use ($activeCompanyId) {
+                $query->whereNull('tyre_company_id');
+                if ($activeCompanyId) {
+                    if (is_array($activeCompanyId)) {
+                        $query->orWhereIn('tyre_company_id', $activeCompanyId);
+                    } else {
+                        $query->orWhere('tyre_company_id', $activeCompanyId);
+                    }
+                }
+            })
+            ->get();
         
         $dropdownData = $this->getLocationsAndSegments();
         $locations = $dropdownData['locations'];
