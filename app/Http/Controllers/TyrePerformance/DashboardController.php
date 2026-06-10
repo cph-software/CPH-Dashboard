@@ -1734,11 +1734,27 @@ class DashboardController extends Controller
                 ->whereNull('tyre_company_id')
                 ->with(['brand', 'size', 'pattern'])
                 ->get();
+                
+            $vehicles = MasterImportKendaraan::withoutGlobalScope('company')
+                ->whereNull('tyre_company_id')
+                ->with(['segment', 'tyres' => function($q) {
+                    $q->withoutGlobalScope('company')
+                      ->whereNotNull('current_position_id')
+                      ->with(['brand', 'currentPosition']);
+                }])->get();
         } else {
             $tyres = Tyre::withoutGlobalScope('company')
                 ->where('tyre_company_id', $companyId)
                 ->with(['brand', 'size', 'pattern'])
                 ->get();
+                
+            $vehicles = MasterImportKendaraan::withoutGlobalScope('company')
+                ->where('tyre_company_id', $companyId)
+                ->with(['segment', 'tyres' => function($q) {
+                    $q->withoutGlobalScope('company')
+                      ->whereNotNull('current_position_id')
+                      ->with(['brand', 'currentPosition']);
+                }])->get();
         }
 
         // Aggregate by Brand
@@ -1768,10 +1784,31 @@ class DashboardController extends Controller
             ];
         })->sortByDesc('count')->values();
 
+        // Map vehicles list to be clean and premium
+        $mappedVehicles = $vehicles->map(function ($vehicle) {
+            return [
+                'id' => $vehicle->id,
+                'kode_kendaraan' => $vehicle->kode_kendaraan,
+                'no_polisi' => $vehicle->no_polisi,
+                'model_kendaraan' => $vehicle->model_kendaraan ?: '-',
+                'segment_name' => $vehicle->segment ? $vehicle->segment->segment_name : ($vehicle->segment_name ?: '-'),
+                'tyres' => $vehicle->tyres->map(function ($tyre) {
+                    return [
+                        'serial_number' => $tyre->serial_number,
+                        'brand_name' => $tyre->brand ? $tyre->brand->brand_name : 'Unknown',
+                        'position_code' => $tyre->currentPosition ? $tyre->currentPosition->position_code : '-',
+                        'current_rtd' => $tyre->current_tread_depth !== null ? $tyre->current_tread_depth : '-',
+                        'initial_rtd' => $tyre->initial_tread_depth !== null ? $tyre->initial_tread_depth : '-',
+                    ];
+                })
+            ];
+        });
+
         return response()->json([
             'by_brand' => $byBrand,
             'by_size' => $bySize,
             'by_pattern' => $byPattern,
+            'vehicles' => $mappedVehicles,
             'total' => $tyres->count()
         ]);
     }

@@ -262,7 +262,19 @@ class DashboardKpiController extends Controller
         })->sortBy('sort_val');
 
         $totalInv = $tyres->sum('price');
-        $avgCpk = $tyres->avg('cpk_val') ?? 0;
+        
+        // Compute correct average cost per unit based on mode
+        if ($mode === 'HM') {
+            $avgCpVal = $tyres->avg('cph_val') ?? 0;
+        } elseif ($mode === 'KM') {
+            $avgCpVal = $tyres->avg('cpk_val') ?? 0;
+        } else {
+            // BOTH: Use average of both
+            $avgCpkVal = $tyres->avg('cpk_val') ?? 0;
+            $avgCphVal = $tyres->avg('cph_val') ?? 0;
+            $avgCpVal = ($avgCpkVal > 0 && $avgCphVal > 0) ? ($avgCpkVal + $avgCphVal) / 2 : ($avgCpkVal ?: $avgCphVal);
+        }
+
         $best = $tyres->first();
         $worst = $tyres->last();
 
@@ -277,26 +289,32 @@ class DashboardKpiController extends Controller
                 'price' => 'Rp '.number_format($t->price, 0, ',', '.'),
             ];
             $row = array_merge($row, DAS::lifetimeData($t, $mode));
-            $row['cpk'] = 'Rp '.number_format($t->cpk_val, 0, ',', '.');
-            if ($mode === 'BOTH') $row['cph'] = 'Rp '.number_format($t->cph_val ?? 0, 0, ',', '.');
+            if ($mode === 'HM') {
+                $row['cph'] = 'Rp '.number_format($t->cph_val, 0, ',', '.');
+            } elseif ($mode === 'KM') {
+                $row['cpk'] = 'Rp '.number_format($t->cpk_val, 0, ',', '.');
+            } else {
+                $row['cpk'] = 'Rp '.number_format($t->cpk_val, 0, ',', '.');
+                $row['cph'] = 'Rp '.number_format($t->cph_val ?? 0, 0, ',', '.');
+            }
             $row['status'] = $t->status;
             return $row;
         });
 
         $cpCols = $mode === 'BOTH' ? ['CPK','CPH'] : [$cpLabel];
-        $cpKeys = $mode === 'BOTH' ? ['cpk','cph'] : ['cpk'];
+        $cpKeys = $mode === 'BOTH' ? ['cpk','cph'] : ($mode === 'HM' ? ['cph'] : ['cpk']);
 
         return response()->json([
             'success' => true, 'title' => 'Detail ' . $cpLabel,
             'summary' => [
-                ['label' => 'Avg '.$cpLabel, 'value' => 'Rp '.number_format($avgCpk, 0, ',', '.'), 'color' => 'secondary'],
+                ['label' => 'Avg '.$cpLabel, 'value' => 'Rp '.number_format($avgCpVal, 0, ',', '.'), 'color' => 'secondary'],
                 ['label' => 'Total Investasi', 'value' => 'Rp '.number_format($totalInv, 0, ',', '.'), 'color' => 'primary'],
                 ['label' => 'Paling Efisien', 'value' => $best ? $best->serial_number : '-', 'color' => 'success'],
                 ['label' => 'Paling Mahal', 'value' => $worst ? $worst->serial_number : '-', 'color' => 'danger'],
             ],
             'charts' => [
                 ['type' => 'bar', 'title' => $cpLabel.' per Brand', 'labels' => $byBrand->pluck('label'), 'series' => $byBrand->pluck('value')],
-                ['type' => 'bar', 'title' => 'Top 10 Paling Efisien', 'labels' => $tyres->take(10)->pluck('serial_number'), 'series' => $tyres->take(10)->pluck('cpk_val')],
+                ['type' => 'bar', 'title' => 'Top 10 Paling Efisien', 'labels' => $tyres->take(10)->pluck('serial_number'), 'series' => $tyres->take(10)->map(fn($t) => round($t->sort_val, 2))->values()],
             ],
             'columns' => array_merge(['Serial','Brand','Size','Pattern','Harga'], $ltCols, $cpCols, ['Status']),
             'keys' => array_merge(['serial_number','brand','size','pattern','price'], $ltKeys, $cpKeys, ['status']),

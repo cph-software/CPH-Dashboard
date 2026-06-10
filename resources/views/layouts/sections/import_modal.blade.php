@@ -63,12 +63,20 @@
                         format kolom sesuai panduan.</div>
                   </div>
 
-                  @if(auth()->user()->role_id == 1 || auth()->user()->tyre_company_id == 1)
+                  @if(\App\Helpers\SessionCompanyHelper::isSuperAdmin() || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
                   <div class="mb-3" id="companySelectContainer" style="display: none;">
-                     <label class="form-label fw-bold text-danger">3. Pilih Perusahaan Tujuan (Khusus Super Admin)</label>
+                     <label class="form-label fw-bold text-danger">3. Pilih Perusahaan Tujuan</label>
                      <select name="target_company_id" id="targetCompanySelect" class="form-select">
                         <option value="" selected>-- Gunakan Global / Default --</option>
-                        @foreach(\App\Models\TyreCompany::all() as $company)
+                        @php
+                           if (\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                              $companies = \App\Models\TyreCompany::all();
+                           } else {
+                              $userCompany = auth()->user()->tyreCompany;
+                              $companies = $userCompany ? collect([$userCompany])->concat($userCompany->children) : collect();
+                           }
+                        @endphp
+                        @foreach($companies as $company)
                            <option value="{{ $company->id }}">{{ $company->company_name }}</option>
                         @endforeach
                      </select>

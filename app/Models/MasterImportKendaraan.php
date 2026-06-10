@@ -18,6 +18,31 @@ class MasterImportKendaraan extends Model
         'permanent_deleted_at' => 'datetime',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function ($vehicle) {
+            // Automatically create or update corresponding TyreMonitoringVehicle
+            \App\Models\TyreMonitoringVehicle::updateOrCreate(
+                ['master_vehicle_id' => $vehicle->id],
+                [
+                    'fleet_name' => $vehicle->kode_kendaraan,
+                    'vehicle_number' => $vehicle->no_polisi ?: '-',
+                    'driver_name' => 'Driver', // fallback default
+                    'tire_positions' => $vehicle->total_tyre_position ?: 6,
+                    'is_trail' => stripos($vehicle->model_kendaraan ?? '', 'trailer') !== false || stripos($vehicle->model_kendaraan ?? '', 'gandengan') !== false,
+                    'status' => $vehicle->tyre_unit_status === 'Active' ? 'active' : 'inactive',
+                    'tyre_company_id' => $vehicle->tyre_company_id ?? 1
+                ]
+            );
+        });
+
+        static::deleted(function ($vehicle) {
+            \App\Models\TyreMonitoringVehicle::where('master_vehicle_id', $vehicle->id)->delete();
+        });
+    }
+
     public function tyres()
     {
         return $this->hasMany(Tyre::class, 'current_vehicle_id');

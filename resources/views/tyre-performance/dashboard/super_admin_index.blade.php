@@ -206,7 +206,7 @@
 
 <!-- Modal for Drilldown Details -->
 <div class="modal fade" id="companyDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-lighter pb-3 border-bottom">
                 <div class="d-flex align-items-center">
@@ -217,7 +217,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold mb-0" id="modalCompanyName">Company Name</h5>
-                        <small class="text-muted">Tyre Asset Breakdown</small>
+                        <small class="text-muted">Breakdown Aset & Kendaraan Aktif</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -231,45 +231,91 @@
                 </div>
 
                 <div id="modalContent" class="d-none">
-                    <div class="row g-4">
-                        <!-- Brand Breakdown -->
-                        <div class="col-md-4">
-                            <div class="card shadow-none bg-lighter h-100 border">
-                                <div class="card-header pb-2">
-                                    <h6 class="mb-0"><i class="icon-base ri-price-tag-3-line text-primary me-2"></i>By Brand</h6>
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs nav-fill mb-4" id="companyDetailTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold" id="asset-analysis-tab" data-bs-toggle="tab" data-bs-target="#asset-analysis" type="button" role="tab" aria-controls="asset-analysis" aria-selected="true">
+                                <i class="ri-pie-chart-line me-1"></i> Analisis Aset
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold" id="vehicle-tyres-tab" data-bs-toggle="tab" data-bs-target="#vehicle-tyres" type="button" role="tab" aria-controls="vehicle-tyres" aria-selected="false">
+                                <i class="ri-truck-line me-1"></i> Daftar Kendaraan & Ban
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab panes -->
+                    <div class="tab-content p-0 border-0">
+                        <!-- Tab 1: Asset Analysis -->
+                        <div class="tab-pane fade show active" id="asset-analysis" role="tabpanel" aria-labelledby="asset-analysis-tab">
+                            <div class="row g-4">
+                                <!-- Brand Breakdown -->
+                                <div class="col-md-4">
+                                    <div class="card shadow-none bg-lighter h-100 border">
+                                        <div class="card-header pb-2">
+                                            <h6 class="mb-0 fw-bold"><i class="icon-base ri-price-tag-3-line text-primary me-2"></i>By Brand</h6>
+                                        </div>
+                                        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                                            <ul class="list-group list-group-flush" id="listBrand">
+                                                <!-- Rendered via JS -->
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush" id="listBrand">
-                                        <!-- Rendered via JS -->
-                                    </ul>
+
+                                <!-- Size Breakdown -->
+                                <div class="col-md-4">
+                                    <div class="card shadow-none bg-lighter h-100 border">
+                                        <div class="card-header pb-2">
+                                            <h6 class="mb-0 fw-bold"><i class="icon-base ri-ruler-line text-info me-2"></i>By Size</h6>
+                                        </div>
+                                        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                                            <ul class="list-group list-group-flush" id="listSize">
+                                                <!-- Rendered via JS -->
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pattern Breakdown -->
+                                <div class="col-md-4">
+                                    <div class="card shadow-none bg-lighter h-100 border">
+                                        <div class="card-header pb-2">
+                                            <h6 class="mb-0 fw-bold"><i class="icon-base ri-git-commit-line text-warning me-2"></i>By Pattern</h6>
+                                        </div>
+                                        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                                            <ul class="list-group list-group-flush" id="listPattern">
+                                                <!-- Rendered via JS -->
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Size Breakdown -->
-                        <div class="col-md-4">
-                            <div class="card shadow-none bg-lighter h-100 border">
-                                <div class="card-header pb-2">
-                                    <h6 class="mb-0"><i class="icon-base ri-ruler-line text-info me-2"></i>By Size</h6>
+                        <!-- Tab 2: Vehicle & Tyres List -->
+                        <div class="tab-pane fade" id="vehicle-tyres" role="tabpanel" aria-labelledby="vehicle-tyres-tab">
+                            <div class="card shadow-none border">
+                                <div class="card-header d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <h6 class="mb-0 fw-bold"><i class="ri-list-check me-2 text-primary"></i>Status Ban Unit Terpasang</h6>
+                                    <span class="badge bg-label-primary px-3 py-1 rounded" id="vehicleCountBadge">0 Unit</span>
                                 </div>
-                                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush" id="listSize">
-                                        <!-- Rendered via JS -->
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pattern Breakdown -->
-                        <div class="col-md-4">
-                            <div class="card shadow-none bg-lighter h-100 border">
-                                <div class="card-header pb-2">
-                                    <h6 class="mb-0"><i class="icon-base ri-git-commit-line text-warning me-2"></i>By Pattern</h6>
-                                </div>
-                                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush" id="listPattern">
-                                        <!-- Rendered via JS -->
-                                    </ul>
+                                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                                    <table class="table table-hover table-striped align-middle mb-0">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th class="py-2">No. Lambung</th>
+                                                <th class="py-2">No. Polisi</th>
+                                                <th class="py-2">Model/Jenis</th>
+                                                <th class="py-2">Segmen</th>
+                                                <th class="py-2" style="min-width: 250px;">Ban Terpasang & RTD</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vehicleTyresTableBody">
+                                            <!-- Rendered via JS -->
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -313,6 +359,16 @@
                     renderList('#listBrand', res.by_brand, res.total);
                     renderList('#listSize', res.by_size, res.total);
                     renderList('#listPattern', res.by_pattern, res.total);
+                    
+                    // Render Vehicle Tyres Table
+                    renderVehiclesTable(res.vehicles);
+                    
+                    // Always show the first tab when opening
+                    let firstTabEl = document.querySelector('#companyDetailTabs button[data-bs-toggle="tab"]');
+                    if (firstTabEl) {
+                        let tab = new bootstrap.Tab(firstTabEl);
+                        tab.show();
+                    }
                     
                     $('#modalLoading').addClass('d-none');
                     $('#modalContent').removeClass('d-none');
@@ -373,6 +429,67 @@
                 });
             }
             $(selector).html(html);
+        }
+
+        function renderVehiclesTable(vehicles) {
+            let html = '';
+            let count = vehicles ? vehicles.length : 0;
+            $('#vehicleCountBadge').text(count + ' Unit');
+
+            if (!vehicles || vehicles.length === 0) {
+                html = '<tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data unit kendaraan aktif di perusahaan ini.</td></tr>';
+            } else {
+                vehicles.forEach(v => {
+                    let tyreBadges = '';
+                    if (!v.tyres || v.tyres.length === 0) {
+                        tyreBadges = '<span class="text-muted small italic text-center py-1">Tidak ada ban terpasang</span>';
+                    } else {
+                        // Sort tyres by position code
+                        v.tyres.sort((a, b) => a.position_code.localeCompare(b.position_code));
+                        
+                        v.tyres.forEach(t => {
+                            let rtdPct = '';
+                            if (t.initial_rtd && t.initial_rtd > 0 && t.current_rtd !== '-') {
+                                let pct = Math.round((parseFloat(t.current_rtd) / parseFloat(t.initial_rtd)) * 100);
+                                rtdPct = ` (${pct}%)`;
+                            }
+                            
+                            // Visual badges depending on RTD remaining depth
+                            let badgeClass = 'bg-label-success';
+                            let valRTD = parseFloat(t.current_rtd);
+                            if (!isNaN(valRTD)) {
+                                if (valRTD < 4) {
+                                    badgeClass = 'bg-label-danger';
+                                } else if (valRTD < 7) {
+                                    badgeClass = 'bg-label-warning';
+                                }
+                            }
+                            
+                            tyreBadges += `
+                                <span class="badge ${badgeClass} border me-1 mb-1 p-2" style="font-size: 0.75rem;" title="Merek: ${t.brand_name}">
+                                    <strong class="text-dark">${t.position_code}</strong>: ${t.serial_number} 
+                                    <span class="ms-1 fw-bold">(${t.current_rtd}mm${rtdPct})</span>
+                                </span>
+                            `;
+                        });
+                    }
+
+                    html += `
+                        <tr>
+                            <td><strong class="text-primary">${v.kode_kendaraan}</strong></td>
+                            <td><span class="badge bg-label-dark font-monospace">${v.no_polisi}</span></td>
+                            <td><span class="small">${v.model_kendaraan}</span></td>
+                            <td><span class="badge bg-label-secondary">${v.segment_name}</span></td>
+                            <td>
+                                <div class="d-flex flex-wrap">
+                                    ${tyreBadges}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            $('#vehicleTyresTableBody').html(html);
         }
     });
 </script>

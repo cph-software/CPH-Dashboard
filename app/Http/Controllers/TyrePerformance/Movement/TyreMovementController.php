@@ -82,6 +82,47 @@ class TyreMovementController extends Controller
         return view('tyre-performance.movement.index', compact('kendaraans'));
     }
 
+    protected function getLocationsAndSegments()
+    {
+        $locationsQuery = \App\Models\TyreLocation::query();
+        $segmentsQuery = \App\Models\TyreSegment::where('status', 'Active');
+
+        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $parentCompany = auth()->user()->tyre_company_id;
+
+            $locationsQuery->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
+                if (is_array($activeCompany)) {
+                    $q->whereIn('tyre_company_id', $activeCompany);
+                } elseif ($activeCompany) {
+                    $q->where('tyre_company_id', $activeCompany);
+                }
+                if ($parentCompany && $parentCompany != $activeCompany) {
+                    $q->orWhere('tyre_company_id', $parentCompany);
+                }
+            });
+
+            $segmentsQuery->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
+                if (is_array($activeCompany)) {
+                    $q->whereIn('tyre_company_id', $activeCompany);
+                } elseif ($activeCompany) {
+                    $q->where('tyre_company_id', $activeCompany);
+                }
+                if ($parentCompany && $parentCompany != $activeCompany) {
+                    $q->orWhere('tyre_company_id', $parentCompany);
+                }
+            });
+        } else {
+            $locationsQuery = $this->applyCompanyScope($locationsQuery);
+            $segmentsQuery = $this->applyCompanyScope($segmentsQuery);
+        }
+
+        return [
+            'locations' => $locationsQuery->get(),
+            'segments' => $segmentsQuery->get()
+        ];
+    }
+
     public function pemasangan()
     {
         $query = MasterImportKendaraan::select('id', 'kode_kendaraan', 'no_polisi', 'total_tyre_position')
@@ -92,11 +133,12 @@ class TyreMovementController extends Controller
             }]);
             
         $kendaraans = $this->applyCompanyScope($query)->get();
-        // Removed eager loading of all tyres to avoid memory bloat
-        // Available tyres will be fetched via AJAX search
         $availableTyres = collect();
-        $locations = \App\Models\TyreLocation::all();
-        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
+        
+        $dropdownData = $this->getLocationsAndSegments();
+        $locations = $dropdownData['locations'];
+        $segments = $dropdownData['segments'];
+        
         return view('tyre-performance.movement.pemasangan', compact('kendaraans', 'availableTyres', 'segments', 'locations'));
     }
 
@@ -181,8 +223,11 @@ class TyreMovementController extends Controller
             
         $kendaraans = $this->applyCompanyScope($query)->get();
         $failureCodes = TyreFailureCode::where('status', 'Active')->get();
-        $locations = \App\Models\TyreLocation::all();
-        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
+        
+        $dropdownData = $this->getLocationsAndSegments();
+        $locations = $dropdownData['locations'];
+        $segments = $dropdownData['segments'];
+        
         return view('tyre-performance.movement.pelepasan', compact('kendaraans', 'failureCodes', 'segments', 'locations'));
     }
 
@@ -199,8 +244,11 @@ class TyreMovementController extends Controller
             }]);
             
         $kendaraans = $this->applyCompanyScope($query)->get();
-        $locations = \App\Models\TyreLocation::all();
-        $segments = \App\Models\TyreSegment::where('status', 'Active')->get();
+        
+        $dropdownData = $this->getLocationsAndSegments();
+        $locations = $dropdownData['locations'];
+        $segments = $dropdownData['segments'];
+        
         return view('tyre-performance.movement.rotasi', compact('kendaraans', 'segments', 'locations'));
     }
 
@@ -977,6 +1025,18 @@ class TyreMovementController extends Controller
                 }
 
                 $finalStatus = $request->target_status ?? 'Repaired';
+                $resolvedCompanyId = null;
+                if (!empty($request->work_location_id)) {
+                    $location = \App\Models\TyreLocation::withoutGlobalScope('company')->find($request->work_location_id);
+                    if ($location) {
+                        $resolvedCompanyId = $location->tyre_company_id;
+                    }
+                }
+                
+                if (!$resolvedCompanyId && \App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                    $resolvedCompanyId = auth()->user()->tyre_company_id;
+                }
+
                 $updateDataRem = [
                     'current_vehicle_id' => null,
                     'current_position_id' => null,
@@ -990,8 +1050,9 @@ class TyreMovementController extends Controller
                     'current_km' => $request->odometer ?? 0,
                     'current_hm' => $request->hour_meter ?? 0,
                 ];
-                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
-                    $updateDataRem['tyre_company_id'] = auth()->user()->tyre_company_id;
+                
+                if ($resolvedCompanyId) {
+                    $updateDataRem['tyre_company_id'] = $resolvedCompanyId;
                 }
                 $tyre->update($updateDataRem);
 
@@ -1118,7 +1179,18 @@ class TyreMovementController extends Controller
             if (!empty($tyreIds)) {
                 $checkCompanyId = $companyId;
                 if ($checkCompanyId) {
-                    $tyresCount = Tyre::whereIn('id', $tyreIds)->where('tyre_company_id', $checkCompanyId)->count();
+                    if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                        $allowedCompanyIds = auth()->user()->tyreCompany->getAllClientIds();
+                        $allowedCompanyIds[] = auth()->user()->tyre_company_id;
+                        
+                        $tyresCount = Tyre::withoutGlobalScope('company')
+                            ->whereIn('id', $tyreIds)
+                            ->whereIn('tyre_company_id', $allowedCompanyIds)
+                            ->count();
+                    } else {
+                        $tyresCount = Tyre::whereIn('id', $tyreIds)->where('tyre_company_id', $checkCompanyId)->count();
+                    }
+                    
                     $uniqueTyreIds = count(array_unique($tyreIds));
                     if ($tyresCount !== $uniqueTyreIds) {
                         throw new \Exception("Akses Ditolak: Satu atau lebih Ban yang dipilih tidak berada dalam lingkup perusahaan Anda.");
@@ -1196,7 +1268,7 @@ class TyreMovementController extends Controller
 
                     // (Kode Handle Replacement dihapus karena pemasangan sekarang mewajibkan node kosong dan menggunakan Drag-to-Correct / Pelepasan eksplisit)
 
-                    $tyre->update([
+                    $updateData = [
                         'current_vehicle_id' => $request->vehicle_id,
                         'current_position_id' => $mov['position_id'],
                         'is_in_warehouse' => false,
@@ -1205,7 +1277,11 @@ class TyreMovementController extends Controller
                         'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
                         'current_km' => $request->odometer ?? 0,
                         'current_hm' => $request->hour_meter ?? 0,
-                    ]);
+                    ];
+                    if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                        $updateData['tyre_company_id'] = $vehicle->tyre_company_id;
+                    }
+                    $tyre->update($updateData);
 
 
                     if ($oldLocationId) {
@@ -1281,7 +1357,19 @@ class TyreMovementController extends Controller
                         'photo' => $photoPath,
                     ]);
 
-                    $tyre->update([
+                    $resolvedCompanyId = null;
+                    if (!empty($request->work_location_id)) {
+                        $location = \App\Models\TyreLocation::withoutGlobalScope('company')->find($request->work_location_id);
+                        if ($location) {
+                            $resolvedCompanyId = $location->tyre_company_id;
+                        }
+                    }
+                    
+                    if (!$resolvedCompanyId && \App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                        $resolvedCompanyId = auth()->user()->tyre_company_id;
+                    }
+
+                    $updateDataRem = [
                         'current_vehicle_id' => null,
                         'current_position_id' => null,
                         'is_in_warehouse' => true,
@@ -1293,7 +1381,13 @@ class TyreMovementController extends Controller
                         'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
                         'current_km' => $request->odometer ?? 0,
                         'current_hm' => $request->hour_meter ?? 0,
-                    ]);
+                    ];
+                    
+                    if ($resolvedCompanyId) {
+                        $updateDataRem['tyre_company_id'] = $resolvedCompanyId;
+                    }
+                    
+                    $tyre->update($updateDataRem);
 
                     if (!empty($request->work_location_id) && $finalStatus !== 'Scrap') {
                         DB::table('tyre_locations')->where('id', $request->work_location_id)->increment('current_stock');
