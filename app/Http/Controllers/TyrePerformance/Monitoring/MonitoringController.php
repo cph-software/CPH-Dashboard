@@ -273,11 +273,13 @@ class MonitoringController extends Controller
 
         $availableTyres = \App\Models\Tyre::whereNull('current_vehicle_id')
             ->where('is_repairing', false)
+            ->whereIn('status', ['New', 'Repaired']) // Hanya tampilkan ban yang siap dipakai
             ->with(['brand', 'size', 'pattern', 'monitoringChecks' => function($q) {
                 $q->latest();
             }])
             ->orderBy('serial_number')
             ->get();
+
 
         // Get latest vehicle readings
         $latestMovement = TyreMovement::where('vehicle_id', $vehicle->master_vehicle_id)

@@ -52,8 +52,12 @@ class TyreMasterController extends Controller
             });
         }
 
-        $totalRecords = Tyre::count();
+        // totalRecords: total ban untuk perusahaan aktif (tanpa search filter)
+        // BelongsToCompany global scope otomatis mengfilter berdasarkan perusahaan aktif
+        $baseQuery = Tyre::query(); // Global scope aktif di sini
+        $totalRecords = $baseQuery->count();
         $filteredRecords = $query->count();
+
 
         // Ordering
         if ($request->has('order')) {

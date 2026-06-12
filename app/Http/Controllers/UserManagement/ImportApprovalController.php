@@ -966,7 +966,8 @@ class ImportApprovalController extends Controller
 
         // [P6] Refresh cache setelah update agar baris selanjutnya pakai data terbaru
         $tyre->refresh();
-        $this->tyreCache[strtoupper($tyre->serial_number)] = $tyre;
+        // FIX: Gunakan key yang konsisten dengan processMovementHistory (SN_CompanyID)
+        $this->tyreCache[strtoupper($tyre->serial_number) . '_' . $uploaderCompanyId] = $tyre;
 
         // Find Failure Code
         $failCodeStr = $data['failure_code'] ?? $data['penyebab'] ?? null;
