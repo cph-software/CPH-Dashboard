@@ -38,6 +38,8 @@ class TyreMonitoringCheck extends Model
         'worn_percentage',
         'km_per_mm',
         'projected_life_km',
+        'hm_per_mm',
+        'projected_life_hm',
         'condition',
         'recommendation',
         'notes',

@@ -26,6 +26,7 @@ class TyreMonitoringVehicle extends Model
         'status',
         'master_vehicle_id',
         'tyre_company_id',
+        'measurement_unit',
     ];
 
     protected $casts = [
