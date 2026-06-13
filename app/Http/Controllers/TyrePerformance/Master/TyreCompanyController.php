@@ -42,7 +42,7 @@ class TyreCompanyController extends Controller
             'parent_company_id' => 'nullable|integer|exists:tyre_companies,id',
             'total_tyre_capacity' => 'required|integer|min:0',
             'max_users' => 'required|integer|min:1',
-            'measurement_mode' => 'required|in:KM,HM',
+            'measurement_mode' => 'required|in:KM,HM,BOTH',
             'status' => 'required|in:Active,Inactive',
         ]);
 
@@ -72,7 +72,7 @@ class TyreCompanyController extends Controller
             'parent_company_id' => 'nullable|integer|exists:tyre_companies,id',
             'total_tyre_capacity' => 'required|integer|min:0',
             'max_users' => 'required|integer|min:1',
-            'measurement_mode' => 'required|in:KM,HM',
+            'measurement_mode' => 'required|in:KM,HM,BOTH',
             'status' => 'required|in:Active,Inactive',
         ]);
 

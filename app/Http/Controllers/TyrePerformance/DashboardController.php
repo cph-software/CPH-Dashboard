@@ -111,10 +111,9 @@ class DashboardController extends Controller
             : 0;
 
         // Company Measurement Mode
-        $measurementMode = 'BOTH';
-        if (auth()->check() && auth()->user()->tyreCompany) {
-            $measurementMode = auth()->user()->tyreCompany->measurement_mode ?? 'BOTH';
-        }
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $measurementMode = $ctx['mode'];
+
 
         // Scrap Rate %
         $scrapRate = $totalTyres > 0 ? round(($scrappedTyres / $totalTyres) * 100, 1) : 0;
@@ -225,9 +224,14 @@ class DashboardController extends Controller
         // ROW 4: Inventory & Operational
         // ========================================
 
-        // 4a. Stock by Location (Bar Chart)
-        $locationStock = TyreLocation::select('location_name', 'current_stock', 'capacity')
-            ->get();
+        // 4a. Stock by Location (Bar Chart) — count actual tyres, not stale current_stock column
+        $locationStock = TyreLocation::withCount('tyres')
+            ->get()
+            ->map(fn($l) => [
+                'location_name' => $l->location_name,
+                'current_stock'  => $l->tyres_count, // actual count from tyres.current_location_id
+                'capacity'       => $l->capacity ?? 0,
+            ]);
 
         // 4b. Failure Code Distribution (Pie Chart) - Filtered
         $failureDistribution = TyreMovement::where('movement_type', 'Removal')
@@ -446,28 +450,29 @@ class DashboardController extends Controller
     /**
      * Get Brand Performance data with optional filters (Cached)
      */
-    private function getBrandPerformanceData($size = null, $type = null, $pattern = null, $brandId = null)
+    private function getBrandPerformanceData($size = null, $type = null, $pattern = null, $brandId = null, $unit = null)
     {
-                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-        // Handle array for Global Agency View
-        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
-        $company = \App\Models\TyreCompany::find($firstCompanyId);
-        $measurementMode = $company->measurement_mode ?? 'BOTH';
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $measurementMode = $ctx['mode'];
+        $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
-        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; $cacheKey = "brand_perf_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
+        // Resolve active unit
+        $activeUnit = $unit;
+        if (!$activeUnit) {
+            $activeUnit = ($measurementMode === 'BOTH') ? 'KM' : $measurementMode;
+        }
+
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; 
+        $cacheKey = "brand_perf_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}_unit{$activeUnit}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit) {
             $query = Tyre::query();
             
-            if ($measurementMode === 'HM') {
+            if ($activeUnit === 'HM') {
                 $query->where('total_lifetime_hm', '>', 0);
-            } elseif ($measurementMode === 'KM') {
-                $query->where('total_lifetime_km', '>', 0);
             } else {
-                // BOTH: show tyres that have ANY lifetime data
-                $query->where(function($q) {
-                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
-                });
+                $query->where('total_lifetime_km', '>', 0);
             }
 
             // Apply filters
@@ -499,16 +504,8 @@ class DashboardController extends Controller
                     ->groupBy('tyre_pattern_id')
                     ->with('pattern:id,name');
 
-                return $query->get()->map(function ($item) use ($measurementMode) {
-                    // Pick the metric that has data
-                    if ($measurementMode === 'HM') {
-                        $val = round($item->avg_hm, 0);
-                    } elseif ($measurementMode === 'KM') {
-                        $val = round($item->avg_km, 0);
-                    } else {
-                        // BOTH: prefer HM if available, fallback to KM
-                        $val = $item->avg_hm > 0 ? round($item->avg_hm, 0) : round($item->avg_km, 0);
-                    }
+                return $query->get()->map(function ($item) use ($activeUnit) {
+                    $val = ($activeUnit === 'HM') ? round($item->avg_hm, 0) : round($item->avg_km, 0);
                     return [
                         'label' => $item->pattern->name ?? 'Unknown',
                         'avg_km' => $val,
@@ -527,14 +524,8 @@ class DashboardController extends Controller
                     ->groupBy('tyre_brand_id')
                     ->with('brand:id,brand_name');
 
-                return $query->get()->map(function ($item) use ($measurementMode) {
-                    if ($measurementMode === 'HM') {
-                        $val = round($item->avg_hm, 0);
-                    } elseif ($measurementMode === 'KM') {
-                        $val = round($item->avg_km, 0);
-                    } else {
-                        $val = $item->avg_hm > 0 ? round($item->avg_hm, 0) : round($item->avg_km, 0);
-                    }
+                return $query->get()->map(function ($item) use ($activeUnit) {
+                    $val = ($activeUnit === 'HM') ? round($item->avg_hm, 0) : round($item->avg_km, 0);
                     return [
                         'label' => $item->brand->brand_name ?? 'Unknown',
                         'avg_km' => $val,
@@ -546,28 +537,30 @@ class DashboardController extends Controller
         });
     }
 
-    private function getCpkByBrandData($size = null, $type = null, $pattern = null, $brandId = null)
+    private function getCpkByBrandData($size = null, $type = null, $pattern = null, $brandId = null, $unit = null)
     {
-                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-        // Handle array for Global Agency View
-        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
-        $company = \App\Models\TyreCompany::find($firstCompanyId);
-        $measurementMode = $company->measurement_mode ?? 'BOTH';
-        
-        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; $cacheKey = "cpk_brand_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}";
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $measurementMode = $ctx['mode'];
+        $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $measurementMode) {
+
+        // Resolve active unit
+        $activeUnit = $unit;
+        if (!$activeUnit) {
+            $activeUnit = ($measurementMode === 'BOTH') ? 'KM' : $measurementMode;
+        }
+        
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; 
+        $cacheKey = "cpk_brand_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}_unit{$activeUnit}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit) {
             $query = Tyre::whereNotNull('price')
                 ->where('price', '>', 0);
             
-            if ($measurementMode === 'HM') {
+            if ($activeUnit === 'HM') {
                 $query->where('total_lifetime_hm', '>', 0);
-            } elseif ($measurementMode === 'KM') {
-                $query->where('total_lifetime_km', '>', 0);
             } else {
-                $query->where(function($q) {
-                    $q->where('total_lifetime_km', '>', 0)->orWhere('total_lifetime_hm', '>', 0);
-                });
+                $query->where('total_lifetime_km', '>', 0);
             }
 
             // Apply filters
@@ -599,12 +592,10 @@ class DashboardController extends Controller
                     ->groupBy('tyre_pattern_id')
                     ->with('pattern:id,name');
 
-                return $query->get()->map(function ($item) use ($measurementMode) {
+                return $query->get()->map(function ($item) use ($activeUnit) {
                     $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
                     $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
-                    if ($measurementMode === 'HM') { $cpVal = $cpH; }
-                    elseif ($measurementMode === 'KM') { $cpVal = $cpK; }
-                    else { $cpVal = $cpH > 0 ? $cpH : $cpK; }
+                    $cpVal = ($activeUnit === 'HM') ? $cpH : $cpK;
                     return [
                         'label' => $item->pattern->name ?? 'Unknown',
                         'cpk' => $cpVal,
@@ -622,12 +613,10 @@ class DashboardController extends Controller
                     ->groupBy('tyre_brand_id')
                     ->with('brand:id,brand_name');
 
-                return $query->get()->map(function ($item) use ($measurementMode) {
+                return $query->get()->map(function ($item) use ($activeUnit) {
                     $cpH = $item->total_hm > 0 ? round($item->total_price / $item->total_hm, 0) : 0;
                     $cpK = $item->total_km > 0 ? round($item->total_price / $item->total_km, 0) : 0;
-                    if ($measurementMode === 'HM') { $cpVal = $cpH; }
-                    elseif ($measurementMode === 'KM') { $cpVal = $cpK; }
-                    else { $cpVal = $cpH > 0 ? $cpH : $cpK; }
+                    $cpVal = ($activeUnit === 'HM') ? $cpH : $cpK;
                     return [
                         'label' => $item->brand->brand_name ?? 'Unknown',
                         'cpk' => $cpVal,
@@ -647,8 +636,9 @@ class DashboardController extends Controller
         $type = $request->input('type');
         $pattern = $request->input('pattern');
         $brandId = $request->input('brand_id');
+        $unit = $request->input('unit');
 
-        $data = $this->getBrandPerformanceData($size, $type, $pattern, $brandId);
+        $data = $this->getBrandPerformanceData($size, $type, $pattern, $brandId, $unit);
 
         return response()->json([
             'success' => true,
@@ -665,8 +655,9 @@ class DashboardController extends Controller
         $type = $request->input('type');
         $pattern = $request->input('pattern');
         $brandId = $request->input('brand_id');
+        $unit = $request->input('unit');
 
-        $data = $this->getCpkByBrandData($size, $type, $pattern, $brandId);
+        $data = $this->getCpkByBrandData($size, $type, $pattern, $brandId, $unit);
 
         return response()->json([
             'success' => true,
@@ -685,12 +676,8 @@ class DashboardController extends Controller
         $chartType = $request->input('chart_type');
 
         $baseQuery = Tyre::query();
-
-                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-        // Handle array for Global Agency View
-        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
-        $company = \App\Models\TyreCompany::find($firstCompanyId);
-        $measurementMode = optional($company)->measurement_mode ?? 'BOTH';
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $measurementMode = $ctx['mode'];
 
         if ($chartType === 'cpk') {
             $baseQuery->whereNotNull('price')->where('price', '>', 0);
@@ -752,10 +739,9 @@ class DashboardController extends Controller
         $brandId = $request->input('brand_id');
         if (!$brandId) return response()->json(['success' => false]);
 
-                $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();// Handle array for Global Agency View
-        $firstCompanyId = is_array($companyId) ? $companyId[0] : $companyId;
-        $company = \App\Models\TyreCompany::find($firstCompanyId);
-        $mode = $company->measurement_mode ?? 'BOTH';
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $mode = $ctx['mode'];
+
 
         $query = Tyre::where('tyre_brand_id', $brandId)->with(['pattern', 'size', 'location']);
         if ($mode === 'BOTH') {
@@ -871,6 +857,19 @@ class DashboardController extends Controller
         $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date'))->startOfDay() : null;
         $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date'))->endOfDay() : null;
 
+        // Resolve company measurement mode once for all cases
+        $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
+        $mode = $ctx['mode']; // 'KM', 'HM', or 'BOTH'
+
+        // Override mode if specific unit is requested and company uses BOTH
+        $unitParam = $request->get('unit');
+        if ($unitParam && in_array($unitParam, ['KM', 'HM']) && $mode === 'BOTH') {
+            $mode = $unitParam;
+        }
+
+        [$ltCols, $ltKeys] = \App\Services\DashboardAnalyticsService::lifetimeCols($mode);
+
+
         switch ($type) {
             // ==========================================
             // 1. STATUS DONUT → List tyres by status
@@ -888,28 +887,32 @@ class DashboardController extends Controller
                     $query->where('status', $value);
                 }
 
-                $tyres = $query->with(['brand', 'size', 'pattern', 'location', 'currentVehicle'])
+                $tyres = $query->with([
+                        'brand', 'size', 'pattern', 'currentVehicle',
+                        // Bypass company global scope so location always loads regardless of session company
+                        'location' => fn($q) => $q->withoutGlobalScope('company'),
+                    ])
                     ->get()
-                    ->map(function ($t) {
-                        return [
+                    ->map(function ($t) use ($mode) {
+                        $row = [
                             'id' => $t->id,
                             'serial_number' => $t->serial_number,
                             'brand' => $t->brand->brand_name ?? '-',
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'location' => $t->location->location_name ?? '-',
+                            'location' => \App\Services\DashboardAnalyticsService::resolveLocation($t),
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                             'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
                             'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
                         ];
+                        return array_merge($row, \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode));
                     });
 
                 return response()->json([
                     'title' => "Ban Status: {$value}",
-                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'Lifetime KM', 'Harga'],
-                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'price'],
+                    'columns' => array_merge(['Serial Number', 'Brand', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD'], $ltCols, ['Harga']),
+                    'keys' => array_merge(['serial_number', 'brand', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd'], $ltKeys, ['price']),
                     'data' => $tyres,
                     'total' => $tyres->count(),
                     'link' => route('tyre-master.index') . '?status=' . urlencode($value),
@@ -926,27 +929,26 @@ class DashboardController extends Controller
                 $tyres = Tyre::where('tyre_brand_id', $brand->id)
                     ->with(['size', 'pattern', 'location', 'currentVehicle'])
                     ->get()
-                    ->map(function ($t) {
-                        return [
+                    ->map(function ($t) use ($mode) {
+                        $row = [
                             'id' => $t->id,
                             'serial_number' => $t->serial_number,
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'location' => $t->location->location_name ?? '-',
+                            'location' => \App\Services\DashboardAnalyticsService::resolveLocation($t),
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                             'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
-                            'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
-                            'lifetime_hm' => $t->total_lifetime_hm ? number_format($t->total_lifetime_hm, 0) : '-',
                             'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
                         ];
+                        return array_merge($row, \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode));
                     });
 
                 return response()->json([
                     'title' => "Ban Brand: {$value}",
-                    'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'KM', 'HM', 'Harga'],
-                    'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'lifetime_km', 'lifetime_hm', 'price'],
+                    'columns' => array_merge(['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD'], $ltCols, ['Harga']),
+                    'keys' => array_merge(['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd'], $ltKeys, ['price']),
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -959,8 +961,12 @@ class DashboardController extends Controller
                 if (!$location)
                     return response()->json(['data' => [], 'total' => 0]);
 
+                // Only show tyres physically at this location (not installed on vehicle)
                 $tyres = Tyre::where('current_location_id', $location->id)
-                    ->with(['brand', 'size', 'pattern', 'currentVehicle'])
+                    ->with([
+                        'brand', 'size', 'pattern', 'currentVehicle',
+                        'location' => fn($q) => $q->withoutGlobalScope('company'),
+                    ])
                     ->get()
                     ->map(function ($t) {
                         return [
@@ -978,7 +984,7 @@ class DashboardController extends Controller
                     });
 
                 return response()->json([
-                    'title' => "Ban di Lokasi: {$value}",
+                    'title' => "Stok Ban di: {$value}",
                     'columns' => ['Serial Number', 'Brand', 'Status', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', 'Retread'],
                     'keys' => ['serial_number', 'brand', 'status', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'retread'],
                     'data' => $tyres,
@@ -989,37 +995,42 @@ class DashboardController extends Controller
             // 4. FAILURE CODE → Movement records
             // ==========================================
             case 'failure':
-                $fc = TyreFailureCode::whereRaw("CONCAT(failure_code, ' - ', failure_name) = ?", [$value])->first();
-                if (!$fc) {
-                    // Try matching by failure_code only
-                    $fc = TyreFailureCode::where('failure_code', $value)->first();
-                }
+                $parts = explode(' - ', $value);
+                $code = $parts[0] ?? $value;
+                $fc = TyreFailureCode::where('failure_code', $code)->first();
                 if (!$fc)
                     return response()->json(['data' => [], 'total' => 0]);
+
+                // Build reading columns/keys based on measurement mode
+                $rdgCols = [];
+                $rdgKeys = [];
+                if ($mode !== 'HM') { $rdgCols[] = 'Odometer (KM)'; $rdgKeys[] = 'km'; }
+                if ($mode !== 'KM') { $rdgCols[] = 'Hour Meter (HM)'; $rdgKeys[] = 'hm'; }
 
                 $movements = TyreMovement::where('failure_code_id', $fc->id)
                     ->where('movement_type', 'Removal')
                     ->with(['tyre.size', 'tyre.pattern', 'vehicle'])
                     ->orderBy('movement_date', 'desc')
                     ->get()
-                    ->map(function ($m) {
-                        return [
+                    ->map(function ($m) use ($mode) {
+                        $row = [
                             'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
                             'serial' => $m->tyre->serial_number ?? '-',
                             'size' => $m->tyre->size->size ?? '-',
                             'pattern' => $m->tyre->pattern->name ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                            'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
                             'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
                             'notes' => $m->notes ?? '-',
                         ];
+                        if ($mode !== 'HM') $row['km'] = $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-';
+                        if ($mode !== 'KM') $row['hm'] = $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-';
+                        return $row;
                     });
 
                 return response()->json([
                     'title' => "Pelepasan: " . ($fc->getDisplayNameByCompanyId(auth()->user()->tyre_company_id ?? null)),
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'KM', 'HM', 'RTD', 'Notes'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'km', 'hm', 'rtd', 'notes'],
+                    'columns' => array_merge(['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan'], $rdgCols, ['RTD', 'Notes']),
+                    'keys' => array_merge(['date', 'serial', 'size', 'pattern', 'vehicle'], $rdgKeys, ['rtd', 'notes']),
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -1044,25 +1055,32 @@ class DashboardController extends Controller
                     return response()->json(['data' => [], 'total' => 0]);
                 }
 
+                // Build reading columns for this movement case (applies to both Examination and others)
+                $mvRdgCols = [];
+                $mvRdgKeys = [];
+                if ($mode !== 'HM') { $mvRdgCols[] = 'Odometer (KM)'; $mvRdgKeys[] = 'km'; }
+                if ($mode !== 'KM') { $mvRdgCols[] = 'Hour Meter (HM)'; $mvRdgKeys[] = 'hm'; }
+
                 if ($movType === 'Examination') {
                     $movements = \App\Models\TyreMonitoringCheck::where('is_sales_input', true)
                         ->whereBetween('check_date', [$monthStart, $monthEnd])
                         ->with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'session.masterVehicle'])
                         ->orderBy('check_date', 'desc')
                         ->get()
-                        ->map(function ($m) {
-                            return [
+                        ->map(function ($m) use ($mode) {
+                            $row = [
                                 'date' => Carbon::parse($m->check_date)->format('d/m/Y'),
                                 'serial' => $m->tyre->serial_number ?? '-',
                                 'size' => $m->tyre->size->size ?? '-',
                                 'pattern' => $m->tyre->pattern->name ?? '-',
                                 'brand' => $m->tyre->brand->brand_name ?? '-',
                                 'vehicle' => $m->session->masterVehicle->kode_kendaraan ?? '-',
-                                'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                                'hm' => $m->hm_reading ? number_format($m->hm_reading, 0) : '-',
                                 'psi' => $m->psi_actual ?? '-',
                                 'rtd' => $m->avg_rtd ? $m->avg_rtd . ' mm' : '-',
                             ];
+                            if ($mode !== 'HM') $row['km'] = $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-';
+                            if ($mode !== 'KM') $row['hm'] = $m->hm_reading ? number_format($m->hm_reading, 0) : '-';
+                            return $row;
                         });
                     $typeLabel = 'Examination';
                 } else {
@@ -1071,19 +1089,20 @@ class DashboardController extends Controller
                         ->with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'vehicle'])
                         ->orderBy('movement_date', 'desc')
                         ->get()
-                        ->map(function ($m) {
-                            return [
+                        ->map(function ($m) use ($mode) {
+                            $row = [
                                 'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
                                 'serial' => $m->tyre->serial_number ?? '-',
                                 'size' => $m->tyre->size->size ?? '-',
                                 'pattern' => $m->tyre->pattern->name ?? '-',
                                 'brand' => $m->tyre->brand->brand_name ?? '-',
                                 'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                                'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
-                                'hm' => $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-',
                                 'psi' => $m->psi_reading ?? '-',
                                 'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
                             ];
+                            if ($mode !== 'HM') $row['km'] = $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-';
+                            if ($mode !== 'KM') $row['hm'] = $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-';
+                            return $row;
                         });
 
                     $typeLabel = $movType === 'Installation' ? 'Pemasangan' : ($movType === 'Removal' ? 'Pelepasan' : ($movType === 'Rotation' ? 'Rotasi' : 'Inspeksi'));
@@ -1091,8 +1110,8 @@ class DashboardController extends Controller
 
                 return response()->json([
                     'title' => "{$typeLabel} - {$monthStr}",
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Brand', 'Kendaraan', 'KM', 'HM', 'PSI', 'RTD'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'brand', 'vehicle', 'km', 'hm', 'psi', 'rtd'],
+                    'columns' => array_merge(['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Brand', 'Kendaraan'], $mvRdgCols ?? [], ['PSI', 'RTD']),
+                    'keys' => array_merge(['date', 'serial', 'size', 'pattern', 'brand', 'vehicle'], $mvRdgKeys ?? [], ['psi', 'rtd']),
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -1120,11 +1139,11 @@ class DashboardController extends Controller
                     } else {
                         return $pct >= 60;
                     }
-                })->map(function ($t) {
+                })->map(function ($t) use ($mode) {
                     $pct = $t->initial_tread_depth > 0
                         ? round(($t->current_tread_depth / $t->initial_tread_depth) * 100, 1)
                         : 0;
-                    return [
+                    $row = [
                         'id' => $t->id,
                         'serial_number' => $t->serial_number,
                         'brand' => $t->brand->brand_name ?? '-',
@@ -1134,14 +1153,14 @@ class DashboardController extends Controller
                         'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                         'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
                         'remaining' => $pct . '%',
-                        'lifetime_km' => $t->total_lifetime_km ? number_format($t->total_lifetime_km, 0) : '-',
                     ];
+                    return array_merge($row, \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode));
                 })->values();
 
                 return response()->json([
                     'title' => "Fleet Health: {$value}",
-                    'columns' => ['Serial Number', 'Brand', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', '% Sisa', 'Lifetime KM'],
-                    'keys' => ['serial_number', 'brand', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'remaining', 'lifetime_km'],
+                    'columns' => array_merge(['Serial Number', 'Brand', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', '% Sisa'], $ltCols),
+                    'keys' => array_merge(['serial_number', 'brand', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'remaining'], $ltKeys),
                     'data' => $tyres,
                     'total' => $tyres->count(),
                 ]);
@@ -1150,29 +1169,38 @@ class DashboardController extends Controller
             // 7. AXLE ANALYSIS → List removals by axle/pos
             // ==========================================
             case 'axle':
+                // Build reading columns for axle based on mode
+                $axRdgCols = [];
+                $axRdgKeys = [];
+                if ($mode !== 'HM') { $axRdgCols[] = 'Odometer (KM)'; $axRdgKeys[] = 'km'; }
+                if ($mode !== 'KM') { $axRdgCols[] = 'Hour Meter (HM)'; $axRdgKeys[] = 'hm'; }
+
                 $movements = TyreMovement::where('movement_type', 'Removal')
                     ->join('tyre_position_details', 'tyre_movements.position_id', '=', 'tyre_position_details.id')
                     ->where('tyre_position_details.position_name', $value)
                     ->with(['tyre.size', 'tyre.pattern', 'vehicle'])
-                    ->orderBy('movement_date', 'desc')
+                    ->select('tyre_movements.*')
+                    ->orderBy('tyre_movements.movement_date', 'desc')
                     ->get()
-                    ->map(function ($m) {
-                        return [
+                    ->map(function ($m) use ($mode) {
+                        $row = [
                             'date' => Carbon::parse($m->movement_date)->format('d/m/Y'),
                             'serial' => $m->tyre->serial_number ?? '-',
                             'size' => $m->tyre->size->size ?? '-',
                             'pattern' => $m->tyre->pattern->name ?? '-',
                             'vehicle' => $m->vehicle->kode_kendaraan ?? '-',
-                            'km' => $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-',
                             'rtd' => $m->rtd_reading ? $m->rtd_reading . ' mm' : '-',
                             'notes' => $m->notes ?? '-',
                         ];
+                        if ($mode !== 'HM') $row['km'] = $m->odometer_reading ? number_format($m->odometer_reading, 0) : '-';
+                        if ($mode !== 'KM') $row['hm'] = $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) : '-';
+                        return $row;
                     });
 
                 return response()->json([
                     'title' => "Scrap Frequency: Posisi {$value}",
-                    'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'KM', 'RTD', 'Notes'],
-                    'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'km', 'rtd', 'notes'],
+                    'columns' => array_merge(['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan'], $axRdgCols, ['RTD', 'Notes']),
+                    'keys' => array_merge(['date', 'serial', 'size', 'pattern', 'vehicle'], $axRdgKeys, ['rtd', 'notes']),
                     'data' => $movements,
                     'total' => $movements->count(),
                 ]);
@@ -1239,7 +1267,7 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'location' => $t->location->location_name ?? '-',
+                            'location' => \App\Services\DashboardAnalyticsService::resolveLocation($t),
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                             'otd' => $t->initial_tread_depth ? $t->initial_tread_depth . ' mm' : '-',
                             'rtd' => $t->current_tread_depth ? $t->current_tread_depth . ' mm' : '-',
@@ -1326,7 +1354,7 @@ class DashboardController extends Controller
                             'status' => $t->status,
                             'size' => $t->size->size ?? '-',
                             'pattern' => $t->pattern->name ?? '-',
-                            'location' => $t->location->location_name ?? '-',
+                            'location' => \App\Services\DashboardAnalyticsService::resolveLocation($t),
                             'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
                         ], \App\Services\DashboardAnalyticsService::lifetimeData($t, $mode), [
                             'price' => 'Rp ' . number_format($t->price, 0, ',', '.'),

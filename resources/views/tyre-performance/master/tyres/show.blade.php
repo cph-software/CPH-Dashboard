@@ -172,51 +172,90 @@
                </div>
                <div class="card-body">
                   <div class="row g-3">
-                     <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                           <div class="avatar avatar-md me-3">
-                              <span class="avatar-initial rounded bg-label-primary">
-                                 <i class="icon-base ri ri-roadster-line ri-lg"></i>
-                              </span>
-                           </div>
-                           <div>
-                              <small class="text-muted d-block">Total KM</small>
-                              <h5 class="mb-0">{{ number_format($tyre->total_lifetime_km ?? 0, 0, ',', '.') }} km</h5>
-                           </div>
-                        </div>
-                     </div>
-                     <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                           <div class="avatar avatar-md me-3">
-                              <span class="avatar-initial rounded bg-label-warning">
-                                 <i class="icon-base ri ri-time-line ri-lg"></i>
-                              </span>
-                           </div>
-                           <div>
-                              <small class="text-muted d-block">Total HM</small>
-                              <h5 class="mb-0">{{ number_format($tyre->total_lifetime_hm ?? 0, 0, ',', '.') }} hrs</h5>
+                     @php
+                        $mode = $companyMode ?? 'BOTH';
+                        $colClass = ($mode === 'BOTH') ? 'col-md-3' : 'col-md-6';
+                     @endphp
+
+                     @if ($mode !== 'HM')
+                        <!-- Total KM -->
+                        <div class="{{ $colClass }}">
+                           <div class="d-flex align-items-center">
+                              <div class="avatar avatar-md me-3">
+                                 <span class="avatar-initial rounded bg-label-primary">
+                                    <i class="icon-base ri ri-roadster-line ri-lg"></i>
+                                 </span>
+                              </div>
+                              <div>
+                                 <small class="text-muted d-block">Total KM</small>
+                                 <h5 class="mb-0">{{ number_format($tyre->total_lifetime_km ?? 0, 0, ',', '.') }} km</h5>
+                              </div>
                            </div>
                         </div>
-                     </div>
-                     <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                           <div class="avatar avatar-md me-3">
-                              <span class="avatar-initial rounded bg-label-success">
-                                 <i class="icon-base ri ri-calculator-line ri-lg"></i>
-                              </span>
-                           </div>
-                           <div>
-                              <small class="text-muted d-block">Cost/KM</small>
-                              <h5 class="mb-0">
-                                 @if ($tyre->price && $tyre->total_lifetime_km > 0)
-                                    Rp {{ number_format($tyre->price / $tyre->total_lifetime_km, 0, ',', '.') }}
-                                 @else
-                                    -
-                                 @endif
-                              </h5>
+                     @endif
+
+                     @if ($mode !== 'KM')
+                        <!-- Total HM -->
+                        <div class="{{ $colClass }}">
+                           <div class="d-flex align-items-center">
+                              <div class="avatar avatar-md me-3">
+                                 <span class="avatar-initial rounded bg-label-warning">
+                                    <i class="icon-base ri ri-time-line ri-lg"></i>
+                                 </span>
+                              </div>
+                              <div>
+                                 <small class="text-muted d-block">Total HM</small>
+                                 <h5 class="mb-0">{{ number_format($tyre->total_lifetime_hm ?? 0, 0, ',', '.') }} hrs</h5>
+                              </div>
                            </div>
                         </div>
-                     </div>
+                     @endif
+
+                     @if ($mode !== 'HM')
+                        <!-- Cost/KM -->
+                        <div class="{{ $colClass }}">
+                           <div class="d-flex align-items-center">
+                              <div class="avatar avatar-md me-3">
+                                 <span class="avatar-initial rounded bg-label-success">
+                                    <i class="icon-base ri ri-calculator-line ri-lg"></i>
+                                 </span>
+                              </div>
+                              <div>
+                                 <small class="text-muted d-block">Cost/KM</small>
+                                 <h5 class="mb-0">
+                                    @if ($tyre->price && $tyre->total_lifetime_km > 0)
+                                       Rp {{ number_format($tyre->price / $tyre->total_lifetime_km, 0, ',', '.') }}
+                                    @else
+                                       -
+                                    @endif
+                                 </h5>
+                              </div>
+                           </div>
+                        </div>
+                     @endif
+
+                     @if ($mode !== 'KM')
+                        <!-- Cost/HM -->
+                        <div class="{{ $colClass }}">
+                           <div class="d-flex align-items-center">
+                              <div class="avatar avatar-md me-3">
+                                 <span class="avatar-initial rounded bg-label-success">
+                                    <i class="icon-base ri ri-calculator-line ri-lg"></i>
+                                 </span>
+                              </div>
+                              <div>
+                                 <small class="text-muted d-block">Cost/HM</small>
+                                 <h5 class="mb-0">
+                                    @if ($tyre->price && $tyre->total_lifetime_hm > 0)
+                                       Rp {{ number_format($tyre->price / $tyre->total_lifetime_hm, 0, ',', '.') }}
+                                    @else
+                                       -
+                                    @endif
+                                 </h5>
+                              </div>
+                           </div>
+                        </div>
+                     @endif
                   </div>
                </div>
             </div>
@@ -237,8 +276,12 @@
                                  <th>Type</th>
                                  <th>Vehicle</th>
                                  <th>Position</th>
-                                 <th>KM</th>
-                                 <th>HM</th>
+                                 @if ($mode !== 'HM')
+                                    <th>KM</th>
+                                 @endif
+                                 @if ($mode !== 'KM')
+                                    <th>HM</th>
+                                 @endif
                                  <th>RTD</th>
                               </tr>
                            </thead>
@@ -254,12 +297,16 @@
                                     </td>
                                     <td>{{ $movement->vehicle->kode_kendaraan ?? '-' }}</td>
                                     <td>{{ $movement->position->position_code ?? '-' }}</td>
-                                    <td>
-                                       {{ $movement->odometer_reading ? number_format($movement->odometer_reading, 0) : '-' }}
-                                    </td>
-                                    <td>
-                                       {{ $movement->hour_meter_reading ? number_format($movement->hour_meter_reading, 0) : '-' }}
-                                    </td>
+                                    @if ($mode !== 'HM')
+                                       <td>
+                                          {{ $movement->odometer_reading ? number_format($movement->odometer_reading, 0) : '-' }}
+                                       </td>
+                                    @endif
+                                    @if ($mode !== 'KM')
+                                       <td>
+                                          {{ $movement->hour_meter_reading ? number_format($movement->hour_meter_reading, 0) : '-' }}
+                                       </td>
+                                    @endif
                                     <td>{{ $movement->rtd_reading ? $movement->rtd_reading . ' mm' : '-' }}</td>
                                  </tr>
                               @endforeach

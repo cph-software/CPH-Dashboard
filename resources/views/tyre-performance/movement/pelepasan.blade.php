@@ -271,13 +271,14 @@
                            <input type="time" name="start_time" id="start_time" class="form-control" value="{{ date('H:i') }}">
                         </div>
                         <div class="col-md-4">
-                           <label class="form-label fw-bold">Gudang / Lokasi Tujuan</label>
-                           <select name="work_location_id" id="work_location_id" class="form-select select2">
+                           <label class="form-label fw-bold">Gudang / Lokasi Tujuan <span class="text-danger">*</span></label>
+                           <select name="work_location_id" id="work_location_id" class="form-select select2" required>
                               <option value=""></option>
                               @foreach ($locations as $loc)
                                  <option value="{{ $loc->id }}">{{ $loc->location_name }}</option>
                               @endforeach
                            </select>
+                           <small class="text-danger"><i class="ri-information-line"></i> Wajib diisi — lokasi tempat ban disimpan setelah dilepas.</small>
                         </div>
                         <div class="col-md-4">
                            <label class="form-label fw-bold">Operational Segment</label>
@@ -366,22 +367,20 @@
                .then(res => res.json())
                .then(res => {
                   let mode = (res.vehicle.company && res.vehicle.company.measurement_mode) ? res.vehicle.company.measurement_mode : 'BOTH';
+                  if (mode === 'BOTH') {
+                      mode = res.vehicle.measurement_unit || 'KM';
+                  }
                   
                   if (mode === 'HM') {
                       $('#odometer_container').hide();
                       $('#odometer').removeAttr('required');
                       $('#hour_meter_container').show();
                       $('#hour_meter').attr('required', 'required');
-                  } else if (mode === 'KM') {
+                  } else {
                       $('#hour_meter_container').hide();
                       $('#hour_meter').removeAttr('required');
                       $('#odometer_container').show();
                       $('#odometer').attr('required', 'required');
-                  } else {
-                      $('#odometer_container').show();
-                      $('#odometer').attr('required', 'required');
-                      $('#hour_meter_container').show();
-                      $('#hour_meter').attr('required', 'required');
                   }
 
                   $('#vehicle_type_display').val(res.vehicle.jenis_kendaraan || '-');
@@ -639,6 +638,15 @@
 
             if(!vehicleSelect.val()) {
                Swal.fire('Peringatan', 'Unit kendaraan wajib dipilih.', 'warning');
+               return;
+            }
+            if(!$('#work_location_id').val()) {
+               Swal.fire({
+                  title: 'Lokasi Tujuan Wajib Diisi!',
+                  html: '<p class="mb-0">Pilih <b>Gudang / Lokasi Tujuan</b> tempat ban akan disimpan setelah dilepas.</p><p class="text-muted small">Ini diperlukan agar stok gudang tercatat dengan benar.</p>',
+                  icon: 'warning',
+                  confirmButtonText: 'OK, Saya Pilih'
+               });
                return;
             }
             if($('#odometer').prop('required') && !$('#odometer').val()) {

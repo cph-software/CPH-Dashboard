@@ -542,7 +542,7 @@ class TyreMovementController extends Controller
             'odometer' => 'nullable|numeric',
             'hour_meter' => 'nullable|numeric',
             'operational_segment_id' => 'nullable|exists:tyre_segments,id',
-            'work_location_id' => 'nullable|exists:tyre_locations,id',
+            'work_location_id' => $request->input('movement_type') === 'Removal' ? 'required|exists:tyre_locations,id' : 'nullable|exists:tyre_locations,id',
             'psi_reading' => 'nullable|numeric',
             'target_psi_reading' => 'nullable|numeric',
             'rtd_reading' => 'nullable|numeric',
@@ -565,6 +565,9 @@ class TyreMovementController extends Controller
             'is_meter_reset' => 'nullable|boolean',
             'photo' => 'nullable|image|max:5120',
             'photo_target' => 'nullable|image|max:5120',
+        ], [
+            'work_location_id.required' => 'Gudang / Lokasi Tujuan wajib diisi saat melakukan pelepasan ban.',
+            'work_location_id.exists' => 'Gudang / Lokasi Tujuan tidak valid.'
         ]);
 
         DB::beginTransaction();
@@ -1160,6 +1163,23 @@ class TyreMovementController extends Controller
         if (!is_array($movements) || empty($movements)) {
             return response()->json(['success' => false, 'message' => 'Data pergerakan ban kosong atau tidak valid.'], 422);
         }
+
+        $hasRemoval = false;
+        if (is_array($movements)) {
+            foreach ($movements as $mov) {
+                if (isset($mov['type']) && $mov['type'] === 'Removal') {
+                    $hasRemoval = true;
+                    break;
+                }
+            }
+        }
+
+        $request->validate([
+            'work_location_id' => $hasRemoval ? 'required|exists:tyre_locations,id' : 'nullable|exists:tyre_locations,id',
+        ], [
+            'work_location_id.required' => 'Gudang / Lokasi Tujuan wajib diisi saat melakukan pelepasan ban.',
+            'work_location_id.exists' => 'Gudang / Lokasi Tujuan tidak valid.'
+        ]);
 
         DB::beginTransaction();
         try {

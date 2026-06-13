@@ -169,6 +169,7 @@
                      <select name="measurement_mode" class="form-select">
                         <option value="KM">Hanya Kilometer (KM - Truk/Bus)</option>
                         <option value="HM">Hanya Hour Meter (HM - Alat Berat)</option>
+                        <option value="BOTH">Kilometer & Hour Meter (BOTH - Mixed Fleet)</option>
                      </select>
                   </div>
                   <div class="mb-3">
@@ -238,6 +239,7 @@
                      <select name="measurement_mode" id="edit_measurement_mode" class="form-select">
                         <option value="KM">Hanya Kilometer (KM)</option>
                         <option value="HM">Hanya Hour Meter (HM)</option>
+                        <option value="BOTH">Kilometer & Hour Meter (BOTH)</option>
                      </select>
                   </div>
                   <div class="mb-3">
@@ -289,12 +291,7 @@
                $('#edit_total_tyre_capacity').val(data.total_tyre_capacity);
                $('#edit_max_users').val(data.max_users);
                $('#edit_status').val(data.status);
-               
-               if (data.measurement_mode && data.measurement_mode !== 'BOTH') {
-                   $('#edit_measurement_mode').val(data.measurement_mode);
-               } else {
-                   $('#edit_measurement_mode').val('KM');
-               }
+               $('#edit_measurement_mode').val(data.measurement_mode || 'KM');
                
                // Set parent company dropdown
                 if ($('#edit_parent_company_id').length) {

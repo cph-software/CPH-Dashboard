@@ -23,10 +23,10 @@ class MovementHistorySheet implements FromArray, WithTitle, ShouldAutoSize, With
             ['Gunakan format ini jika setiap baris memiliki data pemasangan DAN pelepasan.'],
             ['Ban & Kendaraan yang belum ada di Master akan OTOMATIS didaftarkan.'],
             [],
-            ['no_seri', 'unit', 'posisi_ban', 'pemasangan_tanggal', 'pemasangan_km', 'pelepasan_tanggal', 'pelepasan_km', 'keterangan', 'tebal_telapak', 'penyebab'],
-            ['23282I06173', 'DT 535', '2', '17.10.2023', '32816', '09.11.2024', '48124', 'BUANG', '10', 'TELAPAK RUSAK'],
-            ['23272I06061', 'DT 550', '7', '17.10.2023', '25494', '19.10.2023', '25718', 'BUANG', '21', 'TELAPAK TERTUSUK BATU'],
-            ['23272I06135', 'DT 550', '7', '17.10.2023', '25494', '27.10.2023', '26759', '', '20', 'TELAPAK TERTUSUK BATU'],
+            ['no_seri', 'unit', 'posisi_ban', 'pemasangan_tanggal', 'pemasangan_km', 'pemasangan_hm', 'pelepasan_tanggal', 'pelepasan_km', 'pelepasan_hm', 'keterangan', 'tebal_telapak', 'penyebab'],
+            ['23282I06173', 'DT 535', '2', '17.10.2023', '32816', '1640', '09.11.2024', '48124', '2406', 'BUANG', '10', 'TELAPAK RUSAK'],
+            ['23272I06061', 'DT 550', '7', '17.10.2023', '25494', '1270', '19.10.2023', '25718', '1281', 'BUANG', '21', 'TELAPAK TERTUSUK BATU'],
+            ['23272I06135', 'DT 550', '7', '17.10.2023', '25494', '1270', '27.10.2023', '26759', '1330', '', '20', 'TELAPAK TERTUSUK BATU'],
             [],
             ['Kolom', 'Keterangan', 'Wajib?', 'Contoh Nilai'],
             ['no_seri', 'Nomor seri ban. Jika belum ada, akan OTOMATIS didaftarkan', 'YA', '23282I06173'],
@@ -34,8 +34,10 @@ class MovementHistorySheet implements FromArray, WithTitle, ShouldAutoSize, With
             ['posisi_ban', 'Nomor urut posisi ban pada kendaraan', 'TIDAK', '2'],
             ['pemasangan_tanggal', 'Tanggal pemasangan (DD.MM.YYYY atau YYYY-MM-DD)', 'YA', '17.10.2023'],
             ['pemasangan_km', 'Odometer saat pemasangan (km)', 'TIDAK', '32816'],
+            ['pemasangan_hm', 'Hour Meter saat pemasangan (jam)', 'TIDAK', '1640'],
             ['pelepasan_tanggal', 'Tanggal pelepasan (kosongkan jika masih terpasang)', 'TIDAK', '09.11.2024'],
             ['pelepasan_km', 'Odometer saat pelepasan (km)', 'TIDAK', '48124'],
+            ['pelepasan_hm', 'Hour Meter saat pelepasan (jam)', 'TIDAK', '2406'],
             ['keterangan', 'Status: BUANG (Scrap) atau kosong (Repaired)', 'TIDAK', 'BUANG'],
             ['tebal_telapak', 'Kedalaman alur saat dilepas (mm)', 'TIDAK', '10'],
             ['penyebab', 'Penyebab / catatan pelepasan', 'TIDAK', 'TELAPAK RUSAK'],
@@ -56,36 +58,41 @@ class MovementHistorySheet implements FromArray, WithTitle, ShouldAutoSize, With
         return [AfterSheet::class => function (AfterSheet $event) {
             $sheet = $event->sheet->getDelegate();
 
-            // Title for Format A
+            // Title for Format A (row 1)
             $sheet->getStyle('A1')->applyFromArray([
                 'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '1E40AF']],
             ]);
+            // Subtitles (row 2-3)
             $sheet->getStyle('A2:A3')->applyFromArray([
                 'font' => ['italic' => true, 'color' => ['rgb' => '059669']],
             ]);
 
-            // Format A headers (row 6)
-            $sheet->getStyle('A6:J6')->applyFromArray([
+            // Format A headers (row 5) - now 12 columns (A to L)
+            $sheet->getStyle('A5:L5')->applyFromArray([
                 'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2563EB']],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
             ]);
 
-            // Sample data rows (7-9)
-            $sheet->getStyle('A7:J9')->applyFromArray([
+            // Sample data rows (row 6 to 8)
+            $sheet->getStyle('A6:L8')->applyFromArray([
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFF6FF']],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BFDBFE']]],
             ]);
 
-            // Guide header (row 11)
-            $sheet->getStyle('A11:D11')->applyFromArray([
+            // Guide header (row 10)
+            $sheet->getStyle('A10:D10')->applyFromArray([
                 'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '475569']],
             ]);
+            // Guide data rows borders (row 11 to 22)
+            $sheet->getStyle('A11:D22')->applyFromArray([
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
+            ]);
 
             // Guide rows wajib/tidak coloring
-            foreach (range(12, 21) as $row) {
+            foreach (range(11, 22) as $row) {
                 $wajib = $sheet->getCell("C{$row}")->getValue();
                 if ($wajib === null) continue;
                 if (str_contains($wajib, 'YA')) {
@@ -100,21 +107,21 @@ class MovementHistorySheet implements FromArray, WithTitle, ShouldAutoSize, With
                 ]);
             }
 
-            // Title for Format B
-            $sheet->getStyle('A24')->applyFromArray([
+            // Title for Format B (row 25)
+            $sheet->getStyle('A25')->applyFromArray([
                 'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'D97706']],
             ]);
 
-            // Format B headers (row 27)
-            $sheet->getStyle('A27:M27')->applyFromArray([
+            // Format B headers (row 28) - 13 columns (A to M)
+            $sheet->getStyle('A28:M28')->applyFromArray([
                 'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D97706']],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
             ]);
 
-            // Format B sample data
-            $sheet->getStyle('A28:M29')->applyFromArray([
+            // Format B sample data (row 29 to 30)
+            $sheet->getStyle('A29:M30')->applyFromArray([
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFBEB']],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FDE68A']]],
             ]);

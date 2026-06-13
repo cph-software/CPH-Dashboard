@@ -790,6 +790,12 @@ class MonitoringController extends Controller
         }
 
         $mode = $this->getMeasurementMode();
+        $session = TyreMonitoringSession::with('vehicle')->findOrFail($request->session_id);
+        $vehicle = $session->vehicle;
+        $activeUnit = $mode;
+        if ($mode === 'BOTH') {
+            $activeUnit = $vehicle->measurement_unit ?? 'KM';
+        }
 
         $rules = [
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
@@ -801,13 +807,10 @@ class MonitoringController extends Controller
             'temp_id' => 'nullable|string',
         ];
 
-        // Conditional validation based on measurement mode
-        if ($mode === 'HM') {
+        // Conditional validation based on active unit
+        if ($activeUnit === 'HM') {
             $rules['odometer'] = 'nullable|numeric|min:0';
             $rules['hour_meter'] = 'required|numeric|min:0';
-        } elseif ($mode === 'KM') {
-            $rules['odometer'] = 'required|numeric|min:0';
-            $rules['hour_meter'] = 'nullable|numeric|min:0';
         } else {
             $rules['odometer'] = 'required|numeric|min:0';
             $rules['hour_meter'] = 'nullable|numeric|min:0';
@@ -819,29 +822,34 @@ class MonitoringController extends Controller
             'driver_name.required' => 'Nama driver harus diisi.',
         ]);
 
-        $session = TyreMonitoringSession::findOrFail($request->session_id);
-        
-        // Human error prevention: Odometer check vs Session Start (only if KM mode)
-        if ($mode !== 'HM' && $request->odometer && $session->odometer_start) {
+        // Human error prevention: Odometer check vs Session Start
+        if ($activeUnit !== 'HM' && $request->odometer && $session->odometer_start) {
             if ($request->odometer < $session->odometer_start) {
                 return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Awal Sesi ({$session->odometer_start}).")->withInput();
             }
         }
 
-        // Human error prevention: Odometer check vs Last Check (only if KM mode)
+        // Human error prevention: Odometer check vs Last Check
         $lastCheckRecord = TyreMonitoringCheck::where('session_id', $session->session_id)
             ->orderBy('check_number', 'desc')
             ->first();
         
-        if ($mode !== 'HM' && $lastCheckRecord && $request->odometer && $lastCheckRecord->odometer_reading) {
+        if ($activeUnit !== 'HM' && $lastCheckRecord && $request->odometer && $lastCheckRecord->odometer_reading) {
             if ($request->odometer < $lastCheckRecord->odometer_reading) {
                 return redirect()->back()->with('error', "Odometer Input ({$request->odometer}) tidak boleh lebih kecil dari Odometer Check sebelumnya ({$lastCheckRecord->odometer_reading}).")->withInput();
             }
         }
 
-        // Human error prevention: HM check (applicable when HM mode or BOTH)
-        if ($mode !== 'KM' && $request->hour_meter && $session->hm_start && $request->hour_meter < $session->hm_start) {
+        // Human error prevention: HM check vs Session Start
+        if ($activeUnit !== 'KM' && $request->hour_meter && $session->hm_start && $request->hour_meter < $session->hm_start) {
             return redirect()->back()->with('error', "Hour Meter Input ({$request->hour_meter}) tidak boleh lebih kecil dari HM Awal Sesi ({$session->hm_start}).")->withInput();
+        }
+
+        // Human error prevention: HM check vs Last Check
+        if ($activeUnit !== 'KM' && $lastCheckRecord && $request->hour_meter && $lastCheckRecord->hm_reading) {
+            if ($request->hour_meter < $lastCheckRecord->hm_reading) {
+                return redirect()->back()->with('error', "Hour Meter Input ({$request->hour_meter}) tidak boleh lebih kecil dari Hour Meter Check sebelumnya ({$lastCheckRecord->hm_reading}).")->withInput();
+            }
         }
 
         $newCheckNumber = ($lastCheckRecord->check_number ?? 0) + 1;
@@ -911,24 +919,28 @@ class MonitoringController extends Controller
                 $rtdCount = $r4 > 0 ? 4 : 3;
                 $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
 
-                // Analytics — use correct metric base depending on mode
-                if ($mode === 'HM') {
-                    $opMileage = $this->calculateLifetimeDiff($request->hour_meter, $session->hm_start);
-                } else {
-                    $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
-                }
                 $lossRtd = $origRtd - $avgRtd;
                 $wornPct = ($origRtd > 0) ? ($lossRtd / $origRtd * 100) : 0;
-                
-                // Only calculate performance if wear >= 0.1mm to avoid unrealistic numbers
-                if ($lossRtd >= 0.1) {
-                    $kmPerMm = $opMileage / $lossRtd;
-                    // REMAINING life = rate × usable tread left (avgRtd - 3mm safety limit)
-                    $remainingTread = max(0, $avgRtd - 3);
-                    $projLife = $kmPerMm * $remainingTread;
+
+                $kmPerMm = 0;
+                $projectedLifeKm = 0;
+                $hmPerMm = 0;
+                $projectedLifeHm = 0;
+
+                if ($activeUnit === 'HM') {
+                    $opMileage = $this->calculateLifetimeDiff($request->hour_meter, $session->hm_start);
+                    if ($lossRtd >= 0.1) {
+                        $hmPerMm = $opMileage / $lossRtd;
+                        $remainingTread = max(0, $avgRtd - 3);
+                        $projectedLifeHm = $hmPerMm * $remainingTread;
+                    }
                 } else {
-                    $kmPerMm = 0;
-                    $projLife = 0;
+                    $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
+                    if ($lossRtd >= 0.1) {
+                        $kmPerMm = $opMileage / $lossRtd;
+                        $remainingTread = max(0, $avgRtd - 3);
+                        $projectedLifeKm = $kmPerMm * $remainingTread;
+                    }
                 }
 
                 $checkData = [
@@ -937,8 +949,8 @@ class MonitoringController extends Controller
                     'check_date' => $request->check_date,
                     'odometer_reading' => $request->odometer,
                     'hm_reading' => $request->hour_meter,
-                    'operation_mileage' => $opMileage,
-                    'operation_hm' => $opHm,
+                    'operation_mileage' => ($activeUnit === 'HM') ? 0 : $opMileage,
+                    'operation_hm' => ($activeUnit === 'HM') ? $opMileage : $opHm,
                     'driver_name' => $request->driver_name,
                     'phone_number' => $request->phone_number,
                     'position' => $inst ? $inst->position : '?',
@@ -954,7 +966,9 @@ class MonitoringController extends Controller
                     'rtd_4' => $r4,
                     'worn_percentage' => $wornPct,
                     'km_per_mm' => $kmPerMm,
-                    'projected_life_km' => $projLife,
+                    'projected_life_km' => $projectedLifeKm,
+                    'hm_per_mm' => $hmPerMm,
+                    'projected_life_hm' => $projectedLifeHm,
                     'condition' => $c['condition'] ?? 'ok',
                     'recommendation' => $c['recommendation'] ?? null,
                     'notes' => $c['notes'] ?? null,

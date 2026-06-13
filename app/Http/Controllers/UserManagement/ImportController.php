@@ -355,20 +355,35 @@ class ImportController extends Controller
         $warnings = [];
 
         // 1. Serial Number wajib
+        $tyre = null;
         if (empty($sn)) {
             $errors[] = "Nomor Seri kosong.";
         } else {
             // Cek apakah SN terdaftar di database
-            $tyreExists = \App\Models\Tyre::withoutGlobalScopes()
+            $tyre = \App\Models\Tyre::withoutGlobalScopes()
                 ->where('serial_number', $sn)
                 ->where('tyre_company_id', $companyId)
-                ->exists();
-            if (!$tyreExists) {
+                ->first();
+            if (!$tyre) {
                 if ($isLegacy) {
                     $warnings[] = "Ban SN '{$sn}' belum ada, akan dibuat otomatis di Master Tyre.";
                 } else {
                     $errors[] = "Ban SN '{$sn}' tidak ditemukan di Master Tyre.";
                 }
+            }
+        }
+
+        // RTD vs OTD validation
+        $rtdImported = null;
+        if (isset($data['tebal_telapak']) && $data['tebal_telapak'] !== '') {
+            $rtdImported = (float)$data['tebal_telapak'];
+        } elseif (isset($data['rtd']) && $data['rtd'] !== '') {
+            $rtdImported = (float)$data['rtd'];
+        }
+        if ($rtdImported !== null && $tyre) {
+            $otd = (float)($tyre->initial_tread_depth ?: $tyre->original_tread_depth ?: 0);
+            if ($otd > 0 && $rtdImported > $otd) {
+                $warnings[] = "RTD Ban ({$rtdImported}mm) tidak mungkin lebih besar dari RTD Awal ({$otd}mm) di Master Tyre.";
             }
         }
 
@@ -412,10 +427,37 @@ class ImportController extends Controller
         }
 
         // 4. Odometer anomali (warning, bukan error)
-        $installKm = (float)($data['pemasangan_km'] ?? 0);
-        $removeKm = (float)($data['pelepasan_km'] ?? 0);
-        if ($removeDate && $installDate && $removeKm > 0 && $installKm > 0 && $removeKm < $installKm) {
+        $installKm = null;
+        if (isset($data['pemasangan_km']) && $data['pemasangan_km'] !== '') {
+            $installKm = (float)$data['pemasangan_km'];
+        } elseif (isset($data['odometer']) && $data['odometer'] !== '') {
+            $installKm = (float)$data['odometer'];
+        }
+        
+        $removeKm = null;
+        if (isset($data['pelepasan_km']) && $data['pelepasan_km'] !== '') {
+            $removeKm = (float)$data['pelepasan_km'];
+        }
+        
+        if ($removeDate && $installDate && $removeKm !== null && $installKm !== null && $removeKm > 0 && $installKm > 0 && $removeKm < $installKm) {
             $warnings[] = "Odometer anomali: KM Lepas ({$removeKm}) < KM Pasang ({$installKm}).";
+        }
+
+        // Hour Meter values decreasing validation
+        $installHm = null;
+        if (isset($data['pemasangan_hm']) && $data['pemasangan_hm'] !== '') {
+            $installHm = (float)$data['pemasangan_hm'];
+        } elseif (isset($data['hm']) && $data['hm'] !== '') {
+            $installHm = (float)$data['hm'];
+        }
+        
+        $removeHm = null;
+        if (isset($data['pelepasan_hm']) && $data['pelepasan_hm'] !== '') {
+            $removeHm = (float)$data['pelepasan_hm'];
+        }
+        
+        if ($removeDate && $installDate && $removeHm !== null && $installHm !== null && $removeHm > 0 && $installHm > 0 && $removeHm < $installHm) {
+            $warnings[] = "Hour Meter anomali: HM Lepas ({$removeHm}) < HM Pasang ({$installHm}).";
         }
 
         // 5. Validasi Posisi Ban — harus cocok dengan konfigurasi kendaraan
@@ -969,16 +1011,26 @@ class ImportController extends Controller
 
             \DB::commit();
 
-            // --- Send Notification to Approvers ---
+            // --- Send Notification to Approvers & Uploader ---
             try {
                 $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Import Approval', 'approve'); 
-                // 'update' is typically the permission needed to approve/reject
                 
+                $uploaderName = auth()->user()->display_name ?? auth()->user()->name;
+                $actionUrl = route('import-approval.show', $batch->id);
+
                 if ($approvers->count() > 0) {
-                    $submitterName = auth()->user()->display_name;
-                    $actionUrl = route('import-approval.show', $batch->id);
-                    \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Import ' . $module, $submitterName, $actionUrl));
+                    \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Import ' . $module, $uploaderName, $actionUrl));
                 }
+
+                // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
+                \Illuminate\Support\Facades\Notification::send(auth()->user(), 
+                    new \App\Notifications\ApprovalStatusNotification(
+                        'Import ' . $module, 
+                        'Pending', 
+                        'Sistem (Menunggu Approver)', 
+                        $actionUrl
+                    )
+                );
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to send Import Approval Notification: " . $e->getMessage());
             }

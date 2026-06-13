@@ -354,21 +354,19 @@
                .then(res => {
                   const data = res.vehicle;
                   let mode = (data.company && data.company.measurement_mode) ? data.company.measurement_mode : 'BOTH';
+                  if (mode === 'BOTH') {
+                      mode = data.measurement_unit || 'KM';
+                  }
                   if (mode === 'HM') {
                       $('#odometer_container').hide();
                       $('#odometer').removeAttr('required');
                       $('#hour_meter_container').show();
                       $('#hour_meter').attr('required', 'required');
-                  } else if (mode === 'KM') {
+                  } else {
                       $('#hour_meter_container').hide();
                       $('#hour_meter').removeAttr('required');
                       $('#odometer_container').show();
                       $('#odometer').attr('required', 'required');
-                  } else {
-                      $('#odometer_container').show();
-                      $('#odometer').attr('required', 'required');
-                      $('#hour_meter_container').show();
-                      $('#hour_meter').attr('required', 'required');
                   }
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
                   $('#last_odo_display').text((res.last_odometer || 0).toLocaleString());

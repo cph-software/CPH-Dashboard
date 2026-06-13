@@ -33,7 +33,8 @@ class MasterImportKendaraan extends Model
                     'tire_positions' => $vehicle->total_tyre_position ?: 6,
                     'is_trail' => stripos($vehicle->model_kendaraan ?? '', 'trailer') !== false || stripos($vehicle->model_kendaraan ?? '', 'gandengan') !== false,
                     'status' => $vehicle->tyre_unit_status === 'Active' ? 'active' : 'inactive',
-                    'tyre_company_id' => $vehicle->tyre_company_id ?? 1
+                    'tyre_company_id' => $vehicle->tyre_company_id ?? 1,
+                    'measurement_unit' => $vehicle->measurement_unit ?? 'KM'
                 ]
             );
         });

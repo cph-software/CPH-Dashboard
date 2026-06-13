@@ -44,37 +44,53 @@ class VehicleMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEv
 
     public function registerEvents(): array
     {
-        return [AfterSheet::class => function (AfterSheet $event) {
-            $sheet = $event->sheet->getDelegate();
-            $sheet->getStyle('A1:K1')->applyFromArray([
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '16A34A']],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
-            ]);
-            $sheet->getStyle('A2:K4')->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0FDF4']],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BBF7D0']]],
-            ]);
-            $sheet->getStyle('A7')->applyFromArray(['font' => ['bold' => true, 'size' => 12]]);
-            $sheet->getStyle('A8:D8')->applyFromArray([
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '475569']],
-            ]);
-            $sheet->getStyle('A9:D18')->applyFromArray([
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
-            ]);
-            foreach (range(9, 18) as $row) {
-                $wajib = $sheet->getCell("C{$row}")->getValue();
-                $color = ($wajib === 'YA') ? 'FEE2E2' : 'DCFCE7';
-                $fontColor = ($wajib === 'YA') ? 'DC2626' : '16A34A';
-                $sheet->getStyle("C{$row}")->applyFromArray([
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
-                    'font' => ['bold' => true, 'color' => ['rgb' => $fontColor]],
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+
+                // Style header row (A1:K1)
+                $sheet->getStyle('A1:K1')->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '16A34A']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
                 ]);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+
+                // Sample data rows (A2:K4)
+                $sheet->getStyle('A2:K4')->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0FDF4']],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BBF7D0']]],
+                ]);
+
+                // "Guide" Section header (row 6)
+                $sheet->getStyle('A6')->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '1E3A5F']],
+                ]);
+                // Guide columns header (row 7)
+                $sheet->getStyle('A7:D7')->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '475569']],
+                ]);
+                // Guide data rows border (row 8 to 18)
+                $sheet->getStyle('A8:D18')->applyFromArray([
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
+                ]);
+
+                // Wajib? column coloring
+                foreach (range(8, 18) as $row) {
+                    $wajib = $sheet->getCell("C{$row}")->getValue();
+                    $color = ($wajib === 'YA') ? 'FEE2E2' : 'DCFCE7';
+                    $fontColor = ($wajib === 'YA') ? 'DC2626' : '16A34A';
+                    $sheet->getStyle("C{$row}")->applyFromArray([
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
+                        'font' => ['bold' => true, 'color' => ['rgb' => $fontColor]],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                    ]);
+                }
+                
+                $sheet->freezePane('A2');
             }
-            $sheet->freezePane('A2');
-        }];
+        ];
     }
 }

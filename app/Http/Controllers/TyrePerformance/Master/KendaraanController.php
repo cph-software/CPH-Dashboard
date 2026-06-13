@@ -109,7 +109,8 @@ class KendaraanController extends Controller
                     6 => 'operational_segment_id',
                     7 => 'tyre_position_configuration_id',
                     8 => 'total_tyre_position',
-                    9 => 'tyre_unit_status'
+                    9 => 'measurement_unit',
+                    10 => 'tyre_unit_status'
                 ];
             } else {
                 $cols = [
@@ -120,7 +121,8 @@ class KendaraanController extends Controller
                     5 => 'operational_segment_id',
                     6 => 'tyre_position_configuration_id',
                     7 => 'total_tyre_position',
-                    8 => 'tyre_unit_status'
+                    8 => 'measurement_unit',
+                    9 => 'tyre_unit_status'
                 ];
             }
 
@@ -165,6 +167,7 @@ class KendaraanController extends Controller
             'total_tyre_position' => 'required|integer',
             'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'measurement_unit' => 'required|in:KM,HM',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
@@ -183,6 +186,7 @@ class KendaraanController extends Controller
                 'Total Posisi' => $kendaraan->total_tyre_position,
                 'Status' => $kendaraan->tyre_unit_status,
                 'Operational Segment' => $kendaraan->segment->segment_name ?? '-',
+                'Satuan' => $kendaraan->measurement_unit,
             ]
         ]);
 
@@ -210,6 +214,7 @@ class KendaraanController extends Controller
             'total_tyre_position' => 'required|integer',
             'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
             'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'measurement_unit' => 'required|in:KM,HM',
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
@@ -222,6 +227,7 @@ class KendaraanController extends Controller
             'Area' => $kendaraan->area,
             'Konfigurasi Ban' => $kendaraan->tyrePositionConfiguration->config_name ?? '-',
             'Status' => $kendaraan->tyre_unit_status,
+            'Satuan' => $kendaraan->measurement_unit,
         ];
 
         $kendaraan->update($request->all());
@@ -237,6 +243,7 @@ class KendaraanController extends Controller
                 'Area' => $kendaraan->area,
                 'Konfigurasi Ban' => $kendaraan->tyrePositionConfiguration->config_name ?? '-',
                 'Status' => $kendaraan->tyre_unit_status,
+                'Satuan' => $kendaraan->measurement_unit,
             ]
         ]);
 

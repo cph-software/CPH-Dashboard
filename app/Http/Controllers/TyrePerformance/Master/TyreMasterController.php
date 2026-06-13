@@ -114,7 +114,13 @@ class TyreMasterController extends Controller
         $tyre = Tyre::with(['brand', 'size', 'pattern', 'location', 'currentVehicle', 'currentPosition', 'movements.vehicle', 'movements.position'])
             ->findOrFail($id);
 
-        return view('tyre-performance.master.tyres.show', compact('tyre'));
+        $companyMode = 'BOTH';
+        if ($tyre->tyre_company_id) {
+            $company = \App\Models\TyreCompany::find($tyre->tyre_company_id);
+            $companyMode = $company ? $company->measurement_mode : 'BOTH';
+        }
+
+        return view('tyre-performance.master.tyres.show', compact('tyre', 'companyMode'));
     }
 
     public function edit($id)

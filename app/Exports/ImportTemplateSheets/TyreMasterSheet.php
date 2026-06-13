@@ -39,10 +39,13 @@ class TyreMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvent
                 'SN-MC-003', 'MICHELIN', 'R25 29.5', 'XDM2', 'OB Haul',
                 '32', '42.00', '18000000', 'Repaired', 'Yes', 'GUDANG PUSAT'
             ],
-            // Row 6: Guide
-            [], // blank
+            // Row 5: blank
+            [],
+            // Row 6: Guide Section Header
             ['*** PANDUAN PENGISIAN ***'],
+            // Row 7: Guide Table Header
             ['Kolom', 'Keterangan', 'Wajib?', 'Contoh Nilai'],
+            // Row 8-18: Guide Table Data
             ['serial_number', 'Nomor seri unik dari ban (SN)', 'YA', 'SN-BS-001'],
             ['brand', 'Nama merek ban (akan dibuat otomatis jika belum ada)', 'YA', 'BRIDGESTONE'],
             ['size', 'Ukuran ban sesuai standar', 'YA', '11.00-20'],
@@ -62,7 +65,6 @@ class TyreMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvent
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $highestCol = $sheet->getHighestColumn();
 
                 // Style header row (A1:K1)
                 $sheet->getStyle('A1:K1')->applyFromArray([
@@ -79,19 +81,22 @@ class TyreMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvent
                     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BFDBFE']]],
                 ]);
 
-                // "Guide" Section header (row 8)
-                $sheet->getStyle('A7')->applyFromArray([
+                // "Guide" Section header (row 6)
+                $sheet->getStyle('A6')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '1E3A5F']],
                 ]);
-                $sheet->getStyle('A8:D8')->applyFromArray([
+                // Guide columns header (row 7)
+                $sheet->getStyle('A7:D7')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '475569']],
                 ]);
-                $sheet->getStyle('A9:D19')->applyFromArray([
+                // Guide data rows border (row 8 to 18)
+                $sheet->getStyle('A8:D18')->applyFromArray([
                     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
                 ]);
+
                 // Alternating row colors for guide
-                foreach (range(9, 19) as $i => $row) {
+                foreach (range(8, 18) as $i => $row) {
                     if ($i % 2 === 0) {
                         $sheet->getStyle("A{$row}:D{$row}")->applyFromArray([
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F8FAFC']],
@@ -100,7 +105,7 @@ class TyreMasterSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvent
                 }
 
                 // "Wajib?" column coloring (YA = red, TIDAK = green)
-                foreach (range(9, 19) as $row) {
+                foreach (range(8, 18) as $row) {
                     $wajib = $sheet->getCell("C{$row}")->getValue();
                     $color = ($wajib === 'YA') ? 'FEE2E2' : 'DCFCE7';
                     $fontColor = ($wajib === 'YA') ? 'DC2626' : '16A34A';

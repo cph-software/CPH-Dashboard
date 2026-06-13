@@ -43,10 +43,29 @@ class DashboardAnalyticsService
     public static function lifetimeData($tyre, string $mode): array
     {
         $d = [];
-        if ($mode !== 'HM') $d['lifetime_km'] = number_format($tyre->total_lifetime_km ?? 0);
-        if ($mode !== 'KM') $d['lifetime_hm'] = number_format($tyre->total_lifetime_hm ?? 0);
+        if ($mode !== 'HM') {
+            $d['lifetime_km'] = $tyre->total_lifetime_km ? number_format($tyre->total_lifetime_km) : '-';
+        }
+        if ($mode !== 'KM') {
+            $d['lifetime_hm'] = $tyre->total_lifetime_hm ? number_format($tyre->total_lifetime_hm) : '-';
+        }
         return $d;
     }
+
+    /**
+     * Resolve a human-readable location for a tyre (warehouse name or vehicle code).
+     */
+    public static function resolveLocation($tyre): string
+    {
+        if ($tyre->location) {
+            return $tyre->location->location_name;
+        }
+        if ($tyre->currentVehicle) {
+            return 'Di Kendaraan: ' . $tyre->currentVehicle->kode_kendaraan;
+        }
+        return '-';
+    }
+
 
     /**
      * Apply lifetime WHERE clause to a query builder based on mode.

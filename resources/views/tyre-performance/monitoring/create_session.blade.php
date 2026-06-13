@@ -169,21 +169,31 @@
                         <input type="date" name="install_date" class="form-control form-control-lg" required
                            value="{{ date('Y-m-d') }}">
                      </div>
-                     @if ($measurementMode !== 'HM')
+                     @php
+                        $activeUnit = $measurementMode;
+                        if ($measurementMode === 'BOTH') {
+                            $activeUnit = $vehicle->measurement_unit ?? 'KM';
+                        }
+                     @endphp
+                     @if ($activeUnit !== 'HM')
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Odometer Saat Ini (KM)</label>
-                        <input type="number" name="odometer_start" class="form-control form-control-lg" {{ $measurementMode === 'KM' || $measurementMode === 'BOTH' ? 'required' : '' }}
+                        <input type="number" name="odometer_start" class="form-control form-control-lg" required
                            placeholder="KM" value="{{ old('odometer_start', $currentKM) }}">
                      </div>
                      @else
                      <input type="hidden" name="odometer_start" value="{{ old('odometer_start', 0) }}">
                      @endif
+                     
+                     @if ($activeUnit !== 'KM')
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Hour Meter Saat Ini (HM)</label>
-                        <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM"
-                           {{ $measurementMode === 'HM' ? 'required' : '' }}
+                        <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM" required
                            value="{{ old('hm_start', $currentHM) }}">
                      </div>
+                     @else
+                     <input type="hidden" name="hm_start" value="{{ old('hm_start', 0) }}">
+                     @endif
                      <div class="col-md-3">
                         <label class="form-label fw-bold text-truncate w-100" title="Standar RTD Awal (Opsional)">Standar RTD <small class="text-muted fw-normal">(Opsional)</small></label>
                         <input type="number" name="original_rtd" class="form-control form-control-lg" step="0.1"

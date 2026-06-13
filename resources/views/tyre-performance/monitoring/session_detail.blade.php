@@ -189,7 +189,12 @@
       $installedOtds = $session->installations->pluck('original_rtd')->filter(fn($v) => $v > 0);
       $dynamicBaseline = $installedOtds->count() > 0 ? round($installedOtds->avg(), 2) : $session->original_rtd;
 
-      $summary = TyreMonitoringCalculator::calculate($dynamicBaseline, $session->install_date, $mockCheckData, $measurementMode);
+      $activeUnit = $measurementMode;
+      if ($measurementMode === 'BOTH') {
+          $activeUnit = $session->vehicle->measurement_unit ?? 'KM';
+      }
+
+      $summary = TyreMonitoringCalculator::calculate($dynamicBaseline, $session->install_date, $mockCheckData, $activeUnit);
    @endphp
 
    {{-- Page Header --}}
@@ -241,8 +246,8 @@
       <div class="col-6 col-md-3">
          <div class="card h-100">
             <div class="card-body py-3">
-               <p class="text-muted small mb-1">{{ $measurementMode === 'HM' ? 'Running HM' : 'Running Mileage' }}</p>
-               <h4 class="mb-0 fw-bold">{{ number_format($measurementMode === 'HM' ? $runningHm : $runningKm) }} <small class="text-muted fw-normal">{{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small></h4>
+               <p class="text-muted small mb-1">{{ $activeUnit === 'HM' ? 'Running HM' : 'Running Mileage' }}</p>
+               <h4 class="mb-0 fw-bold">{{ number_format($activeUnit === 'HM' ? $runningHm : $runningKm) }} <small class="text-muted fw-normal">{{ $activeUnit === 'HM' ? 'HM' : 'KM' }}</small></h4>
             </div>
          </div>
       </div>
@@ -275,16 +280,16 @@
                   <p class="mb-1 opacity-75 small"><i class="ri ri-focus-3-line me-1"></i>Worn %</p>
                   <h4 class="mb-0 text-white fw-bold">{{ round($summary['worn_pct']) }}%</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh setiap penipisan ban 1 mm' : 'Rata-rata KM yang ditempuh setiap penipisan ban 1 mm' }}">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Rata-rata HM yang ditempuh setiap penipisan ban 1 mm' : 'Rata-rata KM yang ditempuh setiap penipisan ban 1 mm' }}">
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $activeUnit === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_mm'] > 0 ? number_format($summary['km_per_mm']) : 'N/A' }}</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Rata-rata HM yang ditempuh per harinya' : 'Rata-rata KM yang ditempuh per harinya' }}">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $measurementMode === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Rata-rata HM yang ditempuh per harinya' : 'Rata-rata KM yang ditempuh per harinya' }}">
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $activeUnit === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_day'] > 0 ? number_format($summary['km_per_day']) : 'N/A' }}</h4>
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $measurementMode === 'HM' ? 'Estimasi SISA HM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' : 'Estimasi SISA KM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' }}">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $measurementMode === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</p>
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Estimasi SISA HM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' : 'Estimasi SISA KM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' }}">
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $activeUnit === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</p>
                   <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_km'] > 0 ? number_format($summary['proj_life_km']) : 'N/A' }}</h4>
                </div>
                <div class="col-md-2 col-6" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estimasi sisa umur pakai ban dalam bulan dengan ritme pemakaian saat ini">
@@ -479,7 +484,7 @@
                                     <div class="d-flex flex-column">
                                        <small
                                           class="fw-bold">{{ \Carbon\Carbon::parse($latestCheck->check_date)->format('d/m/Y') }}</small>
-                                       <small class="text-info">{{ $measurementMode === 'HM' ? number_format($latestCheck->operation_hm ?? 0) : number_format($latestCheck->operation_mileage) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</small>
+                                       <small class="text-info">{{ $activeUnit === 'HM' ? number_format($latestCheck->operation_hm ?? 0) : number_format($latestCheck->operation_mileage) }} {{ $activeUnit === 'HM' ? 'HM' : 'KM' }}</small>
                                     </div>
                                  @else
                                     <small class="text-muted">No check yet</small>
@@ -524,7 +529,7 @@
                            {{ \Carbon\Carbon::parse($session->install_date)->format('d M Y') }}
                         </h6>
                         <p class="text-muted small mb-1">{{ $session->installations->count() }} ban terpasang · Odometer:
-                           {{ $measurementMode === 'HM' ? number_format($session->hm_start) : number_format($session->odometer_start) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }}</p>
+                           {{ $activeUnit === 'HM' ? number_format($session->hm_start) : number_format($session->odometer_start) }} {{ $activeUnit === 'HM' ? 'HM' : 'KM' }}</p>
                         <div class="d-flex flex-wrap gap-2">
                            @foreach ($session->installations as $inst)
                               <span class="badge bg-label-dark p-2" title="{{ $inst->position }}"><i
@@ -630,7 +635,7 @@
                            </div>
                         @endif
                         <p class="text-muted small mb-2">{{ $group->count() }} posisi diperiksa · Op. Mileage:
-                           {{ $measurementMode === 'HM' ? number_format($first->operation_hm ?? 0) : number_format($first->operation_mileage) }} {{ $measurementMode === 'HM' ? 'HM' : 'KM' }} · Avg RTD: {{ number_format($avgRtd, 2) }}
+                           {{ $activeUnit === 'HM' ? number_format($first->operation_hm ?? 0) : number_format($first->operation_mileage) }} {{ $activeUnit === 'HM' ? 'HM' : 'KM' }} · Avg RTD: {{ number_format($avgRtd, 2) }}
                            mm</p>
                         {{-- Detail Table --}}
                         <div class="table-responsive">
@@ -643,8 +648,8 @@
                                     <th>RTD</th>
                                     <th>Avg</th>
                                     <th>Worn%</th>
-                                    <th>{{ $measurementMode === 'HM' ? 'HM/mm' : 'KM/mm' }}</th>
-                                    <th>{{ $measurementMode === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</th>
+                                    <th>{{ $activeUnit === 'HM' ? 'HM/mm' : 'KM/mm' }}</th>
+                                    <th>{{ $activeUnit === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</th>
                                     <th>Condition</th>
                                  </tr>
                               </thead>
@@ -660,8 +665,19 @@
                                        </td>
                                        <td class="fw-bold">{{ number_format($avgVal, 1) }}</td>
                                        <td>{{ number_format($c->worn_percentage, 0) }}%</td>
-                                       <td>{{ $c->km_per_mm > 0 ? number_format($c->km_per_mm, 0) : 'N/A' }}</td>
-                                       <td class="fw-bold text-primary">{{ $c->projected_life_km > 0 ? number_format($c->projected_life_km, 0) : 'N/A' }}
+                                       <td>
+                                          @if ($activeUnit === 'HM')
+                                             {{ $c->hm_per_mm > 0 ? number_format($c->hm_per_mm, 0) : 'N/A' }}
+                                          @else
+                                             {{ $c->km_per_mm > 0 ? number_format($c->km_per_mm, 0) : 'N/A' }}
+                                          @endif
+                                       </td>
+                                       <td class="fw-bold text-primary">
+                                          @if ($activeUnit === 'HM')
+                                             {{ $c->projected_life_hm > 0 ? number_format($c->projected_life_hm, 0) : 'N/A' }}
+                                          @else
+                                             {{ $c->projected_life_km > 0 ? number_format($c->projected_life_km, 0) : 'N/A' }}
+                                          @endif
                                        </td>
                                        <td>
                                           <span

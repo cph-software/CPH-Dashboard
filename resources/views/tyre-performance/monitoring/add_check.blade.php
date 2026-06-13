@@ -107,11 +107,17 @@
                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                      </div>
-                     @if ($measurementMode !== 'HM')
+                     @php
+                        $activeUnit = $measurementMode;
+                        if ($measurementMode === 'BOTH') {
+                            $activeUnit = $vehicle->measurement_unit ?? 'KM';
+                        }
+                     @endphp
+                     @if ($activeUnit !== 'HM')
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Odometer Check (KM)</label>
                         <input type="number" name="odometer"
-                           class="form-control form-control-lg @error('odometer') is-invalid @enderror" {{ $measurementMode !== 'HM' ? 'required' : '' }}
+                           class="form-control form-control-lg @error('odometer') is-invalid @enderror" required
                            placeholder="KM" value="{{ old('odometer', $currentKM) }}">
                         @error('odometer')
                            <div class="invalid-feedback">{{ $message }}</div>
@@ -120,16 +126,20 @@
                      @else
                      <input type="hidden" name="odometer" value="{{ old('odometer', 0) }}">
                      @endif
+                     
+                     @if ($activeUnit !== 'KM')
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Hour Meter Check (HM)</label>
                         <input type="number" name="hour_meter"
-                           class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM"
-                           {{ $measurementMode === 'HM' ? 'required' : '' }}
+                           class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM" required
                            value="{{ old('hour_meter', $currentHM) }}">
                         @error('hour_meter')
                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                      </div>
+                     @else
+                     <input type="hidden" name="hour_meter" value="{{ old('hour_meter', 0) }}">
+                     @endif
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Driver Name</label>
                         <input type="text" name="driver_name"
@@ -158,9 +168,9 @@
                         @enderror
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">{{ $measurementMode === 'HM' ? 'Operation HM' : 'Operation Mileage (KM)' }}</label>
+                        <label class="form-label fw-bold">{{ $activeUnit === 'HM' ? 'Operation HM' : 'Operation Mileage (KM)' }}</label>
                         <input type="number" name="operation_mileage" class="form-control form-control-lg"
-                           placeholder="{{ $measurementMode === 'HM' ? 'HM' : 'KM' }}" readonly id="computed_milage">
+                           placeholder="{{ $activeUnit === 'HM' ? 'HM' : 'KM' }}" readonly id="computed_milage">
                      </div>
                      <div class="col-md-3">
                         <label class="form-label fw-bold">Load Payload (Ton)</label>
@@ -183,20 +193,13 @@
                            Condition)</h6>
                         <div class="row g-3">
                            @php
-                               // Adjust required photos based on measurement mode
-                               if ($measurementMode === 'HM') {
+                               // Adjust required photos based on active unit
+                               if ($activeUnit === 'HM') {
                                   $generalPhotos = [
                                       'fleet' => 'Foto Fleet',
                                       'vehicle' => 'Foto Kendaraan',
                                       'map' => 'Foto Rute (Map)',
                                       'hm' => 'Foto HM',
-                                  ];
-                               } elseif ($measurementMode === 'KM') {
-                                  $generalPhotos = [
-                                      'fleet' => 'Foto Fleet',
-                                      'vehicle' => 'Foto Kendaraan',
-                                      'map' => 'Foto Rute (Map)',
-                                      'odometer_km' => 'Foto KM',
                                   ];
                                } else {
                                   $generalPhotos = [
@@ -204,7 +207,6 @@
                                       'vehicle' => 'Foto Kendaraan',
                                       'map' => 'Foto Rute (Map)',
                                       'odometer_km' => 'Foto KM',
-                                      'hm' => 'Foto HM',
                                   ];
                                }
                            @endphp
@@ -408,13 +410,15 @@
           const odometerStart = {{ $session->odometer_start ?? 0 }};
           const hmStart = {{ $session->hm_start ?? 0 }};
           const measurementMode = '{{ $measurementMode }}';
+          const vehicleUnit = '{{ $vehicle->measurement_unit ?? 'KM' }}';
+          const activeUnit = measurementMode === 'BOTH' ? vehicleUnit : measurementMode;
           const globalRetase = $('input[name="retase"]');
           const odometerInput = $('input[name="odometer"]');
           const hmInput = $('input[name="hour_meter"]');
           const mileageInput = $('#computed_milage');
 
           // Auto-calculate Operation Mileage/HM based on mode
-          if (measurementMode === 'HM') {
+          if (activeUnit === 'HM') {
               hmInput.on('input', function() {
                  const current = parseFloat($(this).val()) || 0;
                  const diff = current - hmStart;
@@ -588,8 +592,8 @@
          }
 
          // --- FORM SUBMIT VALIDATION (SMART CONDITIONAL UX) ---
-         // 1. General Documentation: Cuma "Foto Odometer" yang diwajibkan sbg bukti kehadiran.
-          const generalPhotosMandatory = measurementMode === 'HM' ? ['hm'] : ['odometer_km'];
+         // 1. General Documentation: Cuma "Foto Odometer/HM" yang diwajibkan sbg bukti kehadiran.
+          const generalPhotosMandatory = activeUnit === 'HM' ? ['hm'] : ['odometer_km'];
 
          // Track general upload clicks (opsional, sebagai tracker saja)
          const generalUploaded = {};
@@ -603,7 +607,7 @@
             for (const type of generalPhotosMandatory) {
                const preview = $(`#preview-${type} img`);
                if (preview.length === 0) {
-                  const requiredPhotoLabel = measurementMode === 'HM' ? 'Foto HM (Hour Meter)' : 'Foto KM (Odometer)';
+                  const requiredPhotoLabel = activeUnit === 'HM' ? 'Foto HM (Hour Meter)' : 'Foto KM (Odometer)';
                   alert(`[BUKTI KEHADIRAN WAJIB]\nSilakan upload ${requiredPhotoLabel} unit ini terlebih dahulu di bagian atas.`);
                   e.preventDefault();
                   return false;

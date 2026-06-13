@@ -507,22 +507,20 @@
                .then(res => res.json())
                .then(res => {
                   let mode = (res.vehicle.company && res.vehicle.company.measurement_mode) ? res.vehicle.company.measurement_mode : 'BOTH';
+                  if (mode === 'BOTH') {
+                      mode = res.vehicle.measurement_unit || 'KM';
+                  }
                   
                   if (mode === 'HM') {
                       $('#odometer_container').hide();
                       $('#odometer').removeAttr('required');
                       $('#hour_meter_container').show();
                       $('#hour_meter').attr('required', 'required');
-                  } else if (mode === 'KM') {
+                  } else {
                       $('#hour_meter_container').hide();
                       $('#hour_meter').removeAttr('required');
                       $('#odometer_container').show();
                       $('#odometer').attr('required', 'required');
-                  } else {
-                      $('#odometer_container').show();
-                      $('#odometer').attr('required', 'required');
-                      $('#hour_meter_container').show();
-                      $('#hour_meter').attr('required', 'required');
                   }
 
                   $('#vehicle_type_display').val(res.vehicle.jenis_kendaraan || '-');

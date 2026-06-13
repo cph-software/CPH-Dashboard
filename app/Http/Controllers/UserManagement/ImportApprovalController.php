@@ -468,6 +468,18 @@ class ImportApprovalController extends Controller
             );
         }
 
+        $company = \App\Models\TyreCompany::find($uploaderCompanyId);
+        $companyMode = $company ? $company->measurement_mode : 'KM';
+        $defaultUnit = ($companyMode === 'HM') ? 'HM' : 'KM';
+
+        $inputUnit = $data['measurement_unit'] ?? $data['satuan'] ?? null;
+        if ($inputUnit) {
+            $inputUnit = strtoupper(trim($inputUnit));
+            if (in_array($inputUnit, ['KM', 'HM'])) {
+                $defaultUnit = $inputUnit;
+            }
+        }
+
         \App\Models\MasterImportKendaraan::updateOrCreate(
             ['kode_kendaraan' => $code, 'tyre_company_id' => $uploaderCompanyId],
             [
@@ -481,6 +493,7 @@ class ImportApprovalController extends Controller
                 'tyre_position_configuration_id' => $layoutId,
                 'total_tyre_position' => $totalPositions,
                 'tyre_unit_status' => $data['status'] ?? 'Active',
+                'measurement_unit' => $defaultUnit,
                 'tyre_company_id' => $uploaderCompanyId
             ]
         );

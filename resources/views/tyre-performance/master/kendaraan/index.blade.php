@@ -64,6 +64,7 @@
                      <th>Default Segment</th>
                      <th>Axle Layout</th>
                      <th>Wheels</th>
+                     <th>Satuan</th>
                      <th>Status</th>
                      <th class="text-center">Actions</th>
                   </tr>
@@ -189,6 +190,13 @@
                            placeholder="e.g. 10" required>
                      </div>
                      <div class="col-md-6 mb-3">
+                        <label for="measurement_unit" class="form-label fw-bold">Satuan Pengukuran</label>
+                        <select name="measurement_unit" class="form-select" required>
+                           <option value="KM">Kilometer (KM)</option>
+                           <option value="HM">Hour Meter (HM)</option>
+                        </select>
+                     </div>
+                     <div class="col-md-6 mb-3">
                         <label for="tyre_unit_status" class="form-label fw-bold">Status</label>
                         <select name="tyre_unit_status" class="form-select" required>
                            <option value="Active">Active</option>
@@ -310,6 +318,13 @@
                         <label for="edit_total_positions" class="form-label fw-bold">Total Wheels</label>
                         <input type="number" id="edit_total_positions" name="total_tyre_position"
                            class="form-control total-pos-input" required>
+                     </div>
+                     <div class="col-md-6 mb-3">
+                        <label for="edit_measurement_unit" class="form-label fw-bold">Satuan Pengukuran</label>
+                        <select id="edit_measurement_unit" name="measurement_unit" class="form-select" required>
+                           <option value="KM">Kilometer (KM)</option>
+                           <option value="HM">Hour Meter (HM)</option>
+                        </select>
                      </div>
                      <div class="col-md-6 mb-3">
                         <label for="edit_unit_status" class="form-label fw-bold">Status</label>
@@ -512,6 +527,12 @@
                   }
                },
                {
+                  data: 'measurement_unit',
+                  render: function(data) {
+                     return `<span class="badge bg-label-info">${data || 'KM'}</span>`;
+                  }
+               },
+               {
                   data: 'tyre_unit_status',
                   render: function(data) {
                      const badges = {
@@ -562,7 +583,8 @@
                                                                data-payload="${row.payload_capacity}"
                                                                data-jenis="${row.jenis_kendaraan}" data-positions="${row.total_tyre_position}"
                                                                data-config-id="${row.tyre_position_configuration_id}"
-                                                               data-status="${row.tyre_unit_status}" title="Edit">
+                                                               data-status="${row.tyre_unit_status}"
+                                                               data-measurement-unit="${row.measurement_unit || 'KM'}" title="Edit">
                                                                <i class="icon-base ri ri-pencil-line"></i>
                                                             </a>`;
                      }
@@ -677,6 +699,7 @@
             const configId = $(this).data('config-id');
             const status = $(this).data('status');
             const companyId = $(this).data('company-id');
+            const measurementUnit = $(this).data('measurement-unit');
 
             editForm.attr('action', `{{ url('master_kendaraan') }}/${id}`);
             $('#edit_tyre_company_id').val(companyId).trigger('change');
@@ -692,6 +715,7 @@
             $('#edit_total_positions').val(positions);
             $('#edit_tyre_position_configuration_id').val(configId === 'null' ? '' : (configId || '')).trigger(
                'change');
+            $('#edit_measurement_unit').val(measurementUnit || 'KM');
             $('#edit_unit_status').val(status);
          });
 

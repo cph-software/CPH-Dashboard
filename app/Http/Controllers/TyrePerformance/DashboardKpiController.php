@@ -72,7 +72,7 @@ class DashboardKpiController extends Controller
                 'size' => $t->size->size ?? '-',
                 'pattern' => $t->pattern->name ?? '-',
                 'status' => $t->status,
-                'location' => $t->location->location_name ?? '-',
+                'location' => DAS::resolveLocation($t),
                 'vehicle' => $t->currentVehicle->kode_kendaraan ?? '-',
             ], DAS::lifetimeData($t, $mode), [
                 'price' => $t->price ? 'Rp ' . number_format($t->price, 0, ',', '.') : '-',
@@ -167,7 +167,7 @@ class DashboardKpiController extends Controller
         $table = $tyres->map(fn($t) => [
             'serial_number' => $t->serial_number, 'brand' => $t->brand->brand_name ?? '-',
             'size' => $t->size->size ?? '-', 'pattern' => $t->pattern->name ?? '-',
-            'status' => $t->status, 'location' => $t->location->location_name ?? '-',
+            'status' => $t->status, 'location' => DAS::resolveLocation($t),
             'price' => $t->price ? 'Rp '.number_format($t->price, 0, ',', '.') : '-',
             '_url' => route('tyre-master.show', $t->id),
         ]);
@@ -222,20 +222,32 @@ class DashboardKpiController extends Controller
             '_url' => route('tyre-master.show', $t->id),
         ]));
 
-        $sortField = $tyres->avg('total_lifetime_hm') > $tyres->avg('total_lifetime_km') ? 'total_lifetime_hm' : 'total_lifetime_km';
-        $sortLabel = $sortField === 'total_lifetime_hm' ? 'HM' : 'KM';
-        $top10 = $tyres->sortByDesc($sortField)->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => $t->{$sortField}]);
-        $byBrand = $tyres->groupBy(fn($t) => $t->brand->brand_name ?? '-')
-            ->map(fn($g, $k) => ['label' => $k, 'value' => round($g->avg($sortField))])
-            ->sortByDesc('value')->values();
+        if ($mode === 'BOTH') {
+            $top10Km = $tyres->where('total_lifetime_km', '>', 0)->sortByDesc('total_lifetime_km')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->total_lifetime_km)]);
+            $top10Hm = $tyres->where('total_lifetime_hm', '>', 0)->sortByDesc('total_lifetime_hm')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->total_lifetime_hm)]);
+
+            $charts = [
+                ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh (KM)', 'labels' => $top10Km->pluck('label'), 'series' => $top10Km->pluck('value')],
+                ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh (HM)', 'labels' => $top10Hm->pluck('label'), 'series' => $top10Hm->pluck('value')],
+            ];
+        } else {
+            $sortField = $mode === 'HM' ? 'total_lifetime_hm' : 'total_lifetime_km';
+            $sortLabel = $mode === 'HM' ? 'HM' : 'KM';
+            $top10 = $tyres->where($sortField, '>', 0)->sortByDesc($sortField)->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->{$sortField})]);
+            $byBrand = $tyres->where($sortField, '>', 0)->groupBy(fn($t) => $t->brand->brand_name ?? '-')
+                ->map(fn($g, $k) => ['label' => $k, 'value' => round($g->avg($sortField))])
+                ->sortByDesc('value')->values();
+
+            $charts = [
+                ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh ('.$sortLabel.')', 'labels' => $top10->pluck('label'), 'series' => $top10->pluck('value')],
+                ['type' => 'bar', 'title' => 'Avg Lifetime per Brand ('.$sortLabel.')', 'labels' => $byBrand->pluck('label'), 'series' => $byBrand->pluck('value')],
+            ];
+        }
 
         return response()->json([
             'success' => true, 'title' => 'Detail Avg Lifetime' . ($mode === 'BOTH' ? ' (KM & HM)' : ' ('.$chartLabel.')'),
             'summary' => $summaryItems,
-            'charts' => [
-                ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh ('.$sortLabel.')', 'labels' => $top10->pluck('label'), 'series' => $top10->pluck('value')],
-                ['type' => 'bar', 'title' => 'Avg Lifetime per Brand ('.$sortLabel.')', 'labels' => $byBrand->pluck('label'), 'series' => $byBrand->pluck('value')],
-            ],
+            'charts' => $charts,
             'columns' => array_merge(['Serial','Brand','Size','Pattern'], $ltCols, ['Status','Kendaraan','Harga']),
             'keys' => array_merge(['serial_number','brand','size','pattern'], $ltKeys, ['status','vehicle','price']),
             'data' => $table, 'total' => $tyres->count(),
@@ -304,18 +316,47 @@ class DashboardKpiController extends Controller
         $cpCols = $mode === 'BOTH' ? ['CPK','CPH'] : [$cpLabel];
         $cpKeys = $mode === 'BOTH' ? ['cpk','cph'] : ($mode === 'HM' ? ['cph'] : ['cpk']);
 
-        return response()->json([
-            'success' => true, 'title' => 'Detail ' . $cpLabel,
-            'summary' => [
+        if ($mode === 'BOTH') {
+            $avgCpkVal = $tyres->avg('cpk_val') ?? 0;
+            $avgCphVal = $tyres->avg('cph_val') ?? 0;
+
+            $summary = [
+                ['label' => 'Avg CPK', 'value' => 'Rp '.number_format($avgCpkVal, 0, ',', '.'), 'color' => 'secondary'],
+                ['label' => 'Avg CPH', 'value' => 'Rp '.number_format($avgCphVal, 0, ',', '.'), 'color' => 'info'],
+                ['label' => 'Total Investasi', 'value' => 'Rp '.number_format($totalInv, 0, ',', '.'), 'color' => 'primary'],
+                ['label' => 'Paling Efisien', 'value' => $best ? $best->serial_number : '-', 'color' => 'success'],
+            ];
+
+            $byBrandCpk = $tyres->where('total_lifetime_km', '>', 0)->groupBy(fn($t) => $t->brand->brand_name ?? '-')
+                ->map(fn($g, $k) => ['label' => $k, 'value' => round($g->sum('price') / max($g->sum('total_lifetime_km'), 1))])
+                ->sortBy('value')->values();
+
+            $byBrandCph = $tyres->where('total_lifetime_hm', '>', 0)->groupBy(fn($t) => $t->brand->brand_name ?? '-')
+                ->map(fn($g, $k) => ['label' => $k, 'value' => round($g->sum('price') / max($g->sum('total_lifetime_hm'), 1))])
+                ->sortBy('value')->values();
+
+            $charts = [
+                ['type' => 'bar', 'title' => 'Cost Per KM (CPK) per Brand', 'labels' => $byBrandCpk->pluck('label'), 'series' => $byBrandCpk->pluck('value')],
+                ['type' => 'bar', 'title' => 'Cost Per HM (CPH) per Brand', 'labels' => $byBrandCph->pluck('label'), 'series' => $byBrandCph->pluck('value')],
+            ];
+        } else {
+            $summary = [
                 ['label' => 'Avg '.$cpLabel, 'value' => 'Rp '.number_format($avgCpVal, 0, ',', '.'), 'color' => 'secondary'],
                 ['label' => 'Total Investasi', 'value' => 'Rp '.number_format($totalInv, 0, ',', '.'), 'color' => 'primary'],
                 ['label' => 'Paling Efisien', 'value' => $best ? $best->serial_number : '-', 'color' => 'success'],
                 ['label' => 'Paling Mahal', 'value' => $worst ? $worst->serial_number : '-', 'color' => 'danger'],
-            ],
-            'charts' => [
+            ];
+
+            $charts = [
                 ['type' => 'bar', 'title' => $cpLabel.' per Brand', 'labels' => $byBrand->pluck('label'), 'series' => $byBrand->pluck('value')],
-                ['type' => 'bar', 'title' => 'Top 10 Paling Efisien', 'labels' => $tyres->take(10)->pluck('serial_number'), 'series' => $tyres->take(10)->map(fn($t) => round($t->sort_val, 2))->values()],
-            ],
+                ['type' => 'bar', 'title' => 'Top 10 Paling Efisien ('.$cpLabel.')', 'labels' => $tyres->take(10)->pluck('serial_number'), 'series' => $tyres->take(10)->map(fn($t) => round($t->sort_val, 2))->values()],
+            ];
+        }
+
+        return response()->json([
+            'success' => true, 'title' => 'Detail ' . $cpLabel,
+            'summary' => $summary,
+            'charts' => $charts,
             'columns' => array_merge(['Serial','Brand','Size','Pattern','Harga'], $ltCols, $cpCols, ['Status']),
             'keys' => array_merge(['serial_number','brand','size','pattern','price'], $ltKeys, $cpKeys, ['status']),
             'data' => $tableData, 'total' => $tyres->count(),
@@ -327,7 +368,7 @@ class DashboardKpiController extends Controller
         [$ltCols, $ltKeys] = DAS::lifetimeCols($mode);
         $field = DAS::primaryField($mode);
         $chartLabel = $mode === 'HM' ? 'HM' : 'KM';
-        $scrapped = Tyre::where('status', 'Scrap')->with(['brand', 'size', 'pattern', 'location'])->get();
+        $scrapped = Tyre::where('status', 'Scrap')->with(['brand', 'size', 'pattern', 'location', 'currentVehicle'])->get();
         $total = Tyre::count();
 
         $removals = TyreMovement::where('movement_type', 'Removal')->where('target_status', 'Scrap')
@@ -342,24 +383,33 @@ class DashboardKpiController extends Controller
         $byBrand = $scrapped->groupBy(fn($t) => $t->brand->brand_name ?? '-')
             ->map(fn($g, $k) => ['label' => $k, 'value' => $g->count()])
             ->sortByDesc('value')->values();
-        $avgLife = $scrapped->avg($field) ?? 0;
 
         $table = $scrapped->map(fn($t) => array_merge([
             'serial_number' => $t->serial_number, 'brand' => $t->brand->brand_name ?? '-',
             'size' => $t->size->size ?? '-', 'pattern' => $t->pattern->name ?? '-',
-            'location' => $t->location->location_name ?? '-',
+            'location' => DAS::resolveLocation($t),
         ], DAS::lifetimeData($t, $mode), [
             '_url' => route('tyre-master.show', $t->id),
         ]));
 
+        $summary = [
+            ['label' => 'Total Scrap', 'value' => $scrapped->count(), 'color' => 'danger'],
+            ['label' => 'Scrap Rate', 'value' => ($total > 0 ? round($scrapped->count()/$total*100,1) : 0).'%', 'color' => 'warning'],
+            ['label' => 'Penyebab #1', 'value' => $topFailure, 'color' => 'info'],
+        ];
+
+        if ($mode !== 'HM') {
+            $avgLifeKm = $scrapped->where('total_lifetime_km', '>', 0)->avg('total_lifetime_km') ?? 0;
+            $summary[] = ['label' => 'Avg Life (KM)', 'value' => number_format($avgLifeKm).' KM', 'color' => 'secondary'];
+        }
+        if ($mode !== 'KM') {
+            $avgLifeHm = $scrapped->where('total_lifetime_hm', '>', 0)->avg('total_lifetime_hm') ?? 0;
+            $summary[] = ['label' => 'Avg Life (HM)', 'value' => number_format($avgLifeHm).' HM', 'color' => 'secondary'];
+        }
+
         return response()->json([
             'success' => true, 'title' => 'Detail Scrap Rate',
-            'summary' => [
-                ['label' => 'Total Scrap', 'value' => $scrapped->count(), 'color' => 'danger'],
-                ['label' => 'Scrap Rate', 'value' => ($total > 0 ? round($scrapped->count()/$total*100,1) : 0).'%', 'color' => 'warning'],
-                ['label' => 'Penyebab #1', 'value' => $topFailure, 'color' => 'info'],
-                ['label' => 'Avg Life (Scrap)', 'value' => number_format($avgLife).' '.$chartLabel, 'color' => 'secondary'],
-            ],
+            'summary' => $summary,
             'charts' => [
                 ['type' => 'donut', 'title' => 'Penyebab Scrap', 'labels' => $failureLabels->values(), 'series' => $failureSeries->values()],
                 ['type' => 'bar', 'title' => 'Brand Paling Sering Scrap', 'labels' => $byBrand->pluck('label'), 'series' => $byBrand->pluck('value')],

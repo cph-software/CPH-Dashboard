@@ -544,7 +544,7 @@
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="brandFilterSize" class="form-select select2">
@@ -554,7 +554,7 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-price-tag-3-line me-1"></i>
                               Brand</label>
                            <select id="brandFilterBrand" class="form-select select2">
@@ -564,7 +564,7 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-primary"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="brandFilterPattern" class="form-select select2">
@@ -574,6 +574,16 @@
                               @endforeach
                            </select>
                         </div>
+                        @if($measurementMode === 'BOTH')
+                        <div class="col-md-3">
+                           <label class="filter-label mb-1 d-block text-primary"><i class="ri-speed-line me-1"></i>
+                              Satuan</label>
+                           <select id="brandFilterUnit" class="form-select">
+                              <option value="KM">Kilometer (KM)</option>
+                              <option value="HM">Hour Meter (HM)</option>
+                           </select>
+                        </div>
+                        @endif
                      </div>
                   </div>
                   <div id="brandPerformanceChart" style="min-height:280px;"></div>
@@ -591,7 +601,7 @@
                <div class="card-body">
                   <div class="chart-filter-bar rounded p-3 mb-3 shadow-sm">
                      <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-ruler-2-line me-1"></i>
                               Size</label>
                            <select id="cpkFilterSize" class="form-select select2">
@@ -601,7 +611,7 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-price-tag-3-line me-1"></i>
                               Brand</label>
                            <select id="cpkFilterBrand" class="form-select select2">
@@ -611,7 +621,7 @@
                               @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="{{ $measurementMode === 'BOTH' ? 'col-md-3' : 'col-md-4' }}">
                            <label class="filter-label mb-1 d-block text-warning"><i class="ri-road-map-line me-1"></i>
                               Pattern</label>
                            <select id="cpkFilterPattern" class="form-select select2">
@@ -621,6 +631,16 @@
                               @endforeach
                            </select>
                         </div>
+                        @if($measurementMode === 'BOTH')
+                        <div class="col-md-3">
+                           <label class="filter-label mb-1 d-block text-warning"><i class="ri-speed-line me-1"></i>
+                              Satuan</label>
+                           <select id="cpkFilterUnit" class="form-select">
+                              <option value="KM">Kilometer (KM)</option>
+                              <option value="HM">Hour Meter (HM)</option>
+                           </select>
+                        </div>
+                        @endif
                      </div>
                   </div>
                   <div id="cpkByBrandChart" style="min-height:280px;"></div>
@@ -1427,6 +1447,13 @@
             }
             container.innerHTML = ''; // Clear loading spinner
             var hasBrand = $('#brandFilterBrand').val();
+            var activeUnit = '{{ $measurementMode }}';
+            if (activeUnit === 'BOTH') {
+               activeUnit = $('#brandFilterUnit').val() || 'KM';
+            }
+            var unitSuffix = activeUnit.toLowerCase();
+            var seriesName = hasBrand ? 'Avg by Pattern' : 'Avg ' + activeUnit;
+
             brandChartInst = new ApexCharts(container, {
                chart: {
                   type: 'bar',
@@ -1436,13 +1463,14 @@
                         openDrillDown('brand_performance', data[cfg.dataPointIndex].label, {
                            size: $('#brandFilterSize').val(),
                            brand_id: $('#brandFilterBrand').val(),
-                           pattern: $('#brandFilterPattern').val()
+                           pattern: $('#brandFilterPattern').val(),
+                           unit: activeUnit
                         });
                      }
                   }
                },
                series: [{
-                  name: hasBrand ? 'Avg by Pattern' : 'Avg {{ $measurementMode === 'BOTH' ? 'Life' : $measurementMode }}',
+                  name: seriesName,
                   data: data.map(function(b) {
                      return b.avg_km;
                   })
@@ -1465,7 +1493,7 @@
                dataLabels: {
                   enabled: true,
                   formatter: function(v, o) {
-                     return v.toLocaleString() + ' {{ $measurementMode === 'HM' ? 'hm' : 'km' }} (' + data[o.dataPointIndex].count + ' ban)';
+                     return v.toLocaleString() + ' ' + unitSuffix + ' (' + data[o.dataPointIndex].count + ' ban)';
                   }
                }
             });
@@ -1479,13 +1507,17 @@
                brandChartInst = null;
             }
             showChartLoading('#brandPerformanceChart', 'Memuat performa brand...');
+            var sendData = {
+               size: $('#brandFilterSize').val(),
+               brand_id: $('#brandFilterBrand').val(),
+               pattern: $('#brandFilterPattern').val()
+            };
+            if ($('#brandFilterUnit').length) {
+               sendData.unit = $('#brandFilterUnit').val();
+            }
             $.ajax({
                url: brandPerformanceUrl,
-               data: {
-                  size: $('#brandFilterSize').val(),
-                  brand_id: $('#brandFilterBrand').val(),
-                  pattern: $('#brandFilterPattern').val()
-               },
+               data: sendData,
                success: function(res) {
                   if (res.success && res.data && res.data.length > 0) {
                      renderBrandChart(res.data);
@@ -1499,7 +1531,7 @@
                }
             });
          }
-         $('#brandFilterSize, #brandFilterBrand, #brandFilterPattern').on('change', function() {
+         $('#brandFilterSize, #brandFilterBrand, #brandFilterPattern, #brandFilterUnit').on('change', function() {
             updateCascadingDropdowns('#brandFilterSize', '#brandFilterBrand', '#brandFilterPattern', 'performance', triggerBrandPerformanceAjax);
          });
 
@@ -1520,6 +1552,13 @@
                return a.cpk - b.cpk;
             });
             var hasBrand = $('#cpkFilterBrand').val();
+            var activeUnit = '{{ $measurementMode }}';
+            if (activeUnit === 'BOTH') {
+               activeUnit = $('#cpkFilterUnit').val() || 'KM';
+            }
+            var labelName = activeUnit === 'HM' ? 'CPH' : 'CPK';
+            var seriesName = hasBrand ? labelName + ' by Pattern' : labelName;
+
             cpkChartInst = new ApexCharts(container, {
                chart: {
                   type: 'bar',
@@ -1529,13 +1568,14 @@
                         openDrillDown('brand_cpk', data[cfg.dataPointIndex].label, {
                            size: $('#cpkFilterSize').val(),
                            brand_id: $('#cpkFilterBrand').val(),
-                           pattern: $('#cpkFilterPattern').val()
+                           pattern: $('#cpkFilterPattern').val(),
+                           unit: activeUnit
                         });
                      }
                   }
                },
                series: [{
-                  name: hasBrand ? 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }} by Pattern' : 'CP{{ $measurementMode === 'HM' ? 'H' : 'K' }}',
+                  name: seriesName,
                   data: data.map(function(b) {
                      return b.cpk;
                   })
@@ -1572,13 +1612,17 @@
                cpkChartInst = null;
             }
             showChartLoading('#cpkByBrandChart', 'Memuat data CPK...');
+            var sendData = {
+               size: $('#cpkFilterSize').val(),
+               brand_id: $('#cpkFilterBrand').val(),
+               pattern: $('#cpkFilterPattern').val()
+            };
+            if ($('#cpkFilterUnit').length) {
+               sendData.unit = $('#cpkFilterUnit').val();
+            }
             $.ajax({
                url: cpkByBrandUrl,
-               data: {
-                  size: $('#cpkFilterSize').val(),
-                  brand_id: $('#cpkFilterBrand').val(),
-                  pattern: $('#cpkFilterPattern').val()
-               },
+               data: sendData,
                success: function(res) {
                   if (res.success && res.data && res.data.length > 0) {
                      renderCpkChart(res.data);
@@ -1592,11 +1636,11 @@
                }
             });
          }
-         $('#cpkFilterSize, #cpkFilterBrand, #cpkFilterPattern').on('change', function() {
+         $('#cpkFilterSize, #cpkFilterBrand, #cpkFilterPattern, #cpkFilterUnit').on('change', function() {
             updateCascadingDropdowns('#cpkFilterSize', '#cpkFilterBrand', '#cpkFilterPattern', 'cpk', triggerCpkAjax);
          });
 
-         // --- Brand Detail Section Logic ---
+                  // --- Brand Detail Section Logic ---
          var brandDetailUrl = '{{ route('master_data.brand-detail-performance') }}';
          var brandPatternChart = null, brandSizeChart = null, brandLocationChart = null;
 
