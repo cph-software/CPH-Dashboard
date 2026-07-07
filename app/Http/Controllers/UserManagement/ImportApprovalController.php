@@ -388,7 +388,7 @@ class ImportApprovalController extends Controller
                 'segment_name' => $data['segment'] ?? $data['segment_name'] ?? null,
                 'is_in_warehouse' => $inWarehouse,
                 'current_location_id' => $locationId,
-                'status' => $data['status'] ?? 'New',
+                'status' => (isset($data['status']) && trim($data['status']) !== '') ? $data['status'] : 'New',
                 'initial_tread_depth' => $initialRtd,
                 'current_tread_depth' => (float)($data['current_rtd'] ?? $initialRtd),
                 'price' => $this->parseEuroNum($data['price'] ?? 0),
@@ -492,7 +492,7 @@ class ImportApprovalController extends Controller
                 'operational_segment_id' => $segmentId,
                 'tyre_position_configuration_id' => $layoutId,
                 'total_tyre_position' => $totalPositions,
-                'tyre_unit_status' => $data['status'] ?? 'Active',
+                'tyre_unit_status' => (isset($data['status']) && trim($data['status']) !== '') ? $data['status'] : 'Active',
                 'measurement_unit' => $defaultUnit,
                 'tyre_company_id' => $uploaderCompanyId
             ]
@@ -1149,7 +1149,7 @@ class ImportApprovalController extends Controller
             'vehicle_id' => $vehicle->id,
             'odometer' => $data['odometer'] ?? 0,
             'tyre_man' => $data['tyre_man'] ?? auth()->user()->name,
-            'status' => $data['status'] ?? 'Draft'
+            'status' => (isset($data['status']) && trim($data['status']) !== '') ? $data['status'] : 'Draft'
         ]);
         // Details are not imported in this simple version
     }
