@@ -62,7 +62,7 @@
                         </td>
                         <td>
                            <div class="d-flex align-items-center justify-content-center">
-                              @if (hasPermission('Patterns', 'update') && auth()->user()->role_id == 1)
+                              @if (hasPermission('Patterns', 'update'))
                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
                                     data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
@@ -70,7 +70,7 @@
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
-                              @if (hasPermission('Patterns', 'delete') && auth()->user()->role_id == 1)
+                              @if (hasPermission('Patterns', 'delete'))
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-pattern"
                                     data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}" title="Delete">

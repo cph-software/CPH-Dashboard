@@ -44,7 +44,7 @@ class CheckTyrePermission
         }
 
         // 1b. Workshop Admin bypass for Companies menu
-        if ($menuName === 'Companies' && \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+        if (($menuName === 'Companies' || $menuName === 'Master Instansi') && \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
             return $next($request);
         }
 

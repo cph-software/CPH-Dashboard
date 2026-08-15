@@ -68,16 +68,30 @@
                         </tr>
                      </thead>
                      <tbody>
-                        @foreach ($aplikasi as $app)
-                           <tr class="bg-label-primary app-header" data-app-id="{{ $app->id }}">
-                              <td colspan="7" class="fw-bold px-4 py-2 text-uppercase small letter-spacing-1">
-                                 <i class="icon-base ri ri-folder-open-line me-1"></i> {{ $app->name }}
-                              </td>
-                           </tr>
-                           @foreach ($app->menus()->orderBy('name')->get() as $menu)
-                              @include('user-management.permissions._menu_row', ['menu' => $menu])
-                           @endforeach
-                        @endforeach
+                         @foreach ($aplikasi as $app)
+                            <tr class="bg-label-primary app-header" data-app-id="{{ $app->id }}">
+                               <td colspan="7" class="fw-bold px-4 py-2 text-uppercase small letter-spacing-1">
+                                  <i class="icon-base ri ri-folder-open-line me-1"></i> {{ $app->name }}
+                               </td>
+                            </tr>
+                            @php
+                               $parentMenus = $app->menus()->whereNull('parent_id')->orderBy('order_no')->get();
+                               $parentIds = $parentMenus->pluck('id')->toArray();
+                               $orphanMenus = $app->menus()->whereNotNull('parent_id')->whereNotIn('parent_id', $parentIds)->get();
+                            @endphp
+                            @foreach ($parentMenus as $parent)
+                               @include('user-management.permissions._menu_row', ['menu' => $parent, 'level' => 0])
+                               @foreach ($parent->children()->orderBy('order_no')->get() as $child)
+                                  @include('user-management.permissions._menu_row', ['menu' => $child, 'level' => 1])
+                                  @foreach ($child->children()->orderBy('order_no')->get() as $grandChild)
+                                     @include('user-management.permissions._menu_row', ['menu' => $grandChild, 'level' => 2])
+                                  @endforeach
+                               @endforeach
+                            @endforeach
+                            @foreach ($orphanMenus as $orphan)
+                               @include('user-management.permissions._menu_row', ['menu' => $orphan, 'level' => 0])
+                            @endforeach
+                         @endforeach
                      </tbody>
                   </table>
                </div>

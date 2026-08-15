@@ -192,6 +192,8 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::post('permissions', [\App\Http\Controllers\UserManagement\PermissionController::class, 'store'])->name('permissions.store')->middleware('tyre.permission:Permissions,update');
 
     // Import Approval
+    Route::redirect('Import-Approval', '/import-approval');
+    Route::redirect('Import-approval', '/import-approval');
     Route::get('import-approval', [\App\Http\Controllers\UserManagement\ImportApprovalController::class, 'index'])
         ->name('import-approval.index')
         ->middleware('tyre.permission:Import Approval,view');

@@ -27,7 +27,7 @@
                   <i class="ri-upload-2-line me-1"></i> Import
                </button>
             @endif
-            @if (hasPermission('Failure Codes', 'create') && auth()->user()->role_id == 1)
+            @if (hasPermission('Failure Codes', 'create'))
                <a href="{{ route('tyre-failure-codes.create') }}" class="btn btn-primary">
                   <i class="icon-base ri ri-add-line me-1"></i> Add Failure Code
                </a>
@@ -142,15 +142,14 @@
                                  <i class="icon-base ri ri-price-tag-3-line"></i>
                               </button>
 
-                              <!-- Only Super Admin can Edit/Delete global Failure Codes -->
-                              @if (hasPermission('Failure Codes', 'update') && auth()->user()->role_id == 1)
+                              @if (hasPermission('Failure Codes', 'update'))
                                  <a href="{{ route('tyre-failure-codes.edit', $fc->id) }}"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1"
                                     title="Edit Global Code">
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
                               @endif
-                              @if (hasPermission('Failure Codes', 'delete') && auth()->user()->role_id == 1)
+                              @if (hasPermission('Failure Codes', 'delete'))
                                  <button type="button"
                                     class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light delete-failure"
                                     data-id="{{ $fc->id }}" data-code="{{ $fc->failure_code }}" title="Delete Global Code">

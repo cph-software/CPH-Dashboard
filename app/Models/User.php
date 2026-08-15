@@ -71,16 +71,45 @@ class User extends Authenticatable
             }
         }
 
-        // Cek apakah menu ada
-        if (!isset($this->cachedMenuPermissions[$menuName]))
-            return false;
+        // Aliases mapping for compatibility between route middleware, DB names, and views
+        $aliases = [
+            'Companies' => 'Master Instansi',
+            'Master Instansi' => 'Companies',
+            'Activity Log' => 'All Activity',
+            'All Activity' => 'Activity Log',
+            'Onboarding Manager' => 'Onboarding Projects',
+        ];
 
-        // Jika tidak ada permission spesifik, cukup cek akses menu
-        if (!$permission)
-            return true;
+        $targetNames = [$menuName];
+        if (isset($aliases[$menuName])) {
+            $targetNames[] = $aliases[$menuName];
+        }
 
-        // Cek granular permission dari cache
-        return in_array($permission, $this->cachedMenuPermissions[$menuName]);
+        // Check exact or alias menu matches
+        foreach ($targetNames as $name) {
+            if (isset($this->cachedMenuPermissions[$name])) {
+                if (!$permission) {
+                    return true;
+                }
+                if (in_array($permission, $this->cachedMenuPermissions[$name])) {
+                    return true;
+                }
+            }
+        }
+
+        // Special parent container fallback: Tyre Operations
+        if ($menuName === 'Tyre Operations') {
+            $childMenus = ['Pemasangan (Install)', 'Pelepasan (Remove)', 'Rotasi (Rotate)', 'Movement History', 'Tyre Monitoring'];
+            foreach ($childMenus as $child) {
+                if (isset($this->cachedMenuPermissions[$child])) {
+                    if (!$permission || in_array($permission, $this->cachedMenuPermissions[$child])) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
