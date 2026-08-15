@@ -36,10 +36,6 @@ class TyreSizeController extends Controller
 
     public function store(Request $request)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menambah Data Master Global.');
-        }
-
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
@@ -51,6 +47,11 @@ class TyreSizeController extends Controller
 
         $size = TyreSize::create($data);
         $size->load(['brand', 'pattern']);
+
+        // Automatically map to user's company if not Super Admin
+        if (auth()->user()->role_id != 1 && auth()->user()->tyre_company_id) {
+            $size->companies()->syncWithoutDetaching([auth()->user()->tyre_company_id]);
+        }
 
         setLogActivity(auth()->id(), 'Menambah ukuran ban: ' . $request->size, [
             'action_type' => 'create',
@@ -68,9 +69,6 @@ class TyreSizeController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat mengubah Data Master Global.');
-        }
         $request->validate([
             'size' => 'required|string|max:255',
             'tyre_brand_id' => 'required|exists:tyre_brands,id',
@@ -102,10 +100,6 @@ class TyreSizeController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menghapus Data Master Global.');
-        }
-
         $size = TyreSize::findOrFail($id);
 
         if ($size->tyres()->exists()) {

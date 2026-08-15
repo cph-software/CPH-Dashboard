@@ -26,16 +26,17 @@ class TyreBrandController extends Controller
 
     public function store(Request $request)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menambah Data Master Global.');
-        }
-
         $request->validate([
             'brand_name' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
         ]);
 
         $brand = TyreBrand::create($request->all());
+
+        // Automatically map to user's company if not Super Admin
+        if (auth()->user()->role_id != 1 && auth()->user()->tyre_company_id) {
+            $brand->companies()->syncWithoutDetaching([auth()->user()->tyre_company_id]);
+        }
 
         setLogActivity(auth()->id(), 'Menambah brand ban: ' . $request->brand_name, [
             'action_type' => 'create',
@@ -48,9 +49,6 @@ class TyreBrandController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat mengubah Data Master Global.');
-        }
         $request->validate([
             'brand_name' => 'required|string|max:255',
             'status' => 'required|in:Active,Inactive',
@@ -72,10 +70,6 @@ class TyreBrandController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->role_id != 1) {
-            return redirect()->back()->with('error', 'Akses Ditolak: Hanya Super Admin yang dapat menghapus Data Master Global.');
-        }
-
         $brand = TyreBrand::findOrFail($id);
 
         if ($brand->tyres()->exists() || $brand->sizes()->exists() || $brand->patterns()->exists()) {
