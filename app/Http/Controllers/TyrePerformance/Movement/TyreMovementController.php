@@ -23,26 +23,19 @@ class TyreMovementController extends Controller
     public function setActiveCompany(Request $request)
     {
         $companyId = $request->input('tyre_company_id');
+        $user = auth()->user();
         
-        if ($companyId == 0 || $companyId === '0') {
-            if (\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
-                session()->forget('active_company_id');
-                return response()->json(['success' => true, 'message' => 'Filter perusahaan dibersihkan (Global View)']);
-            } else {
-                return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang bisa melihat Global View.'], 403);
-            }
-        }
-
-        if ($companyId === 'ALL_CLIENTS') {
+        if ($companyId == 0 || $companyId === '0' || $companyId === 'ALL_CLIENTS') {
             if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
-                // Determine all client IDs and set it to an array
-                $user = auth()->user();
-                $clientIds = $user->tyreCompany->getAllClientIds();
-                $clientIds[] = $user->tyre_company_id; // Include own company
+                $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
+                if ($user->tyre_company_id) {
+                    $clientIds[] = $user->tyre_company_id;
+                }
                 session(['active_company_id' => $clientIds]);
                 return response()->json(['success' => true, 'message' => 'Global Klien (Agregat) Aktif']);
             } else {
-                return response()->json(['success' => false, 'message' => 'Hanya Workshop Admin yang bisa melihat Global Klien.'], 403);
+                session()->forget('active_company_id');
+                return response()->json(['success' => true, 'message' => 'Filter perusahaan dibersihkan (Global View)']);
             }
         }
         
@@ -150,22 +143,27 @@ class TyreMovementController extends Controller
             ->where('is_in_warehouse', true)
             ->where('is_repairing', false);
             
-        // Cross-Company Install Logic: Fetch from Active Company AND Parent Company
-        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
-            $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-            $parentCompany = auth()->user()->tyre_company_id;
-            
-            $query->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
-                if (is_array($activeCompany)) {
-                    $q->whereIn('tyre_company_id', $activeCompany);
-                } elseif ($activeCompany) {
-                    $q->where('tyre_company_id', $activeCompany);
-                }
-                
-                if ($parentCompany && $parentCompany != $activeCompany) {
-                    $q->orWhere('tyre_company_id', $parentCompany);
-                }
-            });
+        // Cross-Company Install Logic: Active Company + Parent/Workshop Company Stock
+        $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $userCompany = auth()->user()->tyre_company_id;
+        
+        $relatedCompanyIds = [];
+        if ($userCompany) {
+            $relatedCompanyIds[] = $userCompany;
+        }
+        if ($activeCompany && !is_array($activeCompany)) {
+            $relatedCompanyIds[] = $activeCompany;
+            $comp = \App\Models\TyreCompany::find($activeCompany);
+            if ($comp && $comp->parent_company_id) {
+                $relatedCompanyIds[] = $comp->parent_company_id;
+            }
+        } elseif (is_array($activeCompany)) {
+            $relatedCompanyIds = array_merge($relatedCompanyIds, $activeCompany);
+        }
+        $relatedCompanyIds = array_unique(array_filter($relatedCompanyIds));
+
+        if (!empty($relatedCompanyIds) && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+            $query->withoutGlobalScope('company')->whereIn('tyre_company_id', $relatedCompanyIds);
         } else {
             $query = $this->applyCompanyScope($query);
         }
@@ -185,14 +183,16 @@ class TyreMovementController extends Controller
             });
         }
 
-        $tyres = $query->with(['brand', 'size', 'pattern', 'latestInstallation'])
-            ->limit(20)
+        $tyres = $query->with(['brand', 'size', 'pattern', 'company', 'latestInstallation'])
+            ->limit(30)
             ->get();
 
         $results = $tyres->map(function ($tyre) {
+            $companyLabel = $tyre->company ? ' [' . $tyre->company->company_name . ']' : '';
             return [
                 'id' => $tyre->id,
-                'text' => $tyre->serial_number,
+                'text' => $tyre->serial_number . $companyLabel . ' (' . ($tyre->brand->brand_name ?? '-') . ' - ' . ($tyre->size->size ?? '-') . ')',
+                'company_name' => $tyre->company->company_name ?? '-',
                 'brand' => $tyre->brand->brand_name ?? '-',
                 'pattern' => $tyre->pattern->name ?? '-',
                 'size' => $tyre->size->size ?? '-',
@@ -317,25 +317,31 @@ class TyreMovementController extends Controller
                     ->where('is_in_warehouse', true)
                     ->where('is_repairing', false);
                     
-            if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
-                $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-                $parentCompany = auth()->user()->tyre_company_id;
-                
-                $query->withoutGlobalScope('company')->where(function($q) use ($activeCompany, $parentCompany) {
-                    if (is_array($activeCompany)) {
-                        $q->whereIn('tyre_company_id', $activeCompany);
-                    } elseif ($activeCompany) {
-                        $q->where('tyre_company_id', $activeCompany);
-                    }
-                    if ($parentCompany && $parentCompany != $activeCompany) {
-                        $q->orWhere('tyre_company_id', $parentCompany);
-                    }
-                });
+            $activeCompany = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $userCompany = auth()->user()->tyre_company_id;
+            
+            $relatedCompanyIds = [];
+            if ($userCompany) {
+                $relatedCompanyIds[] = $userCompany;
+            }
+            if ($activeCompany && !is_array($activeCompany)) {
+                $relatedCompanyIds[] = $activeCompany;
+                $comp = \App\Models\TyreCompany::find($activeCompany);
+                if ($comp && $comp->parent_company_id) {
+                    $relatedCompanyIds[] = $comp->parent_company_id;
+                }
+            } elseif (is_array($activeCompany)) {
+                $relatedCompanyIds = array_merge($relatedCompanyIds, $activeCompany);
+            }
+            $relatedCompanyIds = array_unique(array_filter($relatedCompanyIds));
+
+            if (!empty($relatedCompanyIds) && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                $query->withoutGlobalScope('company')->whereIn('tyre_company_id', $relatedCompanyIds);
             } else {
                 $query = $this->applyCompanyScope($query);
             }
             
-            $availableTyres = $query->with(['brand', 'size'])->limit(50)->get();
+            $availableTyres = $query->with(['brand', 'size', 'company'])->limit(50)->get();
 
             return response()->json([
                 'availableTyres' => $availableTyres

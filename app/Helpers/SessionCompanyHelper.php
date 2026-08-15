@@ -13,7 +13,7 @@ class SessionCompanyHelper
     public static function isSuperAdmin()
     {
         $user = Auth::user();
-        return $user && ($user->role_id == 1 || $user->tyre_company_id == 1);
+        return $user && ($user->role_id == 1 || $user->tyre_company_id == 1 || empty($user->tyre_company_id));
     }
 
     /**
