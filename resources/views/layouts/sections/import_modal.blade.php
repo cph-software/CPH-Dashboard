@@ -114,60 +114,62 @@
       const downloadBtn = document.getElementById('btnDownloadTemplate');
 
       const guides = {
-         'Tyre Master': `<strong>Kolom Wajib:</strong><br>
-               - serial_number (SN Ban)<br>
-               - brand_name (Nama Brand)<br>
-               - size_name (Contoh: 11.00-20)<br>
-               - pattern_name (Nama Pattern)<br>
-               - initial_rtd (OTD Awal)<br>
-               - location_name (Nama Lokasi, misal: GUDANG)<br>
-               - segment_name (Nama Segmen, misal: HAULING)<br>
-               - price (Harga Ban)<br>
-               - status (New/Installed/Scrap/Repaired)`,
-         'Vehicle Master': `<strong>Kolom Wajib:</strong><br>
-               - kode_kendaraan (No. Lambung)<br>
-               - no_polisi (No. Plat)<br>
-               - model_kendaraan (Contoh: DT, HD)<br>
-               - brand_kendaraan (Merek Truk)<br>
-               - site_location (Site Kerja)<br>
-               - curb_weight (Berat Kosong, kg)<br>
-               - payload_capacity (Kapasitas Muat, ton)<br>
-               - segment (Nama/ID Segmen)`,
-         'Movement History': `<strong>Kolom Wajib:</strong><br>
-               - serial_number (SN Ban)<br>
-               - kode_kendaraan (Unit Truk)<br>
-               - movement_type (Installation/Removal)<br>
-               - movement_date (YYYY-MM-DD)<br>
-               - position_code (Konfigurasi Ban)<br>
-               - odometer (KM/HM Kendaraan)`,
-         'Failure Codes': `<strong>Kolom Wajib:</strong><br>
-               - failure_code (Kode Kerusakan)<br>
-               - failure_name (Deskripsi)<br>
-               - default_category (Category Group)`,
-         'Tyre Brand': `<strong>Kolom Wajib:</strong><br>
-                - brand_name (Nama Brand)<br>
-                - brand_type (Premium/Economy)<br>
-                - status (Active/Inactive)`,
-         'Tyre Size': `<strong>Kolom Wajib:</strong><br>
-                - size (Ukuran Ban, misal: 11.00-20)<br>
-                - brand_name (Nama Brand)<br>
-                - type (Bias/Radial)<br>
-                - std_otd (Standard Original Tread Depth)<br>
-                - ply_rating (Angka)`,
-         'Tyre Pattern': `<strong>Kolom Wajib:</strong><br>
-                - pattern_name (Nama Pattern)<br>
-                - brand (Nama Brand)<br>
-                - status (Active/Inactive)`,
-         'Locations': `<strong>Kolom Wajib:</strong><br>
-               - location_name (Nama Lokasi)<br>
-               - location_type (Warehouse/Service/Disposal)<br>
-               - capacity (Kapasitas Ban, angka)`,
-         'Segments': `<strong>Kolom Wajib:</strong><br>
-                - segment_id (ID Segmen, unik/kode pendek)<br>
-                - segment_name (Nama Lengkap Segmen)<br>
-                - location_name (Nama Lokasi/Site Kerja)<br>
-                - terrain_type (Muddy/Rocky/Asphalt)<br>
-                - status (Active/Inactive)`
+         'Tyre Master': `<strong><i class="ri-check-double-line text-primary me-1"></i>Struktur Template (.xlsx):</strong><br>
+               <span class="badge bg-label-primary mb-1">Sheet 1: Import Data</span><br>
+               <span class="badge bg-label-info mb-1">Sheet 2: Panduan & Validasi</span><br>
+               <span class="badge bg-label-success mb-2">Sheet 3: Referensi Master (Brand/Size/Pattern)</span><br>
+               <strong>Kolom Utama:</strong><br>
+               • <code>serial_number</code> (Nomor Seri Ban)<br>
+               • <code>brand</code> (Merek Ban)<br>
+               • <code>size</code> (Ukuran Ban, misal: 11.00-20)<br>
+               • <code>initial_rtd</code> (OTD Awal, mm)<br>
+               • <code>status</code> (New / Repaired / Scrap)<br>
+               • <code>in_warehouse</code> (Yes / No)`,
+         'Vehicle Master': `<strong><i class="ri-check-double-line text-success me-1"></i>Struktur Template (.xlsx):</strong><br>
+               <span class="badge bg-label-primary mb-1">Sheet 1: Import Data</span><br>
+               <span class="badge bg-label-info mb-1">Sheet 2: Panduan & Validasi</span><br>
+               <span class="badge bg-label-success mb-2">Sheet 3: Referensi Layout & Lokasi</span><br>
+               <strong>Kolom Utama:</strong><br>
+               • <code>kode_kendaraan</code> (No. Lambung Unit)<br>
+               • <code>model_kendaraan</code> (DUMP TRUCK, HD)<br>
+               • <code>layout</code> (Konfigurasi Axle Roda)<br>
+               • <code>site_location</code> (Lokasi Site)`,
+         'Movement History': `<strong><i class="ri-check-double-line text-info me-1"></i>Struktur Template (.xlsx):</strong><br>
+               <span class="badge bg-label-primary mb-1">Sheet 1: Import Data (Siklus Lengkap)</span><br>
+               <span class="badge bg-label-info mb-1">Sheet 2: Panduan Lengkap</span><br>
+               <span class="badge bg-label-success mb-2">Sheet 3: Referensi Unit & Kerusakan</span><br>
+               <strong>Kolom Utama:</strong><br>
+               • <code>no_seri</code> & <code>unit</code><br>
+               • <code>pemasangan_tanggal</code> & <code>pemasangan_km</code><br>
+               • <code>pelepasan_tanggal</code> & <code>pelepasan_km</code><br>
+               • <code>keterangan</code> (BUANG / Kosong)<br>
+               • <code>tebal_telapak</code> (Sisa RTD mm)`,
+         'Failure Codes': `<strong><i class="ri-check-double-line text-danger me-1"></i>Format Kolom:</strong><br>
+               • <code>failure_code</code> (Kode Kerusakan Unik)<br>
+               • <code>failure_name</code> (Deskripsi Kerusakan)<br>
+               • <code>default_category</code> (Repair / Scrap / Claim)`,
+         'Tyre Brand': `<strong><i class="ri-check-double-line text-primary me-1"></i>Format Kolom:</strong><br>
+               • <code>brand_name</code> (Nama Merek Ban)<br>
+               • <code>status</code> (Active / Inactive)`,
+         'Tyre Size': `<strong><i class="ri-check-double-line text-info me-1"></i>Format Kolom:</strong><br>
+               • <code>size</code> (Ukuran Ban, misal: 11.00-20)<br>
+               • <code>brand_name</code> (Merek Terkait)<br>
+               • <code>type</code> (Bias / Radial)<br>
+               • <code>std_otd</code> (Standar OTD mm)<br>
+               • <code>ply_rating</code> (Ply Rating)`,
+         'Tyre Pattern': `<strong><i class="ri-check-double-line text-warning me-1"></i>Format Kolom:</strong><br>
+               • <code>pattern_name</code> (Nama Kembangan/Pattern)<br>
+               • <code>brand</code> (Merek Terkait)<br>
+               • <code>status</code> (Active / Inactive)`,
+         'Locations': `<strong><i class="ri-check-double-line text-success me-1"></i>Format Kolom:</strong><br>
+               • <code>location_name</code> (Nama Lokasi Gudang/Workshop)<br>
+               • <code>location_type</code> (Warehouse / Service / Disposal)<br>
+               • <code>capacity</code> (Kapasitas Maksimal Ban)`,
+         'Segments': `<strong><i class="ri-check-double-line text-teal me-1"></i>Format Kolom:</strong><br>
+               • <code>segment_id</code> (Kode ID Segmen)<br>
+               • <code>segment_name</code> (Nama Lengkap Segmen)<br>
+               • <code>location_name</code> (Lokasi Terkait)<br>
+               • <code>terrain_type</code> (Muddy / Rocky / Asphalt)`
       };
 
       if (moduleSelect) {
