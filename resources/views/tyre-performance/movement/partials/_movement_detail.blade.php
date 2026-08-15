@@ -34,69 +34,127 @@
    </div>
 
    {{-- INFO GRID --}}
-   <div class="row g-2 mb-4">
+   <div class="row g-3 mb-4">
       <div class="col-md-6">
-         <table class="table table-sm table-borderless table-hover align-middle">
-            <tr>
-               <td class="fw-bold text-muted" style="width:40%">SN Ban</td>
-               <td>{{ $tyre->serial_number ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Brand</td>
-               <td>{{ $tyre->brand->brand_name ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Ukuran</td>
-               <td>{{ $tyre->size->size ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Pattern</td>
-               <td>{{ $tyre->pattern->name ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Unit</td>
-               <td>{{ $vehicle->kode_kendaraan ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Posisi</td>
-               <td>{{ $position ? $position->position_code . ' — ' . $position->position_name : '-' }}</td>
-            </tr>
-         </table>
+         <div class="card bg-light border-0 shadow-none p-2 mb-2">
+            <h6 class="fw-bold mb-2 text-primary small text-uppercase"><i class="ri-disc-line me-1"></i> Data Ban & Stok</h6>
+            <table class="table table-sm table-borderless table-hover align-middle mb-0">
+               <tr>
+                  <td class="fw-bold text-muted" style="width:40%">SN Ban</td>
+                  <td>
+                     <strong>{{ $tyre->serial_number ?? '-' }}</strong>
+                     @if (!empty($tyre->custom_serial_number))
+                        <span class="badge bg-label-info font-monospace ms-1">#{{ $tyre->custom_serial_number }}</span>
+                     @endif
+                  </td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Pemilik Stok (Induk/Anak)</td>
+                  <td>
+                     @if ($tyre && $tyre->company)
+                        <span class="badge bg-label-primary"><i class="ri-store-2-line me-1"></i>{{ $tyre->company->company_name }}</span>
+                     @else
+                        <span class="text-muted">-</span>
+                     @endif
+                  </td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Brand / Size</td>
+                  <td>{{ $tyre->brand->brand_name ?? '-' }} · {{ $tyre->size->size ?? '-' }}</td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Pattern</td>
+                  <td>{{ $tyre->pattern->name ?? '-' }}</td>
+               </tr>
+            </table>
+         </div>
+
+         <div class="card bg-light border-0 shadow-none p-2">
+            <h6 class="fw-bold mb-2 text-primary small text-uppercase"><i class="ri-truck-line me-1"></i> Data Unit & Posisi</h6>
+            <table class="table table-sm table-borderless table-hover align-middle mb-0">
+               <tr>
+                  <td class="fw-bold text-muted" style="width:40%">Unit Kendaraan</td>
+                  <td>
+                     <strong>{{ $vehicle->kode_kendaraan ?? '-' }}</strong>
+                     @if (!empty($vehicle->no_polisi))
+                        <span class="text-muted small">({{ $vehicle->no_polisi }})</span>
+                     @endif
+                  </td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Perusahaan Unit</td>
+                  <td>
+                     @if ($vehicle && $vehicle->company)
+                        <span class="badge bg-label-secondary"><i class="ri-building-line me-1"></i>{{ $vehicle->company->company_name }}</span>
+                     @else
+                        <span class="text-muted">-</span>
+                     @endif
+                  </td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Posisi Terpasang</td>
+                  <td>
+                     <span class="badge bg-label-dark">{{ $position ? $position->position_code . ' — ' . $position->position_name : '-' }}</span>
+                  </td>
+               </tr>
+            </table>
+         </div>
       </div>
+
       <div class="col-md-6">
-         <table class="table table-sm table-borderless table-hover align-middle">
-            <tr>
-               <td class="fw-bold text-muted" style="width:40%">Odometer</td>
-               <td>{{ $m->odometer_reading ? number_format($m->odometer_reading, 0) . ' km' : '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Hour Meter</td>
-               <td>{{ $m->hour_meter_reading ? number_format($m->hour_meter_reading, 0) . ' Hm' : '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">PSI</td>
-               <td>{{ $m->psi_reading ?? '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">RTD (Avg)</td>
-               <td>{{ $m->rtd_reading ? $m->rtd_reading . ' mm' : '-' }}</td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">RTD 1-4</td>
-               <td>
-                  @php
-                     $rtdParts = array_filter([$m->rtd_1, $m->rtd_2, $m->rtd_3, $m->rtd_4], function ($v) {
-                         return $v !== null;
-                     });
-                  @endphp
-                  {{ count($rtdParts) > 0 ? implode(' / ', $rtdParts) . ' mm' : '-' }}
-               </td>
-            </tr>
-            <tr>
-               <td class="fw-bold text-muted">Waktu</td>
-               <td>{{ $m->start_time ?? '-' }} – {{ $m->end_time ?? '-' }}</td>
-            </tr>
-         </table>
+         <div class="card bg-light border-0 shadow-none p-2 mb-2">
+            <h6 class="fw-bold mb-2 text-primary small text-uppercase"><i class="ri-map-pin-2-line me-1"></i> Lokasi & Pelaksana</h6>
+            <table class="table table-sm table-borderless table-hover align-middle mb-0">
+               <tr>
+                  <td class="fw-bold text-muted" style="width:40%">Lokasi Kerja</td>
+                  <td>{{ $m->workLocation->location_name ?? $m->work_location ?? '-' }}</td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Segmen</td>
+                  <td>{{ $m->segment->segment_name ?? '-' }}</td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Petugas Tyreman</td>
+                  <td>{{ $m->tyreman_1 ?? '-' }} {{ $m->tyreman_2 ? ' / ' . $m->tyreman_2 : '' }}</td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Waktu Pengerjaan</td>
+                  <td>{{ $m->start_time ?? '-' }} – {{ $m->end_time ?? '-' }}</td>
+               </tr>
+            </table>
+         </div>
+
+         <div class="card bg-light border-0 shadow-none p-2">
+            <h6 class="fw-bold mb-2 text-primary small text-uppercase"><i class="ri-speed-up-line me-1"></i> Metrik & Kondisi</h6>
+            <table class="table table-sm table-borderless table-hover align-middle mb-0">
+               <tr>
+                  <td class="fw-bold text-muted" style="width:40%">Odo / HM</td>
+                  <td>
+                     {{ $m->odometer_reading ? number_format($m->odometer_reading, 0) . ' km' : '-' }} 
+                     {{ $m->hour_meter_reading ? ' / ' . number_format($m->hour_meter_reading, 0) . ' Hm' : '' }}
+                  </td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">Tekanan PSI</td>
+                  <td>{{ $m->psi_reading ? $m->psi_reading . ' PSI' : '-' }}</td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">RTD (Rata-rata)</td>
+                  <td><strong>{{ $m->rtd_reading ? $m->rtd_reading . ' mm' : '-' }}</strong></td>
+               </tr>
+               <tr>
+                  <td class="fw-bold text-muted">RTD 1-4</td>
+                  <td>
+                     @php
+                        $rtdParts = array_filter([$m->rtd_1, $m->rtd_2, $m->rtd_3, $m->rtd_4], function ($v) {
+                            return $v !== null;
+                        });
+                     @endphp
+                     {{ count($rtdParts) > 0 ? implode(' / ', $rtdParts) . ' mm' : '-' }}
+                  </td>
+               </tr>
+            </table>
+         </div>
       </div>
    </div>
 

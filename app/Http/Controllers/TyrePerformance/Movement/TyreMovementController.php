@@ -1628,9 +1628,17 @@ class TyreMovementController extends Controller
 
     public function apiHistory(Request $request)
     {
-        $query = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode', 'workLocation']);
+        $query = TyreMovement::with([
+            'tyre.company',
+            'tyre.brand',
+            'vehicle.company',
+            'position',
+            'failureCode',
+            'workLocation',
+            'segment'
+        ]);
 
-        // Company scope: filter movements by vehicle's company
+        // Company scope: filter movements by vehicle's company or active company
         $resolvedCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
         if ($resolvedCompanyId !== null) {
             if (is_array($resolvedCompanyId)) {
@@ -1648,10 +1656,15 @@ class TyreMovementController extends Controller
             $query->where(function ($q) use ($searchValue) {
                 $q->where('movement_type', 'like', "%$searchValue%")
                     ->orWhereHas('tyre', function ($sub) use ($searchValue) {
-                        $sub->where('serial_number', 'like', "%$searchValue%");
+                        $sub->where('serial_number', 'like', "%$searchValue%")
+                            ->orWhere('custom_serial_number', 'like', "%$searchValue%");
                     })
                     ->orWhereHas('vehicle', function ($sub) use ($searchValue) {
-                        $sub->where('kode_kendaraan', 'like', "%$searchValue%");
+                        $sub->where('kode_kendaraan', 'like', "%$searchValue%")
+                            ->orWhere('no_polisi', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('workLocation', function ($sub) use ($searchValue) {
+                        $sub->where('location_name', 'like', "%$searchValue%");
                     });
             });
         }
@@ -1672,6 +1685,34 @@ class TyreMovementController extends Controller
                 $failureInfo = $row->failureCode->display_name ?: ($row->failureCode->failure_code . ' - ' . $row->failureCode->failure_name);
             }
 
+            // 1. Vehicle info + Company
+            $vehicleCompany = $row->vehicle && $row->vehicle->company ? $row->vehicle->company->company_name : null;
+            $vehCode = $row->vehicle ? $row->vehicle->kode_kendaraan : '-';
+            if ($row->vehicle && $row->vehicle->no_polisi) {
+                $vehCode .= ' <span class="text-muted small">[' . e($row->vehicle->no_polisi) . ']</span>';
+            }
+            if ($vehicleCompany) {
+                $vehCode .= '<br><span class="badge bg-label-info text-dark mt-1" style="font-size:0.7rem;"><i class="ri-building-line me-1"></i>' . e($vehicleCompany) . '</span>';
+            }
+
+            // 2. Tyre SN + Custom Code + Stock Owner Company
+            $tyreCompany = $row->tyre && $row->tyre->company ? $row->tyre->company->company_name : null;
+            $tyreSn = $row->tyre ? '<strong>' . e($row->tyre->serial_number) . '</strong>' : '-';
+            if ($row->tyre && $row->tyre->custom_serial_number) {
+                $tyreSn .= '<br><span class="badge bg-label-secondary font-monospace" style="font-size:0.68rem;"><i class="ri-hashtag me-1"></i>' . e($row->tyre->custom_serial_number) . '</span>';
+            }
+            if ($tyreCompany) {
+                $isParent = ($row->tyre->company && $row->tyre->company->parent_company_id === null && $row->tyre->company->children()->count() > 0);
+                $compBadgeClass = $isParent ? 'bg-label-primary' : 'bg-label-dark';
+                $tyreSn .= '<br><span class="badge ' . $compBadgeClass . ' mt-1" style="font-size:0.68rem;"><i class="ri-store-2-line me-1"></i>Stok: ' . e($tyreCompany) . '</span>';
+            }
+
+            // 3. Work Location + Segment
+            $locName = $row->workLocation ? '<strong>' . e($row->workLocation->location_name) . '</strong>' : '-';
+            if ($row->segment) {
+                $locName .= '<br><small class="text-muted"><i class="ri-road-map-line me-1"></i>' . e($row->segment->segment_name) . '</small>';
+            }
+
             return [
                 'id' => $row->id,
                 'movement_date' => \Carbon\Carbon::parse($row->movement_date)->format('d/m/Y'),
@@ -1679,12 +1720,12 @@ class TyreMovementController extends Controller
                 'movement_type_display' => $row->movement_type === 'Installation' ? 'Pasang' : ($row->movement_type === 'Removal' ? 'Lepas' : ($row->movement_type === 'Rotation' ? 'Rotasi' : 'Inspeksi')),
                 'install_condition' => $row->install_condition,
                 'is_replacement' => $row->is_replacement,
-                'tyre_sn' => $row->tyre->serial_number ?? '-',
-                'vehicle_code' => $row->vehicle->kode_kendaraan ?? '-',
+                'tyre_sn' => $tyreSn,
+                'vehicle_code' => $vehCode,
                 'position_name' => $row->position ? $row->position->position_code . ' - ' . $row->position->position_name : '-',
                 'start_time' => $row->start_time ?? '-',
                 'tyreman' => $row->tyreman_1 ?? '-',
-                'work_location' => $row->workLocation ? $row->workLocation->location_name : '-',
+                'work_location' => $locName,
                 'failure_info' => $failureInfo,
                 'action' => '<button type="button" class="btn btn-sm btn-info me-1" onclick="viewMovementDetail(' . $row->id . ')" title="Lihat Detail & Foto"><i class="icon-base ri ri-eye-line"></i> Detail</button>' . 
                     ((!auth()->user()->tyre_company_id || auth()->user()->tyre_company_id == 1 || auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) 
@@ -1704,7 +1745,11 @@ class TyreMovementController extends Controller
     public function show($id)
     {
         try {
-            $movement = TyreMovement::with(['tyre.brand', 'tyre.pattern', 'tyre.size', 'vehicle', 'position', 'failureCode'])->findOrFail($id);
+            $movement = TyreMovement::with([
+                'tyre.brand', 'tyre.pattern', 'tyre.size', 'tyre.company',
+                'vehicle.company',
+                'position', 'failureCode', 'workLocation', 'segment'
+            ])->findOrFail($id);
             $html = view('tyre-performance.movement.partials._movement_detail', compact('movement'))->render();
 
             return response()->json([
