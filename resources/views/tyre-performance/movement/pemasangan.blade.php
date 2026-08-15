@@ -187,7 +187,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                            <label class="form-label fw-bold">Tanggal</label>
-                           <input type="date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                           <input type="date" id="movement_date" name="movement_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                         </div>
                         <div class="col-md-3 mb-3" id="odometer_container">
                            <label class="form-label fw-bold">KM Saat Pasang</label>
@@ -811,7 +811,7 @@
          $(document).on('click', '.btn-autogen-task-sn', function() {
             const idx = $(this).data('taskIndex');
             const posCode = $(this).data('posCode') || 'P';
-            const unitText = $('#kendaraan_id option:selected').text().split('|')[0] || 'UNIT';
+            const unitText = $('#vehicle_id option:selected').text().split('|')[0] || 'UNIT';
             const cleanUnit = unitText.trim().replace(/[^A-Za-z0-9]/g, '');
             const now = new Date();
             const y = now.getFullYear();
@@ -825,7 +825,7 @@
          // Auto-Gen SN for Classic Mode
          $('#btn_c_autogen_sn').on('click', function() {
             const posCode = $('#c_position_id option:selected').text().trim().split(' ')[0] || 'P';
-            const unitText = $('#kendaraan_id option:selected').text().split('|')[0] || 'UNIT';
+            const unitText = $('#vehicle_id option:selected').text().split('|')[0] || 'UNIT';
             const cleanUnit = unitText.trim().replace(/[^A-Za-z0-9]/g, '');
             const now = new Date();
             const y = now.getFullYear();
@@ -905,7 +905,7 @@
             e.preventDefault();
             const isClassic = $('input[name="ui_mode"]:checked').val() === 'classic';
 
-            if(!$('#kendaraan_id').val()) {
+            if(!$('#vehicle_id').val()) {
                Swal.fire('Peringatan', 'Pilih unit kendaraan terlebih dahulu.', 'warning');
                return;
             }
@@ -926,10 +926,6 @@
                 }
             }
 
-            if(!vehicleSelect.val()) {
-               Swal.fire('Peringatan', 'Unit kendaraan wajib dipilih.', 'warning');
-               return;
-            }
             if($('#odometer').prop('required') && !$('#odometer').val()) {
                Swal.fire('Peringatan', 'Odometer wajib diisi untuk unit ini.', 'warning');
                return;

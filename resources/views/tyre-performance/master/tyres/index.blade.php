@@ -85,48 +85,48 @@
             <form action="{{ route('tyre-master.store') }}" method="POST">
                @csrf
                <div class="modal-body">
-                  <div class="row">
-                     @if (auth()->user()->role_id == 1)
-                        <div class="col-md-6 mb-3">
-                           <label for="tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
-                           <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
-                              data-placeholder="Pilih Perusahaan">
-                              <option value="">-- Pilih Perusahaan --</option>
-                              @foreach ($companies as $company)
-                                 <option value="{{ $company->id }}"
-                                    {{ session('active_company_id') == $company->id ? 'selected' : '' }}>
-                                    {{ $company->company_name }}
-                                 </option>
-                              @endforeach
-                           </select>
-                        </div>
-                     @endif
-                     <div class="col-md-6 mb-3">
-                        <label for="serial_number" class="form-label d-flex justify-content-between align-items-center">
-                           <span>Serial Number (SN) <small class="text-muted fw-normal">(Opsional)</small></span>
-                           <button type="button" class="btn btn-xs btn-label-primary py-0 px-2" id="btn_autogen_add_sn">
+                  @if (auth()->user()->role_id == 1)
+                     <div class="mb-3">
+                        <label for="tyre_company_id" class="form-label fw-bold">Instansi / Company <span class="text-danger">*</span></label>
+                        <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
+                           data-placeholder="Pilih Perusahaan">
+                           <option value="">-- Pilih Perusahaan --</option>
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}"
+                                 {{ session('active_company_id') == $company->id ? 'selected' : '' }}>
+                                 {{ $company->company_name }}
+                              </option>
+                           @endforeach
+                        </select>
+                     </div>
+                  @endif
+                  
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-6">
+                        <label for="serial_number" class="form-label fw-bold">Serial Number (SN) <small class="text-muted fw-normal">(Opsional)</small></label>
+                        <div class="input-group">
+                           <input type="text" id="serial_number" name="serial_number" class="form-control text-uppercase"
+                              placeholder="Kosongkan untuk Auto-Gen">
+                           <button type="button" class="btn btn-outline-primary" id="btn_autogen_add_sn" title="Generate nomor seri otomatis">
                               <i class="ri-flashlight-line me-1"></i> Auto-Gen
                            </button>
-                        </label>
-                        <input type="text" id="serial_number" name="serial_number" class="form-control"
-                           placeholder="Kosongkan untuk Auto-Generate">
-                        <small class="text-muted" style="font-size: 0.75rem;">Jika dikosongkan, sistem membuat SN stok unik otomatis.</small>
+                        </div>
                      </div>
-                     <div class="col-md-3 mb-3">
-                        <label for="custom_serial_number" class="form-label">Custom Code</label>
+                     <div class="col-md-3">
+                        <label for="custom_serial_number" class="form-label fw-bold">Custom Code</label>
                         <input type="text" id="custom_serial_number" name="custom_serial_number" class="form-control"
                            placeholder="Ex: BAN-01">
                      </div>
-                     <div class="col-md-3 mb-3">
-                        <label for="add_quantity" class="form-label fw-bold text-primary">Jumlah Unit (Qty)</label>
+                     <div class="col-md-3">
+                        <label for="add_quantity" class="form-label fw-bold text-primary">Jumlah (Qty)</label>
                         <input type="number" id="add_quantity" name="quantity" class="form-control fw-bold border-primary"
                            value="1" min="1" max="100">
-                        <small class="text-muted" style="font-size: 0.75rem;">Isi > 1 untuk bulk stock.</small>
                      </div>
                   </div>
-                  <div class="row g-2">
-                     <div class="col-md-4 mb-3">
-                        <label for="tyre_brand_id" class="form-label">Brand</label>
+
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-4">
+                        <label for="tyre_brand_id" class="form-label fw-bold">Brand <span class="text-danger">*</span></label>
                         <select id="tyre_brand_id" name="tyre_brand_id" class="form-select select2-tags"
                            data-placeholder="Select Brand" required>
                            <option value="">Select Brand</option>
@@ -138,8 +138,8 @@
                            @endif
                         </select>
                      </div>
-                     <div class="col-md-4 mb-3">
-                        <label for="tyre_size_id" class="form-label">Size</label>
+                     <div class="col-md-4">
+                        <label for="tyre_size_id" class="form-label fw-bold">Size <span class="text-danger">*</span></label>
                         <select name="tyre_size_id" id="tyre_size_id" class="form-select select2-tags"
                            data-placeholder="Select Size" required>
                            <option value="">Select Size</option>
@@ -153,8 +153,8 @@
                            @endif
                         </select>
                      </div>
-                     <div class="col-md-4 mb-3">
-                        <label for="tyre_pattern_id" class="form-label">Pattern</label>
+                     <div class="col-md-4">
+                        <label for="tyre_pattern_id" class="form-label fw-bold">Pattern</label>
                         <select name="tyre_pattern_id" id="tyre_pattern_id" class="form-select select2-tags"
                            data-placeholder="Select Pattern">
                            <option value="">Select Pattern</option>
@@ -170,9 +170,9 @@
                      </div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="segment_name" class="form-label">Segment Name</label>
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-6">
+                        <label for="segment_name" class="form-label fw-bold">Segment Name</label>
                         <select id="segment_name" name="segment_name" class="form-select select2-tags-segment" data-placeholder="Ex: Mining, Logging, dll.">
                            <option value="">Pilih Segmen</option>
                            @foreach ($segments as $segment)
@@ -182,8 +182,8 @@
                            @endforeach
                         </select>
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="current_location_id" class="form-label">Warehouse / Lokasi</label>
+                     <div class="col-md-6">
+                        <label for="current_location_id" class="form-label fw-bold">Warehouse / Lokasi</label>
                         <select name="current_location_id" id="current_location_id" class="form-select select2"
                            data-placeholder="Pilih Lokasi">
                            <option value=""></option>
@@ -194,27 +194,27 @@
                      </div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="ply_rating" class="form-label">Ply Rating</label>
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-6">
+                        <label for="ply_rating" class="form-label fw-bold">Ply Rating (PR)</label>
                         <input type="text" id="ply_rating" name="ply_rating" class="form-control"
                            placeholder="Ex: 16PR, 18PR">
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="initial_tread_depth" class="form-label">OTD (Original Tread Depth - mm)</label>
+                     <div class="col-md-6">
+                        <label for="initial_tread_depth" class="form-label fw-bold">OTD (Original Tread Depth - mm)</label>
                         <input type="number" id="initial_tread_depth" name="initial_tread_depth"
                            class="form-control" placeholder="18.5" step="0.01">
                      </div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="price" class="form-label">Harga Beli (IDR)</label>
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-6">
+                        <label for="price" class="form-label fw-bold">Harga Beli (IDR)</label>
                         <input type="text" id="price" name="price" class="form-control currency-input"
                            placeholder="3.500.000">
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="status" class="form-label">Status</label>
+                     <div class="col-md-6">
+                        <label for="status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
                         <select name="status" class="form-select" required>
                            <option value="New">New</option>
                            <option value="Installed">Installed</option>
@@ -226,9 +226,9 @@
                   </div>
 
                   <div class="row g-2">
-                     <div class="col-md-12 mb-3">
-                        <label class="form-label d-block">Location Context</label>
-                        <div class="form-check form-switch mt-2">
+                     <div class="col-md-12">
+                        <label class="form-label d-block fw-bold">Location Context</label>
+                        <div class="form-check form-switch mt-1">
                            <input class="form-check-input" type="checkbox" name="is_in_warehouse" value="1"
                               id="is_in_warehouse" checked>
                            <label class="form-check-label" for="is_in_warehouse">In Warehouse (Stock)</label>
@@ -257,38 +257,38 @@
                @csrf
                @method('PUT')
                <div class="modal-body">
-                  <div class="row">
-                     @if (auth()->user()->role_id == 1)
-                        <div class="col-md-6 mb-3">
-                           <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
-                           <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
-                              data-placeholder="Pilih Perusahaan">
-                              <option value="">-- Pilih Perusahaan --</option>
-                              @foreach ($companies as $company)
-                                 <option value="{{ $company->id }}">{{ $company->company_name }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                     @endif
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_serial_number" class="form-label d-flex justify-content-between align-items-center">
-                           <span>Serial Number (SN)</span>
-                           <button type="button" class="btn btn-xs btn-label-primary py-0 px-2" id="btn_autogen_edit_sn">
+                  @if (auth()->user()->role_id == 1)
+                     <div class="mb-3">
+                        <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Company <span class="text-danger">*</span></label>
+                        <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
+                           data-placeholder="Pilih Perusahaan">
+                           <option value="">-- Pilih Perusahaan --</option>
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                           @endforeach
+                        </select>
+                     </div>
+                  @endif
+                  
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-7">
+                        <label for="edit_serial_number" class="form-label fw-bold">Serial Number (SN) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                           <input type="text" id="edit_serial_number" name="serial_number" class="form-control text-uppercase" required>
+                           <button type="button" class="btn btn-outline-primary" id="btn_autogen_edit_sn" title="Generate nomor seri otomatis">
                               <i class="ri-flashlight-line me-1"></i> Auto-Gen
                            </button>
-                        </label>
-                        <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
-                           required>
+                        </div>
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_custom_serial_number" class="form-label">Custom Serial Number (Opsional)</label>
-                        <input type="text" id="edit_custom_serial_number" name="custom_serial_number"
-                           class="form-control">
+                     <div class="col-md-5">
+                        <label for="edit_custom_serial_number" class="form-label fw-bold">Custom Code</label>
+                        <input type="text" id="edit_custom_serial_number" name="custom_serial_number" class="form-control" placeholder="Ex: BAN-01">
                      </div>
                   </div>
-                  <div class="row g-2">
-                     <div class="col-md-4 mb-3">
-                        <label for="edit_brand_id" class="form-label">Brand</label>
+
+                  <div class="row g-2 mb-3">
+                     <div class="col-md-4">
+                        <label for="edit_brand_id" class="form-label fw-bold">Brand</label>
                         <select id="edit_brand_id" name="tyre_brand_id" class="form-select select2-tags" required>
                            <option value="">Select Brand</option>
                            @foreach ($brands as $brand)
