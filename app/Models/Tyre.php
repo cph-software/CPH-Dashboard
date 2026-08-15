@@ -104,10 +104,12 @@ class Tyre extends Model
 
         static::saved(function ($tyre) {
             $tyre->syncCompanyCount();
+            $tyre->syncLocationCount();
         });
 
         static::deleted(function ($tyre) {
             $tyre->syncCompanyCount();
+            $tyre->syncLocationCount();
         });
     }
 
@@ -117,9 +119,22 @@ class Tyre extends Model
             $company = TyreCompany::find($this->tyre_company_id);
             if ($company) {
                 // Synchronize total_tyre_capacity column with real count from tyres table
-                $count = Tyre::where('tyre_company_id', $this->tyre_company_id)->count();
+                $count = Tyre::withoutGlobalScopes()->where('tyre_company_id', $this->tyre_company_id)->whereNull('deleted_at')->count();
                 $company->update(['total_tyre_capacity' => $count]);
             }
+        }
+    }
+
+    public function syncLocationCount()
+    {
+        $locationsToSync = array_filter([$this->current_location_id, $this->getOriginal('current_location_id')]);
+        foreach (array_unique($locationsToSync) as $locId) {
+            $realCount = Tyre::withoutGlobalScopes()
+                ->where('current_location_id', $locId)
+                ->where('is_in_warehouse', 1)
+                ->whereNull('deleted_at')
+                ->count();
+            \DB::table('tyre_locations')->where('id', $locId)->update(['current_stock' => $realCount]);
         }
     }
 }

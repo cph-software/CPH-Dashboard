@@ -79,22 +79,22 @@ Route::middleware(['auth', 'eula'])->group(function () {
     // ======================================================================
     // TYRE PERFORMANCE — Master Data
     // ======================================================================
-    Route::resource('master_brand', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands')->middleware('tyre.permission:Brands');
-    Route::resource('master_size', \App\Http\Controllers\TyrePerformance\Master\TyreSizeController::class)->names('tyre-sizes')->middleware('tyre.permission:Sizes');
-    Route::resource('master_segment', \App\Http\Controllers\TyrePerformance\Master\TyreSegmentController::class)->names('tyre-segments')->middleware('tyre.permission:Segments');
-    Route::resource('master_location', \App\Http\Controllers\TyrePerformance\Master\TyreLocationController::class)->names('tyre-locations')->middleware('tyre.permission:Locations');
-    Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes')->middleware('tyre.permission:Failure Codes');
-    Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns')->middleware('tyre.permission:Patterns');
-    Route::resource('master_company', \App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class)->names('tyre-companies')->middleware('tyre.permission:Companies');
+    Route::resource('master_brand', \App\Http\Controllers\TyrePerformance\Master\TyreBrandController::class)->names('tyre-brands')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Brands');
+    Route::resource('master_size', \App\Http\Controllers\TyrePerformance\Master\TyreSizeController::class)->names('tyre-sizes')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Sizes');
+    Route::resource('master_segment', \App\Http\Controllers\TyrePerformance\Master\TyreSegmentController::class)->names('tyre-segments')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Segments');
+    Route::resource('master_location', \App\Http\Controllers\TyrePerformance\Master\TyreLocationController::class)->names('tyre-locations')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Locations');
+    Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Failure Codes');
+    Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Patterns');
+    Route::resource('master_company', \App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class)->names('tyre-companies')->except(['create', 'edit'])->middleware('tyre.permission:Companies');
     Route::get('master_company/{id}/mapping', [\App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class, 'mapping'])->name('tyre-companies.mapping')->middleware('tyre.permission:Companies');
     Route::post('master_company/{id}/mapping', [\App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class, 'updateMapping'])->name('tyre-companies.update-mapping')->middleware('tyre.permission:Companies');
     Route::post('failure-aliases', [\App\Http\Controllers\TyrePerformance\Master\TyreFailureAliasController::class, 'store'])->name('tyre-failure-aliases.store')->middleware('tyre.permission:Failure Codes,view');
     Route::delete('failure-aliases/{id}', [\App\Http\Controllers\TyrePerformance\Master\TyreFailureAliasController::class, 'destroy'])->name('tyre-failure-aliases.destroy')->middleware('tyre.permission:Failure Codes,view');
-    Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions')->middleware('tyre.permission:Position Layouts');
+    Route::resource('master_position', \App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class)->names('tyre-positions')->except(['create', 'edit'])->middleware('tyre.permission:Position Layouts');
     Route::get('master_position/{id}/layout', [\App\Http\Controllers\TyrePerformance\Master\TyrePositionController::class, 'getLayout'])->name('tyre-positions.layout');
     Route::get('master_tyre/data', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'data'])->name('tyre-master.data')->middleware('tyre.permission:Master Tyre');
     Route::post('master_tyre/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class, 'bulkAction'])->name('tyre-master.bulk-action')->middleware('tyre.permission:Master Tyre');
-    Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master')->middleware('tyre.permission:Master Tyre');
+    Route::resource('master_tyre', \App\Http\Controllers\TyrePerformance\Master\TyreMasterController::class)->names('tyre-master')->except(['create'])->middleware('tyre.permission:Master Tyre');
     Route::get('master_kendaraan/data', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'data'])->name('tyre-kendaraan.data')->middleware('tyre.permission:Vehicle Master');
     Route::post('master_kendaraan/bulk-action', [\App\Http\Controllers\TyrePerformance\Master\KendaraanController::class, 'bulkAction'])->name('tyre-kendaraan.bulk-action')->middleware('tyre.permission:Vehicle Master');
     Route::get('master_kendaraan/tyre-detail', [\App\Http\Controllers\TyrePerformance\Movement\TyreMovementController::class, 'tyreDetail'])->name('tyre-kendaraan.tyre-detail')->middleware('tyre.permission:Vehicle Master');
@@ -141,7 +141,6 @@ Route::middleware(['auth', 'eula'])->group(function () {
     // ======================================================================
     // TYRE PERFORMANCE — Monitoring
     // ======================================================================
-    Route::get('monitoring/data', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'data'])->name('monitoring.data')->middleware('tyre.permission:Tyre Monitoring');
     Route::get('monitoring/tyre-by-serial', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'getTyreBySerial'])->name('monitoring.tyre-by-serial')->middleware('tyre.permission:Tyre Monitoring');
     Route::get('monitoring/sessions/{id}/export', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'export'])->name('monitoring.sessions.export')->middleware('tyre.permission:Tyre Monitoring');
     Route::get('monitoring/sessions/{id}/export-pdf', [\App\Http\Controllers\TyrePerformance\Monitoring\MonitoringController::class, 'exportPdf'])->name('monitoring.sessions.export-pdf')->middleware('tyre.permission:Tyre Monitoring');
@@ -176,14 +175,14 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::post('examination/{id}/approve', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'approve'])->name('examination.approve')->middleware('tyre.permission:Examination');
     Route::post('examination/{id}/reject', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'reject'])->name('examination.reject')->middleware('tyre.permission:Examination');
     Route::post('examination/upload-image', [\App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class, 'uploadImage'])->name('examination.upload-image')->middleware('tyre.permission:Examination');
-    Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class)->middleware('tyre.permission:Examination');
+    Route::resource('examination', \App\Http\Controllers\TyrePerformance\Examination\TyreExaminationController::class)->except(['edit', 'update'])->middleware('tyre.permission:Examination');
 
     // ======================================================================
     // USER MANAGEMENT
     // ======================================================================
-    Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class)->middleware('tyre.permission:Roles');
-    Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class)->middleware('tyre.permission:Menus');
-    Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class)->middleware('tyre.permission:Users');
+    Route::resource('roles', \App\Http\Controllers\UserManagement\RoleController::class)->except(['show'])->middleware('tyre.permission:Roles');
+    Route::resource('menus', \App\Http\Controllers\UserManagement\MenuController::class)->except(['create', 'show'])->middleware('tyre.permission:Menus');
+    Route::resource('users', \App\Http\Controllers\UserManagement\UserController::class)->except(['create', 'show'])->middleware('tyre.permission:Users');
     Route::get('get-tokos', [\App\Http\Controllers\UserManagement\UserController::class, 'getTokos'])->name('users.get-tokos')->middleware('tyre.permission:Users,view');
 
     // Permission Management
@@ -239,7 +238,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::resource('activity-logs', \App\Http\Controllers\UserManagement\ActivityLogController::class)->only(['index', 'show'])->middleware('tyre.permission:All Activity');
 
    // Onboarding Management (Internal)
-   Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->middleware('tyre.permission:Onboarding Manager');
+   Route::resource('onboarding-projects', \App\Http\Controllers\UserManagement\OnboardingController::class)->except(['create', 'edit'])->middleware('tyre.permission:Onboarding Manager');
    Route::get('onboarding-projects/{id}/download-checklist', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'downloadChecklist'])->name('onboarding-projects.download-checklist')->middleware('tyre.permission:Onboarding Manager');
    Route::post('onboarding-projects/{id}/generate-accounts', [\App\Http\Controllers\UserManagement\OnboardingController::class, 'generateAccounts'])->name('onboarding-projects.generate-accounts')->middleware('tyre.permission:Onboarding Manager');
 });

@@ -55,7 +55,7 @@ if (!function_exists('setLogActivity')) {
                 $menu = \App\Models\Menu::where('name', 'Error Notification')->first();
                 $roleIdsWithPermission = [];
                 if ($menu) {
-                    $roleIdsWithPermission = \Illuminate\Support\Facades\DB::table('menu_role')
+                    $roleIdsWithPermission = \Illuminate\Support\Facades\DB::table('role_menu')
                         ->where('menu_id', $menu->id)
                         ->pluck('role_id')
                         ->toArray();
