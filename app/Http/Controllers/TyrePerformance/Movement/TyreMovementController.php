@@ -1317,6 +1317,22 @@ class TyreMovementController extends Controller
                         'current_km' => $request->odometer ?? 0,
                         'current_hm' => $request->hour_meter ?? 0,
                     ];
+
+                    if (!empty($mov['serial_number'])) {
+                        $newSn = strtoupper(trim($mov['serial_number']));
+                        if ($newSn !== $tyre->serial_number) {
+                            $exists = Tyre::withoutGlobalScopes()
+                                ->where('serial_number', $newSn)
+                                ->where('id', '!=', $tyre->id)
+                                ->whereNull('deleted_at')
+                                ->exists();
+                            if ($exists) {
+                                throw new \Exception("Nomor Seri Ban '{$newSn}' sudah terdaftar pada ban lain di database.");
+                            }
+                            $updateData['serial_number'] = $newSn;
+                        }
+                    }
+
                     if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
                         $updateData['tyre_company_id'] = $vehicle->tyre_company_id;
                     }

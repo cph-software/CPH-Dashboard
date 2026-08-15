@@ -138,18 +138,41 @@ class TyreMasterController extends Controller
         return view('tyre-performance.master.tyres.edit', compact('tyre', 'brands', 'sizes', 'segments', 'patterns', 'locations'));
     }
 
+    private function generateStockSerialNumber($brandId = null)
+    {
+        $brandPrefix = 'STK';
+        if ($brandId) {
+            $brandName = TyreBrand::where('id', $brandId)->value('brand_name');
+            if ($brandName) {
+                $clean = preg_replace('/[^A-Za-z0-9]/', '', $brandName);
+                $brandPrefix = 'STK-' . strtoupper(substr($clean, 0, 3));
+            }
+        }
+        
+        $datePart = now()->format('Ymd');
+        
+        do {
+            $random = strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+            $sn = "{$brandPrefix}-{$datePart}-{$random}";
+            $exists = Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
+        } while ($exists);
+        
+        return $sn;
+    }
+
     public function store(Request $request)
     {
         $request->validate([
-            'serial_number' => 'required|string|max:255|unique:tyres,serial_number,NULL,id,deleted_at,NULL',
+            'serial_number' => 'nullable|string|max:255|unique:tyres,serial_number,NULL,id,deleted_at,NULL',
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,NULL,id,deleted_at,NULL',
+            'quantity' => 'nullable|integer|min:1|max:100',
             'tyre_brand_id' => 'required', // Can be ID or String for Admin
             'tyre_size_id' => 'required',
             'tyre_pattern_id' => 'nullable',
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'nullable',
             'initial_tread_depth' => 'nullable|numeric|min:0',
             'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
@@ -158,6 +181,14 @@ class TyreMasterController extends Controller
 
         $data = $request->all();
         $user = auth()->user();
+        $quantity = (int)($request->quantity ?? 1);
+
+        // Price parser: handle Rupiah / currency strings e.g. "3.500.000"
+        if (!empty($data['price'])) {
+            $cleanPrice = str_replace(['Rp', 'rp', ' ', '.'], '', (string)$data['price']);
+            $cleanPrice = str_replace(',', '.', $cleanPrice);
+            $data['price'] = (float)$cleanPrice;
+        }
 
         // Handle Admin "Type Manual" Logic
         if ($user->role_id == 1) {
@@ -192,25 +223,49 @@ class TyreMasterController extends Controller
             $data['current_tread_depth'] = $data['initial_tread_depth'];
         }
 
-        $tyre = Tyre::create($data);
-        $tyre->load(['brand', 'size', 'pattern', 'location']);
+        $createdSns = [];
+        \DB::beginTransaction();
+        try {
+            for ($i = 0; $i < $quantity; $i++) {
+                $itemData = $data;
+                if (empty($request->serial_number) || $quantity > 1) {
+                    $itemData['serial_number'] = $this->generateStockSerialNumber($data['tyre_brand_id'] ?? null);
+                    if ($i === 0 && !empty($request->serial_number) && $quantity > 1) {
+                        $itemData['serial_number'] = strtoupper(trim($request->serial_number));
+                    }
+                } else {
+                    $itemData['serial_number'] = strtoupper(trim($request->serial_number));
+                }
 
-        setLogActivity(auth()->id(), 'Menambah ban baru: ' . $request->serial_number, [
+                $tyre = Tyre::create($itemData);
+                $createdSns[] = $itemData['serial_number'];
+
+                if (!empty($itemData['is_in_warehouse']) && !empty($itemData['current_location_id'])) {
+                    \App\Models\TyreLocation::where('id', $itemData['current_location_id'])->increment('current_stock');
+                }
+            }
+            \DB::commit();
+        } catch (\Throwable $e) {
+            \DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menambahkan ban: ' . $e->getMessage());
+        }
+
+        setLogActivity(auth()->id(), 'Menambah stok ban: ' . implode(', ', array_slice($createdSns, 0, 5)) . (count($createdSns) > 5 ? ' (+' . (count($createdSns) - 5) . ' lainnya)' : ''), [
             'action_type' => 'create',
             'module' => 'Master Tyre',
             'data_after' => [
-                'Serial Number' => $tyre->serial_number,
-                'Brand' => $tyre->brand->brand_name ?? '-',
-                'Size' => $tyre->size->size ?? '-',
-                'Segment' => $tyre->segment_name ?? '-',
-                'Work Location' => $tyre->location->location_name ?? '-',
-                'Status' => $tyre->status,
-                'Price' => $tyre->price,
-                'Initial Tread Depth' => $tyre->initial_tread_depth ?? '-',
+                'Total Ban' => count($createdSns),
+                'Daftar SN' => array_slice($createdSns, 0, 10),
+                'Brand' => $data['tyre_brand_id'] ?? '-',
+                'Size' => $data['tyre_size_id'] ?? '-',
             ]
         ]);
 
-        return redirect()->back()->with('success', 'Tyre created successfully');
+        $msg = $quantity > 1 
+            ? "Berhasil menambahkan {$quantity} unit stok ban baru dengan Serial Number otomatis."
+            : "Ban {$createdSns[0]} berhasil ditambahkan ke master stok.";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function update(Request $request, $id)

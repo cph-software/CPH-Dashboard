@@ -771,8 +771,8 @@ class ImportController extends Controller
         // causing all data to display as "-" in Import Approval.
         // ============================================================
         $requiredHeaders = [
-            'Tyre Master' => ['serial_number', ['brand_name', 'brand']],
-            'Master Tyre' => ['serial_number', ['brand_name', 'brand']],
+            'Tyre Master' => [['brand_name', 'brand']],
+            'Master Tyre' => [['brand_name', 'brand']],
             'Vehicle Master' => ['kode_kendaraan'],
             'Master Vehicle' => ['kode_kendaraan'],
             'Tyre Brand' => [['brand_name', 'brand']],

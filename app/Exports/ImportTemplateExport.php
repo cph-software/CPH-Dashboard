@@ -79,7 +79,7 @@ class ImportTemplateExport implements WithMultipleSheets
         ];
 
         $guidelines = [
-            ['column' => 'serial_number', 'label' => 'Nomor Seri Ban (SN)', 'type' => 'Teks', 'required' => 'WAJIB', 'sample' => 'SN-BS-001', 'notes' => 'Nomor seri unik ban. Tidak boleh duplikat dalam 1 perusahaan.'],
+            ['column' => 'serial_number', 'label' => 'Nomor Seri Ban (SN)', 'type' => 'Teks', 'required' => 'OPSIONAL', 'sample' => 'SN-BS-001', 'notes' => 'Nomor seri fisik ban. Jika dikosongkan, sistem otomatis membuatkan nomor seri stok (STK-...).'],
             ['column' => 'brand', 'label' => 'Merek / Brand Ban', 'type' => 'Teks', 'required' => 'WAJIB', 'sample' => 'BRIDGESTONE', 'notes' => 'Nama brand ban. Otomatis didaftarkan jika belum ada di database.'],
             ['column' => 'size', 'label' => 'Ukuran Ban (Size)', 'type' => 'Teks', 'required' => 'WAJIB', 'sample' => '11.00-20', 'notes' => 'Ukuran standar ban (misal: 11.00-20, R25 29.5). Otomatis didaftarkan jika belum ada.'],
             ['column' => 'pattern', 'label' => 'Kembangan Ban (Pattern)', 'type' => 'Teks', 'required' => 'OPSIONAL', 'sample' => 'G580', 'notes' => 'Nama tipe kembangan ban. Otomatis didaftarkan jika belum ada.'],

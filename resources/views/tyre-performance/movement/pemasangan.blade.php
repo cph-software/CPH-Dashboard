@@ -245,19 +245,28 @@
                            <h5 class="form-section-title">Detail Pemasangan (Satu per Satu)</h5>
                         </div>
                         <div class="row g-3 bg-light p-3 rounded border border-dashed">
-                           <div class="col-md-6">
-                              <label class="form-label fw-bold">Pilih Ban (Dari Rak)</label>
-                              <select id="c_tyre_id" class="form-select select2">
-                                 <option value="">-- Pilih Ban --</option>
-                              </select>
-                           </div>
-                           <div class="col-12 mt-1" id="c_tyre_info" style="display:none;"></div>
-                           <div class="col-md-6">
-                              <label class="form-label fw-bold">Posisi Pemasangan</label>
-                              <select id="c_position_id" class="form-select select2">
-                                 <option value="">-- Pilih Posisi (Pilih Unit Dulu) --</option>
-                              </select>
-                           </div>
+                            <div class="col-md-6">
+                               <label class="form-label fw-bold">Pilih Ban dari Gudang</label>
+                               <select id="c_tyre_id" class="form-select select2">
+                                  <option value="">-- Pilih Ban --</option>
+                               </select>
+                            </div>
+                            <div class="col-md-6">
+                               <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                                  <span>Nomor Seri Fisik (SN)</span>
+                                  <button type="button" class="btn btn-xs btn-label-primary py-0 px-2" id="btn_c_autogen_sn">
+                                     <i class="ri-flashlight-line me-1"></i> Auto-Gen
+                                  </button>
+                               </label>
+                               <input type="text" id="c_serial_number" class="form-control text-uppercase font-monospace fw-bold" placeholder="SN Fisik Ban (Bisa Diubah)">
+                            </div>
+                            <div class="col-12 mt-1" id="c_tyre_info" style="display:none;"></div>
+                            <div class="col-md-6">
+                               <label class="form-label fw-bold">Posisi Pemasangan</label>
+                               <select id="c_position_id" class="form-select select2">
+                                  <option value="">-- Pilih Posisi (Pilih Unit Dulu) --</option>
+                               </select>
+                            </div>
                            <div class="col-12 mt-1" id="c_position_info" style="display:none;"></div>
                            <div class="col-md-6">
                               <label class="form-label fw-bold">Sisa RTD (mm)</label>
@@ -747,7 +756,7 @@
                         <div class="avatar avatar-sm bg-primary me-2 d-flex align-items-center justify-content-center text-white rounded">
                            <i class="ri-arrow-right-down-line"></i>
                         </div>
-                        <h6 class="mb-0 fw-bold">Pasang di Posisi <span class="text-primary">${posCode}</span> <i class="ri-arrow-right-line mx-1 text-muted"></i> SN Ban: <span class="text-primary">${sn}</span></h6>
+                        <h6 class="mb-0 fw-bold">Pasang di Posisi <span class="text-primary">${posCode}</span> <i class="ri-arrow-right-line mx-1 text-muted"></i> Aset: <span class="text-dark">${brand} ${size}</span></h6>
                      </div>
                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeTask(${taskIndex}, '${tyreId}', '${posId}')"><i class="ri-close-line"></i> Batal</button>
                   </div>
@@ -758,22 +767,34 @@
                      <div><i class="ri-ruler-line ms-2 text-primary"></i> ${rtdLabel}: <span class="text-dark fw-bold">${rtd} mm</span></div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Sisa RTD (mm)</label>
-                        <input type="number" step="0.01" class="form-control form-control-sm t-rtd" placeholder="Isi RTD Baru">
+                  <div class="row g-2 mb-2">
+                     <div class="col-md-6">
+                        <label class="form-label small fw-bold d-flex justify-content-between align-items-center mb-1">
+                           <span>Nomor Seri Fisik (SN)</span>
+                           <button type="button" class="btn btn-xs btn-label-primary py-0 px-2 btn-autogen-task-sn" data-task-index="${taskIndex}" data-pos-code="${posCode}">
+                              <i class="ri-flashlight-line me-1"></i> Auto-Gen SN
+                           </button>
+                        </label>
+                        <input type="text" class="form-control form-control-sm t-serial-number text-uppercase font-monospace fw-bold" id="sn_input_${taskIndex}" value="${sn}" placeholder="SN Fisik Ban">
                      </div>
                      <div class="col-md-3">
-                        <label class="form-label small fw-bold">PSI</label>
+                        <label class="form-label small fw-bold mb-1">Sisa RTD (mm)</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm t-rtd" placeholder="Isi RTD Baru" value="${rtd !== '-' ? rtd : ''}">
+                     </div>
+                     <div class="col-md-3">
+                        <label class="form-label small fw-bold mb-1">PSI <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" class="form-control form-control-sm t-psi" placeholder="Wajib">
                      </div>
-                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Foto Bukti</label>
-                        <input type="file" class="form-control form-control-sm t-photo" id="photo_${taskIndex}" accept="image/*">
+                  </div>
+
+                  <div class="row g-2">
+                     <div class="col-md-6">
+                        <label class="form-label small fw-bold mb-1">Remarks / Catatan</label>
+                        <input type="text" class="form-control form-control-sm t-notes" placeholder="Opsional">
                      </div>
-                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Remarks</label>
-                        <input type="text" class="form-control form-control-sm t-notes">
+                     <div class="col-md-6">
+                        <label class="form-label small fw-bold mb-1">Foto Bukti</label>
+                        <input type="file" class="form-control form-control-sm t-photo" id="photo_${taskIndex}" accept="image/*">
                      </div>
                   </div>
                   <!-- Hidden inputs -->
@@ -785,6 +806,35 @@
             taskContainer.insertAdjacentHTML('beforeend', html);
             taskIndex++;
          }
+
+         // Auto-Gen SN for Visual Tasks
+         $(document).on('click', '.btn-autogen-task-sn', function() {
+            const idx = $(this).data('taskIndex');
+            const posCode = $(this).data('posCode') || 'P';
+            const unitText = $('#kendaraan_id option:selected').text().split('|')[0] || 'UNIT';
+            const cleanUnit = unitText.trim().replace(/[^A-Za-z0-9]/g, '');
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const seq = String(Math.floor(Math.random() * 90 + 10));
+            const genSn = `GEN-${cleanUnit}-${posCode}-${y}${m}${d}-${seq}`.toUpperCase();
+            $(`#sn_input_${idx}`).val(genSn);
+         });
+
+         // Auto-Gen SN for Classic Mode
+         $('#btn_c_autogen_sn').on('click', function() {
+            const posCode = $('#c_position_id option:selected').text().trim().split(' ')[0] || 'P';
+            const unitText = $('#kendaraan_id option:selected').text().split('|')[0] || 'UNIT';
+            const cleanUnit = unitText.trim().replace(/[^A-Za-z0-9]/g, '');
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const seq = String(Math.floor(Math.random() * 90 + 10));
+            const genSn = `GEN-${cleanUnit}-${posCode}-${y}${m}${d}-${seq}`.toUpperCase();
+            $('#c_serial_number').val(genSn);
+         });
 
          window.removeTask = function(index, tyreId, posId) {
             document.getElementById(`task_${index}`).remove();
@@ -818,19 +868,15 @@
                infoBox.html(`
                   <div class="bg-white p-3 rounded border mb-2 border-start border-4 border-danger shadow-sm mt-2">
                      <div class="d-flex align-items-center mb-2">
-                         <i class="ri-alert-line ri-xl me-2 text-danger"></i>
-                         <h6 class="mb-0 fw-bold text-danger">Peringatan Replace (Gusur Ban)</h6>
+                        <i class="ri-alert-fill text-danger ri-xl me-2"></i>
+                        <h6 class="text-danger fw-bold mb-0">Perhatian: Posisi ini SUDAH TERISI!</h6>
                      </div>
-                     <div class="small text-muted mb-2">Posisi ini sudah terisi ban. Melanjutkan pemasangan akan otomatis melepaskan ban saat ini.</div>
-                     <div class="bg-light p-2 rounded border border-dashed d-flex justify-content-between align-items-center flex-wrap gap-1">
-                         <div>
-                             <span class="fw-bold text-dark me-1">${opt.data('sn')}</span>
-                             <span class="small text-muted">&bull; ${opt.data('brand')} | ${opt.data('size')} | ${opt.data('pattern')} | HM: ${opt.data('hm') || 0}</span>
-                         </div>
-                         <span class="badge bg-label-danger"><i class="ri-ruler-line"></i> RTD: ${opt.data('rtd')} mm</span>
-                     </div>
+                     <p class="small text-muted mb-1">
+                        Posisi <b>${opt.text()}</b> saat ini terpasang ban SN: <b>${opt.data('sn')}</b> (${opt.data('brand')} ${opt.data('size')}).
+                     </p>
                   </div>
-               `).slideDown();
+               `);
+               infoBox.slideDown();
             } else {
                infoBox.slideUp();
             }
@@ -840,47 +886,44 @@
             const opt = $(this).find('option:selected');
             const infoBox = $('#c_tyre_info');
             if(opt.val()) {
-               const isNew = opt.data('status') === 'New';
-               const rtdLabel = isNew ? 'OTD: ' : 'RTD: ';
-               const badge = isNew ? '<span class="badge bg-label-success me-1">Baru</span>' : '<span class="badge bg-label-warning me-1">Repaired</span>';
+               $('#c_serial_number').val(opt.data('sn') || '');
+               $('#c_rtd').val(opt.data('rtd') !== '-' ? opt.data('rtd') : '');
                infoBox.html(`
-                  <div class="bg-white p-3 rounded border mb-2 border-start border-4 border-primary shadow-sm mt-1">
-                     <div class="d-flex align-items-center mb-2">
-                         <i class="ri-information-line ri-xl me-2 text-primary"></i>
-                         <h6 class="mb-0 fw-bold">Ban yang akan Dipasang</h6>
-                     </div>
-                     <div class="bg-light p-2 rounded border border-dashed d-flex justify-content-between align-items-center flex-wrap gap-1">
-                         <div>
-                             ${badge}
-                             <span class="fw-bold text-dark me-1">${opt.data('sn')}</span>
-                             <span class="small text-muted">&bull; ${opt.data('brand')} | ${opt.data('size')} | ${opt.data('pattern')}</span>
-                         </div>
-                         <span class="badge bg-label-secondary text-dark"><i class="ri-ruler-line"></i> ${rtdLabel} ${opt.data('rtd')} mm</span>
-                     </div>
+                  <div class="alert alert-info py-2 px-3 small mb-2">
+                     <b>${opt.data('brand')}</b> | ${opt.data('size')} | Sisa RTD: <b>${opt.data('rtd')} mm</b>
                   </div>
-               `).slideDown();
+               `);
+               infoBox.slideDown();
             } else {
+               $('#c_serial_number').val('');
                infoBox.slideUp();
             }
          });
 
-         $('#btn_submit').click(function() {
-            let isClassic = $('#mode_klasik').is(':checked');
+         // SUBMIT FORM
+         $('#btn_submit').on('click', function(e) {
+            e.preventDefault();
+            const isClassic = $('input[name="ui_mode"]:checked').val() === 'classic';
 
-            if(isClassic) {
-               if(!$('#c_tyre_id').val() || !$('#c_position_id').val()) {
-                  Swal.fire('Peringatan', 'Ban dan Posisi wajib dipilih pada Mode Klasik.', 'warning');
-                  return;
-               }
-               if(!$('#c_psi').val()) {
-                  Swal.fire('Peringatan', 'PSI wajib diisi.', 'warning');
-                  return;
-               }
+            if(!$('#kendaraan_id').val()) {
+               Swal.fire('Peringatan', 'Pilih unit kendaraan terlebih dahulu.', 'warning');
+               return;
+            }
+            if(!$('#movement_date').val()) {
+               Swal.fire('Peringatan', 'Pilih tanggal transaksi terlebih dahulu.', 'warning');
+               return;
+            }
+
+            if (isClassic) {
+                if(!$('#c_tyre_id').val() || !$('#c_position_id').val() || !$('#c_psi').val()) {
+                   Swal.fire('Peringatan', 'Lengkapi Ban, Posisi, dan PSI pada Form Satu per Satu.', 'warning');
+                   return;
+                }
             } else {
-               if(tasks.length === 0) {
-                  Swal.fire('Peringatan', 'Antrean pemasangan masih kosong.', 'warning');
-                  return;
-               }
+                if (tasks.length === 0) {
+                   Swal.fire('Peringatan', 'Antrean pemasangan masih kosong. Silakan drag/pilih ban ke posisi roda.', 'warning');
+                   return;
+                }
             }
 
             if(!vehicleSelect.val()) {
@@ -905,6 +948,7 @@
                    type: 'Installation',
                    tyre_id: $('#c_tyre_id').val(),
                    position_id: $('#c_position_id').val(),
+                   serial_number: $('#c_serial_number').val() || '',
                    rtd: $('#c_rtd').val() || '',
                    psi: $('#c_psi').val(),
                    notes: $('#c_notes').val() || ''
@@ -927,6 +971,7 @@
                       type: 'Installation',
                       tyre_id: t.tyre_id,
                       position_id: t.position_id,
+                      serial_number: card.querySelector('.t-serial-number') ? card.querySelector('.t-serial-number').value : '',
                       rtd: card.querySelector('.t-rtd').value || '',
                       psi: psi,
                       notes: card.querySelector('.t-notes').value || ''

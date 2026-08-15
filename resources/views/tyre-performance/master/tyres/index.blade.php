@@ -102,14 +102,26 @@
                         </div>
                      @endif
                      <div class="col-md-6 mb-3">
-                        <label for="serial_number" class="form-label">Serial Number</label>
+                        <label for="serial_number" class="form-label d-flex justify-content-between align-items-center">
+                           <span>Serial Number (SN) <small class="text-muted fw-normal">(Opsional)</small></span>
+                           <button type="button" class="btn btn-xs btn-label-primary py-0 px-2" id="btn_autogen_add_sn">
+                              <i class="ri-flashlight-line me-1"></i> Auto-Gen
+                           </button>
+                        </label>
                         <input type="text" id="serial_number" name="serial_number" class="form-control"
-                           placeholder="Enter Serial Number" required>
+                           placeholder="Kosongkan untuk Auto-Generate">
+                        <small class="text-muted" style="font-size: 0.75rem;">Jika dikosongkan, sistem membuat SN stok unik otomatis.</small>
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="custom_serial_number" class="form-label">Custom Serial Number (Opsional)</label>
+                     <div class="col-md-3 mb-3">
+                        <label for="custom_serial_number" class="form-label">Custom Code</label>
                         <input type="text" id="custom_serial_number" name="custom_serial_number" class="form-control"
-                           placeholder="Enter Custom Code">
+                           placeholder="Ex: BAN-01">
+                     </div>
+                     <div class="col-md-3 mb-3">
+                        <label for="add_quantity" class="form-label fw-bold text-primary">Jumlah Unit (Qty)</label>
+                        <input type="number" id="add_quantity" name="quantity" class="form-control fw-bold border-primary"
+                           value="1" min="1" max="100">
+                        <small class="text-muted" style="font-size: 0.75rem;">Isi > 1 untuk bulk stock.</small>
                      </div>
                   </div>
                   <div class="row g-2">
@@ -259,7 +271,12 @@
                         </div>
                      @endif
                      <div class="col-md-6 mb-3">
-                        <label for="edit_serial_number" class="form-label">Serial Number</label>
+                        <label for="edit_serial_number" class="form-label d-flex justify-content-between align-items-center">
+                           <span>Serial Number (SN)</span>
+                           <button type="button" class="btn btn-xs btn-label-primary py-0 px-2" id="btn_autogen_edit_sn">
+                              <i class="ri-flashlight-line me-1"></i> Auto-Gen
+                           </button>
+                        </label>
                         <input type="text" id="edit_serial_number" name="serial_number" class="form-control"
                            required>
                      </div>
@@ -851,7 +868,27 @@
             const id = $(this).data('id');
             const serial = $(this).data('serial');
 
-            Swal.fire({
+            // Auto-Gen SN Helper
+         function generateRandomStockSN(brandSelectId) {
+            const brandText = $(brandSelectId + ' option:selected').text().trim().replace(/[^A-Za-z0-9]/g, '');
+            const brandPrefix = brandText && brandText !== 'SelectBrand' && brandText !== '' ? brandText.substring(0, 3).toUpperCase() : 'STK';
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+            return `STK-${brandPrefix}-${y}${m}${d}-${rand}`;
+         }
+
+         $('#btn_autogen_add_sn').on('click', function() {
+            $('#serial_number').val(generateRandomStockSN('#tyre_brand_id'));
+         });
+
+         $('#btn_autogen_edit_sn').on('click', function() {
+            $('#edit_serial_number').val(generateRandomStockSN('#edit_brand_id'));
+         });
+
+         Swal.fire({
                title: 'Yakin ingin menghapus?',
                text: `Ban SN "${serial}" akan dihapus permanen!`,
                icon: 'warning',

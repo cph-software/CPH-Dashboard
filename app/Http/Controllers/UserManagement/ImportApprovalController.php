@@ -313,9 +313,17 @@ class ImportApprovalController extends Controller
 
     private function processTyreMaster($data, $uploaderCompanyId)
     {
-        // New Headers support: serial_number, brand, size, pattern, segment, initial_rtd, status, price, in_warehouse
         $sn = $data['serial_number'] ?? $data['sn_ban'] ?? null;
-        if (!$sn) throw new \Exception("Serial Number kosong.");
+        if (empty(trim((string)$sn))) {
+            $brandShort = !empty($data['brand']) ? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string)$data['brand']), 0, 3)) : 'STK';
+            do {
+                $random = strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+                $sn = "STK-{$brandShort}-" . now()->format('Ymd') . "-{$random}";
+                $exists = \App\Models\Tyre::withoutGlobalScopes()->where('serial_number', $sn)->exists();
+            } while ($exists);
+        } else {
+            $sn = strtoupper(trim((string)$sn));
+        }
 
         // 1. Resolve Brand
         $brandId = null;
