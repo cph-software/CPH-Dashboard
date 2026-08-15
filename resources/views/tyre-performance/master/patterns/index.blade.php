@@ -46,6 +46,7 @@
                <thead>
                   <tr>
                      <th>Pattern Name</th>
+                     <th>Brand / Merek</th>
                      <th>Status</th>
                      <th class="text-center">Actions</th>
                   </tr>
@@ -53,8 +54,14 @@
                <tbody class="table-border-bottom-0">
                   @foreach ($patterns as $pattern)
                      <tr>
-
                         <td><strong>{{ $pattern->name }}</strong></td>
+                        <td>
+                           @if($pattern->brand)
+                              <span class="badge bg-label-primary font-monospace">{{ $pattern->brand->brand_name }}</span>
+                           @else
+                              <span class="text-muted">-</span>
+                           @endif
+                        </td>
                         <td>
                            <span class="badge bg-label-{{ $pattern->status == 'Active' ? 'success' : 'secondary' }}">
                               {{ $pattern->status }}
@@ -66,6 +73,7 @@
                                  <a class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light me-1 edit-pattern"
                                     href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editPatternModal"
                                     data-id="{{ $pattern->id }}" data-name="{{ $pattern->name }}"
+                                    data-brand-id="{{ $pattern->tyre_brand_id }}"
                                     data-status="{{ $pattern->status }}" title="Edit">
                                     <i class="icon-base ri ri-pencil-line"></i>
                                  </a>
@@ -104,14 +112,22 @@
             <form action="{{ route('tyre-patterns.store') }}" method="POST">
                @csrf
                <div class="modal-body pt-4">
-
                   <div class="mb-3">
-                     <label for="name" class="form-label fw-bold">Pattern Name</label>
+                     <label for="tyre_brand_id" class="form-label fw-bold">Brand / Merek <span class="text-danger">*</span></label>
+                     <select id="tyre_brand_id" name="tyre_brand_id" class="form-select select2" data-placeholder="-- Pilih Brand --" required>
+                        <option value="">-- Pilih Brand --</option>
+                        @foreach ($brands as $brand)
+                           <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="mb-3">
+                     <label for="name" class="form-label fw-bold">Pattern Name <span class="text-danger">*</span></label>
                      <input type="text" id="name" name="name" class="form-control"
                         placeholder="e.g. Rough Terrain (R150)" required>
                   </div>
                   <div class="mb-3">
-                     <label for="status" class="form-label fw-bold">Status</label>
+                     <label for="status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
                      <select name="status" class="form-select" required>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
@@ -139,13 +155,21 @@
                @csrf
                @method('PUT')
                <div class="modal-body pt-4">
-
                   <div class="mb-3">
-                     <label for="edit_name" class="form-label fw-bold">Pattern Name</label>
+                     <label for="edit_tyre_brand_id" class="form-label fw-bold">Brand / Merek <span class="text-danger">*</span></label>
+                     <select id="edit_tyre_brand_id" name="tyre_brand_id" class="form-select select2" data-placeholder="-- Pilih Brand --" required>
+                        <option value="">-- Pilih Brand --</option>
+                        @foreach ($brands as $brand)
+                           <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="mb-3">
+                     <label for="edit_name" class="form-label fw-bold">Pattern Name <span class="text-danger">*</span></label>
                      <input type="text" id="edit_name" name="name" class="form-control" required>
                   </div>
                   <div class="mb-3">
-                     <label for="edit_status" class="form-label fw-bold">Status</label>
+                     <label for="edit_status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
                      <select id="edit_status" name="status" class="form-select" required>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
@@ -183,11 +207,12 @@
          $(document).on('click', '.edit-pattern', function() {
             const id = $(this).data('id');
             const name = $(this).data('name');
+            const brandId = $(this).data('brandId');
             const status = $(this).data('status');
 
             editForm.attr('action', `{{ url('master_pattern') }}/${id}`);
             $('#edit_name').val(name);
-
+            $('#edit_tyre_brand_id').val(brandId).trigger('change');
             $('#edit_status').val(status);
          });
 

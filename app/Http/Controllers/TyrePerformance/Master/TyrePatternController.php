@@ -11,23 +11,29 @@ class TyrePatternController extends Controller
     public function index()
     {
         $query = TyrePattern::with('brand')->latest();
+        $brandQuery = \App\Models\TyreBrand::where('status', 'Active')->orderBy('brand_name');
         
         if (auth()->user()->role_id != 1) {
             $companyId = auth()->user()->tyre_company_id;
             $query->whereHas('companies', function($q) use ($companyId) {
                 $q->where('tyre_company_id', $companyId);
             });
+            $brandQuery->whereHas('companies', function($q) use ($companyId) {
+                $q->where('tyre_company_id', $companyId);
+            });
         }
         
         $patterns = $query->get();
+        $brands = $brandQuery->get();
 
-        return view('tyre-performance.master.patterns.index', compact('patterns'));
+        return view('tyre-performance.master.patterns.index', compact('patterns', 'brands'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'status' => 'required|in:Active,Inactive',
         ]);
 
@@ -56,6 +62,7 @@ class TyrePatternController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'tyre_brand_id' => 'required|exists:tyre_brands,id',
             'status' => 'required|in:Active,Inactive',
         ]);
 
