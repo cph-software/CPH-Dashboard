@@ -27,6 +27,11 @@
                         </span>
                      </div>
                      <h4 class="mb-1">{{ $tyre->serial_number }}</h4>
+                     @if($tyre->custom_serial_number)
+                        <div class="mb-2">
+                           <span class="badge bg-label-secondary font-monospace"><i class="ri-hashtag me-1"></i>Custom Code: {{ $tyre->custom_serial_number }}</span>
+                        </div>
+                     @endif
                      <span
                         class="badge bg-label-{{ $tyre->status === 'Installed' ? 'success' : ($tyre->status === 'New' ? 'info' : ($tyre->status === 'Scrap' ? 'danger' : 'warning')) }} rounded-pill">
                         {{ $tyre->status }}

@@ -39,6 +39,7 @@ class TyreMasterController extends Controller
             $searchValue = $request->input('search.value');
             $query->where(function ($q) use ($searchValue) {
                 $q->where('serial_number', 'like', "%$searchValue%")
+                    ->orWhere('custom_serial_number', 'like', "%$searchValue%")
                     ->orWhereHas('brand', function ($sub) use ($searchValue) {
                         $sub->where('brand_name', 'like', "%$searchValue%");
                     })

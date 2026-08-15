@@ -495,12 +495,13 @@
                      return `<input type="checkbox" class="form-check-input tyre-checkbox" value="${data}">`;
                   }
                },
-               {
-                  data: 'serial_number',
-                  render: function(data) {
-                     return `<strong>${data}</strong>`;
-                  }
-               },
+                {
+                   data: 'serial_number',
+                   render: function(data, type, row) {
+                      let custom = row.custom_serial_number ? `<br><span class="badge bg-label-secondary font-monospace mt-1" style="font-size: 0.72rem;"><i class="ri-hashtag me-1"></i>${row.custom_serial_number}</span>` : '';
+                      return `<strong class="text-dark">${data}</strong>${custom}`;
+                   }
+                },
                @if (auth()->user()->role_id == 1)
                {
                   data: 'company',
