@@ -15,10 +15,33 @@ class TyreMasterController extends Controller
 {
     public function index()
     {
-        // Master data: Global dropdown (no company whitelist restriction)
-        $brands = TyreBrand::where('status', 'Active')->orderBy('brand_name')->get();
-        $sizes = TyreSize::with('brand')->orderBy('size')->get();
-        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
+        $user = auth()->user();
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+
+        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
+        $sizeQuery = TyreSize::with('brand')->orderBy('size');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+
+        if ($user->role_id != 1 && $activeCompanyId && !is_array($activeCompanyId)) {
+            $hasBrandMapping = \DB::table('tyre_company_brands')->where('tyre_company_id', $activeCompanyId)->exists();
+            if ($hasBrandMapping) {
+                $brandQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $activeCompanyId));
+            }
+
+            $hasSizeMapping = \DB::table('tyre_company_sizes')->where('tyre_company_id', $activeCompanyId)->exists();
+            if ($hasSizeMapping) {
+                $sizeQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $activeCompanyId));
+            }
+
+            $hasPatternMapping = \DB::table('tyre_company_patterns')->where('tyre_company_id', $activeCompanyId)->exists();
+            if ($hasPatternMapping) {
+                $patternQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $activeCompanyId));
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $sizes = $sizeQuery->get();
+        $patterns = $patternQuery->get();
         
         $segments = TyreSegment::with('location')->where('status', 'Active')->get();
         $locations = TyreLocation::all();
@@ -127,11 +150,33 @@ class TyreMasterController extends Controller
     public function edit($id)
     {
         $tyre = Tyre::findOrFail($id);
+        $user = auth()->user();
+        $targetCompanyId = $tyre->tyre_company_id ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
-        // Master data: Global dropdown (no company whitelist restriction)
-        $brands = TyreBrand::where('status', 'Active')->orderBy('brand_name')->get();
-        $sizes = TyreSize::with('brand')->orderBy('size')->get();
-        $patterns = TyrePattern::with('brand')->orderBy('name')->get();
+        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
+        $sizeQuery = TyreSize::with('brand')->orderBy('size');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+
+        if ($user->role_id != 1 && $targetCompanyId && !is_array($targetCompanyId)) {
+            $hasBrandMapping = \DB::table('tyre_company_brands')->where('tyre_company_id', $targetCompanyId)->exists();
+            if ($hasBrandMapping) {
+                $brandQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $targetCompanyId));
+            }
+
+            $hasSizeMapping = \DB::table('tyre_company_sizes')->where('tyre_company_id', $targetCompanyId)->exists();
+            if ($hasSizeMapping) {
+                $sizeQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $targetCompanyId));
+            }
+
+            $hasPatternMapping = \DB::table('tyre_company_patterns')->where('tyre_company_id', $targetCompanyId)->exists();
+            if ($hasPatternMapping) {
+                $patternQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $targetCompanyId));
+            }
+        }
+
+        $brands = $brandQuery->get();
+        $sizes = $sizeQuery->get();
+        $patterns = $patternQuery->get();
         
         $segments = TyreSegment::where('status', 'Active')->get();
         $locations = TyreLocation::all();
@@ -167,9 +212,9 @@ class TyreMasterController extends Controller
             'serial_number' => 'nullable|string|max:255|unique:tyres,serial_number,NULL,id,deleted_at,NULL',
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,NULL,id,deleted_at,NULL',
             'quantity' => 'nullable|integer|min:1|max:100',
-            'tyre_brand_id' => 'required', // Can be ID or String for Admin
-            'tyre_size_id' => 'required',
-            'tyre_pattern_id' => 'nullable',
+            'tyre_brand_id' => 'required', // Can be ID or New Name String
+            'tyre_size_id' => 'required',  // Can be ID or New Name String
+            'tyre_pattern_id' => 'nullable', // Can be ID or New Name String
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
@@ -191,23 +236,88 @@ class TyreMasterController extends Controller
             $data['price'] = (float)$cleanPrice;
         }
 
-        // Handle Admin "Type Manual" Logic
+        // Determine target company ID
+        $targetCompanyId = null;
         if ($user->role_id == 1) {
-            // Brand
+            $targetCompanyId = $data['tyre_company_id'] ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        } else {
+            $targetCompanyId = $user->tyre_company_id ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $data['tyre_company_id'] = $targetCompanyId;
+        }
+
+        // 1. Resolve Brand (ID or New Name String)
+        if (!empty($request->tyre_brand_id)) {
             if (!is_numeric($request->tyre_brand_id)) {
-                $brand = TyreBrand::firstOrCreate(['brand_name' => strtoupper($request->tyre_brand_id)], ['status' => 'Active']);
+                $brandName = strtoupper(trim($request->tyre_brand_id));
+                $brand = TyreBrand::firstOrCreate(['brand_name' => $brandName], ['status' => 'Active']);
                 $data['tyre_brand_id'] = $brand->id;
+            } else {
+                $brand = TyreBrand::find($request->tyre_brand_id);
             }
-            // Size
+            if ($brand && $targetCompanyId && !is_array($targetCompanyId)) {
+                $brand->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 2. Resolve Size (ID or New Name String)
+        if (!empty($request->tyre_size_id)) {
             if (!is_numeric($request->tyre_size_id)) {
-                $size = TyreSize::firstOrCreate(['size' => strtoupper($request->tyre_size_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $sizeName = strtoupper(trim($request->tyre_size_id));
+                $size = TyreSize::firstOrCreate(
+                    [
+                        'size' => $sizeName,
+                        'tyre_brand_id' => $data['tyre_brand_id']
+                    ],
+                    [
+                        'std_otd' => !empty($data['initial_tread_depth']) ? (float)$data['initial_tread_depth'] : 0,
+                        'ply_rating' => !empty($data['ply_rating']) ? (int)preg_replace('/[^0-9]/', '', (string)$data['ply_rating']) : 16,
+                    ]
+                );
                 $data['tyre_size_id'] = $size->id;
+            } else {
+                $size = TyreSize::find($request->tyre_size_id);
             }
-            // Pattern
-            if ($request->filled('tyre_pattern_id') && !is_numeric($request->tyre_pattern_id)) {
-                $pattern = TyrePattern::firstOrCreate(['name' => strtoupper($request->tyre_pattern_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+            if ($size && $targetCompanyId && !is_array($targetCompanyId)) {
+                $size->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 3. Resolve Pattern (ID or New Name String)
+        if ($request->filled('tyre_pattern_id')) {
+            if (!is_numeric($request->tyre_pattern_id)) {
+                $patternName = strtoupper(trim($request->tyre_pattern_id));
+                $pattern = TyrePattern::firstOrCreate(
+                    [
+                        'name' => $patternName,
+                        'tyre_brand_id' => $data['tyre_brand_id']
+                    ],
+                    [
+                        'status' => 'Active'
+                    ]
+                );
                 $data['tyre_pattern_id'] = $pattern->id;
+            } else {
+                $pattern = TyrePattern::find($request->tyre_pattern_id);
             }
+            if ($pattern && $targetCompanyId && !is_array($targetCompanyId)) {
+                $pattern->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 4. Resolve Segment
+        if (!empty($data['segment_name']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            $segName = trim($data['segment_name']);
+            TyreSegment::firstOrCreate(
+                [
+                    'segment_name' => $segName,
+                    'tyre_company_id' => $targetCompanyId
+                ],
+                [
+                    'segment_id' => 'SEG-' . strtoupper(\Illuminate\Support\Str::slug(substr($segName, 0, 5))) . '-' . rand(100, 999),
+                    'terrain_type' => 'Standard',
+                    'status' => 'Active'
+                ]
+            );
         }
 
         // Set Default Tread Depths
@@ -248,25 +358,31 @@ class TyreMasterController extends Controller
             \DB::commit();
         } catch (\Throwable $e) {
             \DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal menambahkan ban: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menyimpan ban: ' . $e->getMessage())->withInput();
         }
 
-        setLogActivity(auth()->id(), 'Menambah stok ban: ' . implode(', ', array_slice($createdSns, 0, 5)) . (count($createdSns) > 5 ? ' (+' . (count($createdSns) - 5) . ' lainnya)' : ''), [
+        // Log Activity
+        $logMessage = $quantity > 1 
+            ? "Menambah {$quantity} ban baru (SN: " . implode(', ', array_slice($createdSns, 0, 5)) . ($quantity > 5 ? '...' : '') . ")"
+            : "Menambah ban baru: " . ($createdSns[0] ?? '-');
+
+        setLogActivity(auth()->id(), $logMessage, [
             'action_type' => 'create',
             'module' => 'Master Tyre',
             'data_after' => [
-                'Total Ban' => count($createdSns),
-                'Daftar SN' => array_slice($createdSns, 0, 10),
-                'Brand' => $data['tyre_brand_id'] ?? '-',
-                'Size' => $data['tyre_size_id'] ?? '-',
+                'Total Qty' => $quantity,
+                'Serial Numbers' => $createdSns,
+                'Brand' => $tyre->brand->brand_name ?? $data['tyre_brand_id'],
+                'Size' => $tyre->size->size ?? $data['tyre_size_id'],
+                'Status' => $tyre->status ?? 'New',
             ]
         ]);
 
-        $msg = $quantity > 1 
-            ? "Berhasil menambahkan {$quantity} unit stok ban baru dengan Serial Number otomatis."
-            : "Ban {$createdSns[0]} berhasil ditambahkan ke master stok.";
+        $successMsg = $quantity > 1 
+            ? "{$quantity} ban berhasil ditambahkan ke master!"
+            : "Ban " . ($createdSns[0] ?? '') . " berhasil ditambahkan ke master!";
 
-        return redirect()->back()->with('success', $msg);
+        return redirect()->back()->with('success', $successMsg);
     }
 
     public function update(Request $request, $id)
@@ -291,20 +407,88 @@ class TyreMasterController extends Controller
         $data = $request->all();
         $user = auth()->user();
 
-        // Handle Admin "Type Manual" Logic
+        // Determine target company ID
+        $targetCompanyId = null;
         if ($user->role_id == 1) {
+            $targetCompanyId = $data['tyre_company_id'] ?? $tyre->tyre_company_id;
+        } else {
+            $targetCompanyId = $tyre->tyre_company_id ?? $user->tyre_company_id;
+            $data['tyre_company_id'] = $targetCompanyId;
+        }
+
+        // 1. Resolve Brand
+        if (!empty($request->tyre_brand_id)) {
             if (!is_numeric($request->tyre_brand_id)) {
-                $brand = TyreBrand::firstOrCreate(['brand_name' => strtoupper($request->tyre_brand_id)], ['status' => 'Active']);
+                $brandName = strtoupper(trim($request->tyre_brand_id));
+                $brand = TyreBrand::firstOrCreate(['brand_name' => $brandName], ['status' => 'Active']);
                 $data['tyre_brand_id'] = $brand->id;
+            } else {
+                $brand = TyreBrand::find($request->tyre_brand_id);
             }
+            if ($brand && $targetCompanyId && !is_array($targetCompanyId)) {
+                $brand->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 2. Resolve Size
+        if (!empty($request->tyre_size_id)) {
             if (!is_numeric($request->tyre_size_id)) {
-                $size = TyreSize::firstOrCreate(['size' => strtoupper($request->tyre_size_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+                $sizeName = strtoupper(trim($request->tyre_size_id));
+                $size = TyreSize::firstOrCreate(
+                    [
+                        'size' => $sizeName,
+                        'tyre_brand_id' => $data['tyre_brand_id']
+                    ],
+                    [
+                        'std_otd' => !empty($data['initial_tread_depth']) ? (float)$data['initial_tread_depth'] : 0,
+                        'ply_rating' => !empty($data['ply_rating']) ? (int)preg_replace('/[^0-9]/', '', (string)$data['ply_rating']) : 16,
+                    ]
+                );
                 $data['tyre_size_id'] = $size->id;
+            } else {
+                $size = TyreSize::find($request->tyre_size_id);
             }
-            if ($request->filled('tyre_pattern_id') && !is_numeric($request->tyre_pattern_id)) {
-                $pattern = TyrePattern::firstOrCreate(['name' => strtoupper($request->tyre_pattern_id), 'tyre_brand_id' => $data['tyre_brand_id']]);
+            if ($size && $targetCompanyId && !is_array($targetCompanyId)) {
+                $size->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 3. Resolve Pattern
+        if ($request->filled('tyre_pattern_id')) {
+            if (!is_numeric($request->tyre_pattern_id)) {
+                $patternName = strtoupper(trim($request->tyre_pattern_id));
+                $pattern = TyrePattern::firstOrCreate(
+                    [
+                        'name' => $patternName,
+                        'tyre_brand_id' => $data['tyre_brand_id']
+                    ],
+                    [
+                        'status' => 'Active'
+                    ]
+                );
                 $data['tyre_pattern_id'] = $pattern->id;
+            } else {
+                $pattern = TyrePattern::find($request->tyre_pattern_id);
             }
+            if ($pattern && $targetCompanyId && !is_array($targetCompanyId)) {
+                $pattern->companies()->syncWithoutDetaching([$targetCompanyId]);
+            }
+        }
+
+        // 4. Resolve Segment
+        if (!empty($data['segment_name']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            $segName = trim($data['segment_name']);
+            TyreSegment::firstOrCreate(
+                [
+                    'segment_name' => $segName,
+                    'tyre_company_id' => $targetCompanyId
+                ],
+                [
+                    'segment_id' => 'SEG-' . strtoupper(\Illuminate\Support\Str::slug(substr($segName, 0, 5))) . '-' . rand(100, 999),
+                    'terrain_type' => 'Standard',
+                    'status' => 'Active'
+                ]
+            );
         }
 
         // Sync Tread Depths jika sebelumnya kosong

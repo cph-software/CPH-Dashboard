@@ -748,8 +748,8 @@
             if ($(this).val() !== "") editPatternOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
          });
 
-         // Role-based Select2 tags
-         const isAdmin = {{ auth()->user()->role_id == 1 ? 'true' : 'false' }};
+         // User Permission for Select2 tags (direct adding of Brand, Size, Pattern)
+         const canCreate = {{ (hasPermission('Master Tyre', 'create') || auth()->user()->role_id == 1) ? 'true' : 'false' }};
 
          function initSelect2Tags(selector, modalId) {
             $(selector).each(function() {
@@ -761,8 +761,19 @@
                $this.select2({
                   placeholder: $this.data('placeholder'),
                   dropdownParent: $this.parent(),
-                  tags: isAdmin,
-                  width: '100%'
+                  tags: canCreate,
+                  width: '100%',
+                  createTag: function(params) {
+                     var term = $.trim(params.term);
+                     if (term === '') {
+                        return null;
+                     }
+                     return {
+                        id: term,
+                        text: '+ Tambah Baru: "' + term + '"',
+                        newTag: true
+                     };
+                  }
                });
             });
          }
@@ -809,9 +820,29 @@
                }
             });
 
-            // Re-init completely so Select2 tags engine doesn't crash on manipulated DOM
-            $(sizeSelector).select2({ placeholder: $(sizeSelector).data('placeholder'), dropdownParent: $(sizeSelector).parent(), tags: isAdmin, width: '100%' });
-            $(patternSelector).select2({ placeholder: $(patternSelector).data('placeholder'), dropdownParent: $(patternSelector).parent(), tags: isAdmin, width: '100%' });
+            // Re-init completely so Select2 tags engine works smoothly for new items
+            $(sizeSelector).select2({
+               placeholder: $(sizeSelector).data('placeholder'),
+               dropdownParent: $(sizeSelector).parent(),
+               tags: canCreate,
+               width: '100%',
+               createTag: function(params) {
+                  var term = $.trim(params.term);
+                  if (term === '') return null;
+                  return { id: term, text: '+ Tambah Baru: "' + term + '"', newTag: true };
+               }
+            });
+            $(patternSelector).select2({
+               placeholder: $(patternSelector).data('placeholder'),
+               dropdownParent: $(patternSelector).parent(),
+               tags: canCreate,
+               width: '100%',
+               createTag: function(params) {
+                  var term = $.trim(params.term);
+                  if (term === '') return null;
+                  return { id: term, text: '+ Tambah Baru: "' + term + '"', newTag: true };
+               }
+            });
          }
          $('#addTyreModal').on('shown.bs.modal', function () {
             if (!$('#tyre_brand_id').data('select2')) initSelect2Tags('#tyre_brand_id');
