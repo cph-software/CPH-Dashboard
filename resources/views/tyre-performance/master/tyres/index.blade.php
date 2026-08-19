@@ -184,7 +184,7 @@
                      </div>
                      <div class="col-md-6">
                         <label for="current_location_id" class="form-label fw-bold">Warehouse / Lokasi</label>
-                        <select name="current_location_id" id="current_location_id" class="form-select select2"
+                        <select name="current_location_id" id="current_location_id" class="form-select select2-tags"
                            data-placeholder="Pilih Lokasi">
                            <option value=""></option>
                            @foreach ($locations as $loc)
@@ -363,7 +363,7 @@
                      </div>
                      <div class="col-md-6 mb-3">
                         <label for="edit_current_location_id" class="form-label">Warehouse / Lokasi</label>
-                        <select id="edit_current_location_id" name="current_location_id" class="form-select select2"
+                        <select id="edit_current_location_id" name="current_location_id" class="form-select select2-tags"
                            data-placeholder="Pilih Lokasi">
                            <option value=""></option>
                            @foreach ($locations as $loc)
@@ -748,7 +748,7 @@
             if ($(this).val() !== "") editPatternOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
          });
 
-         // User Permission for Select2 tags (direct adding of Brand, Size, Pattern)
+         // User Permission for Select2 tags (direct adding of Brand, Size, Pattern, Location, Segment)
          const canCreate = {{ (hasPermission('Master Tyre', 'create') || auth()->user()->role_id == 1) ? 'true' : 'false' }};
 
          function initSelect2Tags(selector, modalId) {
@@ -770,7 +770,7 @@
                      }
                      return {
                         id: term,
-                        text: '+ Tambah Baru: "' + term + '"',
+                        text: term,
                         newTag: true
                      };
                   }
@@ -829,7 +829,7 @@
                createTag: function(params) {
                   var term = $.trim(params.term);
                   if (term === '') return null;
-                  return { id: term, text: '+ Tambah Baru: "' + term + '"', newTag: true };
+                  return { id: term, text: term, newTag: true };
                }
             });
             $(patternSelector).select2({
@@ -840,26 +840,24 @@
                createTag: function(params) {
                   var term = $.trim(params.term);
                   if (term === '') return null;
-                  return { id: term, text: '+ Tambah Baru: "' + term + '"', newTag: true };
+                  return { id: term, text: term, newTag: true };
                }
             });
          }
          $('#addTyreModal').on('shown.bs.modal', function () {
-            if (!$('#tyre_brand_id').data('select2')) initSelect2Tags('#tyre_brand_id');
-            if (!$('#tyre_size_id').data('select2')) initSelect2Tags('#tyre_size_id');
-            if (!$('#tyre_pattern_id').data('select2')) initSelect2Tags('#tyre_pattern_id');
-            if (!$('#segment_name').data('select2')) {
-               $('#segment_name').select2({ placeholder: $(this).data('placeholder'), dropdownParent: $('#segment_name').parent(), tags: true, width: '100%' });
-            }
+            initSelect2Tags('#tyre_brand_id');
+            initSelect2Tags('#tyre_size_id');
+            initSelect2Tags('#tyre_pattern_id');
+            initSelect2Tags('#segment_name');
+            initSelect2Tags('#current_location_id');
          });
 
          $('#editTyreModal').on('shown.bs.modal', function () {
-            if (!$('#edit_brand_id').data('select2')) initSelect2Tags('#edit_brand_id');
-            if (!$('#edit_size_id').data('select2')) initSelect2Tags('#edit_size_id');
-            if (!$('#edit_pattern_id').data('select2')) initSelect2Tags('#edit_pattern_id');
-            if (!$('#edit_segment_name').data('select2')) {
-               $('#edit_segment_name').select2({ placeholder: $(this).data('placeholder'), dropdownParent: $('#edit_segment_name').parent(), tags: true, width: '100%' });
-            }
+            initSelect2Tags('#edit_brand_id');
+            initSelect2Tags('#edit_size_id');
+            initSelect2Tags('#edit_pattern_id');
+            initSelect2Tags('#edit_segment_name');
+            initSelect2Tags('#edit_current_location_id');
          });
 
          initStandardSelect2();

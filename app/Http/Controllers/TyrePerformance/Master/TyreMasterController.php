@@ -320,6 +320,25 @@ class TyreMasterController extends Controller
             );
         }
 
+        // 5. Resolve Location / Warehouse (ID or New Name String)
+        if (!empty($request->current_location_id) && $targetCompanyId && !is_array($targetCompanyId)) {
+            if (!is_numeric($request->current_location_id)) {
+                $locName = trim($request->current_location_id);
+                $location = TyreLocation::firstOrCreate(
+                    [
+                        'location_name' => $locName,
+                        'tyre_company_id' => $targetCompanyId
+                    ],
+                    [
+                        'location_type' => 'Warehouse',
+                        'capacity' => 100,
+                        'current_stock' => 0,
+                    ]
+                );
+                $data['current_location_id'] = $location->id;
+            }
+        }
+
         // Set Default Tread Depths
         if (empty($data['original_tread_depth'])) {
             if (!empty($data['initial_tread_depth'])) {
@@ -489,6 +508,25 @@ class TyreMasterController extends Controller
                     'status' => 'Active'
                 ]
             );
+        }
+
+        // 5. Resolve Location / Warehouse (ID or New Name String)
+        if (!empty($request->current_location_id) && $targetCompanyId && !is_array($targetCompanyId)) {
+            if (!is_numeric($request->current_location_id)) {
+                $locName = trim($request->current_location_id);
+                $location = TyreLocation::firstOrCreate(
+                    [
+                        'location_name' => $locName,
+                        'tyre_company_id' => $targetCompanyId
+                    ],
+                    [
+                        'location_type' => 'Warehouse',
+                        'capacity' => 100,
+                        'current_stock' => 0,
+                    ]
+                );
+                $data['current_location_id'] = $location->id;
+            }
         }
 
         // Sync Tread Depths jika sebelumnya kosong
