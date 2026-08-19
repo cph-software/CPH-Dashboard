@@ -11,7 +11,16 @@ class TyreLocationController extends Controller
 {
     public function index()
     {
-        $locations = TyreLocation::with('company')->latest()->get();
+        $query = TyreLocation::with('company')->latest();
+        if (auth()->user()->role_id != 1) {
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId() ?? auth()->user()->tyre_company_id;
+            if ($activeCompanyId && !is_array($activeCompanyId)) {
+                $query->where(function($q) use ($activeCompanyId) {
+                    $q->whereNull('tyre_company_id')->orWhere('tyre_company_id', $activeCompanyId);
+                });
+            }
+        }
+        $locations = $query->get();
         $companies = TyreCompany::where('status', 'Active')->get();
         return view('tyre-performance.master.locations.index', compact('locations', 'companies'));
     }
