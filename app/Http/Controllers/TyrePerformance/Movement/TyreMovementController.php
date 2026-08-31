@@ -1119,6 +1119,36 @@ class TyreMovementController extends Controller
 
             DB::commit();
 
+            // Auto-sync with Tyre Monitoring
+            try {
+                if ($request->movement_type === 'Installation' && isset($tyre)) {
+                    \App\Services\TyreMonitoringSyncService::syncInstallation(
+                        $request->vehicle_id,
+                        $request->position_id,
+                        $tyre->id,
+                        $request->all()
+                    );
+                } elseif ($request->movement_type === 'Removal' && isset($tyre)) {
+                    \App\Services\TyreMonitoringSyncService::syncRemoval(
+                        $request->vehicle_id,
+                        $request->position_id,
+                        $tyre->id,
+                        $request->all()
+                    );
+                } elseif ($request->movement_type === 'Rotation' && isset($sourceTyre)) {
+                    \App\Services\TyreMonitoringSyncService::syncRotation(
+                        $request->vehicle_id,
+                        $request->position_id,
+                        $request->target_position_id,
+                        $sourceTyre->id,
+                        isset($targetTyre) && $targetTyre ? $targetTyre->id : null,
+                        $request->all()
+                    );
+                }
+            } catch (\Exception $syncEx) {
+                \Illuminate\Support\Facades\Log::error("Tyre Movement -> Monitoring Auto-Sync Error: " . $syncEx->getMessage());
+            }
+
             // [FIX-SYNC-1] Clear dashboard cache so data reflects immediately
             \Illuminate\Support\Facades\Cache::flush();
 
@@ -1607,6 +1637,56 @@ class TyreMovementController extends Controller
             }
 
             DB::commit();
+
+            // Auto-sync all bulk movements with Tyre Monitoring
+            try {
+                foreach ($movements as $mov) {
+                    $mType = $mov['type'] ?? null;
+                    $pId = $mov['position_id'] ?? null;
+                    $tId = $mov['tyre_id'] ?? null;
+
+                    if ($mType === 'Installation' && $tId && $pId) {
+                        \App\Services\TyreMonitoringSyncService::syncInstallation(
+                            $request->vehicle_id,
+                            $pId,
+                            $tId,
+                            array_merge($request->all(), $mov, [
+                                'movement_date' => $request->movement_date,
+                                'odometer_reading' => $request->odometer,
+                                'hour_meter_reading' => $request->hour_meter
+                            ])
+                        );
+                    } elseif ($mType === 'Removal' && $pId) {
+                        $remTyre = Tyre::withoutGlobalScopes()->where('id', $tId)->orWhere(function($q) use ($request, $pId) {
+                            $q->where('current_vehicle_id', $request->vehicle_id)->where('current_position_id', $pId);
+                        })->first();
+                        if ($remTyre) {
+                            \App\Services\TyreMonitoringSyncService::syncRemoval(
+                                $request->vehicle_id,
+                                $pId,
+                                $remTyre->id,
+                                array_merge($request->all(), $mov)
+                            );
+                        }
+                    } elseif ($mType === 'Rotation' && $pId && !empty($mov['target_position_id'])) {
+                        $srcT = Tyre::withoutGlobalScopes()->where('id', $tId)->first();
+                        $tgtT = !empty($mov['target_tyre_id']) ? Tyre::withoutGlobalScopes()->find($mov['target_tyre_id']) : null;
+                        if ($srcT) {
+                            \App\Services\TyreMonitoringSyncService::syncRotation(
+                                $request->vehicle_id,
+                                $pId,
+                                $mov['target_position_id'],
+                                $srcT->id,
+                                $tgtT ? $tgtT->id : null,
+                                array_merge($request->all(), $mov)
+                            );
+                        }
+                    }
+                }
+            } catch (\Exception $bulkSyncEx) {
+                \Illuminate\Support\Facades\Log::error("Tyre Movement Bulk -> Monitoring Auto-Sync Error: " . $bulkSyncEx->getMessage());
+            }
+
             \Illuminate\Support\Facades\Cache::flush();
 
             setLogActivity(Auth::id(), 'Bulk Transaksi Ban pada unit ' . $vehicleCode, [
