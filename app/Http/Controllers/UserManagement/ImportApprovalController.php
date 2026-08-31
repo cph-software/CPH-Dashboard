@@ -387,6 +387,26 @@ class ImportApprovalController extends Controller
             $locationId = $location->id;
         }
 
+        // 5. Resolve Segment
+        $segmentName = $data['segment'] ?? $data['segment_name'] ?? null;
+        if (!empty($segmentName)) {
+            $segment = \App\Models\TyreSegment::where('tyre_company_id', $uploaderCompanyId)
+                ->where(function($q) use ($segmentName) {
+                    $q->where('segment_name', trim($segmentName))
+                      ->orWhere('segment_id', trim($segmentName));
+                })
+                ->first();
+
+            if (!$segment) {
+                \App\Models\TyreSegment::create([
+                    'segment_id' => strtoupper(str_replace(' ', '_', trim($segmentName))),
+                    'segment_name' => trim($segmentName),
+                    'status' => 'Active',
+                    'tyre_company_id' => $uploaderCompanyId
+                ]);
+            }
+        }
+
         $tyre = \App\Models\Tyre::updateOrCreate(
             ['serial_number' => $sn, 'tyre_company_id' => $uploaderCompanyId],
             [

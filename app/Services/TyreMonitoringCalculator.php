@@ -106,4 +106,89 @@ class TyreMonitoringCalculator
 
         return $result;
     }
+
+    /**
+     * Determine tyre wear health status, alert level, and actionable recommendation.
+     *
+     * @param float $avgRtd
+     * @param float $originalRtd
+     * @param float|null $psiActual
+     * @param float|null $psiRecommended
+     * @return array
+     */
+    public static function getWearHealthStatus($avgRtd, $originalRtd = 0, $psiActual = null, $psiRecommended = null): array
+    {
+        $avgRtd = (float)$avgRtd;
+        $originalRtd = (float)$originalRtd;
+        $minSafeRtd = 3.0;
+        $warningRtd = 5.0;
+
+        // 1. RTD Health Status
+        if ($avgRtd <= 0) {
+            $status = 'unknown';
+            $statusLabel = 'Belum Diukur';
+            $badgeClass = 'bg-label-secondary';
+            $color = '#8592a3';
+            $recommendation = 'Lakukan inspeksi RTD awal.';
+        } elseif ($avgRtd <= $minSafeRtd) {
+            $status = 'critical';
+            $statusLabel = 'Kritis (Segera Ganti)';
+            $badgeClass = 'bg-label-danger';
+            $color = '#ea5455';
+            $recommendation = "RTD ({$avgRtd}mm) telah mencapai batas batas aman ({$minSafeRtd}mm). Jadwalkan penggantian ban unit ini segera!";
+        } elseif ($avgRtd <= $warningRtd) {
+            $status = 'warning';
+            $statusLabel = 'Perhatian (Waspada)';
+            $badgeClass = 'bg-label-warning';
+            $color = '#ff9f43';
+            $recommendation = "RTD ({$avgRtd}mm) mendekati batas kritis. Evaluasi keausan dan pertimbangkan rotasi posisi.";
+        } else {
+            $status = 'good';
+            $statusLabel = 'Kondisi Baik';
+            $badgeClass = 'bg-label-success';
+            $color = '#28c76f';
+            $recommendation = 'Kondisi tapak ban prima. Lanjutkan jadwal pemantauan berkala.';
+        }
+
+        // 2. Pressure Health Status
+        $pressureAlert = null;
+        if ($psiActual !== null && $psiActual > 0) {
+            $rec = ($psiRecommended !== null && $psiRecommended > 0) ? (float)$psiRecommended : 110.0;
+            $diffPct = (($psiActual - $rec) / $rec) * 100;
+
+            if ($diffPct < -15 || $psiActual < 90) {
+                $pressureAlert = [
+                    'status' => 'under_inflated',
+                    'label' => 'Tekanan Kurang',
+                    'badge' => 'bg-label-danger',
+                    'message' => "Tekanan ban ({$psiActual} PSI) terlalu rendah (standar {$rec} PSI). Berisiko aus bahu & boros BBM."
+                ];
+            } elseif ($diffPct > 15 || $psiActual > 135) {
+                $pressureAlert = [
+                    'status' => 'over_inflated',
+                    'label' => 'Tekanan Berlebih',
+                    'badge' => 'bg-label-warning',
+                    'message' => "Tekanan ban ({$psiActual} PSI) terlalu tinggi (standar {$rec} PSI). Berisiko aus tengah & benturan batu."
+                ];
+            } else {
+                $pressureAlert = [
+                    'status' => 'normal',
+                    'label' => 'Tekanan Normal',
+                    'badge' => 'bg-label-success',
+                    'message' => "Tekanan angin ({$psiActual} PSI) ideal."
+                ];
+            }
+        }
+
+        return [
+            'status' => $status,
+            'status_label' => $statusLabel,
+            'badge_class' => $badgeClass,
+            'color' => $color,
+            'recommendation' => $recommendation,
+            'pressure_alert' => $pressureAlert,
+            'is_critical' => ($status === 'critical'),
+            'is_warning' => ($status === 'warning'),
+        ];
+    }
 }

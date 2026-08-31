@@ -108,6 +108,23 @@
          border-color: #1a1a1a;
       }
 
+      .v-tyre.health-critical {
+         border: 2px solid #ea5455 !important;
+         background: #4a1c1d !important;
+         box-shadow: 0 0 8px rgba(234, 84, 85, 0.7);
+      }
+
+      .v-tyre.health-warning {
+         border: 2px solid #ff9f43 !important;
+         background: #4a341c !important;
+         box-shadow: 0 0 6px rgba(255, 159, 67, 0.6);
+      }
+
+      .v-tyre.health-good {
+         border: 2px solid #28c76f !important;
+         background: #1c3d28 !important;
+      }
+
       .v-tyre-code {
          font-size: 8px;
          font-weight: 800;
@@ -301,13 +318,108 @@
       </div>
    @endif
 
+   @php
+      $tyreHealthMap = [];
+      $criticalCount = 0;
+      $warningCount = 0;
+      $goodCount = 0;
+      $pressureIssues = [];
+
+      foreach ($masterPositions as $pos) {
+          $t = $assignedTyres->get($pos->id);
+          if ($t) {
+              $latestCheck = $session->checks
+                  ->where('serial_number', $t->serial_number)
+                  ->sortByDesc('check_number')
+                  ->first();
+
+              if ($latestCheck) {
+                  $rtdValues = array_filter([$latestCheck->rtd_1, $latestCheck->rtd_2, $latestCheck->rtd_3, $latestCheck->rtd_4], fn($v) => $v > 0);
+                  $curRtd = count($rtdValues) > 0 ? round(array_sum($rtdValues) / count($rtdValues), 2) : ($t->current_tread_depth ?? 0);
+                  $psiAct = $latestCheck->inf_press_actual;
+                  $psiRec = $latestCheck->inf_press_recommended;
+              } else {
+                  $curRtd = $t->current_tread_depth ?? 0;
+                  $psiAct = null;
+                  $psiRec = null;
+              }
+
+              $health = \App\Services\TyreMonitoringCalculator::getWearHealthStatus($curRtd, $t->initial_tread_depth ?? $curRtd, $psiAct, $psiRec);
+              $tyreHealthMap[$pos->id] = array_merge($health, ['rtd' => $curRtd, 'pos_code' => $pos->position_code]);
+
+              if ($health['status'] === 'critical') $criticalCount++;
+              elseif ($health['status'] === 'warning') $warningCount++;
+              elseif ($health['status'] === 'good') $goodCount++;
+
+              if (!empty($health['pressure_alert']) && $health['pressure_alert']['status'] !== 'normal') {
+                  $pressureIssues[] = "{$pos->position_code} ({$health['pressure_alert']['label']})";
+              }
+          }
+      }
+   @endphp
+
+   {{-- Predictive Health Alert Banner --}}
+   @if ($criticalCount > 0)
+      <div class="alert alert-danger d-flex align-items-center mb-4 shadow-sm" role="alert">
+         <span class="alert-icon rounded-circle p-2 bg-danger text-white me-3">
+            <i class="ri ri-error-warning-fill fs-4"></i>
+         </span>
+         <div class="d-flex flex-column flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+               <h6 class="alert-heading mb-1 text-danger fw-bold"><i class="ri-alert-fill me-1"></i> Peringatan Kritis: {{ $criticalCount }} Ban Mencapai Batas Batas Aus (≤ 3.0 mm)</h6>
+               <span class="badge bg-danger mb-1">{{ $criticalCount }} Posisi Kritis</span>
+            </div>
+            <p class="mb-0 small text-danger">
+               <strong>Rekomendasi Tindakan:</strong> Ban yang berada di zona merah memiliki risiko tinggi pecah tapak/rusak total di medan operasional. Segera lakukan pergantian ban baru atau lepas ke gudang.
+               @if(count($pressureIssues) > 0) · <em>Anomali Tekanan Angin terdeteksi pada: {{ implode(', ', $pressureIssues) }}</em> @endif
+            </p>
+         </div>
+      </div>
+   @elseif ($warningCount > 0)
+      <div class="alert alert-warning d-flex align-items-center mb-4 shadow-sm" role="alert">
+         <span class="alert-icon rounded-circle p-2 bg-warning text-white me-3">
+            <i class="ri ri-alert-line fs-4"></i>
+         </span>
+         <div class="d-flex flex-column flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+               <h6 class="alert-heading mb-1 text-warning fw-bold"><i class="ri-time-line me-1"></i> Perhatian: {{ $warningCount }} Ban Memasuki Zona Waspada (3.1 - 5.0 mm)</h6>
+               <span class="badge bg-warning mb-1">{{ $warningCount }} Posisi Perlu Pantau</span>
+            </div>
+            <p class="mb-0 small text-warning">
+               <strong>Rekomendasi Tindakan:</strong> Pertimbangkan untuk merotasi ban antar posisi atau mempersiapkan stok ban baru di gudang untuk jadwal pergantian mendatang.
+               @if(count($pressureIssues) > 0) · <em>Anomali Tekanan Angin terdeteksi pada: {{ implode(', ', $pressureIssues) }}</em> @endif
+            </p>
+         </div>
+      </div>
+   @else
+      <div class="alert alert-success d-flex align-items-center mb-4 shadow-sm" role="alert">
+         <span class="alert-icon rounded-circle p-2 bg-success text-white me-3">
+            <i class="ri ri-shield-check-line fs-4"></i>
+         </span>
+         <div class="d-flex flex-column flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+               <h6 class="alert-heading mb-1 text-success fw-bold"><i class="ri-checkbox-circle-fill me-1"></i> Kondisi Tapak Ban Prima: Semua Ban Dalam Kondisi Baik (> 5.0 mm)</h6>
+               <span class="badge bg-success mb-1">Semua Posisi Aman</span>
+            </div>
+            <p class="mb-0 small text-success">
+               Seluruh ban unit {{ $session->vehicle->fleet_name }} memiliki ketebalan tapak yang optimal. Lanjutkan pemeriksaan rutin berkala.
+            </p>
+         </div>
+      </div>
+   @endif
+
    <div class="row mb-4">
       {{-- Vehicle Visual Layout --}}
       @if (count($masterPositions) > 0)
          <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
             <div class="card h-100">
-               <div class="card-header border-bottom">
+               <div class="card-header border-bottom d-flex justify-content-between align-items-center">
                   <h6 class="card-title mb-0"><i class="ri ri-truck-line me-1"></i> Vehicle Layout</h6>
+                  <div class="d-flex gap-1 small">
+                     <span class="badge bg-label-success" style="font-size: 9px;">>5mm</span>
+                     <span class="badge bg-label-warning" style="font-size: 9px;">3-5mm</span>
+                     <span class="badge bg-label-danger" style="font-size: 9px;">≤3mm</span>
+                  </div>
                </div>
                <div class="card-body pt-3">
                   <div class="v-chassis">
@@ -326,14 +438,22 @@
                               $right = $positions->where('side', 'Right')->first();
                            @endphp
                            @if ($left)
-                              @php $t = $assignedTyres->get($left->id); @endphp
-                              <div class="v-tyre front {{ $t ? 'filled' : '' }}" title="{{ $left->position_name }}">
+                              @php 
+                                 $t = $assignedTyres->get($left->id); 
+                                 $hInfo = $tyreHealthMap[$left->id] ?? null;
+                                 $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                              @endphp
+                              <div class="v-tyre front {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $left->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                  <span class="v-tyre-code">{{ $left->position_code }}</span>
                               </div>
                            @endif
                            @if ($right)
-                              @php $t = $assignedTyres->get($right->id); @endphp
-                              <div class="v-tyre front {{ $t ? 'filled' : '' }}" title="{{ $right->position_name }}">
+                              @php 
+                                 $t = $assignedTyres->get($right->id); 
+                                 $hInfo = $tyreHealthMap[$right->id] ?? null;
+                                 $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                              @endphp
+                              <div class="v-tyre front {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $right->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                  <span class="v-tyre-code">{{ $right->position_code }}</span>
                               </div>
                            @endif
@@ -344,16 +464,24 @@
                         <div class="v-axle">
                            <div class="v-group">
                               @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
-                                 @php $t = $assignedTyres->get($p->id); @endphp
-                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                 @php 
+                                    $t = $assignedTyres->get($p->id); 
+                                    $hInfo = $tyreHealthMap[$p->id] ?? null;
+                                    $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                                 @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $p->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                     <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
                               @endforeach
                            </div>
                            <div class="v-group">
                               @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
-                                 @php $t = $assignedTyres->get($p->id); @endphp
-                                 <div class="v-tyre middle {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                 @php 
+                                    $t = $assignedTyres->get($p->id); 
+                                    $hInfo = $tyreHealthMap[$p->id] ?? null;
+                                    $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                                 @endphp
+                                 <div class="v-tyre middle {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $p->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                     <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
                               @endforeach
@@ -365,16 +493,24 @@
                         <div class="v-axle">
                            <div class="v-group">
                               @foreach ($positions->where('side', 'Left')->sortBy('display_order') as $p)
-                                 @php $t = $assignedTyres->get($p->id); @endphp
-                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                 @php 
+                                    $t = $assignedTyres->get($p->id); 
+                                    $hInfo = $tyreHealthMap[$p->id] ?? null;
+                                    $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                                 @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $p->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                     <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
                               @endforeach
                            </div>
                            <div class="v-group">
                               @foreach ($positions->where('side', 'Right')->sortBy('display_order') as $p)
-                                 @php $t = $assignedTyres->get($p->id); @endphp
-                                 <div class="v-tyre rear {{ $t ? 'filled' : '' }}" title="{{ $p->position_name }}">
+                                 @php 
+                                    $t = $assignedTyres->get($p->id); 
+                                    $hInfo = $tyreHealthMap[$p->id] ?? null;
+                                    $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                                 @endphp
+                                 <div class="v-tyre rear {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $p->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                     <span class="v-tyre-code">{{ $p->position_code }}</span>
                                  </div>
                               @endforeach
@@ -385,8 +521,12 @@
                      @if ($spares->count() > 0)
                         <div class="v-spare-list">
                            @foreach ($spares as $s)
-                              @php $t = $assignedTyres->get($s->id); @endphp
-                              <div class="v-tyre spare {{ $t ? 'filled' : '' }}" title="{{ $s->position_name }}">
+                              @php 
+                                 $t = $assignedTyres->get($s->id); 
+                                 $hInfo = $tyreHealthMap[$s->id] ?? null;
+                                 $hClass = $hInfo ? 'health-' . $hInfo['status'] : '';
+                              @endphp
+                              <div class="v-tyre spare {{ $t ? 'filled ' . $hClass : '' }}" title="{{ $s->position_name }} ({{ $hInfo['rtd'] ?? '-' }} mm - {{ $hInfo['status_label'] ?? '' }})">
                                  <span class="v-tyre-code">{{ $s->position_code }}</span>
                               </div>
                            @endforeach
@@ -402,7 +542,7 @@
       <div class="{{ count($masterPositions) > 0 ? 'col-lg-8' : 'col-md-12' }}">
          <div class="card h-100">
             <div class="card-header border-bottom">
-               <h6 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Installed Tyres</h6>
+               <h6 class="card-title mb-0"><i class="ri ri-list-check me-1"></i> Installed Tyres & Health Condition</h6>
             </div>
             <div class="table-responsive">
                <table class="table table-hover mb-0">
@@ -410,7 +550,7 @@
                      <tr>
                         <th class="text-center" width="60">Pos</th>
                         <th>Tyre Details</th>
-                        <th>Status</th>
+                        <th>Kondisi & Status</th>
                         <th>Current RTD</th>
                         <th>Last Inspection</th>
                      </tr>
@@ -420,6 +560,7 @@
                         @php
                            $tyre = $assignedTyres->get($pos->id);
                            $inst = $session->installations->where('position_id', $pos->id)->first();
+                           $hInfo = $tyreHealthMap[$pos->id] ?? null;
                         @endphp
                         <tr>
                            <td class="text-center fw-bold align-middle bg-light">
@@ -437,11 +578,20 @@
                                  <span class="text-muted fst-italic">Posisi Kosong</span>
                               @endif
                            </td>
-                           <td class="align-middle text-center">
-                              @if ($tyre)
-                                 <span class="badge rounded-pill bg-label-success">
-                                    <i class="ri ri-checkbox-circle-line me-1"></i>Installed
-                                 </span>
+                           <td class="align-middle">
+                              @if ($tyre && $hInfo)
+                                 <div class="d-flex flex-column gap-1">
+                                    <span class="badge rounded-pill {{ $hInfo['badge_class'] }}" data-bs-toggle="tooltip" title="{{ $hInfo['recommendation'] }}">
+                                       {{ $hInfo['status_label'] }}
+                                    </span>
+                                    @if (!empty($hInfo['pressure_alert']) && $hInfo['pressure_alert']['status'] !== 'normal')
+                                       <span class="badge rounded-pill {{ $hInfo['pressure_alert']['badge'] }}" style="font-size: 10px;" data-bs-toggle="tooltip" title="{{ $hInfo['pressure_alert']['message'] }}">
+                                          <i class="ri-dashboard-3-line me-1"></i>{{ $hInfo['pressure_alert']['label'] }}
+                                       </span>
+                                    @endif
+                                 </div>
+                              @elseif ($tyre)
+                                 <span class="badge rounded-pill bg-label-success">Installed</span>
                               @else
                                  <span class="badge rounded-pill bg-label-secondary">
                                     <i class="ri ri-subtract-line me-1"></i>Empty
@@ -449,24 +599,18 @@
                               @endif
                            </td>
                            <td class="align-middle">
-                              @if ($tyre)
+                              @if ($tyre && $hInfo)
+                                 <span class="fw-bold fs-6 {{ $hInfo['status'] === 'critical' ? 'text-danger' : ($hInfo['status'] === 'warning' ? 'text-warning' : 'text-success') }}">
+                                    {{ $hInfo['rtd'] }} mm
+                                 </span>
                                  @php
-                                    // Show latest check RTD if available, otherwise fall back to master tyre
                                     $latestCheckForRtd = $session->checks
                                         ->where('serial_number', $tyre->serial_number)
                                         ->sortByDesc('check_number')
                                         ->first();
-                                    
-                                    if ($latestCheckForRtd) {
-                                        $rtdValues = array_filter([$latestCheckForRtd->rtd_1, $latestCheckForRtd->rtd_2, $latestCheckForRtd->rtd_3, $latestCheckForRtd->rtd_4], fn($v) => $v > 0);
-                                        $displayRtd = count($rtdValues) > 0 ? round(array_sum($rtdValues) / count($rtdValues), 2) : $tyre->current_tread_depth;
-                                    } else {
-                                        $displayRtd = $tyre->current_tread_depth;
-                                    }
                                  @endphp
-                                 <span class="fw-bold">{{ $displayRtd }} mm</span>
                                  @if ($latestCheckForRtd && $latestCheckForRtd->approval_status === 'Pending')
-                                    <small class="text-warning d-block"><i class="ri-time-line"></i> Menunggu Approval</small>
+                                    <small class="text-warning d-block" style="font-size: 11px;"><i class="ri-time-line"></i> Menunggu Approval</small>
                                  @endif
                               @else
                                  -
