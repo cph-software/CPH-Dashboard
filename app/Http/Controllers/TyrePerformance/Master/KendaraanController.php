@@ -214,7 +214,8 @@ class KendaraanController extends Controller
 
         // 2. Resolve Segment (create if new string)
         if (!empty($data['operational_segment_id']) && $targetCompanyId && !is_array($targetCompanyId)) {
-            if (!is_numeric($data['operational_segment_id'])) {
+            $seg = is_numeric($data['operational_segment_id']) ? TyreSegment::find($data['operational_segment_id']) : null;
+            if (!$seg) {
                 $segName = trim($data['operational_segment_id']);
                 $seg = TyreSegment::firstOrCreate(
                     [
@@ -228,8 +229,8 @@ class KendaraanController extends Controller
                         'status' => 'Active'
                     ]
                 );
-                $data['operational_segment_id'] = $seg->id;
             }
+            $data['operational_segment_id'] = $seg->id;
         }
 
         $data['jenis_kendaraan'] = $data['jenis_kendaraan'] ?? 'Dump Truck';
@@ -319,7 +320,8 @@ class KendaraanController extends Controller
 
         // 2. Resolve Segment (create if new string)
         if (!empty($data['operational_segment_id']) && $targetCompanyId && !is_array($targetCompanyId)) {
-            if (!is_numeric($data['operational_segment_id'])) {
+            $seg = is_numeric($data['operational_segment_id']) ? TyreSegment::find($data['operational_segment_id']) : null;
+            if (!$seg) {
                 $segName = trim($data['operational_segment_id']);
                 $seg = TyreSegment::firstOrCreate(
                     [
@@ -333,8 +335,8 @@ class KendaraanController extends Controller
                         'status' => 'Active'
                     ]
                 );
-                $data['operational_segment_id'] = $seg->id;
             }
+            $data['operational_segment_id'] = $seg->id;
         }
 
         $dataBefore = [

@@ -247,36 +247,34 @@ class TyreMasterController extends Controller
 
         // 1. Resolve Brand (ID or New Name String)
         if (!empty($request->tyre_brand_id)) {
-            if (!is_numeric($request->tyre_brand_id)) {
+            $brand = is_numeric($request->tyre_brand_id) ? TyreBrand::find($request->tyre_brand_id) : null;
+            if (!$brand) {
                 $brandName = strtoupper(trim($request->tyre_brand_id));
                 $brand = TyreBrand::firstOrCreate(['brand_name' => $brandName], ['status' => 'Active']);
-                $data['tyre_brand_id'] = $brand->id;
-            } else {
-                $brand = TyreBrand::find($request->tyre_brand_id);
             }
+            $data['tyre_brand_id'] = $brand->id;
             if ($brand && $targetCompanyId && !is_array($targetCompanyId)) {
                 $brand->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
         }
 
-        // 2. Resolve Size (ID or New Name String)
+        // 2. Resolve Size (ID or New Name String e.g. "0222", "11.00-20")
         if (!empty($request->tyre_size_id)) {
-            if (!is_numeric($request->tyre_size_id)) {
+            $size = is_numeric($request->tyre_size_id) ? TyreSize::find($request->tyre_size_id) : null;
+            if (!$size) {
                 $sizeName = strtoupper(trim($request->tyre_size_id));
                 $size = TyreSize::firstOrCreate(
                     [
                         'size' => $sizeName,
-                        'tyre_brand_id' => $data['tyre_brand_id']
+                        'tyre_brand_id' => $data['tyre_brand_id'] ?? null
                     ],
                     [
                         'std_otd' => !empty($data['initial_tread_depth']) ? (float)$data['initial_tread_depth'] : 0,
                         'ply_rating' => !empty($data['ply_rating']) ? (int)preg_replace('/[^0-9]/', '', (string)$data['ply_rating']) : 16,
                     ]
                 );
-                $data['tyre_size_id'] = $size->id;
-            } else {
-                $size = TyreSize::find($request->tyre_size_id);
             }
+            $data['tyre_size_id'] = $size->id;
             if ($size && $targetCompanyId && !is_array($targetCompanyId)) {
                 $size->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
@@ -284,21 +282,20 @@ class TyreMasterController extends Controller
 
         // 3. Resolve Pattern (ID or New Name String)
         if ($request->filled('tyre_pattern_id')) {
-            if (!is_numeric($request->tyre_pattern_id)) {
+            $pattern = is_numeric($request->tyre_pattern_id) ? TyrePattern::find($request->tyre_pattern_id) : null;
+            if (!$pattern) {
                 $patternName = strtoupper(trim($request->tyre_pattern_id));
                 $pattern = TyrePattern::firstOrCreate(
                     [
                         'name' => $patternName,
-                        'tyre_brand_id' => $data['tyre_brand_id']
+                        'tyre_brand_id' => $data['tyre_brand_id'] ?? null
                     ],
                     [
                         'status' => 'Active'
                     ]
                 );
-                $data['tyre_pattern_id'] = $pattern->id;
-            } else {
-                $pattern = TyrePattern::find($request->tyre_pattern_id);
             }
+            $data['tyre_pattern_id'] = $pattern->id;
             if ($pattern && $targetCompanyId && !is_array($targetCompanyId)) {
                 $pattern->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
@@ -322,7 +319,8 @@ class TyreMasterController extends Controller
 
         // 5. Resolve Location / Warehouse (ID or New Name String)
         if (!empty($request->current_location_id) && $targetCompanyId && !is_array($targetCompanyId)) {
-            if (!is_numeric($request->current_location_id)) {
+            $location = is_numeric($request->current_location_id) ? TyreLocation::find($request->current_location_id) : null;
+            if (!$location) {
                 $locName = trim($request->current_location_id);
                 $location = TyreLocation::firstOrCreate(
                     [
@@ -335,8 +333,8 @@ class TyreMasterController extends Controller
                         'current_stock' => 0,
                     ]
                 );
-                $data['current_location_id'] = $location->id;
             }
+            $data['current_location_id'] = $location->id;
         }
 
         // Set Default Tread Depths
@@ -437,13 +435,12 @@ class TyreMasterController extends Controller
 
         // 1. Resolve Brand
         if (!empty($request->tyre_brand_id)) {
-            if (!is_numeric($request->tyre_brand_id)) {
+            $brand = is_numeric($request->tyre_brand_id) ? TyreBrand::find($request->tyre_brand_id) : null;
+            if (!$brand) {
                 $brandName = strtoupper(trim($request->tyre_brand_id));
                 $brand = TyreBrand::firstOrCreate(['brand_name' => $brandName], ['status' => 'Active']);
-                $data['tyre_brand_id'] = $brand->id;
-            } else {
-                $brand = TyreBrand::find($request->tyre_brand_id);
             }
+            $data['tyre_brand_id'] = $brand->id;
             if ($brand && $targetCompanyId && !is_array($targetCompanyId)) {
                 $brand->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
@@ -451,22 +448,21 @@ class TyreMasterController extends Controller
 
         // 2. Resolve Size
         if (!empty($request->tyre_size_id)) {
-            if (!is_numeric($request->tyre_size_id)) {
+            $size = is_numeric($request->tyre_size_id) ? TyreSize::find($request->tyre_size_id) : null;
+            if (!$size) {
                 $sizeName = strtoupper(trim($request->tyre_size_id));
                 $size = TyreSize::firstOrCreate(
                     [
                         'size' => $sizeName,
-                        'tyre_brand_id' => $data['tyre_brand_id']
+                        'tyre_brand_id' => $data['tyre_brand_id'] ?? null
                     ],
                     [
                         'std_otd' => !empty($data['initial_tread_depth']) ? (float)$data['initial_tread_depth'] : 0,
                         'ply_rating' => !empty($data['ply_rating']) ? (int)preg_replace('/[^0-9]/', '', (string)$data['ply_rating']) : 16,
                     ]
                 );
-                $data['tyre_size_id'] = $size->id;
-            } else {
-                $size = TyreSize::find($request->tyre_size_id);
             }
+            $data['tyre_size_id'] = $size->id;
             if ($size && $targetCompanyId && !is_array($targetCompanyId)) {
                 $size->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
@@ -474,21 +470,20 @@ class TyreMasterController extends Controller
 
         // 3. Resolve Pattern
         if ($request->filled('tyre_pattern_id')) {
-            if (!is_numeric($request->tyre_pattern_id)) {
+            $pattern = is_numeric($request->tyre_pattern_id) ? TyrePattern::find($request->tyre_pattern_id) : null;
+            if (!$pattern) {
                 $patternName = strtoupper(trim($request->tyre_pattern_id));
                 $pattern = TyrePattern::firstOrCreate(
                     [
                         'name' => $patternName,
-                        'tyre_brand_id' => $data['tyre_brand_id']
+                        'tyre_brand_id' => $data['tyre_brand_id'] ?? null
                     ],
                     [
                         'status' => 'Active'
                     ]
                 );
-                $data['tyre_pattern_id'] = $pattern->id;
-            } else {
-                $pattern = TyrePattern::find($request->tyre_pattern_id);
             }
+            $data['tyre_pattern_id'] = $pattern->id;
             if ($pattern && $targetCompanyId && !is_array($targetCompanyId)) {
                 $pattern->companies()->syncWithoutDetaching([$targetCompanyId]);
             }
@@ -512,7 +507,8 @@ class TyreMasterController extends Controller
 
         // 5. Resolve Location / Warehouse (ID or New Name String)
         if (!empty($request->current_location_id) && $targetCompanyId && !is_array($targetCompanyId)) {
-            if (!is_numeric($request->current_location_id)) {
+            $location = is_numeric($request->current_location_id) ? TyreLocation::find($request->current_location_id) : null;
+            if (!$location) {
                 $locName = trim($request->current_location_id);
                 $location = TyreLocation::firstOrCreate(
                     [
@@ -525,8 +521,8 @@ class TyreMasterController extends Controller
                         'current_stock' => 0,
                     ]
                 );
-                $data['current_location_id'] = $location->id;
             }
+            $data['current_location_id'] = $location->id;
         }
 
         // Sync Tread Depths jika sebelumnya kosong
