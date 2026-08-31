@@ -83,7 +83,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::resource('master_size', \App\Http\Controllers\TyrePerformance\Master\TyreSizeController::class)->names('tyre-sizes')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Sizes');
     Route::resource('master_segment', \App\Http\Controllers\TyrePerformance\Master\TyreSegmentController::class)->names('tyre-segments')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Segments');
     Route::resource('master_location', \App\Http\Controllers\TyrePerformance\Master\TyreLocationController::class)->names('tyre-locations')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Locations');
-    Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Failure Codes');
+    Route::resource('master_failure_code', \App\Http\Controllers\TyrePerformance\Master\TyreFailureCodeController::class)->names('tyre-failure-codes')->middleware('tyre.permission:Failure Codes');
     Route::resource('master_pattern', \App\Http\Controllers\TyrePerformance\Master\TyrePatternController::class)->names('tyre-patterns')->except(['create', 'show', 'edit'])->middleware('tyre.permission:Patterns');
     Route::resource('master_company', \App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class)->names('tyre-companies')->middleware('tyre.permission:Master Instansi');
     Route::get('master_company/{id}/mapping', [\App\Http\Controllers\TyrePerformance\Master\TyreCompanyController::class, 'mapping'])->name('tyre-companies.mapping')->middleware('tyre.permission:Master Instansi');

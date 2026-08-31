@@ -705,9 +705,15 @@
             $('#edit_tyre_company_id').val(companyId).trigger('change');
             $('#edit_kode_kendaraan').val(kode);
             $('#edit_no_polisi').val(nopol);
+            if (area && !$('#edit_area option[value="' + area + '"]').length) {
+                $('#edit_area').append(new Option(area, area, true, true));
+            }
             $('#edit_area').val(area).trigger('change');
-            $('#edit_operational_segment_id').val(segmentId === 'null' ? '' : (segmentId || '')).trigger(
-               'change');
+
+            if (segmentId && segmentId !== 'null' && !$('#edit_operational_segment_id option[value="' + segmentId + '"]').length) {
+                $('#edit_operational_segment_id').append(new Option(segmentId, segmentId, true, true));
+            }
+            $('#edit_operational_segment_id').val(segmentId === 'null' ? '' : (segmentId || '')).trigger('change');
             $('#edit_jenis_kendaraan').val(jenis === 'null' ? '' : (jenis || ''));
             $('#edit_vehicle_brand').val(brand === 'null' ? '' : (brand || ''));
             $('#edit_curb_weight').val(curbWeight === 'null' ? '' : (curbWeight || ''));
@@ -1026,8 +1032,41 @@
             });
          @endif
 
-         // Initialize Select2
-         $('.select2').each(function() {
+         // User Permission for Select2 tags on Vehicle (direct adding Area/Location and Segment)
+         const canCreateVehicle = {{ (hasPermission('Vehicle Master', 'create') || auth()->user()->role_id == 1) ? 'true' : 'false' }};
+
+         function initVehicleSelect2Tags(selector) {
+            $(selector).each(function() {
+               var $this = $(this);
+               if ($this.data('select2')) {
+                  $this.select2('destroy');
+               }
+               $this.select2({
+                  placeholder: $this.data('placeholder'),
+                  dropdownParent: $this.closest('.modal'),
+                  tags: canCreateVehicle,
+                  width: '100%',
+                  createTag: function(params) {
+                     var term = $.trim(params.term);
+                     if (term === '') return null;
+                     return { id: term, text: term, newTag: true };
+                  }
+               });
+            });
+         }
+
+         $('#addVehicleModal').on('shown.bs.modal', function () {
+            initVehicleSelect2Tags('#area');
+            initVehicleSelect2Tags('#operational_segment_id');
+         });
+
+         $('#editVehicleModal').on('shown.bs.modal', function () {
+            initVehicleSelect2Tags('#edit_area');
+            initVehicleSelect2Tags('#edit_operational_segment_id');
+         });
+
+         // Initialize standard Select2
+         $('.select2:not(#area):not(#operational_segment_id):not(#edit_area):not(#edit_operational_segment_id)').each(function() {
             var $this = $(this);
             $this.wrap('<div class="position-relative"></div>').select2({
                placeholder: $this.data('placeholder'),

@@ -11,62 +11,6 @@ use Illuminate\Http\Request;
 
 class KendaraanController extends Controller
 {
-    public function index()
-    {
-        // Removed heavy eager loading of all vehicles
-        // Data will be loaded via AJAX for the DataTable
-        $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
-        $locations = TyreLocation::all();
-        $segments = TyreSegment::all();
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
-
-        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments', 'companies'));
-    }
-
-    public function show($id)
-    {
-        $kendaraan = MasterImportKendaraan::with([
-            'tyrePositionConfiguration',
-            'segment',
-            'tyres.brand',
-            'tyres.size',
-            'tyres.pattern',
-            'tyres.currentPosition',
-        ])->findOrFail($id);
-
-        // Movement history for this vehicle
-        $movements = \App\Models\TyreMovement::with(['tyre.brand', 'tyre.size', 'position'])
-            ->where('vehicle_id', $id)
-            ->orderBy('movement_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->limit(50)
-            ->get();
-
-        // Stats
-        $installedCount = $kendaraan->tyres->count();
-        $totalPositions = $kendaraan->total_tyre_position ?? 0;
-        $removalCount = $movements->where('movement_type', 'Removal')->count();
-        $installCount = $movements->where('movement_type', 'Installation')->count();
-
-        // Integrated Monitoring Data — Match by no_polisi to TyreMonitoringVehicle
-        $monitoringVehicle = \App\Models\TyreMonitoringVehicle::where('vehicle_number', $kendaraan->no_polisi)
-            ->with(['sessions' => function($q) {
-                $q->orderBy('install_date', 'desc');
-            }])
-            ->first();
-
-        return view('tyre-performance.master.kendaraan.show', compact(
-            'kendaraan',
-            'movements',
-            'installedCount',
-            'totalPositions',
-            'removalCount',
-            'installCount',
-            'monitoringVehicle'
-        ));
-    }
-
-
     /**
      * Data for Server-Side DataTables
      */
@@ -145,6 +89,72 @@ class KendaraanController extends Controller
             "data" => $kendaraans
         ]);
     }
+    public function index()
+    {
+        $user = auth()->user();
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+
+        $locQuery = TyreLocation::query();
+        $segQuery = TyreSegment::with('location')->where('status', 'Active');
+
+        if ($user->role_id != 1 && $activeCompanyId && !is_array($activeCompanyId)) {
+            $locQuery->where(function($q) use ($activeCompanyId) {
+                $q->whereNull('tyre_company_id')->orWhere('tyre_company_id', $activeCompanyId);
+            });
+            $segQuery->where(function($q) use ($activeCompanyId) {
+                $q->whereNull('tyre_company_id')->orWhere('tyre_company_id', $activeCompanyId);
+            });
+        }
+        $locations = $locQuery->get();
+        $segments = $segQuery->get();
+        $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
+        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+
+        return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments', 'companies'));
+    }
+
+    public function show($id)
+    {
+        $kendaraan = MasterImportKendaraan::with([
+            'tyrePositionConfiguration',
+            'segment',
+            'tyres.brand',
+            'tyres.size',
+            'tyres.pattern',
+            'tyres.currentPosition',
+        ])->findOrFail($id);
+
+        // Movement history for this vehicle
+        $movements = \App\Models\TyreMovement::with(['tyre.brand', 'tyre.size', 'position'])
+            ->where('vehicle_id', $id)
+            ->orderBy('movement_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Stats
+        $installedCount = $kendaraan->tyres->count();
+        $totalPositions = $kendaraan->total_tyre_position ?? 0;
+        $removalCount = $movements->where('movement_type', 'Removal')->count();
+        $installCount = $movements->where('movement_type', 'Installation')->count();
+
+        // Integrated Monitoring Data — Match by no_polisi to TyreMonitoringVehicle
+        $monitoringVehicle = \App\Models\TyreMonitoringVehicle::where('vehicle_number', $kendaraan->no_polisi)
+            ->with(['sessions' => function($q) {
+                $q->orderBy('install_date', 'desc');
+            }])
+            ->first();
+
+        return view('tyre-performance.master.kendaraan.show', compact(
+            'kendaraan',
+            'movements',
+            'installedCount',
+            'totalPositions',
+            'removalCount',
+            'installCount',
+            'monitoringVehicle'
+        ));
+    }
 
     public function store(Request $request)
     {
@@ -156,7 +166,7 @@ class KendaraanController extends Controller
             'curb_weight' => 'nullable|integer|min:0',
             'payload_capacity' => 'nullable|numeric|min:0',
             'area' => 'required|string|max:255',
-            'operational_segment_id' => 'nullable|exists:tyre_segments,id',
+            'operational_segment_id' => 'nullable',
             'tipe_kendaraan' => 'nullable|string|max:255',
             'tahun_rakit' => 'nullable|string|max:4',
             'usia_kendaraan' => 'nullable|string|max:255',
@@ -171,7 +181,64 @@ class KendaraanController extends Controller
             'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
-        $kendaraan = MasterImportKendaraan::create($request->all());
+        $data = $request->all();
+        $user = auth()->user();
+
+        // Determine target company ID
+        $targetCompanyId = null;
+        if ($user->role_id == 1) {
+            $targetCompanyId = $data['tyre_company_id'] ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        } else {
+            $targetCompanyId = $user->tyre_company_id ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $data['tyre_company_id'] = $targetCompanyId;
+        }
+
+        // 1. Resolve Location / Area (create if new string)
+        $locationId = null;
+        if (!empty($data['area']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            $locName = trim($data['area']);
+            $location = TyreLocation::firstOrCreate(
+                [
+                    'location_name' => $locName,
+                    'tyre_company_id' => $targetCompanyId
+                ],
+                [
+                    'location_type' => 'Warehouse',
+                    'capacity' => 100,
+                    'current_stock' => 0,
+                ]
+            );
+            $locationId = $location->id;
+            $data['area'] = $locName;
+        }
+
+        // 2. Resolve Segment (create if new string)
+        if (!empty($data['operational_segment_id']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            if (!is_numeric($data['operational_segment_id'])) {
+                $segName = trim($data['operational_segment_id']);
+                $seg = TyreSegment::firstOrCreate(
+                    [
+                        'segment_name' => $segName,
+                        'tyre_company_id' => $targetCompanyId
+                    ],
+                    [
+                        'segment_id' => 'SEG-' . strtoupper(\Illuminate\Support\Str::slug(substr($segName, 0, 5))) . '-' . rand(100, 999),
+                        'tyre_location_id' => $locationId,
+                        'terrain_type' => 'Standard',
+                        'status' => 'Active'
+                    ]
+                );
+                $data['operational_segment_id'] = $seg->id;
+            }
+        }
+
+        $data['jenis_kendaraan'] = $data['jenis_kendaraan'] ?? 'Dump Truck';
+        $data['vehicle_brand'] = $data['vehicle_brand'] ?? '-';
+        $data['tipe_kendaraan'] = $data['tipe_kendaraan'] ?? '-';
+        $data['curb_weight'] = $data['curb_weight'] ?? 0;
+        $data['payload_capacity'] = $data['payload_capacity'] ?? 0;
+
+        $kendaraan = MasterImportKendaraan::create($data);
         $kendaraan->load(['tyrePositionConfiguration', 'segment']);
 
         setLogActivity(auth()->id(), 'Menambah kendaraan: ' . $request->kode_kendaraan . ' (' . $request->no_polisi . ')', [
@@ -203,7 +270,7 @@ class KendaraanController extends Controller
             'curb_weight' => 'nullable|integer|min:0',
             'payload_capacity' => 'nullable|numeric|min:0',
             'area' => 'required|string|max:255',
-            'operational_segment_id' => 'nullable|exists:tyre_segments,id',
+            'operational_segment_id' => 'nullable',
             'tipe_kendaraan' => 'nullable|string|max:255',
             'tahun_rakit' => 'nullable|string|max:4',
             'usia_kendaraan' => 'nullable|string|max:255',
@@ -219,8 +286,57 @@ class KendaraanController extends Controller
         ]);
 
         $kendaraan = MasterImportKendaraan::findOrFail($id);
-        $kendaraan->load(['tyrePositionConfiguration', 'segment']);
-        
+        $data = $request->all();
+        $user = auth()->user();
+
+        // Determine target company ID
+        $targetCompanyId = null;
+        if ($user->role_id == 1) {
+            $targetCompanyId = $data['tyre_company_id'] ?? $kendaraan->tyre_company_id;
+        } else {
+            $targetCompanyId = $kendaraan->tyre_company_id ?? $user->tyre_company_id;
+            $data['tyre_company_id'] = $targetCompanyId;
+        }
+
+        // 1. Resolve Location / Area (create if new string)
+        $locationId = null;
+        if (!empty($data['area']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            $locName = trim($data['area']);
+            $location = TyreLocation::firstOrCreate(
+                [
+                    'location_name' => $locName,
+                    'tyre_company_id' => $targetCompanyId
+                ],
+                [
+                    'location_type' => 'Warehouse',
+                    'capacity' => 100,
+                    'current_stock' => 0,
+                ]
+            );
+            $locationId = $location->id;
+            $data['area'] = $locName;
+        }
+
+        // 2. Resolve Segment (create if new string)
+        if (!empty($data['operational_segment_id']) && $targetCompanyId && !is_array($targetCompanyId)) {
+            if (!is_numeric($data['operational_segment_id'])) {
+                $segName = trim($data['operational_segment_id']);
+                $seg = TyreSegment::firstOrCreate(
+                    [
+                        'segment_name' => $segName,
+                        'tyre_company_id' => $targetCompanyId
+                    ],
+                    [
+                        'segment_id' => 'SEG-' . strtoupper(\Illuminate\Support\Str::slug(substr($segName, 0, 5))) . '-' . rand(100, 999),
+                        'tyre_location_id' => $locationId,
+                        'terrain_type' => 'Standard',
+                        'status' => 'Active'
+                    ]
+                );
+                $data['operational_segment_id'] = $seg->id;
+            }
+        }
+
         $dataBefore = [
             'Kode Unit' => $kendaraan->kode_kendaraan,
             'No Polisi' => $kendaraan->no_polisi,
@@ -230,7 +346,7 @@ class KendaraanController extends Controller
             'Satuan' => $kendaraan->measurement_unit,
         ];
 
-        $kendaraan->update($request->all());
+        $kendaraan->update($data);
         $kendaraan->load(['tyrePositionConfiguration', 'segment']); // Reload for updated data
 
         setLogActivity(auth()->id(), 'Memperbarui kendaraan: ' . $request->kode_kendaraan, [
