@@ -190,7 +190,8 @@ class TyreMasterController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $status = $request->status ?? 'New';
+        $rules = [
             'serial_number' => 'nullable|string|max:255',
             'custom_serial_number' => 'nullable|string|max:255',
             'quantity' => 'nullable|integer|min:1|max:100',
@@ -199,14 +200,21 @@ class TyreMasterController extends Controller
             'tyre_pattern_id' => 'required', // Pattern *
             'current_location_id' => 'required', // Lokasi *
             'price' => 'required', // Harga *
-            'initial_tread_depth' => 'required|numeric|min:0', // OTD *
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread', // Status *
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
             'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => 'nullable',
-        ]);
+        ];
+
+        if ($status === 'New') {
+            $rules['initial_tread_depth'] = 'nullable|numeric|min:0';
+        } else {
+            $rules['initial_tread_depth'] = 'required|numeric|min:0';
+        }
+
+        $request->validate($rules);
 
         $data = $request->all();
         $user = auth()->user();
@@ -347,17 +355,26 @@ class TyreMasterController extends Controller
         }
 
         // Set Default Tread Depths
-        if (empty($data['original_tread_depth'])) {
-            if (!empty($data['initial_tread_depth'])) {
-                $data['original_tread_depth'] = $data['initial_tread_depth'];
+        if ($data['status'] === 'New') {
+            if (empty($data['initial_tread_depth']) && $data['initial_tread_depth'] !== '0' && $data['initial_tread_depth'] !== 0) {
+                $size = TyreSize::find($data['tyre_size_id'] ?? null);
+                $data['initial_tread_depth'] = $size ? (float)$size->std_otd : 16.0;
             } else {
-                $size = TyreSize::find($data['tyre_size_id']);
-                $data['original_tread_depth'] = $size ? $size->std_otd : 0;
-                $data['initial_tread_depth'] = $data['original_tread_depth'];
+                $data['initial_tread_depth'] = (float)$data['initial_tread_depth'];
             }
-        }
-        if (!isset($data['current_tread_depth'])) {
+            if (empty($data['ply_rating'])) {
+                $size = TyreSize::find($data['tyre_size_id'] ?? null);
+                if ($size && $size->ply_rating) {
+                    $data['ply_rating'] = $size->ply_rating;
+                }
+            }
+            $data['original_tread_depth'] = $data['initial_tread_depth'];
             $data['current_tread_depth'] = $data['initial_tread_depth'];
+        } else {
+            // For Used / Repaired / Retread / Installed / Scrap
+            $size = TyreSize::find($data['tyre_size_id'] ?? null);
+            $data['original_tread_depth'] = $size ? (float)$size->std_otd : (float)$data['initial_tread_depth'];
+            $data['current_tread_depth'] = (float)$data['initial_tread_depth'];
         }
 
         $createdSns = [];
@@ -413,7 +430,8 @@ class TyreMasterController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $status = $request->status ?? 'New';
+        $rules = [
             'serial_number' => 'required|string|max:255|unique:tyres,serial_number,' . $id . ',id,deleted_at,NULL',
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id . ',id,deleted_at,NULL',
             'tyre_brand_id' => 'required',
@@ -421,14 +439,21 @@ class TyreMasterController extends Controller
             'tyre_pattern_id' => 'required',
             'current_location_id' => 'required',
             'price' => 'required',
-            'initial_tread_depth' => 'required|numeric|min:0',
             'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
             'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
             'tyre_company_id' => 'nullable',
-        ]);
+        ];
+
+        if ($status === 'New') {
+            $rules['initial_tread_depth'] = 'nullable|numeric|min:0';
+        } else {
+            $rules['initial_tread_depth'] = 'required|numeric|min:0';
+        }
+
+        $request->validate($rules);
 
         $tyre = Tyre::findOrFail($id);
         $data = $request->all();
@@ -568,17 +593,33 @@ class TyreMasterController extends Controller
             $data['current_location_id'] = $location->id;
         }
 
-        // Sync Tread Depths jika sebelumnya kosong
-        if (empty($tyre->original_tread_depth) && !empty($data['initial_tread_depth'])) {
-            $data['original_tread_depth'] = $data['initial_tread_depth'];
-        } elseif (empty($tyre->original_tread_depth) && empty($data['initial_tread_depth'])) {
-            $size = TyreSize::find($data['tyre_size_id']);
-            $data['original_tread_depth'] = $size ? $size->std_otd : 0;
-            $data['initial_tread_depth'] = $data['original_tread_depth'];
-        }
-
-        if (empty($tyre->current_tread_depth) && !empty($data['initial_tread_depth'])) {
-            $data['current_tread_depth'] = $data['initial_tread_depth'];
+        // Sync Tread Depths jika status New atau updated
+        if ($data['status'] === 'New') {
+            if (empty($data['initial_tread_depth']) && $data['initial_tread_depth'] !== '0' && $data['initial_tread_depth'] !== 0) {
+                $size = TyreSize::find($data['tyre_size_id'] ?? null);
+                $data['initial_tread_depth'] = $size ? (float)$size->std_otd : 16.0;
+            } else {
+                $data['initial_tread_depth'] = (float)$data['initial_tread_depth'];
+            }
+            if (empty($data['ply_rating'])) {
+                $size = TyreSize::find($data['tyre_size_id'] ?? null);
+                if ($size && $size->ply_rating) {
+                    $data['ply_rating'] = $size->ply_rating;
+                }
+            }
+            if (empty($tyre->original_tread_depth)) {
+                $data['original_tread_depth'] = $data['initial_tread_depth'];
+            }
+            if (empty($tyre->current_tread_depth)) {
+                $data['current_tread_depth'] = $data['initial_tread_depth'];
+            }
+        } else {
+            // For non-New status
+            $size = TyreSize::find($data['tyre_size_id'] ?? null);
+            if (empty($tyre->original_tread_depth)) {
+                $data['original_tread_depth'] = $size ? (float)$size->std_otd : (float)$data['initial_tread_depth'];
+            }
+            $data['current_tread_depth'] = (float)$data['initial_tread_depth'];
         }
 
         $dataBefore = $tyre->toArray();

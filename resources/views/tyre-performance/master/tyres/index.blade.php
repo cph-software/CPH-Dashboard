@@ -159,8 +159,8 @@
                         </select>
                      </div>
                      <div class="col-md-6">
-                        <label for="status" class="form-label fw-bold">Status Ban <span class="text-danger">*</span></label>
-                        <select name="status" class="form-select" required>
+                        <label for="add_status" class="form-label fw-bold">Status Ban <span class="text-danger">*</span></label>
+                        <select name="status" id="add_status" class="form-select" required>
                            <option value="New">New (Ban Baru)</option>
                            <option value="Installed">Installed (Terpasang)</option>
                            <option value="Repaired">Repaired (Siap Pakai/Bekas)</option>
@@ -177,9 +177,12 @@
                            placeholder="e.g. 3.500.000" required>
                      </div>
                      <div class="col-md-6">
-                        <label for="initial_tread_depth" class="form-label fw-bold">OTD (Original Tread Depth - mm) <span class="text-danger">*</span></label>
+                        <label for="initial_tread_depth" class="form-label fw-bold">
+                           <span id="label_otd">OTD (Original Tread Depth - mm)</span>
+                           <small id="help_otd" class="text-muted fw-normal">(Auto dari Size untuk ban baru)</small>
+                        </label>
                         <input type="number" id="initial_tread_depth" name="initial_tread_depth"
-                           class="form-control" placeholder="18.5" step="0.01" required>
+                           class="form-control" placeholder="18.5" step="0.01">
                      </div>
                   </div>
 
@@ -341,9 +344,12 @@
                         <input type="text" id="edit_price" name="price" class="form-control currency-input" required>
                      </div>
                      <div class="col-md-6">
-                        <label for="edit_initial_tread_depth" class="form-label fw-bold">OTD (Original Tread Depth - mm) <span class="text-danger">*</span></label>
+                        <label for="edit_initial_tread_depth" class="form-label fw-bold">
+                           <span id="edit_label_otd">OTD (Original Tread Depth - mm)</span>
+                           <small id="edit_help_otd" class="text-muted fw-normal">(Auto dari Size untuk ban baru)</small>
+                        </label>
                         <input type="number" id="edit_initial_tread_depth" name="initial_tread_depth"
-                           class="form-control" step="0.01" required>
+                           class="form-control" step="0.01">
                      </div>
                   </div>
 
@@ -748,7 +754,13 @@
          // Hierarchical Dropdowns (Brand > Size > Pattern) using Array backing to prevent Select2 glitches
          const sizeOptions = [];
          $('#tyre_size_id option').each(function() {
-            if ($(this).val() !== "") sizeOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
+            if ($(this).val() !== "") sizeOptions.push({ 
+               val: $(this).val(), 
+               text: $(this).text().trim(), 
+               brandId: $(this).data('brand-id'),
+               otd: $(this).data('otd'),
+               ply: $(this).data('ply')
+            });
          });
 
          const patternOptions = [];
@@ -758,7 +770,13 @@
 
          const editSizeOptions = [];
          $('#edit_size_id option').each(function() {
-            if ($(this).val() !== "") editSizeOptions.push({ val: $(this).val(), text: $(this).text().trim(), brandId: $(this).data('brand-id') });
+            if ($(this).val() !== "") editSizeOptions.push({ 
+               val: $(this).val(), 
+               text: $(this).text().trim(), 
+               brandId: $(this).data('brand-id'),
+               otd: $(this).data('otd'),
+               ply: $(this).data('ply')
+            });
          });
 
          const editPatternOptions = [];
@@ -828,7 +846,11 @@
 
             sOpts.forEach(opt => {
                if (!brandId || String(opt.brandId) === String(brandId)) {
-                  $(sizeSelector).append(new Option(opt.text, opt.val, false, opt.val === currentSize));
+                  const optElem = new Option(opt.text, opt.val, false, opt.val === currentSize);
+                  $(optElem).attr('data-otd', opt.otd || '');
+                  $(optElem).attr('data-ply', opt.ply || '');
+                  $(optElem).attr('data-brand-id', opt.brandId || '');
+                  $(sizeSelector).append(optElem);
                }
             });
 
@@ -862,6 +884,47 @@
                }
             });
          }
+
+         // Smart OTD & Ply Rating Auto-Populate (Hanya aktif untuk status New)
+         function handleSmartOtd(sizeSelector, statusSelector, otdSelector, plySelector, labelSelector, helpSelector) {
+            const status = $(statusSelector).val();
+            const selectedOpt = $(sizeSelector).find('option:selected');
+            const otd = selectedOpt.data('otd') || selectedOpt.attr('data-otd');
+            const ply = selectedOpt.data('ply') || selectedOpt.attr('data-ply');
+
+            if (status === 'New') {
+               $(labelSelector).text('OTD (Original Tread Depth - mm)');
+               $(helpSelector).text('(Auto dari Size untuk ban baru, bisa diubah)').removeClass('text-danger').addClass('text-muted');
+               $(otdSelector).prop('required', false);
+               if (otd !== undefined && otd !== null && otd !== '') {
+                  $(otdSelector).val(otd);
+               }
+               if (ply !== undefined && ply !== null && ply !== '') {
+                  $(plySelector).val(ply);
+               }
+            } else {
+               $(labelSelector).text('Sisa Ketebalan Saat Ini (RTD - mm)');
+               $(helpSelector).text('(Wajib diisi untuk ban bekas/repaired)').removeClass('text-muted').addClass('text-danger');
+               $(otdSelector).prop('required', true);
+            }
+         }
+
+         $(document).on('change', '#tyre_size_id', function() {
+            handleSmartOtd('#tyre_size_id', '#add_status', '#initial_tread_depth', '#ply_rating', '#label_otd', '#help_otd');
+         });
+
+         $(document).on('change', '#add_status', function() {
+            handleSmartOtd('#tyre_size_id', '#add_status', '#initial_tread_depth', '#ply_rating', '#label_otd', '#help_otd');
+         });
+
+         $(document).on('change', '#edit_size_id', function() {
+            handleSmartOtd('#edit_size_id', '#edit_status', '#edit_initial_tread_depth', '#edit_ply_rating', '#edit_label_otd', '#edit_help_otd');
+         });
+
+         $(document).on('change', '#edit_status', function() {
+            handleSmartOtd('#edit_size_id', '#edit_status', '#edit_initial_tread_depth', '#edit_ply_rating', '#edit_label_otd', '#edit_help_otd');
+         });
+
          $('#addTyreModal').on('shown.bs.modal', function () {
             initSelect2Tags('#tyre_brand_id');
             initSelect2Tags('#tyre_size_id');

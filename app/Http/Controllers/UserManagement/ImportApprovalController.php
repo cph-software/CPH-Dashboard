@@ -373,7 +373,32 @@ class ImportApprovalController extends Controller
             }
         }
 
+        $status = (isset($data['status']) && trim($data['status']) !== '') ? $data['status'] : 'New';
         $initialRtd = (float)($data['initial_rtd'] ?? $data['otd'] ?? 0);
+        $plyRating = (int)($data['ply_rating'] ?? 0);
+
+        if ($status === 'New') {
+            if ($initialRtd <= 0 && $sizeId) {
+                $sizeObj = \App\Models\TyreSize::find($sizeId);
+                if ($sizeObj && $sizeObj->std_otd > 0) {
+                    $initialRtd = (float)$sizeObj->std_otd;
+                }
+            }
+            if ($plyRating <= 0 && $sizeId) {
+                $sizeObj = $sizeObj ?? \App\Models\TyreSize::find($sizeId);
+                if ($sizeObj && $sizeObj->ply_rating > 0) {
+                    $plyRating = (int)$sizeObj->ply_rating;
+                }
+            }
+            $originalRtd = $initialRtd;
+            $currentRtd = (float)($data['current_rtd'] ?? $initialRtd);
+        } else {
+            // For Used / Repaired / Retread / Scrap
+            $sizeObj = $sizeId ? \App\Models\TyreSize::find($sizeId) : null;
+            $originalRtd = $sizeObj && $sizeObj->std_otd > 0 ? (float)$sizeObj->std_otd : $initialRtd;
+            $currentRtd = (float)($data['current_rtd'] ?? $initialRtd);
+        }
+
         $inWarehouse = ($data['in_warehouse'] ?? $data['warehouse'] ?? 'Yes') == 'Yes' ? 1 : 0;
         
         // 4. Resolve Location/Warehouse ID
@@ -416,12 +441,12 @@ class ImportApprovalController extends Controller
                 'segment_name' => $data['segment'] ?? $data['segment_name'] ?? null,
                 'is_in_warehouse' => $inWarehouse,
                 'current_location_id' => $locationId,
-                'status' => (isset($data['status']) && trim($data['status']) !== '') ? $data['status'] : 'New',
+                'status' => $status,
                 'initial_tread_depth' => $initialRtd,
-                'current_tread_depth' => (float)($data['current_rtd'] ?? $initialRtd),
+                'current_tread_depth' => $currentRtd,
                 'price' => $this->parseEuroNum($data['price'] ?? 0),
-                'ply_rating' => (int)($data['ply_rating'] ?? 0),
-                'original_tread_depth' => $initialRtd,
+                'ply_rating' => $plyRating,
+                'original_tread_depth' => $originalRtd,
                 'tyre_company_id' => $uploaderCompanyId
             ]
         );
