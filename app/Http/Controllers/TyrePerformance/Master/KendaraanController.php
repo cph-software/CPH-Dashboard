@@ -205,12 +205,19 @@ class KendaraanController extends Controller
         }
         $data['tyre_company_id'] = $targetCompanyId;
 
-        // Auto-generate unit code if empty
+        // Auto-generate unit code if empty or check uniqueness if provided
         if (empty($data['kode_kendaraan'])) {
             $cleanNoPol = strtoupper(str_replace([' ', '-', '.'], '', $request->no_polisi));
             $candidateCode = 'UNIT-' . $cleanNoPol;
-            $exists = MasterImportKendaraan::where('kode_kendaraan', $candidateCode)->exists();
+            $exists = MasterImportKendaraan::withoutGlobalScopes()->where('kode_kendaraan', $candidateCode)->exists();
             $data['kode_kendaraan'] = $exists ? $candidateCode . '-' . rand(100, 999) : $candidateCode;
+        } else {
+            $cleanInputCode = trim($data['kode_kendaraan']);
+            $exists = MasterImportKendaraan::withoutGlobalScopes()->where('kode_kendaraan', $cleanInputCode)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Kode unit "' . $cleanInputCode . '" sudah digunakan. Silakan gunakan kode lain atau kosongkan agar dibuat otomatis.');
+            }
+            $data['kode_kendaraan'] = $cleanInputCode;
         }
 
         // Auto-fill total_tyre_position from configuration if empty
@@ -327,12 +334,19 @@ class KendaraanController extends Controller
         }
         $data['tyre_company_id'] = $targetCompanyId;
 
-        // Auto-generate unit code if empty
+        // Auto-generate unit code if empty or check uniqueness if provided
         if (empty($data['kode_kendaraan'])) {
             $cleanNoPol = strtoupper(str_replace([' ', '-', '.'], '', $request->no_polisi));
             $candidateCode = 'UNIT-' . $cleanNoPol;
-            $exists = MasterImportKendaraan::where('kode_kendaraan', $candidateCode)->where('id', '!=', $id)->exists();
+            $exists = MasterImportKendaraan::withoutGlobalScopes()->where('kode_kendaraan', $candidateCode)->where('id', '!=', $id)->exists();
             $data['kode_kendaraan'] = $exists ? $candidateCode . '-' . rand(100, 999) : $candidateCode;
+        } else {
+            $cleanInputCode = trim($data['kode_kendaraan']);
+            $exists = MasterImportKendaraan::withoutGlobalScopes()->where('kode_kendaraan', $cleanInputCode)->where('id', '!=', $id)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Kode unit "' . $cleanInputCode . '" sudah digunakan oleh kendaraan lain.');
+            }
+            $data['kode_kendaraan'] = $cleanInputCode;
         }
 
         // Auto-fill total_tyre_position from configuration if empty

@@ -238,7 +238,23 @@ class TyreMasterController extends Controller
         }
         $data['tyre_company_id'] = $targetCompanyId;
 
-        // 1. Resolve Brand (ID or New Name String)
+        // Check Serial Number uniqueness if provided
+        if (!empty($request->serial_number)) {
+            $checkSn = strtoupper(trim($request->serial_number));
+            $exists = Tyre::withoutGlobalScopes()->where('serial_number', $checkSn)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Serial Number "' . $checkSn . '" sudah terdaftar dalam sistem. Silakan gunakan nomor seri lain atau kosongkan agar dibuat otomatis.');
+            }
+        }
+
+        // Check Custom Serial Number uniqueness if provided
+        if (!empty($request->custom_serial_number)) {
+            $checkCustomSn = trim($request->custom_serial_number);
+            $exists = Tyre::withoutGlobalScopes()->where('custom_serial_number', $checkCustomSn)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Custom Code / No Seri Pabrik "' . $checkCustomSn . '" sudah terdaftar dalam sistem.');
+            }
+        }
         if (!empty($request->tyre_brand_id)) {
             $brand = is_numeric($request->tyre_brand_id) ? TyreBrand::find($request->tyre_brand_id) : null;
             if (!$brand) {
@@ -441,6 +457,24 @@ class TyreMasterController extends Controller
             $targetCompanyId = $tyre->tyre_company_id ?? $user->tyre_company_id;
         }
         $data['tyre_company_id'] = $targetCompanyId;
+
+        // Check Serial Number uniqueness if updated
+        if (!empty($request->serial_number)) {
+            $checkSn = strtoupper(trim($request->serial_number));
+            $exists = Tyre::withoutGlobalScopes()->where('serial_number', $checkSn)->where('id', '!=', $id)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Serial Number "' . $checkSn . '" sudah digunakan oleh ban lain.');
+            }
+        }
+
+        // Check Custom Serial Number uniqueness if updated
+        if (!empty($request->custom_serial_number)) {
+            $checkCustomSn = trim($request->custom_serial_number);
+            $exists = Tyre::withoutGlobalScopes()->where('custom_serial_number', $checkCustomSn)->where('id', '!=', $id)->exists();
+            if ($exists) {
+                return redirect()->back()->withInput()->with('error', 'Custom Code / No Seri Pabrik "' . $checkCustomSn . '" sudah digunakan oleh ban lain.');
+            }
+        }
 
         // 1. Resolve Brand
         if (!empty($request->tyre_brand_id)) {
