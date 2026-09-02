@@ -334,11 +334,41 @@ class MonitoringController extends Controller
         $patterns = TyrePattern::orderBy('name')->get();
         $sizes = TyreSize::orderBy('size')->get();
         
-        // Only check tyres that were installed for this session
-        $installedTyres = Tyre::whereIn('serial_number', $session->installations->pluck('serial_number'))
-            ->where('current_vehicle_id', $session->master_vehicle_id)
-            ->with(['brand', 'size', 'pattern'])
-            ->get();
+        // Dynamically sync and fetch all currently installed tyres on this master vehicle
+        if ($session->master_vehicle_id) {
+            $currentInstalledTyres = Tyre::where('current_vehicle_id', $session->master_vehicle_id)
+                ->whereNotNull('current_position_id')
+                ->with(['brand', 'size', 'pattern'])
+                ->get();
+
+            foreach ($currentInstalledTyres as $cTyre) {
+                $instExists = $session->installations()
+                    ->where('serial_number', $cTyre->serial_number)
+                    ->where('position_id', $cTyre->current_position_id)
+                    ->exists();
+
+                if (!$instExists) {
+                    \App\Services\TyreMonitoringSyncService::syncInstallation(
+                        $session->master_vehicle_id,
+                        $cTyre->current_position_id,
+                        $cTyre->id,
+                        [
+                            'movement_date' => $session->install_date ?? date('Y-m-d'),
+                            'odometer' => $session->odometer_start ?? 0,
+                            'hour_meter' => $session->hm_start ?? 0,
+                            'rtd' => $cTyre->current_tread_depth ?? $cTyre->initial_tread_depth,
+                            'psi' => $session->retase ?? 110,
+                        ]
+                    );
+                }
+            }
+
+            $installedTyres = $currentInstalledTyres;
+        } else {
+            $installedTyres = Tyre::whereIn('serial_number', $session->installations->pluck('serial_number'))
+                ->with(['brand', 'size', 'pattern'])
+                ->get();
+        }
 
         // Attach last check data to each tyre for historical RTD points
         foreach ($installedTyres as $tyre) {
@@ -875,17 +905,17 @@ class MonitoringController extends Controller
             }
         }
 
-        // Validate each axle involved
+        // Validate each axle involved: ensure all ACTUALLY installed tyres on that axle are checked
         foreach ($checksForAxles as $axleKey => $checkedSerials) {
             [$axleType, $axleNumber] = explode('_', $axleKey);
-            // Get all positions in this axle for this vehicle's configuration
-            $totalPositionsInAxle = TyrePositionDetail::where('configuration_id', $session->vehicle->tyre_position_configuration_id)
-                ->where('axle_type', $axleType)
-                ->where('axle_number', $axleNumber)
+            $installedOnAxle = TyreMonitoringInstallation::where('session_id', $session->session_id)
+                ->whereHas('positionDetail', function($q) use ($axleType, $axleNumber) {
+                    $q->where('axle_type', $axleType)->where('axle_number', $axleNumber);
+                })
                 ->count();
             
-            if (count($checkedSerials) < $totalPositionsInAxle) {
-                return redirect()->back()->with('error', "Sumbat/Axle {$axleType} #{$axleNumber} memiliki {$totalPositionsInAxle} ban, tetapi Anda hanya mengisi " . count($checkedSerials) . " ban. Harap isi semua ban dalam satu sumbu.")
+            if ($installedOnAxle > 0 && count($checkedSerials) < $installedOnAxle) {
+                return redirect()->back()->with('error', "Sumbu/Axle {$axleType} #{$axleNumber} memiliki {$installedOnAxle} ban terpasang, tetapi Anda hanya mengisi " . count($checkedSerials) . " ban. Harap isi semua ban dalam satu sumbu.")
                     ->withInput();
             }
         }
