@@ -579,8 +579,28 @@ class TyreMovementController extends Controller
         DB::beginTransaction();
         try {
             $warnings = [];
-            $vehicle = MasterImportKendaraan::find($request->vehicle_id);
-            $vehicleCode = $vehicle->kode_kendaraan ?? 'Unknown (' . $request->vehicle_id . ')';
+            $vehicle = MasterImportKendaraan::findOrFail($request->vehicle_id);
+            $vehicleCode = $vehicle->kode_kendaraan;
+
+            // Check vehicle access:
+            if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+                    $allowedCompanyIds = auth()->user()->tyreCompany ? auth()->user()->tyreCompany->getAllClientIds() : [];
+                    $allowedCompanyIds[] = auth()->user()->tyre_company_id;
+                    if (!in_array($vehicle->tyre_company_id, $allowedCompanyIds)) {
+                        throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda atau klien binaan Anda.');
+                    }
+                } else {
+                    $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+                    if ($activeCompanyId && !is_array($activeCompanyId)) {
+                        if ($vehicle->tyre_company_id != $activeCompanyId) {
+                            throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+                        }
+                    } elseif ($vehicle->tyre_company_id != auth()->user()->tyre_company_id) {
+                        throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+                    }
+                }
+            }
 
             // 1. Future date detection
             if (\Carbon\Carbon::parse($request->movement_date)->isFuture()) {
