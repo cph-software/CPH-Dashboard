@@ -51,9 +51,17 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $isSuperAdmin = \App\Helpers\SessionCompanyHelper::isSuperAdmin();
+        $isWorkshopAdmin = \App\Helpers\SessionCompanyHelper::isWorkshopAdmin();
         $sessionCompany = session('active_company_id');
 
-        if ($isSuperAdmin && !$sessionCompany && $request->get('view') === 'overview') {
+        // Mode Global / Keseluruhan Perusahaan:
+        // Jika Super Admin atau Workshop Admin belum memilih satu perusahaan spesifik (active_company_id null, ALL_CLIENTS, atau array),
+        // tampilkan halaman Global Overview / Keseluruhan Perusahaan (superAdminIndex).
+        // Begitu user memilih/klik salah satu perusahaan, barulah diarahkan ke tampilan dashboard analitik detail perusahaan tersebut.
+        if (
+            ($isSuperAdmin && (!$sessionCompany || $sessionCompany === 'ALL_CLIENTS')) ||
+            ($isWorkshopAdmin && (!$sessionCompany || $sessionCompany === 'ALL_CLIENTS' || is_array($sessionCompany)))
+        ) {
             return $this->superAdminIndex($request);
         }
 
@@ -1670,7 +1678,9 @@ class DashboardController extends Controller
         } elseif ($type === 'monitoring') {
             $headers = [
                 'ID Sesi Monitoring',
-                'Perusahaan',
+                'Perusahaan Pemilik Unit',
+                'Perusahaan Pengelola / Bengkel',
+                'Perusahaan Pemilik Ban',
                 'Kode Unit',
                 'No. Polisi',
                 'Pengemudi / Driver',
@@ -1679,6 +1689,9 @@ class DashboardController extends Controller
                 'Tanggal Pemeriksaan',
                 'Pemeriksaan Ke-',
                 'SN Ban',
+                'Brand Ban',
+                'Ukuran Ban',
+                'Pola Telapak / Pattern',
                 'Posisi Roda',
                 'Target PSI',
                 'Actual PSI',
@@ -1700,21 +1713,52 @@ class DashboardController extends Controller
                 'Catatan / Notes'
             ];
 
-            $checks = TyreMonitoringCheck::with(['session.masterVehicle', 'session.vehicle', 'positionDetail', 'company', 'session.company'])
-                ->orderBy('check_date', 'desc')
-                ->get();
+            $checks = TyreMonitoringCheck::with([
+                'session.masterVehicle.company',
+                'session.vehicle.company',
+                'session.company',
+                'positionDetail',
+                'company',
+                'tyre.brand',
+                'tyre.size',
+                'tyre.pattern',
+                'tyre.company'
+            ])
+            ->orderBy('check_date', 'desc')
+            ->get();
 
             foreach ($checks as $row) {
                 $session = $row->session;
-                $companyName = $row->company->company_name ?? ($session->company->company_name ?? '-');
                 $masterV = $session ? $session->masterVehicle : null;
                 $legacyV = $session ? $session->vehicle : null;
-                $unitCode = $masterV->kode_kendaraan ?? ($legacyV->vehicle_number ?? '-');
+
+                // 1. Perusahaan Pemilik Unit (Customer/Cabang)
+                $vehicleCompany = ($masterV && $masterV->company)
+                    ? $masterV->company->company_name
+                    : (($legacyV && $legacyV->company)
+                        ? $legacyV->company->company_name
+                        : ($row->company->company_name ?? ($session->company->company_name ?? '-')));
+
+                // 2. Perusahaan Pengelola / Bengkel (Induk)
+                $managingCompany = ($session && $session->company)
+                    ? $session->company->company_name
+                    : ($row->company->company_name ?? '-');
+
+                // 3. Perusahaan Pemilik Ban
+                $tyreCompany = ($row->tyre && $row->tyre->company)
+                    ? $row->tyre->company->company_name
+                    : ($row->company->company_name ?? ($session->company->company_name ?? '-'));
+
+                $unitCode = $masterV->kode_kendaraan ?? ($legacyV->fleet_name ?? ($legacyV->vehicle_number ?? '-'));
                 $noPolisi = $masterV->no_polisi ?? ($legacyV->vehicle_number ?? '-');
                 $driver = $row->driver_name ?? ($legacyV->driver_name ?? '-');
                 $phone = $row->phone_number ?? ($legacyV->phone_number ?? '-');
                 $installDate = $session ? $session->install_date : '-';
                 $posName = $row->positionDetail ? ($row->positionDetail->position_code . ' - ' . $row->positionDetail->position_name) : ($row->position ?? '-');
+
+                $brandName = $row->tyre->brand->brand_name ?? ($row->brand_name ?? '-');
+                $sizeName = $row->tyre->size->size ?? ($row->size_name ?? '-');
+                $patternName = $row->tyre->pattern->name ?? ($row->pattern ?? '-');
 
                 $rtdSum = ($row->rtd_1 ?? 0) + ($row->rtd_2 ?? 0) + ($row->rtd_3 ?? 0) + ($row->rtd_4 ?? 0);
                 $rtdCount = (($row->rtd_1 > 0 ? 1 : 0) + ($row->rtd_2 > 0 ? 1 : 0) + ($row->rtd_3 > 0 ? 1 : 0) + ($row->rtd_4 > 0 ? 1 : 0)) ?: 1;
@@ -1722,7 +1766,9 @@ class DashboardController extends Controller
 
                 $data[] = [
                     $row->session_id ?? '-',
-                    $companyName,
+                    $vehicleCompany,
+                    $managingCompany,
+                    $tyreCompany,
                     $unitCode,
                     $noPolisi,
                     $driver,
@@ -1731,6 +1777,9 @@ class DashboardController extends Controller
                     $row->check_date ?? '-',
                     $row->check_number ?? '-',
                     $row->serial_number ?? '-',
+                    $brandName,
+                    $sizeName,
+                    $patternName,
                     $posName,
                     $row->inf_press_recommended ?? '-',
                     $row->inf_press_actual ?? '-',
@@ -1884,7 +1933,7 @@ class DashboardController extends Controller
             return ExcelExportService::generateExcelFile($data, $headers, $filename . '.xlsx');
         } else {
             // CSV export
-            $headers = [
+            $httpHeaders = [
                 "Content-type" => "text/csv",
                 "Content-Disposition" => "attachment; filename=\"$filename.csv\"",
                 "Pragma" => "no-cache",
@@ -1901,7 +1950,7 @@ class DashboardController extends Controller
                 fclose($file);
             };
 
-            return response()->stream($callback, 200, $headers);
+            return response()->stream($callback, 200, $httpHeaders);
         }
     }
 
@@ -1954,9 +2003,14 @@ class DashboardController extends Controller
                 ->where('tyre_company_id', $company->id)
                 ->count();
 
-            // Tyres summary
+            // Tyres summary: Tyres owned by this company OR tyres installed on vehicles owned by this company
             $tyres = Tyre::withoutGlobalScope('company')
-                ->where('tyre_company_id', $company->id)
+                ->where(function ($q) use ($company) {
+                    $q->where('tyre_company_id', $company->id)
+                      ->orWhereIn('current_vehicle_id', function ($vq) use ($company) {
+                          $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $company->id);
+                      });
+                })
                 ->get();
             
             $totalTyres = $tyres->count();
@@ -2053,7 +2107,12 @@ class DashboardController extends Controller
                 }])->get();
         } else {
             $tyres = Tyre::withoutGlobalScope('company')
-                ->where('tyre_company_id', $companyId)
+                ->where(function ($q) use ($companyId) {
+                    $q->where('tyre_company_id', $companyId)
+                      ->orWhereIn('current_vehicle_id', function ($vq) use ($companyId) {
+                          $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $companyId);
+                      });
+                })
                 ->with(['brand', 'size', 'pattern'])
                 ->get();
                 

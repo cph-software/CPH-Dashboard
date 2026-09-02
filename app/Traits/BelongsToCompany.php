@@ -31,6 +31,24 @@ trait BelongsToCompany
                                       $vq->select('id')->from('master_import_kendaraan')->whereIn('tyre_company_id', $activeCompanyId);
                                   });
                             });
+                        } elseif ($table === 'tyre_monitoring_session') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->whereIn($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.master_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->whereIn('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } elseif ($table === 'tyre_monitoring_check') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->whereIn($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.session_id', function ($sq) use ($activeCompanyId) {
+                                      $sq->select('session_id')->from('tyre_monitoring_session')
+                                        ->whereIn('tyre_company_id', $activeCompanyId)
+                                        ->orWhereIn('master_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                            $vq->select('id')->from('master_import_kendaraan')->whereIn('tyre_company_id', $activeCompanyId);
+                                        });
+                                  });
+                            });
                         } else {
                             $builder->whereIn($table . '.tyre_company_id', $activeCompanyId);
                         }
@@ -47,6 +65,24 @@ trait BelongsToCompany
                                 $q->where($table . '.tyre_company_id', $activeCompanyId)
                                   ->orWhereIn($table . '.vehicle_id', function ($vq) use ($activeCompanyId) {
                                       $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } elseif ($table === 'tyre_monitoring_session') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->where($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.master_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } elseif ($table === 'tyre_monitoring_check') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->where($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.session_id', function ($sq) use ($activeCompanyId) {
+                                      $sq->select('session_id')->from('tyre_monitoring_session')
+                                        ->where('tyre_company_id', $activeCompanyId)
+                                        ->orWhereIn('master_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                            $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $activeCompanyId);
+                                        });
                                   });
                             });
                         } else {

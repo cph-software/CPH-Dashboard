@@ -33,6 +33,11 @@ class TyreMonitoringVehicle extends Model
         'is_trail' => 'boolean'
     ];
 
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
+    }
+
     public function masterVehicle()
     {
         return $this->belongsTo(MasterImportKendaraan::class, 'master_vehicle_id');
