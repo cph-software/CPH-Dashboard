@@ -44,6 +44,8 @@ class TyreSizeController extends Controller
         ]);
 
         $data = $request->all();
+        $data['std_otd'] = $request->filled('std_otd') ? $request->std_otd : 0;
+        $data['ply_rating'] = $request->filled('ply_rating') ? $request->ply_rating : 0;
 
         $size = TyreSize::create($data);
         $size->load(['brand', 'pattern']);
@@ -79,6 +81,12 @@ class TyreSizeController extends Controller
         $size = TyreSize::findOrFail($id);
         $dataBefore = $size->toArray();
         $data = $request->all();
+        if (array_key_exists('std_otd', $data)) {
+            $data['std_otd'] = $request->filled('std_otd') ? $request->std_otd : 0;
+        }
+        if (array_key_exists('ply_rating', $data)) {
+            $data['ply_rating'] = $request->filled('ply_rating') ? $request->ply_rating : 0;
+        }
 
         $size->update($data);
         $size->load(['brand', 'pattern']);
