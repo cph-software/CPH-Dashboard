@@ -108,7 +108,15 @@ class KendaraanController extends Controller
         $locations = $locQuery->get();
         $segments = $segQuery->get();
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        if ($user->role_id == 1) {
+            $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
+            if ($user->tyre_company_id) $clientIds[] = $user->tyre_company_id;
+            $companies = \App\Models\TyreCompany::whereIn('id', $clientIds)->where('status', 'Active')->orderBy('company_name')->get();
+        } else {
+            $companies = \App\Models\TyreCompany::where('id', $user->tyre_company_id)->get();
+        }
 
         return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments', 'companies'));
     }
@@ -159,38 +167,56 @@ class KendaraanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,NULL,id,deleted_at,NULL',
+            'kode_kendaraan' => 'nullable|string|max:255',
             'no_polisi' => 'required|string|max:255',
+            'vehicle_brand' => 'required|string|max:255',
+            'area' => 'required|string|max:255',
+            'tyre_position_configuration_id' => 'required|exists:tyre_position_configurations,id',
+            'total_tyre_position' => 'nullable|integer',
+            'measurement_unit' => 'required|in:KM,HM',
+            'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'tyre_company_id' => 'nullable',
             'jenis_kendaraan' => 'nullable|string|max:255',
-            'vehicle_brand' => 'nullable|string|max:255',
             'curb_weight' => 'nullable|integer|min:0',
             'payload_capacity' => 'nullable|numeric|min:0',
-            'area' => 'required|string|max:255',
             'operational_segment_id' => 'nullable',
             'tipe_kendaraan' => 'nullable|string|max:255',
-            'tahun_rakit' => 'nullable|string|max:4',
-            'usia_kendaraan' => 'nullable|string|max:255',
-            'kapasitas_silinder' => 'nullable|string|max:255',
-            'no_bpkb' => 'nullable|string|max:255',
-            'no_rangka' => 'nullable|string|max:255',
-            'no_mesin' => 'nullable|string|max:255',
-            'total_tyre_position' => 'required|integer',
-            'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
-            'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
-            'measurement_unit' => 'required|in:KM,HM',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $data = $request->all();
         $user = auth()->user();
 
         // Determine target company ID
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
         $targetCompanyId = null;
+
         if ($user->role_id == 1) {
-            $targetCompanyId = $data['tyre_company_id'] ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $targetCompanyId = $data['tyre_company_id'] ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : 1);
+        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            if (!empty($data['tyre_company_id']) && \App\Helpers\SessionCompanyHelper::isValidClient($data['tyre_company_id'])) {
+                $targetCompanyId = $data['tyre_company_id'];
+            } elseif (!is_array($activeCompanyId) && $activeCompanyId) {
+                $targetCompanyId = $activeCompanyId;
+            } else {
+                $targetCompanyId = $user->tyre_company_id;
+            }
         } else {
-            $targetCompanyId = $user->tyre_company_id ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-            $data['tyre_company_id'] = $targetCompanyId;
+            $targetCompanyId = $user->tyre_company_id;
+        }
+        $data['tyre_company_id'] = $targetCompanyId;
+
+        // Auto-generate unit code if empty
+        if (empty($data['kode_kendaraan'])) {
+            $cleanNoPol = strtoupper(str_replace([' ', '-', '.'], '', $request->no_polisi));
+            $candidateCode = 'UNIT-' . $cleanNoPol;
+            $exists = MasterImportKendaraan::where('kode_kendaraan', $candidateCode)->exists();
+            $data['kode_kendaraan'] = $exists ? $candidateCode . '-' . rand(100, 999) : $candidateCode;
+        }
+
+        // Auto-fill total_tyre_position from configuration if empty
+        if (empty($data['total_tyre_position']) && !empty($data['tyre_position_configuration_id'])) {
+            $config = TyrePositionConfiguration::find($data['tyre_position_configuration_id']);
+            $data['total_tyre_position'] = $config ? $config->total_positions : 10;
         }
 
         // 1. Resolve Location / Area (create if new string)
@@ -264,26 +290,20 @@ class KendaraanController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'kode_kendaraan' => 'required|string|max:255|unique:master_import_kendaraan,kode_kendaraan,' . $id . ',id,deleted_at,NULL',
+            'kode_kendaraan' => 'nullable|string|max:255',
             'no_polisi' => 'required|string|max:255',
+            'vehicle_brand' => 'required|string|max:255',
+            'area' => 'required|string|max:255',
+            'tyre_position_configuration_id' => 'required|exists:tyre_position_configurations,id',
+            'total_tyre_position' => 'nullable|integer',
+            'measurement_unit' => 'required|in:KM,HM',
+            'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
+            'tyre_company_id' => 'nullable',
             'jenis_kendaraan' => 'nullable|string|max:255',
-            'vehicle_brand' => 'nullable|string|max:255',
             'curb_weight' => 'nullable|integer|min:0',
             'payload_capacity' => 'nullable|numeric|min:0',
-            'area' => 'required|string|max:255',
             'operational_segment_id' => 'nullable',
             'tipe_kendaraan' => 'nullable|string|max:255',
-            'tahun_rakit' => 'nullable|string|max:4',
-            'usia_kendaraan' => 'nullable|string|max:255',
-            'kapasitas_silinder' => 'nullable|string|max:255',
-            'no_bpkb' => 'nullable|string|max:255',
-            'no_rangka' => 'nullable|string|max:255',
-            'no_mesin' => 'nullable|string|max:255',
-            'total_tyre_position' => 'required|integer',
-            'tyre_position_configuration_id' => 'nullable|exists:tyre_position_configurations,id',
-            'tyre_unit_status' => 'required|in:Active,Inactive,Maintenance',
-            'measurement_unit' => 'required|in:KM,HM',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
         ]);
 
         $kendaraan = MasterImportKendaraan::findOrFail($id);
@@ -291,12 +311,34 @@ class KendaraanController extends Controller
         $user = auth()->user();
 
         // Determine target company ID
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
         $targetCompanyId = null;
+
         if ($user->role_id == 1) {
-            $targetCompanyId = $data['tyre_company_id'] ?? $kendaraan->tyre_company_id;
+            $targetCompanyId = $data['tyre_company_id'] ?? $kendaraan->tyre_company_id ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : 1);
+        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            if (!empty($data['tyre_company_id']) && \App\Helpers\SessionCompanyHelper::isValidClient($data['tyre_company_id'])) {
+                $targetCompanyId = $data['tyre_company_id'];
+            } else {
+                $targetCompanyId = $kendaraan->tyre_company_id ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : $user->tyre_company_id);
+            }
         } else {
             $targetCompanyId = $kendaraan->tyre_company_id ?? $user->tyre_company_id;
-            $data['tyre_company_id'] = $targetCompanyId;
+        }
+        $data['tyre_company_id'] = $targetCompanyId;
+
+        // Auto-generate unit code if empty
+        if (empty($data['kode_kendaraan'])) {
+            $cleanNoPol = strtoupper(str_replace([' ', '-', '.'], '', $request->no_polisi));
+            $candidateCode = 'UNIT-' . $cleanNoPol;
+            $exists = MasterImportKendaraan::where('kode_kendaraan', $candidateCode)->where('id', '!=', $id)->exists();
+            $data['kode_kendaraan'] = $exists ? $candidateCode . '-' . rand(100, 999) : $candidateCode;
+        }
+
+        // Auto-fill total_tyre_position from configuration if empty
+        if (empty($data['total_tyre_position']) && !empty($data['tyre_position_configuration_id'])) {
+            $config = TyrePositionConfiguration::find($data['tyre_position_configuration_id']);
+            $data['total_tyre_position'] = $config ? $config->total_positions : 10;
         }
 
         // 1. Resolve Location / Area (create if new string)

@@ -53,6 +53,7 @@ class TyreCompanyController extends Controller
         if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
             $data['parent_company_id'] = auth()->user()->tyre_company_id;
         }
+        $data['total_tyres'] = (int)($data['total_tyre_capacity'] ?? 0);
         TyreCompany::create($data);
 
         setLogActivity(auth()->id(), 'Menambah instansi tyre: ' . $request->company_name, [
@@ -80,6 +81,9 @@ class TyreCompanyController extends Controller
         $dataBefore = $company->toArray();
         $data = $request->all();
         if (empty($data['parent_company_id'])) $data['parent_company_id'] = null;
+        if (isset($data['total_tyre_capacity'])) {
+            $data['total_tyres'] = (int)$data['total_tyre_capacity'];
+        }
         $company->update($data);
 
         setLogActivity(auth()->id(), 'Memperbarui instansi tyre: ' . $request->company_name, [

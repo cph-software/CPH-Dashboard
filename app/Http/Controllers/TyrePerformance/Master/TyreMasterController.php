@@ -85,42 +85,24 @@ class TyreMasterController extends Controller
 
         // Ordering
         if ($request->has('order')) {
-            $columnIndex = $request->input('order.0.column');
-            $columnDir = $request->input('order.0.dir');
-
-            $isAdmin = (auth()->check() && auth()->user()->role_id == 1);
-
-            if ($isAdmin) {
-                // Map column index to DB field for Admin (with company column)
-                $cols = [
-                    1 => 'serial_number',
-                    2 => 'tyre_company_id',
-                    3 => 'tyre_brand_id',
-                    4 => 'tyre_size_id',
-                    5 => 'segment_name',
-                    6 => 'is_in_warehouse',
-                    7 => 'status'
-                ];
-            } else {
-                // Map column index to DB field for Normal User (without company column)
-                $cols = [
-                    1 => 'serial_number',
-                    2 => 'tyre_brand_id',
-                    3 => 'tyre_size_id',
-                    4 => 'segment_name',
-                    5 => 'is_in_warehouse',
-                    6 => 'status'
-                ];
-            }
-
-            if (isset($cols[$columnIndex])) {
-                $query->orderBy($cols[$columnIndex], $columnDir);
-            }
+            $orderColumnIndex = $request->input('order.0.column');
+            $orderDir = $request->input('order.0.dir', 'desc');
+            $columns = [
+                0 => 'id',
+                1 => 'serial_number',
+                2 => 'tyre_brand_id',
+                3 => 'tyre_size_id',
+                4 => 'tyre_pattern_id',
+                5 => 'current_location_id',
+                6 => 'status',
+                7 => 'id'
+            ];
+            $column = $columns[$orderColumnIndex] ?? 'id';
+            $query->orderBy($column, $orderDir);
         } else {
             $query->latest();
         }
 
-        // Pagination
         $start = $request->input('start', 0);
         $length = $request->input('length', 10);
         $tyres = $query->skip($start)->take($length)->get();
@@ -209,20 +191,21 @@ class TyreMasterController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'serial_number' => 'nullable|string|max:255|unique:tyres,serial_number,NULL,id,deleted_at,NULL',
-            'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,NULL,id,deleted_at,NULL',
+            'serial_number' => 'nullable|string|max:255',
+            'custom_serial_number' => 'nullable|string|max:255',
             'quantity' => 'nullable|integer|min:1|max:100',
-            'tyre_brand_id' => 'required', // Can be ID or New Name String
-            'tyre_size_id' => 'required',  // Can be ID or New Name String
-            'tyre_pattern_id' => 'nullable', // Can be ID or New Name String
+            'tyre_brand_id' => 'required', // Brand *
+            'tyre_size_id' => 'required',  // Size *
+            'tyre_pattern_id' => 'required', // Pattern *
+            'current_location_id' => 'required', // Lokasi *
+            'price' => 'required', // Harga *
+            'initial_tread_depth' => 'required|numeric|min:0', // OTD *
+            'status' => 'required|in:New,Installed,Scrap,Repaired,Retread', // Status *
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
-            'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
-            'price' => 'nullable',
-            'initial_tread_depth' => 'nullable|numeric|min:0',
             'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
+            'tyre_company_id' => 'nullable',
         ]);
 
         $data = $request->all();
@@ -237,13 +220,23 @@ class TyreMasterController extends Controller
         }
 
         // Determine target company ID
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
         $targetCompanyId = null;
+
         if ($user->role_id == 1) {
-            $targetCompanyId = $data['tyre_company_id'] ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            $targetCompanyId = $data['tyre_company_id'] ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : 1);
+        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            if (!empty($data['tyre_company_id']) && \App\Helpers\SessionCompanyHelper::isValidClient($data['tyre_company_id'])) {
+                $targetCompanyId = $data['tyre_company_id'];
+            } elseif (!is_array($activeCompanyId) && $activeCompanyId) {
+                $targetCompanyId = $activeCompanyId;
+            } else {
+                $targetCompanyId = $user->tyre_company_id;
+            }
         } else {
-            $targetCompanyId = $user->tyre_company_id ?? \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
-            $data['tyre_company_id'] = $targetCompanyId;
+            $targetCompanyId = $user->tyre_company_id;
         }
+        $data['tyre_company_id'] = $targetCompanyId;
 
         // 1. Resolve Brand (ID or New Name String)
         if (!empty($request->tyre_brand_id)) {
@@ -409,29 +402,45 @@ class TyreMasterController extends Controller
             'custom_serial_number' => 'nullable|string|max:255|unique:tyres,custom_serial_number,' . $id . ',id,deleted_at,NULL',
             'tyre_brand_id' => 'required',
             'tyre_size_id' => 'required',
-            'tyre_pattern_id' => 'nullable',
+            'tyre_pattern_id' => 'required',
+            'current_location_id' => 'required',
+            'price' => 'required',
+            'initial_tread_depth' => 'required|numeric|min:0',
+            'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
             'segment_name' => 'nullable|string|max:255',
             'is_in_warehouse' => 'nullable|boolean',
-            'status' => 'required|in:New,Installed,Scrap,Repaired,Retread',
-            'price' => 'nullable|numeric|min:0',
-            'initial_tread_depth' => 'nullable|numeric|min:0',
             'ply_rating' => 'nullable|string|max:50',
             'retread_count' => 'nullable|integer|min:0',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
+            'tyre_company_id' => 'nullable',
         ]);
 
         $tyre = Tyre::findOrFail($id);
         $data = $request->all();
         $user = auth()->user();
 
+        // Price parser: handle Rupiah / currency strings e.g. "3.500.000"
+        if (!empty($data['price'])) {
+            $cleanPrice = str_replace(['Rp', 'rp', ' ', '.'], '', (string)$data['price']);
+            $cleanPrice = str_replace(',', '.', $cleanPrice);
+            $data['price'] = (float)$cleanPrice;
+        }
+
         // Determine target company ID
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
         $targetCompanyId = null;
+
         if ($user->role_id == 1) {
-            $targetCompanyId = $data['tyre_company_id'] ?? $tyre->tyre_company_id;
+            $targetCompanyId = $data['tyre_company_id'] ?? $tyre->tyre_company_id ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : 1);
+        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+            if (!empty($data['tyre_company_id']) && \App\Helpers\SessionCompanyHelper::isValidClient($data['tyre_company_id'])) {
+                $targetCompanyId = $data['tyre_company_id'];
+            } else {
+                $targetCompanyId = $tyre->tyre_company_id ?? (!is_array($activeCompanyId) && $activeCompanyId ? $activeCompanyId : $user->tyre_company_id);
+            }
         } else {
             $targetCompanyId = $tyre->tyre_company_id ?? $user->tyre_company_id;
-            $data['tyre_company_id'] = $targetCompanyId;
         }
+        $data['tyre_company_id'] = $targetCompanyId;
 
         // 1. Resolve Brand
         if (!empty($request->tyre_brand_id)) {

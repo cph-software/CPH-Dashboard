@@ -79,136 +79,133 @@
 
    <!-- Add Vehicle Modal -->
    <div class="modal fade" id="addVehicleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary">
-               <h5 class="modal-title text-white">Add New Vehicle</h5>
+               <h5 class="modal-title text-white"><i class="ri-truck-line me-1"></i> Add New Vehicle</h5>
                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                   aria-label="Close"></button>
             </div>
             <form action="{{ route('tyre-kendaraan.store') }}" method="POST">
                @csrf
-               {{-- Default values for simplified fields --}}
 
                <div class="modal-body pt-4">
-                  <div class="row g-2">
-                     @if (auth()->user()->role_id == 1)
-                        <div class="col-md-12 mb-3">
-                           <label for="tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
-                           <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
-                              data-placeholder="Pilih Perusahaan">
-                              <option value="">-- Pilih Perusahaan --</option>
-                              @foreach ($companies as $company)
-                                 <option value="{{ $company->id }}"
-                                    {{ session('active_company_id') == $company->id ? 'selected' : '' }}>
-                                    {{ $company->company_name }}
-                                 </option>
-                              @endforeach
-                           </select>
+                  @if (auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
+                     <div class="mb-3">
+                        <label for="tyre_company_id" class="form-label fw-bold">Instansi / Customer Perusahaan <span class="text-danger">*</span></label>
+                        <select name="tyre_company_id" id="tyre_company_id" class="form-select select2"
+                           data-placeholder="Pilih Perusahaan">
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}"
+                                 {{ (session('active_company_id') == $company->id || (!session('active_company_id') && auth()->user()->tyre_company_id == $company->id)) ? 'selected' : '' }}>
+                                 🏢 {{ $company->company_name }}
+                              </option>
+                           @endforeach
+                        </select>
+                     </div>
+                  @endif
+
+                  {{-- Section: Data Wajib --}}
+                  <div class="card bg-label-primary border-primary border-opacity-25 mb-3">
+                     <div class="card-body py-3">
+                        <h6 class="card-title text-primary fw-bold mb-3"><i class="ri-checkbox-circle-fill me-1"></i> Data Utama Kendaraan (Wajib)</h6>
+                        <div class="row g-2">
+                           <div class="col-md-6 mb-2">
+                              <label for="no_polisi" class="form-label fw-bold">No. Polisi <span class="text-danger">*</span></label>
+                              <input type="text" id="no_polisi" name="no_polisi" class="form-control text-uppercase fw-bold" placeholder="B 1234 ABC" required>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="vehicle_brand" class="form-label fw-bold">Merk Kendaraan <span class="text-danger">*</span></label>
+                              <input type="text" id="vehicle_brand" name="vehicle_brand" class="form-control" placeholder="e.g. Hino, Volvo, Scania, Isuzu" required>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="area" class="form-label fw-bold">Operational Area <span class="text-danger">*</span></label>
+                              <select name="area" id="area" class="form-select select2-tags" required data-placeholder="Select Area">
+                                 <option value="">-- Select Area --</option>
+                                 @foreach ($locations as $loc)
+                                    <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="tyre_position_configuration_id" class="form-label fw-bold">Axle Layout Configuration <span class="text-danger">*</span></label>
+                              <select name="tyre_position_configuration_id" class="form-select select2 config-selector" data-placeholder="Select Configuration" required>
+                                 <option value="">-- Select Configuration --</option>
+                                 @foreach ($configurations as $config)
+                                    <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
+                                       {{ $config->name }} ({{ $config->total_positions }} Wheels)
+                                    </option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="measurement_unit" class="form-label fw-bold">Satuan Pengukuran <span class="text-danger">*</span></label>
+                              <select name="measurement_unit" class="form-select" required>
+                                 <option value="KM">Kilometer (KM - Odometer)</option>
+                                 <option value="HM">Hour Meter (HM - Jam Kerja)</option>
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="tyre_unit_status" class="form-label fw-bold">Status Unit <span class="text-danger">*</span></label>
+                              <select name="tyre_unit_status" class="form-select" required>
+                                 <option value="Active">Active (Siap Operasi)</option>
+                                 <option value="Maintenance">Maintenance (Dalam Perbaikan)</option>
+                                 <option value="Inactive">Inactive</option>
+                              </select>
+                           </div>
                         </div>
-                     @endif
-                     <div class="col-md-6 mb-3">
-                        <label for="kode_kendaraan" class="form-label fw-bold">Unit Code</label>
-                        <input type="text" id="kode_kendaraan" name="kode_kendaraan" class="form-control"
-                           placeholder="e.g. DT-101" required>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="no_polisi" class="form-label fw-bold">No. Polisi</label>
-                        <input type="text" id="no_polisi" name="no_polisi" class="form-control" placeholder="B 1234 ABC"
-                           required>
                      </div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="jenis_kendaraan" class="form-label fw-bold">Vehicle Type</label>
-                        <input type="text" id="jenis_kendaraan" name="jenis_kendaraan" class="form-control"
-                           placeholder="e.g. Dump Truck">
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="vehicle_brand" class="form-label fw-bold">Merk Kendaraan</label>
-                        <input type="text" id="vehicle_brand" name="vehicle_brand" class="form-control"
-                           placeholder="e.g. Volvo, Hino, Isuzu">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="area" class="form-label fw-bold">Operational Area</label>
-                        <select name="area" id="area" class="form-select select2" required
-                           data-placeholder="Select Area">
-                           <option value="">-- Select Area --</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="operational_segment_id" class="form-label fw-bold">Default Working Segment</label>
-                        <select name="operational_segment_id" id="operational_segment_id" class="form-select select2"
-                           data-placeholder="Select Segment">
-                           <option value="">-- Select Segment --</option>
-                           @foreach ($segments as $seg)
-                              <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="curb_weight" class="form-label fw-bold">Curb Weight <span
-                              class="text-muted fw-normal">(kg)</span></label>
-                        <input type="number" id="curb_weight" name="curb_weight" class="form-control"
-                           placeholder="e.g. 12000" min="0">
-                        <div class="form-text text-muted">Berat kosong kendaraan</div>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="payload_capacity" class="form-label fw-bold">Payload Capacity <span
-                              class="text-muted fw-normal">(ton)</span></label>
-                        <input type="number" id="payload_capacity" name="payload_capacity" class="form-control"
-                           placeholder="e.g. 30" min="0" step="0.01">
-                        <div class="form-text text-muted">Kapasitas muat maksimum</div>
-                     </div>
-                  </div>
-
-                  <div class="mb-3">
-                     <label for="tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
-                        Configuration</label>
-                     <select name="tyre_position_configuration_id" class="form-select select2 config-selector"
-                        data-placeholder="Select Configuration">
-                        <option value="">-- Select Configuration --</option>
-                        @foreach ($configurations as $config)
-                           <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
-                              {{ $config->name }} ({{ $config->total_positions }} Wheels)
-                           </option>
-                        @endforeach
-                     </select>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="total_tyre_position" class="form-label fw-bold">Total Wheels</label>
-                        <input type="number" name="total_tyre_position" class="form-control total-pos-input"
-                           placeholder="e.g. 10" required>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="measurement_unit" class="form-label fw-bold">Satuan Pengukuran</label>
-                        <select name="measurement_unit" class="form-select" required>
-                           <option value="KM">Kilometer (KM)</option>
-                           <option value="HM">Hour Meter (HM)</option>
-                        </select>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="tyre_unit_status" class="form-label fw-bold">Status</label>
-                        <select name="tyre_unit_status" class="form-select" required>
-                           <option value="Active">Active</option>
-                           <option value="Inactive">Inactive</option>
-                           <option value="Maintenance">Maintenance</option>
-                        </select>
+                  {{-- Section: Data Tambahan / Opsional (Abu-abu / Muted) --}}
+                  <div class="card bg-light border">
+                     <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                           <span class="text-muted fw-bold small text-uppercase"><i class="ri-information-line me-1"></i> Detail Tambahan (Opsional)</span>
+                        </div>
+                        <div class="row g-2">
+                           <div class="col-md-6 mb-2">
+                              <label for="kode_kendaraan" class="form-label text-muted small">Unit Code / No Lambung <small>(Opsional - Auto-Gen jika kosong)</small></label>
+                              <input type="text" id="kode_kendaraan" name="kode_kendaraan" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. DT-101 (Otomatis dibuat jika kosong)">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="jenis_kendaraan" class="form-label text-muted small">Vehicle Type <small>(Opsional)</small></label>
+                              <input type="text" id="jenis_kendaraan" name="jenis_kendaraan" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. Dump Truck, Trailer">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="operational_segment_id" class="form-label text-muted small">Default Working Segment <small>(Opsional)</small></label>
+                              <select name="operational_segment_id" id="operational_segment_id" class="form-select form-select-sm select2-tags"
+                                 data-placeholder="Select Segment">
+                                 <option value="">-- Select Segment --</option>
+                                 @foreach ($segments as $seg)
+                                    <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-3 mb-2">
+                              <label for="curb_weight" class="form-label text-muted small">Curb Weight <small>(kg)</small></label>
+                              <input type="number" id="curb_weight" name="curb_weight" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. 12000" min="0">
+                           </div>
+                           <div class="col-md-3 mb-2">
+                              <label for="payload_capacity" class="form-label text-muted small">Payload <small>(ton)</small></label>
+                              <input type="number" id="payload_capacity" name="payload_capacity" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. 30" min="0" step="0.01">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="total_tyre_position" class="form-label text-muted small">Total Wheels <small>(Otomatis dari konfigurasi)</small></label>
+                              <input type="number" name="total_tyre_position" class="form-control form-control-sm bg-white border-secondary border-opacity-25 total-pos-input"
+                                 placeholder="e.g. 10">
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
                <div class="modal-footer border-top">
                   <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary shadow">Save changes</button>
+                  <button type="submit" class="btn btn-primary shadow">Simpan Kendaraan</button>
                </div>
             </form>
          </div>
@@ -217,10 +214,10 @@
 
    <!-- Edit Vehicle Modal -->
    <div class="modal fade" id="editVehicleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
          <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-warning">
-               <h5 class="modal-title">Edit Vehicle</h5>
+               <h5 class="modal-title"><i class="ri-edit-line me-1"></i> Edit Vehicle</h5>
                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editVehicleForm" method="POST">
@@ -228,111 +225,115 @@
                @method('PUT')
 
                <div class="modal-body pt-4">
-                  <div class="row g-2">
-                     @if (auth()->user()->role_id == 1)
-                        <div class="col-md-12 mb-3">
-                           <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Company</label>
-                           <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
-                              data-placeholder="Pilih Perusahaan">
-                              <option value="">-- Pilih Perusahaan --</option>
-                              @foreach ($companies as $company)
-                                 <option value="{{ $company->id }}">{{ $company->company_name }}</option>
-                              @endforeach
-                           </select>
-                        </div>
-                     @endif
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_kode_kendaraan" class="form-label fw-bold">Unit Code</label>
-                        <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control"
-                           required>
+                  @if (auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
+                     <div class="mb-3">
+                        <label for="edit_tyre_company_id" class="form-label fw-bold">Instansi / Customer Perusahaan</label>
+                        <select name="tyre_company_id" id="edit_tyre_company_id" class="form-select select2"
+                           data-placeholder="Pilih Perusahaan">
+                           <option value="">-- Pilih Perusahaan --</option>
+                           @foreach ($companies as $company)
+                              <option value="{{ $company->id }}">{{ $company->company_name }}</option>
+                           @endforeach
+                        </select>
                      </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_no_polisi" class="form-label fw-bold">No. Polisi</label>
-                        <input type="text" id="edit_no_polisi" name="no_polisi" class="form-control" required>
+                  @endif
+
+                  {{-- Section: Data Wajib --}}
+                  <div class="card bg-label-warning border-warning border-opacity-25 mb-3">
+                     <div class="card-body py-3">
+                        <h6 class="card-title text-warning fw-bold mb-3"><i class="ri-checkbox-circle-fill me-1"></i> Data Utama Kendaraan (Wajib)</h6>
+                        <div class="row g-2">
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_no_polisi" class="form-label fw-bold">No. Polisi <span class="text-danger">*</span></label>
+                              <input type="text" id="edit_no_polisi" name="no_polisi" class="form-control text-uppercase fw-bold" required>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_vehicle_brand" class="form-label fw-bold">Merk Kendaraan <span class="text-danger">*</span></label>
+                              <input type="text" id="edit_vehicle_brand" name="vehicle_brand" class="form-control"
+                                 placeholder="e.g. Volvo, Hino" required>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_area" class="form-label fw-bold">Operational Area <span class="text-danger">*</span></label>
+                              <select name="area" id="edit_area" class="form-select select2-tags" required
+                                 data-placeholder="Select Area">
+                                 <option value="">-- Select Area --</option>
+                                 @foreach ($locations as $loc)
+                                    <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Axle Layout Configuration <span class="text-danger">*</span></label>
+                              <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
+                                 class="form-select select2 config-selector" required>
+                                 <option value="">-- No Configuration --</option>
+                                 @foreach ($configurations as $config)
+                                    <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
+                                       {{ $config->name }} ({{ $config->total_positions }} Wheels)
+                                    </option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_measurement_unit" class="form-label fw-bold">Satuan Pengukuran <span class="text-danger">*</span></label>
+                              <select id="edit_measurement_unit" name="measurement_unit" class="form-select" required>
+                                 <option value="KM">Kilometer (KM)</option>
+                                 <option value="HM">Hour Meter (HM)</option>
+                              </select>
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_unit_status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                              <select id="edit_unit_status" name="tyre_unit_status" class="form-select" required>
+                                 <option value="Active">Active</option>
+                                 <option value="Inactive">Inactive</option>
+                                 <option value="Maintenance">Maintenance</option>
+                              </select>
+                           </div>
+                        </div>
                      </div>
                   </div>
 
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_jenis_kendaraan" class="form-label fw-bold">Vehicle Type</label>
-                        <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control">
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_vehicle_brand" class="form-label fw-bold">Merk Kendaraan</label>
-                        <input type="text" id="edit_vehicle_brand" name="vehicle_brand" class="form-control"
-                           placeholder="e.g. Volvo, Hino">
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_area" class="form-label fw-bold">Operational Area (Gudang Base)</label>
-                        <select name="area" id="edit_area" class="form-select select2" required
-                           data-placeholder="Select Area">
-                           <option value="">-- Select Area --</option>
-                           @foreach ($locations as $loc)
-                              <option value="{{ $loc->location_name }}">{{ $loc->location_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_operational_segment_id" class="form-label fw-bold">Default Working
-                           Segment</label>
-                        <select name="operational_segment_id" id="edit_operational_segment_id"
-                           class="form-select select2" data-placeholder="Select Segment">
-                           <option value="">-- Select Segment --</option>
-                           @foreach ($segments as $seg)
-                              <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
-                           @endforeach
-                        </select>
-                     </div>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_curb_weight" class="form-label fw-bold">Curb Weight <span
-                              class="text-muted fw-normal">(kg)</span></label>
-                        <input type="number" id="edit_curb_weight" name="curb_weight" class="form-control"
-                           placeholder="e.g. 12000" min="0">
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_payload_capacity" class="form-label fw-bold">Payload Capacity <span
-                              class="text-muted fw-normal">(ton)</span></label>
-                        <input type="number" id="edit_payload_capacity" name="payload_capacity" class="form-control"
-                           placeholder="e.g. 30" min="0" step="0.01">
-                     </div>
-                  </div>
-                  <div class="mb-3">
-                     <label for="edit_tyre_position_configuration_id" class="form-label fw-bold">Axle Layout
-                        Configuration</label>
-                     <select id="edit_tyre_position_configuration_id" name="tyre_position_configuration_id"
-                        class="form-select select2 config-selector">
-                        <option value="">-- No Configuration --</option>
-                        @foreach ($configurations as $config)
-                           <option value="{{ $config->id }}" data-total="{{ $config->total_positions }}">
-                              {{ $config->name }} ({{ $config->total_positions }} Wheels)
-                           </option>
-                        @endforeach
-                     </select>
-                  </div>
-                  <div class="row g-2">
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_total_positions" class="form-label fw-bold">Total Wheels</label>
-                        <input type="number" id="edit_total_positions" name="total_tyre_position"
-                           class="form-control total-pos-input" required>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_measurement_unit" class="form-label fw-bold">Satuan Pengukuran</label>
-                        <select id="edit_measurement_unit" name="measurement_unit" class="form-select" required>
-                           <option value="KM">Kilometer (KM)</option>
-                           <option value="HM">Hour Meter (HM)</option>
-                        </select>
-                     </div>
-                     <div class="col-md-6 mb-3">
-                        <label for="edit_unit_status" class="form-label fw-bold">Status</label>
-                        <select id="edit_unit_status" name="tyre_unit_status" class="form-select" required>
-                           <option value="Active">Active</option>
-                           <option value="Inactive">Inactive</option>
-                           <option value="Maintenance">Maintenance</option>
-                        </select>
+                  {{-- Section: Data Tambahan / Opsional (Abu-abu / Muted) --}}
+                  <div class="card bg-light border">
+                     <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                           <span class="text-muted fw-bold small text-uppercase"><i class="ri-information-line me-1"></i> Detail Tambahan (Opsional)</span>
+                        </div>
+                        <div class="row g-2">
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_kode_kendaraan" class="form-label text-muted small">Unit Code / No Lambung <small>(Opsional)</small></label>
+                              <input type="text" id="edit_kode_kendaraan" name="kode_kendaraan" class="form-control form-control-sm bg-white border-secondary border-opacity-25">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_jenis_kendaraan" class="form-label text-muted small">Vehicle Type <small>(Opsional)</small></label>
+                              <input type="text" id="edit_jenis_kendaraan" name="jenis_kendaraan" class="form-control form-control-sm bg-white border-secondary border-opacity-25">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_operational_segment_id" class="form-label text-muted small">Default Working Segment <small>(Opsional)</small></label>
+                              <select name="operational_segment_id" id="edit_operational_segment_id"
+                                 class="form-select form-select-sm select2-tags" data-placeholder="Select Segment">
+                                 <option value="">-- Select Segment --</option>
+                                 @foreach ($segments as $seg)
+                                    <option value="{{ $seg->id }}">{{ $seg->segment_name }}</option>
+                                 @endforeach
+                              </select>
+                           </div>
+                           <div class="col-md-3 mb-2">
+                              <label for="edit_curb_weight" class="form-label text-muted small">Curb Weight <small>(kg)</small></label>
+                              <input type="number" id="edit_curb_weight" name="curb_weight" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. 12000" min="0">
+                           </div>
+                           <div class="col-md-3 mb-2">
+                              <label for="edit_payload_capacity" class="form-label text-muted small">Payload <small>(ton)</small></label>
+                              <input type="number" id="edit_payload_capacity" name="payload_capacity" class="form-control form-control-sm bg-white border-secondary border-opacity-25"
+                                 placeholder="e.g. 30" min="0" step="0.01">
+                           </div>
+                           <div class="col-md-6 mb-2">
+                              <label for="edit_total_positions" class="form-label text-muted small">Total Wheels <small>(Otomatis)</small></label>
+                              <input type="number" id="edit_total_positions" name="total_tyre_position"
+                                 class="form-control form-control-sm bg-white border-secondary border-opacity-25 total-pos-input">
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
