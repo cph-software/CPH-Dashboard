@@ -238,10 +238,7 @@
                               <th style="width: 80px;">Config</th>
                               <th style="width: 280px;">Tyre Configuration</th>
                               <th style="width: 150px;">Psi (Rec/Act)</th>
-                              <th style="width: 100px;">RTD 1</th>
-                              <th style="width: 100px;">RTD 2</th>
-                              <th style="width: 100px;">RTD 3</th>
-                              <th style="width: 100px;">RTD 4</th>
+                              <th style="width: 140px;">RTD (mm)</th>
                               <th style="width: 80px;">Docs</th>
                               <th style="width: 180px;">Kondisi</th>
                               <th>
@@ -259,6 +256,7 @@
                               @php
                                  $posDetail = $masterPositions->firstWhere('id', $tyre->current_position_id);
                                  $serial = $tyre->serial_number;
+                                 $prevRtd = $tyre->last_check ? ($tyre->last_check->avg_rtd ?? $tyre->last_check->rtd_1) : ($tyre->current_tread_depth ?? $tyre->initial_tread_depth);
                               @endphp
                               <tr>
                                  <td class="text-center fw-bold bg-light" style="font-size: 1.1rem;">
@@ -292,28 +290,11 @@
                                     </div>
                                  </td>
                                  <td>
-                                    <input type="number" name="checks[{{ $serial }}][rtd_1]"
-                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_1') is-invalid @enderror" step="0.1"
-                                       value="{{ old('checks.'.$serial.'.rtd_1', $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth) }}">
-                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_1 ?? $tyre->current_tread_depth ?? '-' }}</small>
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $serial }}][rtd_2]"
-                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_2') is-invalid @enderror" step="0.1"
-                                       value="{{ old('checks.'.$serial.'.rtd_2', $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth) }}">
-                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_2 ?? $tyre->current_tread_depth ?? '-' }}</small>
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $serial }}][rtd_3]"
-                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_3') is-invalid @enderror" step="0.1"
-                                       value="{{ old('checks.'.$serial.'.rtd_3', $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth) }}">
-                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_3 ?? $tyre->current_tread_depth ?? '-' }}</small>
-                                 </td>
-                                 <td>
-                                    <input type="number" name="checks[{{ $serial }}][rtd_4]"
-                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd_4') is-invalid @enderror" step="0.1"
-                                       value="{{ old('checks.'.$serial.'.rtd_4', $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth) }}">
-                                    <small class="text-muted d-block text-center mt-1" style="font-size: 9px;" title="Previous RTD">Prev: {{ $tyre->last_check->rtd_4 ?? $tyre->current_tread_depth ?? '-' }}</small>
+                                    <input type="number" name="checks[{{ $serial }}][rtd]"
+                                       class="form-control rtd-input @error('checks.'.$serial.'.rtd') is-invalid @enderror" step="0.1"
+                                       placeholder="mm"
+                                       value="{{ old('checks.'.$serial.'.rtd', $prevRtd ? number_format($prevRtd, 1, '.', '') : '') }}">
+                                    <small class="text-muted d-block text-center mt-1" style="font-size: 10px;" title="Previous RTD">Prev: {{ $prevRtd ? number_format($prevRtd, 1) . ' mm' : '-' }}</small>
                                  </td>
                                  <td class="text-center">
                                     <button type="button" class="btn btn-icon btn-outline-info tyre-doc-btn"
@@ -591,10 +572,7 @@
             }
          }
 
-         // --- FORM SUBMIT VALIDATION (SMART CONDITIONAL UX) ---
-         // 1. General Documentation: Cuma "Foto Odometer/HM" yang diwajibkan sbg bukti kehadiran.
-          const generalPhotosMandatory = activeUnit === 'HM' ? ['hm'] : ['odometer_km'];
-
+         // --- FORM SUBMIT HANDLER (FOTO BERSIFAT OPSIONAL) ---
          // Track general upload clicks (opsional, sebagai tracker saja)
          const generalUploaded = {};
          $('.upload-btn').on('click', function() {
@@ -603,44 +581,7 @@
          });
 
          $('form').on('submit', function(e) {
-            // STEP 1: Cek General Photos (Khusus Odo Wajib)
-            for (const type of generalPhotosMandatory) {
-               const preview = $(`#preview-${type} img`);
-               if (preview.length === 0) {
-                  const requiredPhotoLabel = activeUnit === 'HM' ? 'Foto HM (Hour Meter)' : 'Foto KM (Odometer)';
-                  alert(`[BUKTI KEHADIRAN WAJIB]\nSilakan upload ${requiredPhotoLabel} unit ini terlebih dahulu di bagian atas.`);
-                  e.preventDefault();
-                  return false;
-               }
-            }
-
-            // STEP 2: Cek Smart Validation Ban (Wajib Foto HANYA jika masalah)
-            let missingTyreDocs = false;
-            
-            $('select[name$="[condition]"]').each(function() {
-               const condition = $(this).val();
-               const nameAttr = $(this).attr('name');
-               const serialMatch = nameAttr.match(/checks\[(.*?)\]\[condition\]/);
-               
-               if (serialMatch && (condition === 'warning' || condition === 'critical')) {
-                  const serial = serialMatch[1];
-                  const pos = $(`.tyre-doc-btn[data-serial="${serial}"]`).data('pos') || '-';
-                  
-                  // Kalau teknisi lapor ada masalah (warning/critical), maka minimal Foto Telapak WAJIB ada!
-                  if (!uploadedLog[serial] || !uploadedLog[serial]['tyre_tread']) {
-                      alert(`[PERINGATAN DOKUMENTASI]\nBan ${serial} (Posisi ${pos}) dilaporkan memiliki kondisi '${condition.toUpperCase()}'.\n\nAnda dilarang menyimpan formulir sebelum melampirkan minimal 'Foto Telapak' pada ban tersebut sebagai bukti fisik masalah!`);
-                      missingTyreDocs = true;
-                      return false; // Break the each loop
-                  }
-               }
-            });
-
-            if (missingTyreDocs) {
-               e.preventDefault();
-               return false;
-            }
-
-            // Lolos semua filter UX Smart!
+            // Foto KM/HM bersifat opsional sehingga user/teknisi dapat submit langsung.
             return true;
          });
       });

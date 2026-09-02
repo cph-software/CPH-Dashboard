@@ -889,8 +889,9 @@ class MonitoringController extends Controller
         // Validation Rule: 1 Axle = Must check all wheels in that axle (if it's a dual axle)
         $checksForAxles = [];
         foreach ($request->checks as $serial => $c) {
-            // Check if this tyre actually has data
-            if (empty($c['rtd_1']) && empty($c['rtd_2']) && empty($c['rtd_3']) && empty($c['rtd_4']) && empty($c['psi_actual'])) continue;
+            // Check if this tyre actually has data (supports single 'rtd' or multi 'rtd_1'..)
+            $hasRtd = (isset($c['rtd']) && $c['rtd'] !== '') || !empty($c['rtd_1']) || !empty($c['rtd_2']) || !empty($c['rtd_3']) || !empty($c['rtd_4']);
+            if (!$hasRtd && empty($c['psi_actual'])) continue;
 
             $inst = TyreMonitoringInstallation::where('session_id', $session->session_id)
                 ->where('serial_number', $serial)
@@ -926,28 +927,38 @@ class MonitoringController extends Controller
             $opHm = $request->hour_meter ? ($request->hour_meter - ($session->hm_start ?? $request->hour_meter)) : 0;
 
             foreach ($request->checks as $serial => $c) {
-                // Skip if no data
-                if (empty($c['rtd_1']) && empty($c['rtd_2']) && empty($c['rtd_3']) && empty($c['rtd_4']) && empty($c['psi_actual'])) continue;
+                $hasRtd = (isset($c['rtd']) && $c['rtd'] !== '') || !empty($c['rtd_1']) || !empty($c['rtd_2']) || !empty($c['rtd_3']) || !empty($c['rtd_4']);
+                if (!$hasRtd && empty($c['psi_actual'])) continue;
 
                 $inst = TyreMonitoringInstallation::where('session_id', $session->session_id)
                     ->where('serial_number', $serial)
                     ->first();
                 
-                $origRtd = $inst->original_rtd ?? $session->original_rtd ?? 1;
-                
-                $r1 = (float)($c['rtd_1'] ?? 0);
-                $r2 = (float)($c['rtd_2'] ?? 0);
-                $r3 = (float)($c['rtd_3'] ?? 0);
-                $r4 = (float)($c['rtd_4'] ?? 0);
+                $origRtd = (float)($inst->original_rtd ?? $session->original_rtd ?? 1);
+
+                if (isset($c['rtd']) && $c['rtd'] !== '') {
+                    // Single RTD input mode
+                    $avgRtd = (float)$c['rtd'];
+                    $r1 = $avgRtd;
+                    $r2 = $avgRtd;
+                    $r3 = $avgRtd;
+                    $r4 = $avgRtd;
+                } else {
+                    $r1 = (float)($c['rtd_1'] ?? 0);
+                    $r2 = (float)($c['rtd_2'] ?? 0);
+                    $r3 = (float)($c['rtd_3'] ?? 0);
+                    $r4 = isset($c['rtd_4']) && $c['rtd_4'] !== '' ? (float)$c['rtd_4'] : null;
+                    $rtdCount = $r4 !== null && $r4 > 0 ? 4 : 3;
+                    $avgRtd = ($r1 + $r2 + $r3 + ($r4 ?? 0)) / $rtdCount;
+                }
 
                 // Validation: RTD cannot be greater than original
-                if ($r1 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_1" => "RTD 1 ({$r1}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
-                if ($r2 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_2" => "RTD 2 ({$r2}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
-                if ($r3 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_3" => "RTD 3 ({$r3}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
-                if ($r4 > $origRtd) return redirect()->back()->withErrors(["checks.{$serial}.rtd_4" => "RTD 4 ({$r4}) > RTD Original ({$origRtd})."])->with('error', "Ada kesalahan input RTD pada ban {$serial}.")->withInput();
-
-                $rtdCount = $r4 > 0 ? 4 : 3;
-                $avgRtd = ($r1 + $r2 + $r3 + $r4) / $rtdCount;
+                if ($avgRtd > $origRtd && $origRtd > 0) {
+                    return redirect()->back()
+                        ->withErrors(["checks.{$serial}.rtd" => "RTD ({$avgRtd} mm) > RTD Original ({$origRtd} mm)."])
+                        ->with('error', "Ada kesalahan input RTD pada ban {$serial}. Nilai RTD ({$avgRtd} mm) tidak boleh lebih besar dari RTD Awal ({$origRtd} mm).")
+                        ->withInput();
+                }
 
                 $lossRtd = $origRtd - $avgRtd;
                 $wornPct = ($origRtd > 0) ? ($lossRtd / $origRtd * 100) : 0;
