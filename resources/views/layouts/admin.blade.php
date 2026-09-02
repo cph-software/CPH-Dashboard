@@ -28,12 +28,23 @@
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/css/core.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/css/demo.css') }}" />
    <style>
-      /* Compact Dashboard & Layout Scale for Wide Screens */
-      @media (min-width: 1200px) {
-         .content-wrapper {
-            zoom: 0.90;
+      /* Global Application Scale for Spacious Modern Layout (Setara Zoom 85%) */
+      body {
+         zoom: 0.85;
+         -webkit-font-smoothing: antialiased;
+         -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Firefox Scale Support */
+      @supports not (zoom: 0.85) {
+         body {
+            transform: scale(0.85);
+            transform-origin: top left;
+            width: 117.65%;
+            height: 117.65%;
          }
       }
+
       /* Ensure modals and backdrops are clean without zoom backdrop clipping */
       .modal-backdrop {
          width: 100vw !important;
@@ -41,6 +52,14 @@
          position: fixed !important;
          top: 0 !important;
          left: 0 !important;
+      }
+
+      .modal {
+         zoom: 1 !important;
+      }
+
+      .swal2-container {
+         zoom: 1.15 !important;
       }
    </style>
 
