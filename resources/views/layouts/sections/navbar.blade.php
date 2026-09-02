@@ -147,6 +147,14 @@
                }
 
                if (searchInput) {
+                  searchInput.addEventListener('click', function(e) {
+                     e.stopPropagation();
+                  });
+                  if (searchInput.parentElement) {
+                     searchInput.parentElement.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                     });
+                  }
                   searchInput.addEventListener('input', function() {
                      filterCompanyItems(this.value);
                   });
