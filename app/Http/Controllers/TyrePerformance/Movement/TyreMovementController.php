@@ -1223,8 +1223,24 @@ class TyreMovementController extends Controller
             $vehicle = MasterImportKendaraan::where('id', $request->vehicle_id)->lockForUpdate()->firstOrFail();
             $vehicleCode = $vehicle->kode_kendaraan;
             
-            if ($companyId && $vehicle->tyre_company_id != $companyId) {
-                throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+            // Check vehicle access:
+            if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
+                    $allowedCompanyIds = auth()->user()->tyreCompany ? auth()->user()->tyreCompany->getAllClientIds() : [];
+                    $allowedCompanyIds[] = auth()->user()->tyre_company_id;
+                    if (!in_array($vehicle->tyre_company_id, $allowedCompanyIds)) {
+                        throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda atau klien binaan Anda.');
+                    }
+                } else {
+                    $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+                    if ($activeCompanyId && !is_array($activeCompanyId)) {
+                        if ($vehicle->tyre_company_id != $activeCompanyId) {
+                            throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+                        }
+                    } elseif ($vehicle->tyre_company_id != auth()->user()->tyre_company_id) {
+                        throw new \Exception('Akses Ditolak: Kendaraan bukan milik perusahaan Anda.');
+                    }
+                }
             }
 
             $warnings = [];
