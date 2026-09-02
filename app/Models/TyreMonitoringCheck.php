@@ -65,4 +65,9 @@ class TyreMonitoringCheck extends Model
     {
         return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number');
     }
+
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
+    }
 }

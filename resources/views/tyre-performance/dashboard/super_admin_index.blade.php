@@ -48,7 +48,20 @@
             </h4>
             <p class="text-muted mb-0">Bird-eye view of all company assets and tyre performance.</p>
         </div>
-        <div class="mt-3 mt-md-0 d-flex align-items-center">
+        <div class="mt-3 mt-md-0 d-flex align-items-center gap-2">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle py-2 px-3 shadow-none"
+                   style="border-radius: 6px;" data-bs-toggle="dropdown" aria-expanded="false">
+                   <i class="icon-base ri-download-2-line me-1"></i> Export Data
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                   <li><h6 class="dropdown-header small text-muted text-uppercase">Raw Data Export</h6></li>
+                   <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'movements', 'format' => 'excel']) }}"><i class="ri-history-line me-1"></i> Movements Raw Data</a></li>
+                   <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'failures', 'format' => 'excel']) }}"><i class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
+                   <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i class="ri-disc-line me-1"></i> Tyre Master List</a></li>
+                   <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'monitoring', 'format' => 'excel']) }}"><i class="ri-dashboard-line me-1"></i> Tyre Monitoring Data</a></li>
+                </ul>
+            </div>
             <span class="badge bg-label-primary px-3 py-2 rounded-pill fs-6 shadow-sm">
                 <i class="icon-base ri-building-line me-1"></i> All Companies Active
             </span>

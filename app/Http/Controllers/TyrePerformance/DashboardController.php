@@ -12,6 +12,8 @@ use App\Models\TyreLocation;
 use App\Models\TyreSegment;
 use App\Models\TyreFailureCode;
 use App\Models\MasterImportKendaraan;
+use App\Models\TyreMonitoringCheck;
+use App\Models\TyreMonitoringSession;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1442,47 +1444,289 @@ class DashboardController extends Controller
         $data = [];
 
         if ($type === 'movements') {
-            $headers = ['Tanggal', 'SN Ban', 'Unit', 'Posisi', 'Tipe Pergerakan', 'Odometer', 'HM', 'RTD', 'PSI', 'Failure Code', 'Remark'];
+            $headers = [
+                'Tanggal Pergerakan',
+                'Perusahaan Pemilik Ban',
+                'Perusahaan Unit',
+                'SN Ban',
+                'Custom Code',
+                'Brand',
+                'Size',
+                'Pattern',
+                'No. Polisi',
+                'Kode Unit',
+                'Posisi Roda',
+                'Tipe Pergerakan',
+                'Odometer (KM)',
+                'Running KM',
+                'Hour Meter (HM)',
+                'Running HM',
+                'RTD (mm)',
+                'PSI',
+                'Kode Kerusakan',
+                'Nama Kerusakan',
+                'Keterangan / Remarks',
+                'Tyreman'
+            ];
             
-            $movements = TyreMovement::with(['tyre', 'vehicle', 'position', 'failureCode'])
+            $movements = TyreMovement::with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'tyre.company', 'vehicle.company', 'position', 'failureCode', 'company'])
                 ->whereBetween('movement_date', [$startDate, $endDate])
                 ->orderBy('movement_date', 'desc')
                 ->get();
 
             foreach ($movements as $row) {
+                $tyreOwner = $row->tyre->company->company_name ?? ($row->company->company_name ?? '-');
+                $vehicleOwner = $row->vehicle->company->company_name ?? ($row->company->company_name ?? '-');
+                $pos = $row->position ? ($row->position->position_code . ($row->position->position_name ? ' - ' . $row->position->position_name : '')) : '-';
+
                 $data[] = [
                     $row->movement_date,
+                    $tyreOwner,
+                    $vehicleOwner,
                     $row->tyre->serial_number ?? '-',
+                    $row->tyre->custom_serial_number ?? '-',
+                    $row->tyre->brand->brand_name ?? '-',
+                    $row->tyre->size->size ?? '-',
+                    $row->tyre->pattern->name ?? '-',
+                    $row->vehicle->no_polisi ?? ($row->vehicle->kode_kendaraan ?? '-'),
                     $row->vehicle->kode_kendaraan ?? '-',
-                    $row->position ? ($row->position->position_code . ' - ' . $row->position->position_name) : '-',
+                    $pos,
                     $row->movement_type,
-                    $row->odometer_reading,
-                    $row->hour_meter_reading,
-                    $row->rtd_reading,
-                    $row->psi_reading,
+                    $row->odometer_reading ?? 0,
+                    $row->running_km ?? 0,
+                    $row->hour_meter_reading ?? 0,
+                    $row->running_hm ?? 0,
+                    $row->rtd_reading ?? 0,
+                    $row->psi_reading ?? 0,
                     $row->failureCode->failure_code ?? '-',
-                    $row->remarks
+                    $row->failureCode->failure_name ?? '-',
+                    $row->remarks ?? ($row->notes ?? '-'),
+                    trim(($row->tyreman_1 ?? '') . ' ' . ($row->tyreman_2 ?? '')) ?: '-'
+                ];
+            }
+        } elseif ($type === 'failures' || $type === 'failure_analysis') {
+            $headers = [
+                'Tanggal Peristiwa',
+                'Perusahaan Pemilik Ban',
+                'Perusahaan Unit',
+                'SN Ban',
+                'Custom Code',
+                'Brand',
+                'Size',
+                'Pattern',
+                'No. Polisi',
+                'Kode Unit',
+                'Posisi Terakhir',
+                'Kode Kerusakan',
+                'Nama Kerusakan',
+                'Kategori Kerusakan',
+                'RTD Terakhir (mm)',
+                'PSI Terakhir',
+                'Total Lifetime KM',
+                'Total Lifetime HM',
+                'Harga Ban (IDR)',
+                'Status Akhir Ban',
+                'Keterangan / Remarks',
+                'Tyreman'
+            ];
+
+            $failures = TyreMovement::with(['tyre.brand', 'tyre.size', 'tyre.pattern', 'tyre.company', 'vehicle.company', 'position', 'failureCode', 'company'])
+                ->where(function($q) {
+                    $q->whereNotNull('failure_code_id')
+                      ->orWhere('movement_type', 'Removal')
+                      ->orWhere('target_status', 'Scrap');
+                })
+                ->whereBetween('movement_date', [$startDate, $endDate])
+                ->orderBy('movement_date', 'desc')
+                ->get();
+
+            foreach ($failures as $row) {
+                $tyreOwner = $row->tyre->company->company_name ?? ($row->company->company_name ?? '-');
+                $vehicleOwner = $row->vehicle->company->company_name ?? ($row->company->company_name ?? '-');
+                $pos = $row->position ? ($row->position->position_code . ($row->position->position_name ? ' - ' . $row->position->position_name : '')) : '-';
+
+                $data[] = [
+                    $row->movement_date,
+                    $tyreOwner,
+                    $vehicleOwner,
+                    $row->tyre->serial_number ?? '-',
+                    $row->tyre->custom_serial_number ?? '-',
+                    $row->tyre->brand->brand_name ?? '-',
+                    $row->tyre->size->size ?? '-',
+                    $row->tyre->pattern->name ?? '-',
+                    $row->vehicle->no_polisi ?? ($row->vehicle->kode_kendaraan ?? '-'),
+                    $row->vehicle->kode_kendaraan ?? '-',
+                    $pos,
+                    $row->failureCode->failure_code ?? '-',
+                    $row->failureCode->failure_name ?? '-',
+                    $row->failureCode->default_category ?? '-',
+                    $row->rtd_reading ?? ($row->tyre->current_tread_depth ?? 0),
+                    $row->psi_reading ?? 0,
+                    $row->tyre->total_lifetime_km ?? 0,
+                    $row->tyre->total_lifetime_hm ?? 0,
+                    $row->tyre->price ?? 0,
+                    $row->target_status ?? ($row->tyre->status ?? '-'),
+                    $row->remarks ?? ($row->notes ?? '-'),
+                    trim(($row->tyreman_1 ?? '') . ' ' . ($row->tyreman_2 ?? '')) ?: '-'
                 ];
             }
         } elseif ($type === 'assets') {
-            $headers = ['SN Ban', 'Brand', 'Size', 'Pattern', 'Status', 'Current Vehicle', 'Posisi', 'RTD', 'OTD', 'Price', 'Lifetime KM', 'Lifetime HM'];
+            $headers = [
+                'SN Ban',
+                'Custom Serial Number',
+                'Perusahaan Pemilik Ban',
+                'Brand',
+                'Size',
+                'Pattern',
+                'Status Ban',
+                'No. Polisi Unit',
+                'Kode Unit',
+                'Perusahaan Unit',
+                'Posisi Terpasang',
+                'Lokasi / Gudang',
+                'OTD Awal (mm)',
+                'RTD Saat Ini (mm)',
+                'Sisa RTD (%)',
+                'Konsumsi RTD (mm)',
+                'Total Lifetime KM',
+                'Total Lifetime HM',
+                'Harga Beli (IDR)',
+                'CPK (IDR/KM)',
+                'CPH (IDR/HM)',
+                'Estimasi Sisa Umur (KM)',
+                'Estimasi Sisa Umur (HM)'
+            ];
             
-            $tyres = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle', 'currentPosition'])->get();
+            $tyres = Tyre::with(['brand', 'size', 'pattern', 'currentVehicle.company', 'currentPosition', 'company', 'location'])->get();
 
             foreach ($tyres as $row) {
+                $otd = (float)($row->initial_tread_depth ?? 0);
+                $rtd = (float)($row->current_tread_depth ?? 0);
+                $consumed = max(0, $otd - $rtd);
+                $sisaPct = $otd > 0 ? round(($rtd / $otd) * 100, 1) : 0;
+                $price = (float)($row->price ?? 0);
+                $lifetimeKm = (float)($row->total_lifetime_km ?? 0);
+                $lifetimeHm = (float)($row->total_lifetime_hm ?? 0);
+
+                $cpk = $lifetimeKm > 0 && $price > 0 ? round($price / $lifetimeKm, 2) : 0;
+                $cph = $lifetimeHm > 0 && $price > 0 ? round($price / $lifetimeHm, 2) : 0;
+
+                $usableRtd = max(0, $rtd - 2);
+                $wearRateKm = ($consumed > 0 && $lifetimeKm > 0) ? ($consumed / $lifetimeKm) : 0;
+                $wearRateHm = ($consumed > 0 && $lifetimeHm > 0) ? ($consumed / $lifetimeHm) : 0;
+
+                $estRemainingKm = $wearRateKm > 0 ? round($usableRtd / $wearRateKm) : 0;
+                $estRemainingHm = $wearRateHm > 0 ? round($usableRtd / $wearRateHm) : 0;
+
                 $data[] = [
                     $row->serial_number,
+                    $row->custom_serial_number ?? '-',
+                    $row->company->company_name ?? '-',
                     $row->brand->brand_name ?? '-',
                     $row->size->size ?? '-',
                     $row->pattern->name ?? '-',
                     $row->status,
+                    $row->currentVehicle->no_polisi ?? ($row->currentVehicle->kode_kendaraan ?? '-'),
                     $row->currentVehicle->kode_kendaraan ?? '-',
+                    $row->currentVehicle->company->company_name ?? '-',
                     $row->currentPosition->position_code ?? '-',
-                    $row->current_tread_depth,
-                    $row->initial_tread_depth,
-                    $row->price,
-                    $row->total_lifetime_km,
-                    $row->total_lifetime_hm
+                    $row->location->location_name ?? '-',
+                    $otd,
+                    $rtd,
+                    $sisaPct . '%',
+                    round($consumed, 2),
+                    $lifetimeKm,
+                    $lifetimeHm,
+                    $price,
+                    $cpk,
+                    $cph,
+                    $estRemainingKm,
+                    $estRemainingHm
+                ];
+            }
+        } elseif ($type === 'monitoring') {
+            $headers = [
+                'ID Sesi Monitoring',
+                'Perusahaan',
+                'Kode Unit',
+                'No. Polisi',
+                'Pengemudi / Driver',
+                'No. Telepon',
+                'Tanggal Pasang Sesi',
+                'Tanggal Pemeriksaan',
+                'Pemeriksaan Ke-',
+                'SN Ban',
+                'Posisi Roda',
+                'Target PSI',
+                'Actual PSI',
+                'RTD 1 (mm)',
+                'RTD 2 (mm)',
+                'RTD 3 (mm)',
+                'RTD 4 (mm)',
+                'Rata-rata RTD (mm)',
+                'Keausan / Worn (%)',
+                'Odometer Reading (KM)',
+                'Hour Meter Reading (HM)',
+                'Operation Mileage (KM)',
+                'Operation HM',
+                'Proyeksi Umur (KM)',
+                'Proyeksi Umur (HM)',
+                'Kondisi Fisik Ban',
+                'Rekomendasi Tindakan',
+                'Status Approval',
+                'Catatan / Notes'
+            ];
+
+            $checks = TyreMonitoringCheck::with(['session.masterVehicle', 'session.vehicle', 'positionDetail', 'company', 'session.company'])
+                ->orderBy('check_date', 'desc')
+                ->get();
+
+            foreach ($checks as $row) {
+                $session = $row->session;
+                $companyName = $row->company->company_name ?? ($session->company->company_name ?? '-');
+                $masterV = $session ? $session->masterVehicle : null;
+                $legacyV = $session ? $session->vehicle : null;
+                $unitCode = $masterV->kode_kendaraan ?? ($legacyV->vehicle_number ?? '-');
+                $noPolisi = $masterV->no_polisi ?? ($legacyV->vehicle_number ?? '-');
+                $driver = $row->driver_name ?? ($legacyV->driver_name ?? '-');
+                $phone = $row->phone_number ?? ($legacyV->phone_number ?? '-');
+                $installDate = $session ? $session->install_date : '-';
+                $posName = $row->positionDetail ? ($row->positionDetail->position_code . ' - ' . $row->positionDetail->position_name) : ($row->position ?? '-');
+
+                $rtdSum = ($row->rtd_1 ?? 0) + ($row->rtd_2 ?? 0) + ($row->rtd_3 ?? 0) + ($row->rtd_4 ?? 0);
+                $rtdCount = (($row->rtd_1 > 0 ? 1 : 0) + ($row->rtd_2 > 0 ? 1 : 0) + ($row->rtd_3 > 0 ? 1 : 0) + ($row->rtd_4 > 0 ? 1 : 0)) ?: 1;
+                $avgRtd = round($rtdSum / $rtdCount, 2);
+
+                $data[] = [
+                    $row->session_id ?? '-',
+                    $companyName,
+                    $unitCode,
+                    $noPolisi,
+                    $driver,
+                    $phone,
+                    $installDate,
+                    $row->check_date ?? '-',
+                    $row->check_number ?? '-',
+                    $row->serial_number ?? '-',
+                    $posName,
+                    $row->inf_press_recommended ?? '-',
+                    $row->inf_press_actual ?? '-',
+                    $row->rtd_1 ?? 0,
+                    $row->rtd_2 ?? 0,
+                    $row->rtd_3 ?? 0,
+                    $row->rtd_4 ?? 0,
+                    $avgRtd,
+                    ($row->worn_percentage ?? 0) . '%',
+                    $row->odometer_reading ?? 0,
+                    $row->hm_reading ?? 0,
+                    $row->operation_mileage ?? 0,
+                    $row->operation_hm ?? 0,
+                    $row->projected_life_km ?? 0,
+                    $row->projected_life_hm ?? 0,
+                    $row->condition ?? '-',
+                    $row->recommendation ?? '-',
+                    $row->approval_status ?? '-',
+                    $row->notes ?? '-'
                 ];
             }
         } elseif ($type === 'vehicles') {

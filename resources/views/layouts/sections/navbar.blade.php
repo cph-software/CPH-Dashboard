@@ -24,35 +24,84 @@
             $isGlobalClient = is_array($currentActiveCompany);
             if ($isSuperAdmin) {
                 $activeCompanies = \App\Models\TyreCompany::orderBy('company_name', 'asc')->get();
-                $globalLabel = "🏢 All Companies (Sistem)";
+                $globalLabel = "All Companies (Sistem)";
                 $globalValue = '0';
                 $isGlobalSelected = !$currentActiveCompany;
             } else {
                 $userCompany = Auth::user()->tyreCompany;
-                $activeCompanies = $userCompany->children()->orderBy('company_name', 'asc')->get();
-                $activeCompanies->prepend($userCompany); // Add own company at top
-                $globalLabel = "🌐 Global Klien (Agregat)";
+                $activeCompanies = $userCompany ? $userCompany->children()->orderBy('company_name', 'asc')->get() : collect();
+                if ($userCompany) {
+                    $activeCompanies->prepend($userCompany);
+                }
+                $globalLabel = "Global Klien (Agregat)";
                 $globalValue = 'ALL_CLIENTS';
                 $isGlobalSelected = $isGlobalClient || !$currentActiveCompany;
             }
+
+            // Determine active display name
+            $activeDisplayLabel = $globalLabel;
+            if (!$isGlobalSelected && $currentActiveCompany) {
+                $matchedComp = $activeCompanies->firstWhere('id', $currentActiveCompany);
+                if ($matchedComp) {
+                    $activeDisplayLabel = $matchedComp->company_name;
+                    if (!$isSuperAdmin && $matchedComp->id == Auth::user()->tyre_company_id) {
+                        $activeDisplayLabel .= ' (Bengkel Anda)';
+                    }
+                }
+            }
          @endphp
-         <div class="navbar-nav align-items-center ms-4">
-            <div class="nav-item">
-               <select class="form-select border-0 shadow-none bg-transparent fw-bold text-primary"
-                  id="admin_company_filter" style="cursor: pointer;">
-                  <option value="{{ $globalValue }}" {{ $isGlobalSelected ? 'selected' : '' }}>
-                     {{ $globalLabel }}
-                  </option>
-                  @foreach ($activeCompanies as $comp)
-                     @php
-                        $isSelected = !$isGlobalClient && $currentActiveCompany == $comp->id;
-                        $labelSuffix = (!$isSuperAdmin && $comp->id == Auth::user()->tyre_company_id) ? '(Bengkel Anda)' : '';
-                     @endphp
-                     <option value="{{ $comp->id }}" {{ $isSelected ? 'selected' : '' }}>
-                        🏢 {{ $comp->company_name }} {{ $labelSuffix }}
-                     </option>
-                  @endforeach
-               </select>
+         <div class="navbar-nav align-items-center ms-3">
+            <div class="nav-item dropdown" id="navbarCompanyDropdownContainer">
+               <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm text-truncate"
+                  type="button" id="navbarCompanySwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px; max-width: 280px;">
+                  <i class="{{ $isGlobalSelected ? 'ri-global-line' : 'ri-building-line' }} text-primary fs-5"></i>
+                  <span class="text-truncate">{{ $activeDisplayLabel }}</span>
+               </button>
+               <div class="dropdown-menu dropdown-menu-start shadow-lg border-0 p-0 mt-2" aria-labelledby="navbarCompanySwitcherBtn" style="min-width: 320px; max-width: 360px; border-radius: 10px;">
+                  <div class="p-2 border-bottom bg-light rounded-top">
+                     <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="ri-search-line text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0 shadow-none" id="navbar_company_search_input" placeholder="Cari nama perusahaan / customer..." autocomplete="off">
+                     </div>
+                  </div>
+                  <div class="navbar-company-list py-1" id="navbar_company_items_list" style="max-height: 280px; overflow-y: auto;">
+                     <!-- Global Option -->
+                     <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 company-switcher-item {{ $isGlobalSelected ? 'active fw-bold' : '' }}"
+                        href="javascript:void(0);" data-company-id="{{ $globalValue }}" data-company-name="{{ strtolower($globalLabel) }}">
+                        <span class="d-flex align-items-center">
+                           <i class="ri-global-line me-2 {{ $isGlobalSelected ? 'text-white' : 'text-primary' }}"></i>
+                           <span>{{ $globalLabel }}</span>
+                        </span>
+                        @if ($isGlobalSelected)
+                           <i class="ri-check-line text-white"></i>
+                        @endif
+                     </a>
+                     <div class="dropdown-divider my-1"></div>
+                     <!-- Companies List -->
+                     @foreach ($activeCompanies as $comp)
+                        @php
+                           $isSelected = !$isGlobalClient && $currentActiveCompany == $comp->id;
+                           $isOwn = (!$isSuperAdmin && $comp->id == Auth::user()->tyre_company_id);
+                        @endphp
+                        <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 company-switcher-item {{ $isSelected ? 'active fw-bold' : '' }}"
+                           href="javascript:void(0);" data-company-id="{{ $comp->id }}" data-company-name="{{ strtolower($comp->company_name) }}">
+                           <span class="d-flex align-items-center text-truncate me-2">
+                              <i class="ri-building-4-line me-2 {{ $isSelected ? 'text-white' : ($isOwn ? 'text-warning' : 'text-secondary') }}"></i>
+                              <span class="text-truncate">{{ $comp->company_name }}</span>
+                              @if ($isOwn)
+                                 <span class="badge {{ $isSelected ? 'bg-white text-primary' : 'bg-label-warning' }} ms-2 small" style="font-size: 0.65rem;">Bengkel Anda</span>
+                              @endif
+                           </span>
+                           @if ($isSelected)
+                              <i class="ri-check-line text-white"></i>
+                           @endif
+                        </a>
+                     @endforeach
+                     <div class="no-companies-found text-center text-muted py-3 small d-none" id="no_companies_found_msg">
+                        <i class="ri-search-2-line me-1"></i> Perusahaan tidak ditemukan
+                     </div>
+                  </div>
+               </div>
             </div>
          </div>
          
@@ -64,10 +113,51 @@
 
          <script>
             document.addEventListener('DOMContentLoaded', function() {
-               const filter = document.getElementById('admin_company_filter');
-               if (filter) {
-                  filter.addEventListener('change', function() {
-                     const companyId = this.value;
+               const searchInput = document.getElementById('navbar_company_search_input');
+               const itemsList = document.getElementById('navbar_company_items_list');
+               const items = itemsList ? itemsList.querySelectorAll('.company-switcher-item') : [];
+               const noFoundMsg = document.getElementById('no_companies_found_msg');
+               const dropdownContainer = document.getElementById('navbarCompanyDropdownContainer');
+
+               // Focus search on open
+               if (dropdownContainer && searchInput) {
+                  dropdownContainer.addEventListener('shown.bs.dropdown', function () {
+                     searchInput.value = '';
+                     filterCompanyItems('');
+                     setTimeout(() => searchInput.focus(), 100);
+                  });
+               }
+
+               // Real-time filter
+               function filterCompanyItems(term) {
+                  const query = term.toLowerCase().trim();
+                  let visibleCount = 0;
+                  items.forEach(item => {
+                     const name = item.getAttribute('data-company-name') || '';
+                     if (!query || name.includes(query)) {
+                        item.classList.remove('d-none');
+                        visibleCount++;
+                     } else {
+                        item.classList.add('d-none');
+                     }
+                  });
+                  if (noFoundMsg) {
+                     noFoundMsg.classList.toggle('d-none', visibleCount > 0);
+                  }
+               }
+
+               if (searchInput) {
+                  searchInput.addEventListener('input', function() {
+                     filterCompanyItems(this.value);
+                  });
+               }
+
+               // Switch company on click
+               items.forEach(item => {
+                  item.addEventListener('click', function() {
+                     const companyId = this.getAttribute('data-company-id');
+                     if (!companyId) return;
+
                      fetch("{{ route('tyre-movement.set-active-company') }}", {
                            method: 'POST',
                            headers: {
@@ -86,7 +176,7 @@
                         })
                         .catch(error => console.error('Error:', error));
                   });
-               }
+               });
             });
          </script>
       @endif

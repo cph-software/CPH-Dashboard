@@ -27,6 +27,14 @@
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/libs/pickr/pickr-themes.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/css/core.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/css/demo.css') }}" />
+   <style>
+      /* Compact Dashboard & Layout Scale for Wide Screens */
+      @media (min-width: 1200px) {
+         body {
+            zoom: 0.90;
+         }
+      }
+   </style>
 
    <!-- Vendors CSS -->
    <link rel="stylesheet"

@@ -59,4 +59,9 @@ class TyreMovement extends Model
     {
         return $this->belongsTo(TyreSegment::class, 'operational_segment_id');
     }
+
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
+    }
 }

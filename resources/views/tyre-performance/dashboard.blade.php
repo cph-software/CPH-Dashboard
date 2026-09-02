@@ -222,6 +222,9 @@
                         <li><a class="dropdown-item"
                               href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i
                                  class="ri-disc-line me-1"></i> Tyre Master List</a></li>
+                        <li><a class="dropdown-item"
+                              href="{{ route('master_data.export', ['type' => 'monitoring', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                                 class="ri-dashboard-line me-1"></i> Tyre Monitoring Data</a></li>
                         @endif
 
                         @if (hasPermission('Dashboard', 'export') && hasPermission('Import Approval', 'view'))

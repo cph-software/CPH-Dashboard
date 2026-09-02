@@ -52,4 +52,9 @@ class TyreMonitoringSession extends Model
     {
         return $this->hasOne(TyreMonitoringRemoval::class, 'session_id', 'session_id');
     }
+
+    public function company()
+    {
+        return $this->belongsTo(TyreCompany::class, 'tyre_company_id');
+    }
 }
