@@ -120,11 +120,11 @@
                         <select name="tyre_size_id" id="tyre_size_id" class="form-select select2-tags"
                            data-placeholder="Select Size" required>
                            <option value="">Select Size</option>
-                           @foreach ($sizes as $size)
-                              <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}" {{ old('tyre_size_id') == $size->id ? 'selected' : '' }}>
-                                 {{ $size->size }}
-                              </option>
-                           @endforeach
+                            @foreach ($sizes as $size)
+                               <option value="{{ $size->id }}" data-brand-id="{{ $size->tyre_brand_id }}" data-otd="{{ $size->std_otd }}" data-ply="{{ $size->ply_rating }}" {{ old('tyre_size_id') == $size->id ? 'selected' : '' }}>
+                                  {{ $size->size }}
+                               </option>
+                            @endforeach
                            @if(old('tyre_size_id') && !$sizes->contains('id', old('tyre_size_id')))
                               <option value="{{ old('tyre_size_id') }}" selected>{{ old('tyre_size_id') }}</option>
                            @endif
