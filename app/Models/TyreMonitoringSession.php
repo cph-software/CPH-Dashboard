@@ -30,22 +30,22 @@ class TyreMonitoringSession extends Model
 
     public function vehicle()
     {
-        return $this->belongsTo(TyreMonitoringVehicle::class, 'vehicle_id', 'vehicle_id');
+        return $this->belongsTo(TyreMonitoringVehicle::class, 'vehicle_id', 'vehicle_id')->withoutGlobalScope('company');
     }
 
     public function masterVehicle()
     {
-        return $this->belongsTo(MasterImportKendaraan::class, 'master_vehicle_id');
+        return $this->belongsTo(MasterImportKendaraan::class, 'master_vehicle_id')->withoutGlobalScope('company');
     }
 
     public function installations()
     {
-        return $this->hasMany(TyreMonitoringInstallation::class, 'session_id', 'session_id');
+        return $this->hasMany(TyreMonitoringInstallation::class, 'session_id', 'session_id')->withoutGlobalScope('company');
     }
 
     public function checks()
     {
-        return $this->hasMany(TyreMonitoringCheck::class, 'session_id', 'session_id');
+        return $this->hasMany(TyreMonitoringCheck::class, 'session_id', 'session_id')->withoutGlobalScope('company');
     }
 
     public function removal()

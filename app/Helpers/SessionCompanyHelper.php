@@ -44,20 +44,27 @@ class SessionCompanyHelper
         }
 
         if (self::isWorkshopAdmin()) {
-            if ($sessionCompanyId) {
+            if ($sessionCompanyId && $sessionCompanyId !== 'ALL_CLIENTS') {
                 // Global Klien mode: session is an array of company IDs
                 if (is_array($sessionCompanyId)) {
                     return $sessionCompanyId;
                 }
-                // Single company selected
+                // If user explicitly selected Induk ($userCompanyId):
+                // Induk manages itself AND all its client companies!
+                if ($sessionCompanyId == $userCompanyId) {
+                    $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
+                    $clientIds[] = (int) $userCompanyId;
+                    return array_values(array_unique(array_filter($clientIds)));
+                }
+                // Single client company selected
                 if (self::isValidClient($sessionCompanyId)) {
-                    return $sessionCompanyId;
+                    return (int) $sessionCompanyId;
                 }
             } else {
                 // Default mode for Workshop Admin: Global Klien (Array of all clients + own)
-                $clientIds = $user->tyreCompany->getAllClientIds();
-                $clientIds[] = $userCompanyId;
-                return $clientIds;
+                $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
+                $clientIds[] = (int) $userCompanyId;
+                return array_values(array_unique(array_filter($clientIds)));
             }
         }
 

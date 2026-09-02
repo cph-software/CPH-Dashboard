@@ -46,7 +46,12 @@ class MasterImportKendaraan extends Model
 
     public function tyres()
     {
-        return $this->hasMany(Tyre::class, 'current_vehicle_id');
+        return $this->hasMany(Tyre::class, 'current_vehicle_id')->withoutGlobalScope('company');
+    }
+
+    public function installedTyres()
+    {
+        return $this->hasMany(Tyre::class, 'current_vehicle_id')->withoutGlobalScope('company')->where('status', 'Installed');
     }
 
     public function getTyreCapacityLabelAttribute()
@@ -76,7 +81,7 @@ class MasterImportKendaraan extends Model
 
     public function monitoringSessions()
     {
-        return $this->hasMany(TyreMonitoringSession::class, 'master_vehicle_id');
+        return $this->hasMany(TyreMonitoringSession::class, 'master_vehicle_id')->withoutGlobalScope('company');
     }
 
     public function setKodeKendaraanAttribute($value)

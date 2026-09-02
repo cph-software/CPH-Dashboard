@@ -51,13 +51,9 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $isSuperAdmin = \App\Helpers\SessionCompanyHelper::isSuperAdmin();
-        $isWorkshopAdmin = \App\Helpers\SessionCompanyHelper::isWorkshopAdmin();
         $sessionCompany = session('active_company_id');
 
-        if (
-            ($isSuperAdmin && !$sessionCompany) ||
-            ($isWorkshopAdmin && (!$sessionCompany || is_array($sessionCompany)))
-        ) {
+        if ($isSuperAdmin && !$sessionCompany && $request->get('view') === 'overview') {
             return $this->superAdminIndex($request);
         }
 
@@ -77,6 +73,10 @@ class DashboardController extends Controller
             $endDate = Carbon::now()->endOfDay();
         }
 
+        // Resilient SQL expressions for effective mileage (lifetime or active running movements)
+        $effectiveKmExpr = "GREATEST(COALESCE(tyres.total_lifetime_km, 0), COALESCE(tyres.current_km, 0), COALESCE((SELECT SUM(running_km) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+        $effectiveHmExpr = "GREATEST(COALESCE(tyres.total_lifetime_hm, 0), COALESCE(tyres.current_hm, 0), COALESCE((SELECT SUM(running_hm) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+
         // ========================================
         // ROW 1: KPI Summary Cards
         // ========================================
@@ -88,25 +88,25 @@ class DashboardController extends Controller
         // Total investment value
         $totalInvestment = Tyre::sum('price');
 
-        // Average lifetime KM (only from tyres that have run)
-        $avgLifetimeKm = Tyre::where('total_lifetime_km', '>', 0)->avg('total_lifetime_km') ?? 0;
-        $avgLifetimeHm = Tyre::where('total_lifetime_hm', '>', 0)->avg('total_lifetime_hm') ?? 0;
+        // Average lifetime KM/HM (from tyres that have accumulated mileage)
+        $avgLifetimeKm = Tyre::whereRaw("{$effectiveKmExpr} > 0")->selectRaw("AVG({$effectiveKmExpr}) as avg_km")->value('avg_km') ?? 0;
+        $avgLifetimeHm = Tyre::whereRaw("{$effectiveHmExpr} > 0")->selectRaw("AVG({$effectiveHmExpr}) as avg_hm")->value('avg_hm') ?? 0;
 
         // Average Cost Per KM
-        $tyresWithCpk = Tyre::where('total_lifetime_km', '>', 0)
-            ->whereNotNull('price')
+        $tyresWithCpk = Tyre::whereNotNull('price')
             ->where('price', '>', 0)
-            ->select(DB::raw('SUM(price) as total_price, SUM(total_lifetime_km) as total_km'))
+            ->whereRaw("{$effectiveKmExpr} > 0")
+            ->select(DB::raw("SUM(price) as total_price, SUM({$effectiveKmExpr}) as total_km"))
             ->first();
         $avgCpk = ($tyresWithCpk && $tyresWithCpk->total_km > 0)
             ? $tyresWithCpk->total_price / $tyresWithCpk->total_km
             : 0;
             
         // Average Cost Per HM
-        $tyresWithCph = Tyre::where('total_lifetime_hm', '>', 0)
-            ->whereNotNull('price')
+        $tyresWithCph = Tyre::whereNotNull('price')
             ->where('price', '>', 0)
-            ->select(DB::raw('SUM(price) as total_price, SUM(total_lifetime_hm) as total_hm'))
+            ->whereRaw("{$effectiveHmExpr} > 0")
+            ->select(DB::raw("SUM(price) as total_price, SUM({$effectiveHmExpr}) as total_hm"))
             ->first();
         $avgCph = ($tyresWithCph && $tyresWithCph->total_hm > 0)
             ? $tyresWithCph->total_price / $tyresWithCph->total_hm
@@ -115,6 +115,15 @@ class DashboardController extends Controller
         // Company Measurement Mode
         $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
         $measurementMode = $ctx['mode'];
+        if ($measurementMode === 'BOTH') {
+            $hasKmData = Tyre::whereRaw("{$effectiveKmExpr} > 0")->exists();
+            $hasHmData = Tyre::whereRaw("{$effectiveHmExpr} > 0")->exists();
+            if ($hasHmData && !$hasKmData) {
+                $measurementMode = 'HM';
+            } elseif ($hasKmData && !$hasHmData) {
+                $measurementMode = 'KM';
+            }
+        }
 
 
         // Scrap Rate %
@@ -458,24 +467,31 @@ class DashboardController extends Controller
         $measurementMode = $ctx['mode'];
         $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
+        $effectiveKmExpr = "GREATEST(COALESCE(tyres.total_lifetime_km, 0), COALESCE(tyres.current_km, 0), COALESCE((SELECT SUM(running_km) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+        $effectiveHmExpr = "GREATEST(COALESCE(tyres.total_lifetime_hm, 0), COALESCE(tyres.current_hm, 0), COALESCE((SELECT SUM(running_hm) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
 
         // Resolve active unit
         $activeUnit = $unit;
         if (!$activeUnit) {
-            $activeUnit = ($measurementMode === 'BOTH') ? 'KM' : $measurementMode;
+            if ($measurementMode === 'HM') {
+                $activeUnit = 'HM';
+            } elseif ($measurementMode === 'KM') {
+                $activeUnit = 'KM';
+            } else {
+                $hasKm = Tyre::whereRaw("{$effectiveKmExpr} > 0")->exists();
+                $hasHm = Tyre::whereRaw("{$effectiveHmExpr} > 0")->exists();
+                $activeUnit = ($hasHm && !$hasKm) ? 'HM' : 'KM';
+            }
         }
 
-        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; 
-        $cacheKey = "brand_perf_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}_unit{$activeUnit}";
+        $expr = ($activeUnit === 'HM') ? $effectiveHmExpr : $effectiveKmExpr;
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit) {
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : ($companyId ?? 'global'); 
+        $cacheKey = "brand_perf_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_unit{$activeUnit}_v3";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit, $expr, $effectiveKmExpr, $effectiveHmExpr) {
             $query = Tyre::query();
-            
-            if ($activeUnit === 'HM') {
-                $query->where('total_lifetime_hm', '>', 0);
-            } else {
-                $query->where('total_lifetime_km', '>', 0);
-            }
+            $query->whereRaw("{$expr} > 0");
 
             // Apply filters
             if ($size) {
@@ -499,8 +515,8 @@ class DashboardController extends Controller
                 $query->where('tyre_brand_id', $brandId)
                     ->select(
                         'tyre_pattern_id',
-                        DB::raw('AVG(total_lifetime_km) as avg_km'),
-                        DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+                        DB::raw("AVG({$effectiveKmExpr}) as avg_km"),
+                        DB::raw("AVG({$effectiveHmExpr}) as avg_hm"),
                         DB::raw('COUNT(*) as tyre_count')
                     )
                     ->groupBy('tyre_pattern_id')
@@ -519,8 +535,8 @@ class DashboardController extends Controller
                 // Group by Brand
                 $query->select(
                         'tyre_brand_id',
-                        DB::raw('AVG(total_lifetime_km) as avg_km'),
-                        DB::raw('AVG(total_lifetime_hm) as avg_hm'),
+                        DB::raw("AVG({$effectiveKmExpr}) as avg_km"),
+                        DB::raw("AVG({$effectiveHmExpr}) as avg_hm"),
                         DB::raw('COUNT(*) as tyre_count')
                     )
                     ->groupBy('tyre_brand_id')
@@ -545,25 +561,32 @@ class DashboardController extends Controller
         $measurementMode = $ctx['mode'];
         $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
 
+        $effectiveKmExpr = "GREATEST(COALESCE(tyres.total_lifetime_km, 0), COALESCE(tyres.current_km, 0), COALESCE((SELECT SUM(running_km) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+        $effectiveHmExpr = "GREATEST(COALESCE(tyres.total_lifetime_hm, 0), COALESCE(tyres.current_hm, 0), COALESCE((SELECT SUM(running_hm) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
 
         // Resolve active unit
         $activeUnit = $unit;
         if (!$activeUnit) {
-            $activeUnit = ($measurementMode === 'BOTH') ? 'KM' : $measurementMode;
-        }
-        
-        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : $companyId; 
-        $cacheKey = "cpk_brand_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_mode{$measurementMode}_unit{$activeUnit}";
-
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit) {
-            $query = Tyre::whereNotNull('price')
-                ->where('price', '>', 0);
-            
-            if ($activeUnit === 'HM') {
-                $query->where('total_lifetime_hm', '>', 0);
+            if ($measurementMode === 'HM') {
+                $activeUnit = 'HM';
+            } elseif ($measurementMode === 'KM') {
+                $activeUnit = 'KM';
             } else {
-                $query->where('total_lifetime_km', '>', 0);
+                $hasKm = Tyre::whereRaw("{$effectiveKmExpr} > 0")->exists();
+                $hasHm = Tyre::whereRaw("{$effectiveHmExpr} > 0")->exists();
+                $activeUnit = ($hasHm && !$hasKm) ? 'HM' : 'KM';
             }
+        }
+
+        $expr = ($activeUnit === 'HM') ? $effectiveHmExpr : $effectiveKmExpr;
+
+        $cacheCompanyId = is_array($companyId) ? implode('_', $companyId) : ($companyId ?? 'global'); 
+        $cacheKey = "cpk_brand_comp_{$cacheCompanyId}_sz{$size}_ty{$type}_pat{$pattern}_br{$brandId}_unit{$activeUnit}_v3";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($size, $type, $pattern, $brandId, $activeUnit, $expr, $effectiveKmExpr, $effectiveHmExpr) {
+            $query = Tyre::whereNotNull('price')
+                ->where('price', '>', 0)
+                ->whereRaw("{$expr} > 0");
 
             // Apply filters
             if ($size) {
@@ -587,8 +610,8 @@ class DashboardController extends Controller
                     ->select(
                         'tyre_pattern_id',
                         DB::raw('SUM(price) as total_price'),
-                        DB::raw('SUM(total_lifetime_km) as total_km'),
-                        DB::raw('SUM(total_lifetime_hm) as total_hm'),
+                        DB::raw("SUM({$effectiveKmExpr}) as total_km"),
+                        DB::raw("SUM({$effectiveHmExpr}) as total_hm"),
                         DB::raw('COUNT(*) as tyre_count')
                     )
                     ->groupBy('tyre_pattern_id')
@@ -608,8 +631,8 @@ class DashboardController extends Controller
                 $query->select(
                         'tyre_brand_id',
                         DB::raw('SUM(price) as total_price'),
-                        DB::raw('SUM(total_lifetime_km) as total_km'),
-                        DB::raw('SUM(total_lifetime_hm) as total_hm'),
+                        DB::raw("SUM({$effectiveKmExpr}) as total_km"),
+                        DB::raw("SUM({$effectiveHmExpr}) as total_hm"),
                         DB::raw('COUNT(*) as tyre_count')
                     )
                     ->groupBy('tyre_brand_id')

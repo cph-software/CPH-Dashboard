@@ -32,12 +32,12 @@ class TyreMovement extends Model
 
     public function tyre()
     {
-        return $this->belongsTo(Tyre::class, 'tyre_id');
+        return $this->belongsTo(Tyre::class, 'tyre_id')->withoutGlobalScope('company');
     }
 
     public function vehicle()
     {
-        return $this->belongsTo(MasterImportKendaraan::class, 'vehicle_id');
+        return $this->belongsTo(MasterImportKendaraan::class, 'vehicle_id')->withoutGlobalScope('company');
     }
 
     public function position()

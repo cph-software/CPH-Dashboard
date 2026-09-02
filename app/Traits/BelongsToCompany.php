@@ -17,9 +17,41 @@ trait BelongsToCompany
 
                 if ($activeCompanyId !== null) {
                     if (is_array($activeCompanyId)) {
-                        $builder->whereIn($table . '.tyre_company_id', $activeCompanyId);
+                        if ($table === 'tyres') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->whereIn($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.current_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->whereIn('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } elseif ($table === 'tyre_movements') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->whereIn($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->whereIn('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } else {
+                            $builder->whereIn($table . '.tyre_company_id', $activeCompanyId);
+                        }
                     } else {
-                        $builder->where($table . '.tyre_company_id', $activeCompanyId);
+                        if ($table === 'tyres') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->where($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.current_vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } elseif ($table === 'tyre_movements') {
+                            $builder->where(function ($q) use ($table, $activeCompanyId) {
+                                $q->where($table . '.tyre_company_id', $activeCompanyId)
+                                  ->orWhereIn($table . '.vehicle_id', function ($vq) use ($activeCompanyId) {
+                                      $vq->select('id')->from('master_import_kendaraan')->where('tyre_company_id', $activeCompanyId);
+                                  });
+                            });
+                        } else {
+                            $builder->where($table . '.tyre_company_id', $activeCompanyId);
+                        }
                     }
                 }
             }

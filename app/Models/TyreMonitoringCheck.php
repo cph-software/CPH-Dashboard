@@ -53,7 +53,7 @@ class TyreMonitoringCheck extends Model
 
     public function session()
     {
-        return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id');
+        return $this->belongsTo(TyreMonitoringSession::class, 'session_id', 'session_id')->withoutGlobalScope('company');
     }
 
     public function positionDetail()
@@ -63,7 +63,7 @@ class TyreMonitoringCheck extends Model
 
     public function tyre()
     {
-        return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number');
+        return $this->belongsTo(Tyre::class, 'serial_number', 'serial_number')->withoutGlobalScope('company');
     }
 
     public function company()

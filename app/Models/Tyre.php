@@ -47,7 +47,7 @@ class Tyre extends Model
 
     public function location()
     {
-        return $this->belongsTo(TyreLocation::class, 'current_location_id');
+        return $this->belongsTo(TyreLocation::class, 'current_location_id')->withoutGlobalScope('company');
     }
 
     public function company()
@@ -57,7 +57,7 @@ class Tyre extends Model
 
     public function currentVehicle()
     {
-        return $this->belongsTo(MasterImportKendaraan::class, 'current_vehicle_id');
+        return $this->belongsTo(MasterImportKendaraan::class, 'current_vehicle_id')->withoutGlobalScope('company');
     }
 
     public function currentPosition()
@@ -68,6 +68,7 @@ class Tyre extends Model
     public function latestInstallation()
     {
         return $this->hasOne(TyreMovement::class, 'tyre_id')
+            ->withoutGlobalScope('company')
             ->where('movement_type', 'Installation')
             ->latest('movement_date')
             ->latest('id');
@@ -75,7 +76,7 @@ class Tyre extends Model
 
     public function movements()
     {
-        return $this->hasMany(TyreMovement::class, 'tyre_id');
+        return $this->hasMany(TyreMovement::class, 'tyre_id')->withoutGlobalScope('company');
     }
 
     public function monitoringInstallations()
