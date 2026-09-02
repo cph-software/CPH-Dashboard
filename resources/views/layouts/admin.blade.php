@@ -30,9 +30,17 @@
    <style>
       /* Compact Dashboard & Layout Scale for Wide Screens */
       @media (min-width: 1200px) {
-         body {
+         .content-wrapper {
             zoom: 0.90;
          }
+      }
+      /* Ensure modals and backdrops are clean without zoom backdrop clipping */
+      .modal-backdrop {
+         width: 100vw !important;
+         height: 100vh !important;
+         position: fixed !important;
+         top: 0 !important;
+         left: 0 !important;
       }
    </style>
 
@@ -126,12 +134,21 @@
          });
       @endif
 
-      // Initialize Tooltips
+      // Initialize Tooltips & Modals
       document.addEventListener('DOMContentLoaded', function() {
          var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
          var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-         })
+         });
+
+         // Move modals to body to prevent zoom and z-index coordinate clipping
+         if (window.jQuery) {
+            $(document).on('show.bs.modal', '.modal', function() {
+               if ($(this).parent()[0] !== document.body) {
+                  $(this).appendTo('body');
+               }
+            });
+         }
       });
    </script>
 

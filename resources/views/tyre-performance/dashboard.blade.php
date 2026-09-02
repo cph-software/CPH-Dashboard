@@ -389,48 +389,6 @@
          </div>
       </div>
 
-      {{-- DATA QUALITY SCORE --}}
-      <div class="row g-4 mb-4">
-         <div class="col-12">
-            <div class="card">
-               <div class="card-body py-3">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                     <div class="d-flex align-items-center gap-2">
-                        <i class="ri-shield-check-line text-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }} ri-24px"></i>
-                        <div>
-                           <h6 class="mb-0 fw-bold">Data Quality Score</h6>
-                           <small class="text-muted">Kelengkapan data mempengaruhi akurasi analitik</small>
-                        </div>
-                     </div>
-                     <span class="badge bg-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }} fs-6">{{ $dataQuality['score'] }}%</span>
-                  </div>
-                  <div class="progress mb-3" style="height: 8px;">
-                     <div class="progress-bar bg-{{ $dataQuality['score'] >= 60 ? 'success' : ($dataQuality['score'] >= 30 ? 'warning' : 'danger') }}"
-                        role="progressbar" style="width: {{ $dataQuality['score'] }}%"></div>
-                  </div>
-                  <div class="row g-3 text-center">
-                     <div class="col-md-3 col-6">
-                        <div class="small text-muted">Ban Terpasang</div>
-                        <div class="fw-bold {{ $dataQuality['installed'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['installed']) }} / {{ number_format($totalTyres) }}</div>
-                     </div>
-                     <div class="col-md-3 col-6">
-                        <div class="small text-muted">Pernah Beroperasi <i class="ri-information-line" data-bs-toggle="tooltip" title="Ban yang punya data jarak tempuh (KM/HM > 0), dari semua status"></i></div>
-                        <div class="fw-bold {{ $dataQuality['with_lifetime'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['with_lifetime']) }} / {{ number_format($totalTyres) }}</div>
-                     </div>
-                     <div class="col-md-3 col-6">
-                        <div class="small text-muted">Punya Harga</div>
-                        <div class="fw-bold {{ $dataQuality['with_price'] > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($dataQuality['with_price']) }} / {{ number_format($totalTyres) }}</div>
-                     </div>
-                     <div class="col-md-3 col-6">
-                        <div class="small text-muted">Unit Punya Ban</div>
-                        <div class="fw-bold {{ $dataQuality['vehicles_with_tyres'] > 0 ? 'text-success' : 'text-danger' }}">{{ $dataQuality['vehicles_with_tyres'] }} / {{ $totalVehicles }}</div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-
 
       <div class="row g-4 mb-4">
          <div class="col-xl-4 col-lg-4 col-sm-6">
