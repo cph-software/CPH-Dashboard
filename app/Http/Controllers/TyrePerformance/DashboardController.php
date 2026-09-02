@@ -984,7 +984,7 @@ class DashboardController extends Controller
             case 'location':
                 $location = TyreLocation::where('location_name', $value)->first();
                 if (!$location)
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Stok Ban di: {$value}", 'columns' => ['Serial Number', 'Brand', 'Status', 'Size', 'Pattern', 'Kendaraan', 'OTD', 'RTD', 'Retread'], 'keys' => ['serial_number', 'brand', 'status', 'size', 'pattern', 'vehicle', 'otd', 'rtd', 'retread'], 'data' => [], 'total' => 0]);
 
                 // Only show tyres physically at this location (not installed on vehicle)
                 $tyres = Tyre::where('current_location_id', $location->id)
@@ -1024,7 +1024,7 @@ class DashboardController extends Controller
                 $code = $parts[0] ?? $value;
                 $fc = TyreFailureCode::where('failure_code', $code)->first();
                 if (!$fc)
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Pelepasan: {$value}", 'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Kendaraan', 'RTD', 'Notes'], 'keys' => ['date', 'serial', 'size', 'pattern', 'vehicle', 'rtd', 'notes'], 'data' => [], 'total' => 0]);
 
                 // Build reading columns/keys based on measurement mode
                 $rdgCols = [];
@@ -1067,7 +1067,7 @@ class DashboardController extends Controller
                 // value format: "Jan 2026|Installation" or "Jan 2026|Removal"
                 $parts = explode('|', $value);
                 if (count($parts) !== 2)
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Pergerakan Ban: {$value}", 'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Brand', 'Kendaraan', 'PSI', 'RTD'], 'keys' => ['date', 'serial', 'size', 'pattern', 'brand', 'vehicle', 'psi', 'rtd'], 'data' => [], 'total' => 0]);
 
                 $monthStr = $parts[0];
                 $movType = $parts[1];
@@ -1077,7 +1077,7 @@ class DashboardController extends Controller
                     $monthStart = $monthDate->copy()->startOfMonth();
                     $monthEnd = $monthDate->copy()->endOfMonth();
                 } catch (\Exception $e) {
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Pergerakan Ban: {$value}", 'columns' => ['Tanggal', 'Serial Ban', 'Size', 'Pattern', 'Brand', 'Kendaraan', 'PSI', 'RTD'], 'keys' => ['date', 'serial', 'size', 'pattern', 'brand', 'vehicle', 'psi', 'rtd'], 'data' => [], 'total' => 0]);
                 }
 
                 // Build reading columns for this movement case (applies to both Examination and others)
@@ -1243,7 +1243,7 @@ class DashboardController extends Controller
                     $patternName = null;
                 }
                 if (!$brand)
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Brand Performance: {$value}", 'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'OTD', 'RTD', 'Harga'], 'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'otd', 'rtd', 'price'], 'data' => [], 'total' => 0]);
 
                 $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
                 $mode = $ctx['mode'];
@@ -1322,7 +1322,7 @@ class DashboardController extends Controller
                     $patternName = null;
                 }
                 if (!$brand)
-                    return response()->json(['data' => [], 'total' => 0]);
+                    return response()->json(['title' => "Cost Per KM: {$value}", 'columns' => ['Serial Number', 'Status', 'Size', 'Pattern', 'Location', 'Kendaraan', 'Harga', 'CPK'], 'keys' => ['serial_number', 'status', 'size', 'pattern', 'location', 'vehicle', 'price', 'cpk'], 'data' => [], 'total' => 0]);
 
                 $ctx = \App\Services\DashboardAnalyticsService::getCompanyContext();
                 $mode = $ctx['mode'];

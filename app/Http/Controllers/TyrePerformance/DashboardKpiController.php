@@ -195,20 +195,34 @@ class DashboardKpiController extends Controller
         [$ltCols, $ltKeys] = DAS::lifetimeCols($mode);
         $field = DAS::primaryField($mode);
         $chartLabel = $mode === 'HM' ? 'HM' : 'KM';
-        $query = Tyre::query()->with(['brand', 'size', 'pattern', 'currentVehicle']);
+        $query = Tyre::query()->with(['brand', 'size', 'pattern', 'currentVehicle', 'movements']);
         DAS::applyLifetimeFilter($query, $mode);
-        $tyres = $query->orderByDesc($field)->limit(500)->get();
+        $tyres = $query->limit(500)->get();
+
+        $tyres = $tyres->map(function($t) {
+            $km = $t->total_lifetime_km ?: ($t->current_km ?: 0);
+            if (!$km && isset($t->movements)) {
+                $km = $t->movements->sum('running_km');
+            }
+            $hm = $t->total_lifetime_hm ?: ($t->current_hm ?: 0);
+            if (!$hm && isset($t->movements)) {
+                $hm = $t->movements->sum('running_hm');
+            }
+            $t->effective_km = $km;
+            $t->effective_hm = $hm;
+            return $t;
+        });
 
         $summaryItems = [];
         if ($mode !== 'HM') {
-            $avgKm = $tyres->where('total_lifetime_km', '>', 0)->avg('total_lifetime_km') ?? 0;
-            $maxKm = $tyres->max('total_lifetime_km') ?? 0;
+            $avgKm = $tyres->where('effective_km', '>', 0)->avg('effective_km') ?? 0;
+            $maxKm = $tyres->max('effective_km') ?? 0;
             $summaryItems[] = ['label' => 'Avg KM', 'value' => number_format($avgKm, 0).' KM', 'color' => 'warning'];
             $summaryItems[] = ['label' => 'Max KM', 'value' => number_format($maxKm, 0).' KM', 'color' => 'success'];
         }
         if ($mode !== 'KM') {
-            $avgHm = $tyres->where('total_lifetime_hm', '>', 0)->avg('total_lifetime_hm') ?? 0;
-            $maxHm = $tyres->max('total_lifetime_hm') ?? 0;
+            $avgHm = $tyres->where('effective_hm', '>', 0)->avg('effective_hm') ?? 0;
+            $maxHm = $tyres->max('effective_hm') ?? 0;
             $summaryItems[] = ['label' => 'Avg HM', 'value' => number_format($avgHm, 0).' HM', 'color' => 'info'];
             $summaryItems[] = ['label' => 'Max HM', 'value' => number_format($maxHm, 0).' HM', 'color' => 'primary'];
         }
@@ -223,15 +237,15 @@ class DashboardKpiController extends Controller
         ]));
 
         if ($mode === 'BOTH') {
-            $top10Km = $tyres->where('total_lifetime_km', '>', 0)->sortByDesc('total_lifetime_km')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->total_lifetime_km)]);
-            $top10Hm = $tyres->where('total_lifetime_hm', '>', 0)->sortByDesc('total_lifetime_hm')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->total_lifetime_hm)]);
+            $top10Km = $tyres->where('effective_km', '>', 0)->sortByDesc('effective_km')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->effective_km)]);
+            $top10Hm = $tyres->where('effective_hm', '>', 0)->sortByDesc('effective_hm')->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->effective_hm)]);
 
             $charts = [
                 ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh (KM)', 'labels' => $top10Km->pluck('label'), 'series' => $top10Km->pluck('value')],
                 ['type' => 'bar', 'title' => 'Top 10 Ban Terjauh (HM)', 'labels' => $top10Hm->pluck('label'), 'series' => $top10Hm->pluck('value')],
             ];
         } else {
-            $sortField = $mode === 'HM' ? 'total_lifetime_hm' : 'total_lifetime_km';
+            $sortField = $mode === 'HM' ? 'effective_hm' : 'effective_km';
             $sortLabel = $mode === 'HM' ? 'HM' : 'KM';
             $top10 = $tyres->where($sortField, '>', 0)->sortByDesc($sortField)->take(10)->map(fn($t) => ['label' => $t->serial_number, 'value' => round($t->{$sortField})]);
             $byBrand = $tyres->where($sortField, '>', 0)->groupBy(fn($t) => $t->brand->brand_name ?? '-')
@@ -260,18 +274,28 @@ class DashboardKpiController extends Controller
         $field = DAS::primaryField($mode);
         $cpLabel = $mode === 'HM' ? 'CPH' : ($mode === 'KM' ? 'CPK' : 'CPK/CPH');
         $query2 = Tyre::query()->whereNotNull('price')->where('price', '>', 0)
-            ->with(['brand', 'size', 'pattern', 'currentVehicle']);
+            ->with(['brand', 'size', 'pattern', 'currentVehicle', 'movements']);
         DAS::applyLifetimeFilter($query2, $mode);
         $tyres = $query2->get();
 
         $tyres = $tyres->map(function($t) use ($mode) {
-            $t->cpk_val = $t->total_lifetime_km > 0 ? round($t->price / $t->total_lifetime_km, 2) : 0;
-            $t->cph_val = $t->total_lifetime_hm > 0 ? round($t->price / $t->total_lifetime_hm, 2) : 0;
+            $km = $t->total_lifetime_km ?: ($t->current_km ?: 0);
+            if (!$km && isset($t->movements)) {
+                $km = $t->movements->sum('running_km');
+            }
+            $hm = $t->total_lifetime_hm ?: ($t->current_hm ?: 0);
+            if (!$hm && isset($t->movements)) {
+                $hm = $t->movements->sum('running_hm');
+            }
+            $t->effective_km = $km;
+            $t->effective_hm = $hm;
+            $t->cpk_val = $km > 0 ? round($t->price / $km, 2) : 0;
+            $t->cph_val = $hm > 0 ? round($t->price / $hm, 2) : 0;
             if ($mode === 'HM') { $t->sort_val = $t->cph_val; }
             elseif ($mode === 'KM') { $t->sort_val = $t->cpk_val; }
             else { $t->sort_val = $t->cph_val > 0 ? $t->cph_val : $t->cpk_val; }
             return $t;
-        })->sortBy('sort_val');
+        })->filter(fn($t) => $t->sort_val > 0)->sortBy('sort_val');
 
         $totalInv = $tyres->sum('price');
         
