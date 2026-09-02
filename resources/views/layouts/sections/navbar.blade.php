@@ -51,154 +51,52 @@
             }
          @endphp
          <style>
-            .custom-company-switcher-btn {
-               background: #f8fafc;
-               border: 1px solid #e2e8f0;
-               border-radius: 8px;
-               transition: all 0.2s ease;
-               cursor: pointer;
+            .company-switcher-list::-webkit-scrollbar {
+               width: 4px;
             }
-            .custom-company-switcher-btn:hover,
-            .custom-company-switcher-btn[aria-expanded="true"] {
-               background: #ffffff;
-               border-color: #696cff;
-               box-shadow: 0 2px 10px rgba(105, 108, 255, 0.15) !important;
-            }
-            .company-search-wrapper {
-               position: relative;
-            }
-            .company-search-wrapper .search-icon {
-               position: absolute;
-               left: 12px;
-               top: 50%;
-               transform: translateY(-50%);
-               color: #94a3b8;
-               font-size: 1rem;
-               pointer-events: none;
-            }
-            .custom-company-search-input {
-               background-color: #f1f5f9 !important;
-               border: 1px solid #e2e8f0 !important;
-               border-radius: 8px !important;
-               padding: 7px 12px 7px 36px !important;
-               font-size: 0.83rem !important;
-               color: #334155 !important;
-               transition: all 0.2s ease;
-            }
-            .custom-company-search-input:focus {
-               background-color: #ffffff !important;
-               border-color: #696cff !important;
-               box-shadow: 0 0 0 3px rgba(105, 108, 255, 0.15) !important;
-               outline: none !important;
-            }
-            .company-item-icon-wrapper {
-               width: 28px;
-               height: 28px;
-               display: inline-flex;
-               align-items: center;
-               justify-content: center;
-               border-radius: 6px;
-               font-size: 0.9rem;
-               flex-shrink: 0;
-            }
-            .company-switcher-item {
-               border-radius: 8px !important;
-               padding: 8px 12px !important;
-               margin: 2px 0 !important;
-               font-size: 0.85rem !important;
-               color: #475569 !important;
-               transition: all 0.15s ease-in-out !important;
-               cursor: pointer;
-               display: flex !important;
-               align-items: center !important;
-               justify-content: space-between !important;
-            }
-            .company-switcher-item:hover {
-               background-color: rgba(105, 108, 255, 0.08) !important;
-               color: #696cff !important;
-            }
-            .company-switcher-item.active {
-               background-color: #696cff !important;
-               color: #ffffff !important;
-               font-weight: 600 !important;
-            }
-            .company-switcher-item.active .company-item-title {
-               color: #ffffff !important;
-            }
-            .company-switcher-item.active .company-item-icon-wrapper {
-               background-color: rgba(255, 255, 255, 0.2) !important;
-               color: #ffffff !important;
-            }
-            .navbar-company-list::-webkit-scrollbar {
-               width: 5px;
-            }
-            .navbar-company-list::-webkit-scrollbar-track {
-               background: transparent;
-            }
-            .navbar-company-list::-webkit-scrollbar-thumb {
+            .company-switcher-list::-webkit-scrollbar-thumb {
                background: #cbd5e1;
-               border-radius: 10px;
-            }
-            .navbar-company-list::-webkit-scrollbar-thumb:hover {
-               background: #94a3b8;
+               border-radius: 4px;
             }
          </style>
 
          <div class="navbar-nav align-items-center ms-3">
             <div class="nav-item dropdown" id="navbarCompanyDropdownContainer">
-               <button class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 fw-semibold custom-company-switcher-btn"
-                  type="button" id="navbarCompanySwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="max-width: 290px;">
-                  <div class="company-item-icon-wrapper bg-label-primary text-primary" style="width: 24px; height: 24px; font-size: 0.8rem;">
-                     <i class="{{ $isGlobalSelected ? 'ri-global-line' : 'ri-building-line' }}"></i>
-                  </div>
-                  <span class="text-truncate text-dark fw-bold" style="max-width: 210px; font-size: 0.85rem;">{{ $activeDisplayLabel }}</span>
-                  <i class="ri-arrow-down-s-line text-muted ms-auto fs-6"></i>
+               <button class="btn btn-outline-primary btn-sm dropdown-toggle fw-semibold d-flex align-items-center gap-1 shadow-none"
+                  type="button" id="navbarCompanySwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 6px;">
+                  <i class="{{ $isGlobalSelected ? 'ri-global-line' : 'ri-building-line' }} me-1"></i>
+                  <span class="text-truncate" style="max-width: 220px;">{{ $activeDisplayLabel }}</span>
                </button>
-               <div class="dropdown-menu dropdown-menu-start border-0 shadow-lg p-2 mt-2" aria-labelledby="navbarCompanySwitcherBtn" style="min-width: 330px; max-width: 380px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border: 1px solid #edf2f7;">
-                  <div class="company-search-wrapper px-1 pt-1 pb-2">
-                     <i class="ri-search-line search-icon"></i>
-                     <input type="text" class="form-control custom-company-search-input" id="navbar_company_search_input" placeholder="Cari nama perusahaan / customer..." autocomplete="off">
+               <div class="dropdown-menu dropdown-menu-start shadow-sm border p-2 mt-1" aria-labelledby="navbarCompanySwitcherBtn" style="min-width: 290px; max-width: 340px; border-radius: 8px;">
+                  <div class="px-1 pb-2">
+                     <input type="text" class="form-control form-control-sm shadow-none" id="navbar_company_search_input" placeholder="Cari perusahaan..." autocomplete="off">
                   </div>
-                  <div class="dropdown-divider my-1 opacity-50"></div>
-                  <div class="navbar-company-list py-1 px-1" id="navbar_company_items_list" style="max-height: 270px; overflow-y: auto;">
+                  <div class="dropdown-divider my-1"></div>
+                  <div class="company-switcher-list py-1" id="navbar_company_items_list" style="max-height: 250px; overflow-y: auto;">
                      <!-- Global Option -->
-                     <a class="dropdown-item company-switcher-item {{ $isGlobalSelected ? 'active' : '' }}"
+                     <a class="dropdown-item py-2 px-3 company-switcher-item {{ $isGlobalSelected ? 'active fw-bold' : '' }}"
                         href="javascript:void(0);" data-company-id="{{ $globalValue }}" data-company-name="{{ strtolower($globalLabel) }}">
-                        <div class="d-flex align-items-center text-truncate me-2">
-                           <div class="company-item-icon-wrapper me-2 {{ $isGlobalSelected ? 'bg-white text-primary' : 'bg-label-primary text-primary' }}">
-                              <i class="ri-global-line"></i>
-                           </div>
-                           <span class="company-item-title text-truncate">{{ $globalLabel }}</span>
-                        </div>
-                        @if ($isGlobalSelected)
-                           <i class="ri-check-line text-white fw-bold fs-6"></i>
-                        @endif
+                        <i class="ri-global-line me-2"></i>{{ $globalLabel }}
                      </a>
-                     <div class="dropdown-divider my-1 opacity-50"></div>
+                     <div class="dropdown-divider my-1"></div>
                      <!-- Companies List -->
                      @foreach ($activeCompanies as $comp)
                         @php
                            $isSelected = !$isGlobalClient && $currentActiveCompany == $comp->id;
                            $isOwn = (!$isSuperAdmin && $comp->id == Auth::user()->tyre_company_id);
                         @endphp
-                        <a class="dropdown-item company-switcher-item {{ $isSelected ? 'active' : '' }}"
+                        <a class="dropdown-item py-2 px-3 company-switcher-item d-flex align-items-center justify-content-between {{ $isSelected ? 'active fw-bold' : '' }}"
                            href="javascript:void(0);" data-company-id="{{ $comp->id }}" data-company-name="{{ strtolower($comp->company_name) }}">
-                           <div class="d-flex align-items-center text-truncate me-2">
-                              <div class="company-item-icon-wrapper me-2 {{ $isSelected ? 'bg-white text-primary' : ($isOwn ? 'bg-label-warning text-warning' : 'bg-label-secondary text-secondary') }}">
-                                 <i class="{{ $isOwn ? 'ri-store-2-line' : 'ri-building-4-line' }}"></i>
-                              </div>
-                              <span class="company-item-title text-truncate">{{ $comp->company_name }}</span>
-                              @if ($isOwn)
-                                 <span class="badge {{ $isSelected ? 'bg-white text-warning' : 'bg-label-warning' }} ms-2 small py-1 px-2" style="font-size: 0.65rem;">Bengkel Anda</span>
-                              @endif
-                           </div>
-                           @if ($isSelected)
-                              <i class="ri-check-line text-white fw-bold fs-6"></i>
+                           <span class="text-truncate me-2">
+                              <i class="ri-building-line me-2"></i>{{ $comp->company_name }}
+                           </span>
+                           @if ($isOwn)
+                              <span class="badge {{ $isSelected ? 'bg-white text-primary' : 'bg-label-warning' }} ms-2" style="font-size: 0.65rem;">Bengkel Anda</span>
                            @endif
                         </a>
                      @endforeach
-                     <div class="no-companies-found text-center text-muted py-3 small d-none" id="no_companies_found_msg">
-                        <i class="ri-search-2-line me-1"></i> Perusahaan tidak ditemukan
+                     <div class="no-companies-found text-center text-muted py-2 small d-none" id="no_companies_found_msg">
+                        Perusahaan tidak ditemukan
                      </div>
                   </div>
                </div>
