@@ -50,50 +50,150 @@
                 }
             }
          @endphp
+         <style>
+            .custom-company-switcher-btn {
+               background: #f8fafc;
+               border: 1px solid #e2e8f0;
+               border-radius: 8px;
+               transition: all 0.2s ease;
+               cursor: pointer;
+            }
+            .custom-company-switcher-btn:hover,
+            .custom-company-switcher-btn[aria-expanded="true"] {
+               background: #ffffff;
+               border-color: #696cff;
+               box-shadow: 0 2px 10px rgba(105, 108, 255, 0.15) !important;
+            }
+            .company-search-wrapper {
+               position: relative;
+            }
+            .company-search-wrapper .search-icon {
+               position: absolute;
+               left: 12px;
+               top: 50%;
+               transform: translateY(-50%);
+               color: #94a3b8;
+               font-size: 1rem;
+               pointer-events: none;
+            }
+            .custom-company-search-input {
+               background-color: #f1f5f9 !important;
+               border: 1px solid #e2e8f0 !important;
+               border-radius: 8px !important;
+               padding: 7px 12px 7px 36px !important;
+               font-size: 0.83rem !important;
+               color: #334155 !important;
+               transition: all 0.2s ease;
+            }
+            .custom-company-search-input:focus {
+               background-color: #ffffff !important;
+               border-color: #696cff !important;
+               box-shadow: 0 0 0 3px rgba(105, 108, 255, 0.15) !important;
+               outline: none !important;
+            }
+            .company-item-icon-wrapper {
+               width: 28px;
+               height: 28px;
+               display: inline-flex;
+               align-items: center;
+               justify-content: center;
+               border-radius: 6px;
+               font-size: 0.9rem;
+               flex-shrink: 0;
+            }
+            .company-switcher-item {
+               border-radius: 8px !important;
+               padding: 8px 12px !important;
+               margin: 2px 0 !important;
+               font-size: 0.85rem !important;
+               color: #475569 !important;
+               transition: all 0.15s ease-in-out !important;
+               cursor: pointer;
+               display: flex !important;
+               align-items: center !important;
+               justify-content: space-between !important;
+            }
+            .company-switcher-item:hover {
+               background-color: rgba(105, 108, 255, 0.08) !important;
+               color: #696cff !important;
+            }
+            .company-switcher-item.active {
+               background-color: #696cff !important;
+               color: #ffffff !important;
+               font-weight: 600 !important;
+            }
+            .company-switcher-item.active .company-item-title {
+               color: #ffffff !important;
+            }
+            .company-switcher-item.active .company-item-icon-wrapper {
+               background-color: rgba(255, 255, 255, 0.2) !important;
+               color: #ffffff !important;
+            }
+            .navbar-company-list::-webkit-scrollbar {
+               width: 5px;
+            }
+            .navbar-company-list::-webkit-scrollbar-track {
+               background: transparent;
+            }
+            .navbar-company-list::-webkit-scrollbar-thumb {
+               background: #cbd5e1;
+               border-radius: 10px;
+            }
+            .navbar-company-list::-webkit-scrollbar-thumb:hover {
+               background: #94a3b8;
+            }
+         </style>
+
          <div class="navbar-nav align-items-center ms-3">
             <div class="nav-item dropdown" id="navbarCompanyDropdownContainer">
-               <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm text-truncate"
-                  type="button" id="navbarCompanySwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px; max-width: 280px;">
-                  <i class="{{ $isGlobalSelected ? 'ri-global-line' : 'ri-building-line' }} text-primary fs-5"></i>
-                  <span class="text-truncate">{{ $activeDisplayLabel }}</span>
-               </button>
-               <div class="dropdown-menu dropdown-menu-start shadow-lg border-0 p-0 mt-2" aria-labelledby="navbarCompanySwitcherBtn" style="min-width: 320px; max-width: 360px; border-radius: 10px;">
-                  <div class="p-2 border-bottom bg-light rounded-top">
-                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white border-end-0"><i class="ri-search-line text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0 shadow-none" id="navbar_company_search_input" placeholder="Cari nama perusahaan / customer..." autocomplete="off">
-                     </div>
+               <button class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 fw-semibold custom-company-switcher-btn"
+                  type="button" id="navbarCompanySwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="max-width: 290px;">
+                  <div class="company-item-icon-wrapper bg-label-primary text-primary" style="width: 24px; height: 24px; font-size: 0.8rem;">
+                     <i class="{{ $isGlobalSelected ? 'ri-global-line' : 'ri-building-line' }}"></i>
                   </div>
-                  <div class="navbar-company-list py-1" id="navbar_company_items_list" style="max-height: 280px; overflow-y: auto;">
+                  <span class="text-truncate text-dark fw-bold" style="max-width: 210px; font-size: 0.85rem;">{{ $activeDisplayLabel }}</span>
+                  <i class="ri-arrow-down-s-line text-muted ms-auto fs-6"></i>
+               </button>
+               <div class="dropdown-menu dropdown-menu-start border-0 shadow-lg p-2 mt-2" aria-labelledby="navbarCompanySwitcherBtn" style="min-width: 330px; max-width: 380px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border: 1px solid #edf2f7;">
+                  <div class="company-search-wrapper px-1 pt-1 pb-2">
+                     <i class="ri-search-line search-icon"></i>
+                     <input type="text" class="form-control custom-company-search-input" id="navbar_company_search_input" placeholder="Cari nama perusahaan / customer..." autocomplete="off">
+                  </div>
+                  <div class="dropdown-divider my-1 opacity-50"></div>
+                  <div class="navbar-company-list py-1 px-1" id="navbar_company_items_list" style="max-height: 270px; overflow-y: auto;">
                      <!-- Global Option -->
-                     <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 company-switcher-item {{ $isGlobalSelected ? 'active fw-bold' : '' }}"
+                     <a class="dropdown-item company-switcher-item {{ $isGlobalSelected ? 'active' : '' }}"
                         href="javascript:void(0);" data-company-id="{{ $globalValue }}" data-company-name="{{ strtolower($globalLabel) }}">
-                        <span class="d-flex align-items-center">
-                           <i class="ri-global-line me-2 {{ $isGlobalSelected ? 'text-white' : 'text-primary' }}"></i>
-                           <span>{{ $globalLabel }}</span>
-                        </span>
+                        <div class="d-flex align-items-center text-truncate me-2">
+                           <div class="company-item-icon-wrapper me-2 {{ $isGlobalSelected ? 'bg-white text-primary' : 'bg-label-primary text-primary' }}">
+                              <i class="ri-global-line"></i>
+                           </div>
+                           <span class="company-item-title text-truncate">{{ $globalLabel }}</span>
+                        </div>
                         @if ($isGlobalSelected)
-                           <i class="ri-check-line text-white"></i>
+                           <i class="ri-check-line text-white fw-bold fs-6"></i>
                         @endif
                      </a>
-                     <div class="dropdown-divider my-1"></div>
+                     <div class="dropdown-divider my-1 opacity-50"></div>
                      <!-- Companies List -->
                      @foreach ($activeCompanies as $comp)
                         @php
                            $isSelected = !$isGlobalClient && $currentActiveCompany == $comp->id;
                            $isOwn = (!$isSuperAdmin && $comp->id == Auth::user()->tyre_company_id);
                         @endphp
-                        <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 company-switcher-item {{ $isSelected ? 'active fw-bold' : '' }}"
+                        <a class="dropdown-item company-switcher-item {{ $isSelected ? 'active' : '' }}"
                            href="javascript:void(0);" data-company-id="{{ $comp->id }}" data-company-name="{{ strtolower($comp->company_name) }}">
-                           <span class="d-flex align-items-center text-truncate me-2">
-                              <i class="ri-building-4-line me-2 {{ $isSelected ? 'text-white' : ($isOwn ? 'text-warning' : 'text-secondary') }}"></i>
-                              <span class="text-truncate">{{ $comp->company_name }}</span>
+                           <div class="d-flex align-items-center text-truncate me-2">
+                              <div class="company-item-icon-wrapper me-2 {{ $isSelected ? 'bg-white text-primary' : ($isOwn ? 'bg-label-warning text-warning' : 'bg-label-secondary text-secondary') }}">
+                                 <i class="{{ $isOwn ? 'ri-store-2-line' : 'ri-building-4-line' }}"></i>
+                              </div>
+                              <span class="company-item-title text-truncate">{{ $comp->company_name }}</span>
                               @if ($isOwn)
-                                 <span class="badge {{ $isSelected ? 'bg-white text-primary' : 'bg-label-warning' }} ms-2 small" style="font-size: 0.65rem;">Bengkel Anda</span>
+                                 <span class="badge {{ $isSelected ? 'bg-white text-warning' : 'bg-label-warning' }} ms-2 small py-1 px-2" style="font-size: 0.65rem;">Bengkel Anda</span>
                               @endif
-                           </span>
+                           </div>
                            @if ($isSelected)
-                              <i class="ri-check-line text-white"></i>
+                              <i class="ri-check-line text-white fw-bold fs-6"></i>
                            @endif
                         </a>
                      @endforeach
