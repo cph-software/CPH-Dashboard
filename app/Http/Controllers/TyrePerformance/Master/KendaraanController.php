@@ -108,15 +108,7 @@ class KendaraanController extends Controller
         $locations = $locQuery->get();
         $segments = $segQuery->get();
         $configurations = TyrePositionConfiguration::where('status', 'Active')->get();
-        if ($user->role_id == 1) {
-            $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
-        } elseif (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin()) {
-            $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
-            if ($user->tyre_company_id) $clientIds[] = $user->tyre_company_id;
-            $companies = \App\Models\TyreCompany::whereIn('id', $clientIds)->where('status', 'Active')->orderBy('company_name')->get();
-        } else {
-            $companies = \App\Models\TyreCompany::where('id', $user->tyre_company_id)->get();
-        }
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
 
         return view('tyre-performance.master.kendaraan.index', compact('configurations', 'locations', 'segments', 'companies'));
     }

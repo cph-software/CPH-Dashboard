@@ -14,7 +14,7 @@ class TyreSegmentController extends Controller
     {
         $segments = TyreSegment::with(['location', 'company'])->latest()->get();
         $locations = TyreLocation::all();
-        $companies = TyreCompany::where('status', 'Active')->get();
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
         return view('tyre-performance.master.segments.index', compact('segments', 'locations', 'companies'));
     }
 

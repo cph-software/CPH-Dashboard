@@ -25,7 +25,7 @@ class TyreFailureCodeController extends Controller
             });
         }
         $failureCodes = $query->with('aliases.company')->latest()->get();
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
         return view('tyre-performance.master.failure-codes.index', compact('failureCodes', 'companies'));
     }
 
@@ -81,7 +81,7 @@ class TyreFailureCodeController extends Controller
     public function show($id)
     {
         $failureCode = TyreFailureCode::with('aliases.company')->findOrFail($id);
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
         return view('tyre-performance.master.failure-codes.show', compact('failureCode', 'companies'));
     }
 

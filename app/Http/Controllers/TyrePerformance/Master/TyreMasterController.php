@@ -45,7 +45,7 @@ class TyreMasterController extends Controller
         
         $segments = TyreSegment::with('location')->where('status', 'Active')->get();
         $locations = TyreLocation::all();
-        $companies = \App\Models\TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
 
         return view('tyre-performance.master.tyres.index', compact('brands', 'sizes', 'segments', 'patterns', 'locations', 'companies'));
     }

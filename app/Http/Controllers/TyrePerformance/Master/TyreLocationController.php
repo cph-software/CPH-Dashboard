@@ -21,7 +21,7 @@ class TyreLocationController extends Controller
             }
         }
         $locations = $query->get();
-        $companies = TyreCompany::where('status', 'Active')->get();
+        $companies = \App\Helpers\SessionCompanyHelper::getAccessibleCompanies();
         return view('tyre-performance.master.locations.index', compact('locations', 'companies'));
     }
 

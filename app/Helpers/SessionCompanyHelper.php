@@ -88,4 +88,34 @@ class SessionCompanyHelper
             ->where('parent_company_id', $user->tyre_company_id)
             ->exists();
     }
+
+    /**
+     * Get list of accessible companies for the current user (e.g. for dropdowns).
+     */
+    public static function getAccessibleCompanies()
+    {
+        $user = Auth::user();
+        if (!$user) return collect();
+
+        if (self::isSuperAdmin()) {
+            return TyreCompany::where('status', 'Active')->orderBy('company_name')->get();
+        }
+
+        if (self::isWorkshopAdmin()) {
+            $clientIds = $user->tyreCompany ? $user->tyreCompany->getAllClientIds() : [];
+            if ($user->tyre_company_id) {
+                $clientIds[] = $user->tyre_company_id;
+            }
+            return TyreCompany::whereIn('id', array_unique($clientIds))
+                ->where('status', 'Active')
+                ->orderBy('company_name')
+                ->get();
+        }
+
+        if ($user->tyre_company_id) {
+            return TyreCompany::where('id', $user->tyre_company_id)->get();
+        }
+
+        return collect();
+    }
 }
