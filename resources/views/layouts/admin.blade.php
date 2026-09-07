@@ -28,38 +28,42 @@
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/vendor/css/core.css') }}" />
    <link rel="stylesheet" href="{{ asset('template/full-version/assets/css/demo.css') }}" />
    <style>
-      /* Global Application Scale for Spacious Modern Layout (Setara Zoom 85%) */
-      body {
-         zoom: 0.85;
+      /* Global Application Scale for Spacious Modern Layout (Setara Zoom 86% Natural & Presisi Tanpa Glitch) */
+      :root, html {
+         font-size: 13.8px !important;
+         --bs-root-font-size: 13.8px !important;
          -webkit-font-smoothing: antialiased;
          -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Firefox Scale Support */
-      @supports not (zoom: 0.85) {
-         body {
-            transform: scale(0.85);
-            transform-origin: top left;
-            width: 117.65%;
-            height: 117.65%;
-         }
+      body {
+         font-size: 0.9375rem;
+         line-height: 1.375;
       }
 
-      /* Ensure modals and backdrops are clean without zoom backdrop clipping */
+      /* Compact Spacing for Modern Dashboard Feel */
+      .container-xxl {
+         max-width: 100% !important;
+         padding-left: 1.5rem !important;
+         padding-right: 1.5rem !important;
+      }
+
+      /* Clean Full-Screen Modal Backdrop (Menghilangkan bug abu-abu terpotong) */
       .modal-backdrop {
          width: 100vw !important;
          height: 100vh !important;
          position: fixed !important;
          top: 0 !important;
          left: 0 !important;
+         z-index: 1050 !important;
       }
 
       .modal {
-         zoom: 1 !important;
+         z-index: 1055 !important;
       }
 
       .swal2-container {
-         zoom: 1.15 !important;
+         z-index: 1090 !important;
       }
    </style>
 
