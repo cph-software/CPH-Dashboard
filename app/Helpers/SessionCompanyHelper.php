@@ -13,18 +13,20 @@ class SessionCompanyHelper
     public static function isSuperAdmin()
     {
         $user = Auth::user();
-        return $user && ($user->role_id == 1 || $user->tyre_company_id == 1 || empty($user->tyre_company_id));
+        return $user && ($user->role_id == 1);
     }
 
     /**
-     * Check if the current user is a Workshop Admin (has child companies).
+     * Check if the current user is a Workshop Admin (has child companies or role_id == 5).
      */
     public static function isWorkshopAdmin()
     {
         $user = Auth::user();
-        if (!$user || !$user->tyreCompany) return false;
+        if (!$user) return false;
         
-        return $user->tyreCompany->children()->count() > 0;
+        if ($user->role_id == 5) return true;
+
+        return $user->tyreCompany && $user->tyreCompany->children()->count() > 0;
     }
 
     /**
