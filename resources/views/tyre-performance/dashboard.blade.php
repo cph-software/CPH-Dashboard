@@ -225,6 +225,15 @@
                         <li><a class="dropdown-item"
                               href="{{ route('master_data.export', ['type' => 'monitoring', 'format' => 'excel', 'start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
                                  class="ri-dashboard-line me-1"></i> Tyre Monitoring Data</a></li>
+                        <li>
+                           <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                           <h6 class="dropdown-header small text-muted text-uppercase">Executive Report</h6>
+                        </li>
+                        <li><a class="dropdown-item text-danger fw-bold" target="_blank"
+                              href="{{ route('master_data.export_pdf', ['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}"><i
+                                 class="ri-file-pdf-2-line me-1 text-danger"></i> Executive Summary Report (PDF)</a></li>
                         @endif
 
                         @if (hasPermission('Dashboard', 'export') && hasPermission('Import Approval', 'view'))

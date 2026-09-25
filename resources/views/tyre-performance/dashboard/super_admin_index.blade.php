@@ -60,6 +60,9 @@
                    <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'failures', 'format' => 'excel']) }}"><i class="ri-error-warning-line me-1"></i> Failure Analysis Data</a></li>
                    <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'assets', 'format' => 'excel']) }}"><i class="ri-disc-line me-1"></i> Tyre Master List</a></li>
                    <li><a class="dropdown-item" href="{{ route('master_data.export', ['type' => 'monitoring', 'format' => 'excel']) }}"><i class="ri-dashboard-line me-1"></i> Tyre Monitoring Data</a></li>
+                   <li><hr class="dropdown-divider"></li>
+                   <li><h6 class="dropdown-header small text-muted text-uppercase">Executive Report</h6></li>
+                   <li><a class="dropdown-item text-danger fw-bold" target="_blank" href="{{ route('master_data.export_pdf') }}"><i class="ri-file-pdf-2-line me-1 text-danger"></i> Executive Summary Report (PDF)</a></li>
                 </ul>
             </div>
             <span class="badge bg-label-primary px-3 py-2 rounded-pill fs-6 shadow-sm">

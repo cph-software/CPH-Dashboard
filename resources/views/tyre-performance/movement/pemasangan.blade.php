@@ -191,12 +191,12 @@
                         </div>
                         <div class="col-md-3 mb-3" id="odometer_container">
                            <label class="form-label fw-bold">KM Saat Pasang</label>
-                           <input type="number" name="odometer" id="odometer" class="form-control" placeholder="KM Odometer" required>
+                           <input type="number" name="odometer" id="odometer" class="form-control" placeholder="KM Odometer">
                            <small class="text-muted extra-small d-block mt-1">Last KM: <span id="last_odo_display" class="fw-bold">-</span></small>
                         </div>
                         <div class="col-md-3 mb-3" id="hour_meter_container">
                            <label class="form-label fw-bold">HM Saat Pasang</label>
-                           <input type="number" name="hour_meter" id="hour_meter" class="form-control" placeholder="Hour Meter" required>
+                           <input type="number" name="hour_meter" id="hour_meter" class="form-control" placeholder="Hour Meter">
                            <small class="text-muted extra-small d-block mt-1">Last HM: <span id="last_hm_display" class="fw-bold">-</span></small>
                         </div>
                         <div class="col-md-3 mb-3">
@@ -522,14 +522,10 @@
                   
                   if (mode === 'HM') {
                       $('#odometer_container').hide();
-                      $('#odometer').removeAttr('required');
                       $('#hour_meter_container').show();
-                      $('#hour_meter').attr('required', 'required');
                   } else {
                       $('#hour_meter_container').hide();
-                      $('#hour_meter').removeAttr('required');
                       $('#odometer_container').show();
-                      $('#odometer').attr('required', 'required');
                   }
 
                   $('#vehicle_type_display').val(res.vehicle.jenis_kendaraan || '-');
@@ -926,14 +922,6 @@
                 }
             }
 
-            if($('#odometer').prop('required') && !$('#odometer').val()) {
-               Swal.fire('Peringatan', 'Odometer wajib diisi untuk unit ini.', 'warning');
-               return;
-            }
-            if($('#hour_meter').prop('required') && !$('#hour_meter').val()) {
-               Swal.fire('Peringatan', 'Hour Meter wajib diisi untuk unit ini.', 'warning');
-               return;
-            }
 
             let isValid = true;
             let movements = [];

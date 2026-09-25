@@ -581,6 +581,7 @@ class TyreMovementController extends Controller
             $warnings = [];
             $vehicle = MasterImportKendaraan::findOrFail($request->vehicle_id);
             $vehicleCode = $vehicle->kode_kendaraan;
+            $isOdoEmpty = ($request->odometer === null || $request->odometer === '') && ($request->hour_meter === null || $request->hour_meter === '');
 
             // Check vehicle access:
             if (!\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
@@ -864,23 +865,28 @@ class TyreMovementController extends Controller
 
                         $kmDiff = 0;
                         $hmDiff = 0;
-                        if ($lastOldMov) {
+                        if ($lastOldMov && !$isOdoEmpty) {
                             $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastOldMov->odometer_reading);
                             $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastOldMov->hour_meter_reading);
                         }
 
                         // 2. Create Removal Log for Old Tyre (Auto-replace)
+                        $oldNotes = 'Auto-Removal during Replacement (SN: ' . $tyre->serial_number . ')';
+                        if ($isOdoEmpty) {
+                            $oldNotes = '[Odometer Rusak] ' . $oldNotes;
+                        }
+
                         TyreMovement::create([
                             'tyre_id' => $oldTyre->id,
                             'vehicle_id' => $request->vehicle_id,
                             'position_id' => $request->position_id,
                             'movement_type' => 'Removal',
                             'movement_date' => $request->movement_date,
-                            'odometer_reading' => $request->odometer,
-                            'hour_meter_reading' => $request->hour_meter,
+                            'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                            'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                             'running_km' => $kmDiff,
                             'running_hm' => $hmDiff,
-                            'notes' => 'Auto-Removal during Replacement (SN: ' . $tyre->serial_number . ')',
+                            'notes' => $oldNotes,
                             'created_by' => Auth::id()
                         ]);
 
@@ -894,11 +900,11 @@ class TyreMovementController extends Controller
                             'status' => 'Repaired',
                             'total_lifetime_km' => ($oldTyre->total_lifetime_km ?? 0) + $kmDiff,
                             'total_lifetime_hm' => ($oldTyre->total_lifetime_hm ?? 0) + $hmDiff,
-                            'current_km' => $request->odometer ?? 0,
-                            'current_hm' => $request->hour_meter ?? 0,
+                            'current_km' => $isOdoEmpty ? ($oldTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                            'current_hm' => $isOdoEmpty ? ($oldTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                         ];
-                        if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
-                            $updateDataOld['tyre_company_id'] = auth()->user()->tyre_company_id;
+                        if (!empty($vehicle->tyre_company_id)) {
+                            $updateDataOld['tyre_company_id'] = $vehicle->tyre_company_id;
                         }
                         $oldTyre->update($updateDataOld);
 
@@ -926,10 +932,10 @@ class TyreMovementController extends Controller
                     'current_location_id' => null,
                     'status' => 'Installed',
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
-                    'current_km' => $request->odometer ?? 0,
-                    'current_hm' => $request->hour_meter ?? 0,
+                    'current_km' => $isOdoEmpty ? ($tyre->current_km ?? 0) : ($request->odometer ?? 0),
+                    'current_hm' => $isOdoEmpty ? ($tyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                 ];
-                if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                if (!empty($vehicle->tyre_company_id)) {
                     $updateDataNew['tyre_company_id'] = $vehicle->tyre_company_id;
                 }
                 $tyre->update($updateDataNew);
@@ -941,6 +947,13 @@ class TyreMovementController extends Controller
                     DB::table('tyre_locations')
                         ->where('id', $oldLocationId)
                         ->decrement('current_stock');
+                }
+
+                $remarksInstall = $request->remarks;
+                $notesInstall = $request->notes;
+                if ($isOdoEmpty) {
+                    $remarksInstall = !empty($remarksInstall) ? trim('[Odometer Rusak] ' . $remarksInstall) : '[Odometer Rusak]';
+                    $notesInstall = !empty($notesInstall) ? trim('[Odometer Rusak] ' . $notesInstall) : '[Odometer Rusak]';
                 }
 
                 // 4. Log Movement
@@ -966,10 +979,10 @@ class TyreMovementController extends Controller
                     'new_bolts_quantity' => $request->new_bolts_quantity,
                     'movement_type' => 'Installation',
                     'movement_date' => $request->movement_date,
-                    'odometer_reading' => $request->odometer,
-                    'hour_meter_reading' => $request->hour_meter,
-                    'remarks' => $request->remarks,
-                    'notes' => $request->notes,
+                    'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                    'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
+                    'remarks' => $remarksInstall,
+                    'notes' => $notesInstall,
                     'created_by' => Auth::id(),
                     'photo' => $photoPath,
                 ]);
@@ -1141,7 +1154,7 @@ class TyreMovementController extends Controller
 
             // Auto-sync with Tyre Monitoring
             try {
-                if ($request->movement_type === 'Installation' && isset($tyre)) {
+                if ($request->movement_type === 'Installation' && isset($tyre) && !$isOdoEmpty) {
                     \App\Services\TyreMonitoringSyncService::syncInstallation(
                         $request->vehicle_id,
                         $request->position_id,
@@ -1319,20 +1332,30 @@ class TyreMovementController extends Controller
                 }
 
                 if ($type === 'Installation') {
+                    $isOdoEmpty = ($request->odometer === null || $request->odometer === '') && ($request->hour_meter === null || $request->hour_meter === '');
+
                     // Cek jika posisi sudah ada bannya (Fitur Auto-Replace)
                     $isReplacement = false;
                     $oldTyre = Tyre::where('current_vehicle_id', $request->vehicle_id)->where('current_position_id', $mov['position_id'])->first();
                     if ($oldTyre) {
                         $isReplacement = true;
                         if ($oldTyre) {
-                            // Catat pelepasan ban lama
-                            $oldTyre->update([
+                            $oldUpdate = [
                                 'current_vehicle_id' => null,
                                 'current_position_id' => null,
                                 'is_in_warehouse' => true,
                                 'status' => 'Repaired', 
                                 'is_repairing' => true,
-                            ]);
+                            ];
+                            if (!empty($vehicle->tyre_company_id)) {
+                                $oldUpdate['tyre_company_id'] = $vehicle->tyre_company_id;
+                            }
+                            $oldTyre->update($oldUpdate);
+
+                            $oldRemNotes = 'Auto-removed during replacement.';
+                            if ($isOdoEmpty) {
+                                $oldRemNotes = '[Odometer Rusak] ' . $oldRemNotes;
+                            }
 
                             TyreMovement::create([
                                 'tyre_id' => $oldTyre->id,
@@ -1343,10 +1366,10 @@ class TyreMovementController extends Controller
                                 'start_time' => $request->start_time ?? null,
                                 'movement_type' => 'Removal',
                                 'movement_date' => $request->movement_date,
-                                'odometer_reading' => $request->odometer,
-                                'hour_meter_reading' => $request->hour_meter,
+                                'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                                'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                                 'created_by' => Auth::id(),
-                                'notes' => 'Auto-removed during replacement.'
+                                'notes' => $oldRemNotes
                             ]);
                         }
                     }
@@ -1371,8 +1394,6 @@ class TyreMovementController extends Controller
                         $warnings[] = "Ban SN {$tyre->serial_number} sudah SCRAP.";
                     }
 
-                    // (Kode Handle Replacement dihapus karena pemasangan sekarang mewajibkan node kosong dan menggunakan Drag-to-Correct / Pelepasan eksplisit)
-
                     $updateData = [
                         'current_vehicle_id' => $request->vehicle_id,
                         'current_position_id' => $mov['position_id'],
@@ -1380,8 +1401,8 @@ class TyreMovementController extends Controller
                         'current_location_id' => null,
                         'status' => 'Installed',
                         'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
-                        'current_km' => $request->odometer ?? 0,
-                        'current_hm' => $request->hour_meter ?? 0,
+                        'current_km' => $isOdoEmpty ? ($tyre->current_km ?? 0) : ($request->odometer ?? 0),
+                        'current_hm' => $isOdoEmpty ? ($tyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                     ];
 
                     if (!empty($mov['serial_number'])) {
@@ -1399,14 +1420,20 @@ class TyreMovementController extends Controller
                         }
                     }
 
-                    if (\App\Helpers\SessionCompanyHelper::isWorkshopAdmin() && !\App\Helpers\SessionCompanyHelper::isSuperAdmin()) {
+                    if (!empty($vehicle->tyre_company_id)) {
                         $updateData['tyre_company_id'] = $vehicle->tyre_company_id;
                     }
                     $tyre->update($updateData);
 
-
                     if ($oldLocationId) {
                         DB::table('tyre_locations')->where('id', $oldLocationId)->decrement('current_stock');
+                    }
+
+                    $movRemarks = $mov['remarks'] ?? null;
+                    $movNotes = $mov['notes'] ?? null;
+                    if ($isOdoEmpty) {
+                        $movRemarks = !empty($movRemarks) ? trim('[Odometer Rusak] ' . $movRemarks) : '[Odometer Rusak]';
+                        $movNotes = !empty($movNotes) ? trim('[Odometer Rusak] ' . $movNotes) : '[Odometer Rusak]';
                     }
 
                     TyreMovement::create([
@@ -1424,10 +1451,10 @@ class TyreMovementController extends Controller
                         'rtd_reading' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : null,
                         'movement_type' => 'Installation',
                         'movement_date' => $request->movement_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
-                        'remarks' => $mov['remarks'] ?? null,
-                        'notes' => $mov['notes'] ?? null,
+                        'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                        'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
+                        'remarks' => $movRemarks,
+                        'notes' => $movNotes,
                         'created_by' => Auth::id(),
                         'photo' => $photoPath,
                     ]);
@@ -1681,7 +1708,7 @@ class TyreMovementController extends Controller
                     $pId = $mov['position_id'] ?? null;
                     $tId = $mov['tyre_id'] ?? null;
 
-                    if ($mType === 'Installation' && $tId && $pId) {
+                    if ($mType === 'Installation' && $tId && $pId && !$isOdoEmpty) {
                         \App\Services\TyreMonitoringSyncService::syncInstallation(
                             $request->vehicle_id,
                             $pId,

@@ -73,6 +73,7 @@ Route::middleware(['auth', 'eula'])->group(function () {
     Route::get('tyre-dashboard/filter-options', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'filterOptionsAjax'])->name('master_data.filter-options')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/kpi-detail', [\App\Http\Controllers\TyrePerformance\DashboardKpiController::class, 'kpiDetailAjax'])->name('master_data.kpi-detail')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/export', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'export'])->name('master_data.export')->middleware('tyre.permission:Dashboard');
+    Route::get('tyre-dashboard/export-pdf', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'exportExecutivePdf'])->name('master_data.export_pdf')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/download-template', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'downloadTemplate'])->name('master_data.download-template')->middleware('tyre.permission:Dashboard');
     Route::get('tyre-dashboard/super-admin-company-detail', [\App\Http\Controllers\TyrePerformance\DashboardController::class, 'superAdminCompanyDetailAjax'])->name('master_data.super-admin-company-detail')->middleware('tyre.permission:Dashboard');
 

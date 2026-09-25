@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DashboardController extends Controller
 {
@@ -1477,26 +1478,22 @@ class DashboardController extends Controller
         if ($type === 'movements') {
             $headers = [
                 'Tanggal Pergerakan',
-                'Perusahaan Pemilik Ban',
-                'Perusahaan Unit',
-                'SN Ban',
-                'Custom Code',
+                'Perusahaan',
+                'SN BAN',
                 'Brand',
                 'Size',
                 'Pattern',
-                'No. Polisi',
-                'Kode Unit',
-                'Posisi Roda',
+                'No Polisi',
+                'Posisi Ban',
                 'Tipe Pergerakan',
-                'Odometer (KM)',
+                'Odometer KM',
                 'Running KM',
-                'Hour Meter (HM)',
+                'Odometer HM',
                 'Running HM',
-                'RTD (mm)',
+                'RTD',
                 'PSI',
-                'Kode Kerusakan',
-                'Nama Kerusakan',
-                'Keterangan / Remarks',
+                'Kerusakan',
+                'Keterangan',
                 'Tyreman'
             ];
             
@@ -1506,31 +1503,39 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($movements as $row) {
-                $tyreOwner = $row->tyre->company->company_name ?? ($row->company->company_name ?? '-');
-                $vehicleOwner = $row->vehicle->company->company_name ?? ($row->company->company_name ?? '-');
+                $companyName = $row->vehicle->company->company_name ?? ($row->company->company_name ?? ($row->tyre->company->company_name ?? '-'));
                 $pos = $row->position ? ($row->position->position_code . ($row->position->position_name ? ' - ' . $row->position->position_name : '')) : '-';
+
+                // Check odometer rusak flag
+                $isOdoRusak = ($row->odometer_reading === null && $row->hour_meter_reading === null) || 
+                              (strpos(($row->remarks ?? '') . ' ' . ($row->notes ?? ''), '[Odometer Rusak]') !== false);
+
+                $odoKm = $row->odometer_reading !== null ? $row->odometer_reading : ($isOdoRusak ? 'Odo Rusak' : '-');
+                $odoHm = $row->hour_meter_reading !== null ? $row->hour_meter_reading : ($isOdoRusak ? 'Odo Rusak' : '-');
+
+                // Kerusakan: gabungkan kode dan nama (contoh: BUR/Terbakar)
+                $kerusakan = '-';
+                if ($row->failureCode) {
+                    $kerusakan = trim($row->failureCode->failure_code . '/' . $row->failureCode->failure_name);
+                }
 
                 $data[] = [
                     $row->movement_date,
-                    $tyreOwner,
-                    $vehicleOwner,
+                    $companyName,
                     $row->tyre->serial_number ?? '-',
-                    $row->tyre->custom_serial_number ?? '-',
                     $row->tyre->brand->brand_name ?? '-',
                     $row->tyre->size->size ?? '-',
                     $row->tyre->pattern->name ?? '-',
                     $row->vehicle->no_polisi ?? ($row->vehicle->kode_kendaraan ?? '-'),
-                    $row->vehicle->kode_kendaraan ?? '-',
                     $pos,
                     $row->movement_type,
-                    $row->odometer_reading ?? 0,
+                    $odoKm,
                     $row->running_km ?? 0,
-                    $row->hour_meter_reading ?? 0,
+                    $odoHm,
                     $row->running_hm ?? 0,
                     $row->rtd_reading ?? 0,
                     $row->psi_reading ?? 0,
-                    $row->failureCode->failure_code ?? '-',
-                    $row->failureCode->failure_name ?? '-',
+                    $kerusakan,
                     $row->remarks ?? ($row->notes ?? '-'),
                     trim(($row->tyreman_1 ?? '') . ' ' . ($row->tyreman_2 ?? '')) ?: '-'
                 ];
@@ -1952,6 +1957,195 @@ class DashboardController extends Controller
 
             return response()->stream($callback, 200, $httpHeaders);
         }
+    }
+
+    public function exportExecutivePdf(Request $request)
+    {
+        $startDate = $request->filled('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subYear()->startOfDay();
+        $endDate = $request->filled('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
+
+        // 1. Logo Base64 from public/storage/logo.png
+        $logoPath = public_path('storage/logo.png');
+        $logoBase64 = file_exists($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
+
+        // 2. Company Name Context
+        $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $companyName = 'Semua Perusahaan (Global)';
+        if ($companyId && !is_array($companyId) && $companyId !== 'ALL_CLIENTS') {
+            $comp = \App\Models\TyreCompany::find($companyId);
+            if ($comp) {
+                $companyName = $comp->company_name;
+            }
+        } elseif (auth()->user()->tyreCompany) {
+            $companyName = auth()->user()->tyreCompany->company_name;
+        }
+
+        // Resilient effective mileage expressions
+        $effectiveKmExpr = "GREATEST(COALESCE(tyres.total_lifetime_km, 0), COALESCE(tyres.current_km, 0), COALESCE((SELECT SUM(running_km) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+        $effectiveHmExpr = "GREATEST(COALESCE(tyres.total_lifetime_hm, 0), COALESCE(tyres.current_hm, 0), COALESCE((SELECT SUM(running_hm) FROM tyre_movements WHERE tyre_movements.tyre_id = tyres.id), 0))";
+
+        // 3. KPI Summary
+        $totalTyres = Tyre::count();
+        $installedTyres = Tyre::where('status', 'Installed')->count();
+        $inStockTyres = Tyre::whereIn('status', ['New', 'Repaired'])->count();
+        $scrappedTyres = Tyre::where('status', 'Scrap')->count();
+        $totalInvestment = Tyre::sum('price') ?? 0;
+
+        $avgKm = Tyre::whereRaw("{$effectiveKmExpr} > 0")->selectRaw("AVG({$effectiveKmExpr}) as avg_km")->value('avg_km') ?? 0;
+        $avgHm = Tyre::whereRaw("{$effectiveHmExpr} > 0")->selectRaw("AVG({$effectiveHmExpr}) as avg_hm")->value('avg_hm') ?? 0;
+
+        $tyresWithCpk = Tyre::whereNotNull('price')
+            ->where('price', '>', 0)
+            ->whereRaw("{$effectiveKmExpr} > 0")
+            ->selectRaw("SUM(price) as total_price, SUM({$effectiveKmExpr}) as total_km")
+            ->first();
+        $avgCpk = ($tyresWithCpk && $tyresWithCpk->total_km > 0)
+            ? round($tyresWithCpk->total_price / $tyresWithCpk->total_km, 2)
+            : 0;
+
+        // 4. Movement Summary in period
+        $movCounts = TyreMovement::whereBetween('movement_date', [$startDate, $endDate])
+            ->selectRaw("movement_type, COUNT(*) as total")
+            ->groupBy('movement_type')
+            ->pluck('total', 'movement_type')
+            ->toArray();
+
+        $totalPemasangan = $movCounts['Installation'] ?? 0;
+        $totalPelepasan = $movCounts['Removal'] ?? 0;
+        $totalRotasi = $movCounts['Rotation'] ?? 0;
+        $totalInspeksi = TyreMovement::whereIn('movement_type', ['Examination', 'Inspection'])
+            ->whereBetween('movement_date', [$startDate, $endDate])
+            ->count();
+
+        // Top Failure Modes (Pelepasan Ban)
+        $topFailures = TyreMovement::where('movement_type', 'Removal')
+            ->whereBetween('movement_date', [$startDate, $endDate])
+            ->whereNotNull('failure_code_id')
+            ->with('failureCode')
+            ->select('failure_code_id', DB::raw('count(*) as count'))
+            ->groupBy('failure_code_id')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get()
+            ->map(function($f) use ($totalPelepasan) {
+                $pct = $totalPelepasan > 0 ? round(($f->count / $totalPelepasan) * 100, 1) : 0;
+                return [
+                    'code' => $f->failureCode->failure_code ?? 'N/A',
+                    'name' => $f->failureCode->failure_name ?? 'Lain-lain',
+                    'count' => $f->count,
+                    'percentage' => $pct
+                ];
+            });
+
+        // Critical RTD (< 5mm)
+        $criticalTyres = Tyre::where('status', 'Installed')
+            ->whereNotNull('current_tread_depth')
+            ->where('current_tread_depth', '<', 5)
+            ->with(['brand', 'currentVehicle', 'currentPosition'])
+            ->limit(5)
+            ->get();
+
+        // 5. Rekomendasi Ban Paling Efektif
+        $brandPatternStats = Tyre::with(['brand', 'pattern', 'size'])
+            ->select(
+                'tyre_brand_id',
+                'tyre_pattern_id',
+                'tyre_size_id',
+                DB::raw('COUNT(*) as total_populasi'),
+                DB::raw('AVG(price) as avg_price'),
+                DB::raw("AVG({$effectiveKmExpr}) as avg_km"),
+                DB::raw('AVG(initial_tread_depth) as avg_otd'),
+                DB::raw('AVG(current_tread_depth) as avg_rtd')
+            )
+            ->groupBy('tyre_brand_id', 'tyre_pattern_id', 'tyre_size_id')
+            ->get()
+            ->map(function($item) use ($avgCpk) {
+                $avgKmVal = round($item->avg_km);
+                $avgPriceVal = round($item->avg_price);
+                $cpkVal = ($avgKmVal > 0 && $avgPriceVal > 0) ? round($avgPriceVal / $avgKmVal, 2) : 0;
+                $otd = $item->avg_otd ?? 0;
+                $rtd = $item->avg_rtd ?? 0;
+                $consumed = max(0, $otd - $rtd);
+                $kmPerMm = ($consumed > 0 && $avgKmVal > 0) ? round($avgKmVal / $consumed, 0) : 0;
+
+                if ($cpkVal > 0 && $cpkVal <= ($avgCpk > 0 ? $avgCpk * 0.9 : 50)) {
+                    $status = 'Sangat Efektif (Paling Hemat)';
+                    $badgeClass = 'badge-success';
+                } elseif ($kmPerMm >= 2500 || $avgKmVal >= 30000) {
+                    $status = 'Tahan Lama (Durabilitas Tinggi)';
+                    $badgeClass = 'badge-info';
+                } elseif ($cpkVal > 0 && $cpkVal > ($avgCpk > 0 ? $avgCpk * 1.3 : 100)) {
+                    $status = 'Perlu Evaluasi (Biaya Tinggi)';
+                    $badgeClass = 'badge-warning';
+                } else {
+                    $status = 'Kinerja Standar';
+                    $badgeClass = 'badge-secondary';
+                }
+
+                return [
+                    'brand' => $item->brand->brand_name ?? 'Unknown',
+                    'pattern' => $item->pattern->name ?? '-',
+                    'size' => $item->size->size ?? '-',
+                    'count' => $item->total_populasi,
+                    'price' => $avgPriceVal,
+                    'avg_km' => $avgKmVal,
+                    'cpk' => $cpkVal,
+                    'km_per_mm' => $kmPerMm,
+                    'status' => $status,
+                    'badge' => $badgeClass,
+                ];
+            });
+
+        // Urutkan ban rekomendasi: prioritaskan yang ada KM & CPK efisien
+        $effectiveTyres = $brandPatternStats->filter(fn($x) => $x['avg_km'] > 0)->sortBy('cpk')->values();
+        if ($effectiveTyres->isEmpty()) {
+            $effectiveTyres = $brandPatternStats->sortByDesc('count')->values();
+        }
+
+        $bestCpkTyre = $brandPatternStats->filter(fn($x) => $x['cpk'] > 0)->sortBy('cpk')->first();
+        $bestLifeTyre = $brandPatternStats->sortByDesc('avg_km')->first();
+
+        $viewData = [
+            'logoBase64' => $logoBase64,
+            'companyName' => $companyName,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'printDate' => Carbon::now()->translatedFormat('d F Y, H:i') . ' WIB',
+            'user' => auth()->user(),
+            'totalTyres' => $totalTyres,
+            'installedTyres' => $installedTyres,
+            'inStockTyres' => $inStockTyres,
+            'scrappedTyres' => $scrappedTyres,
+            'totalInvestment' => $totalInvestment,
+            'avgKm' => round($avgKm),
+            'avgHm' => round($avgHm),
+            'avgCpk' => $avgCpk,
+            'totalPemasangan' => $totalPemasangan,
+            'totalPelepasan' => $totalPelepasan,
+            'totalRotasi' => $totalRotasi,
+            'totalInspeksi' => $totalInspeksi,
+            'topFailures' => $topFailures,
+            'criticalTyres' => $criticalTyres,
+            'effectiveTyres' => $effectiveTyres->take(12),
+            'bestCpkTyre' => $bestCpkTyre,
+            'bestLifeTyre' => $bestLifeTyre,
+        ];
+
+        setLogActivity(auth()->id(), "Mengekspor Laporan Eksekutif PDF", [
+            'module' => 'Dashboard',
+            'period' => $startDate->format('Y-m-d') . ' s/d ' . $endDate->format('Y-m-d'),
+            'company' => $companyName
+        ]);
+
+        $pdf = Pdf::loadView('tyre-performance.reports.executive_summary_pdf', $viewData)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true);
+
+        $cleanComp = preg_replace('/[^A-Za-z0-9]/', '_', $companyName);
+        $filename = "Executive_Report_CPH_Tyre_{$cleanComp}_" . now()->format('Ymd_His') . ".pdf";
+
+        return $pdf->stream($filename);
     }
 
     public function downloadTemplate(Request $request)

@@ -5,8 +5,8 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
    <div class="app-brand demo" style="height: 75px">
       <a href="{{ url('/') }}" class="app-brand-link">
-         <span class="app-brand-logo demo">
-            <img src="{{ asset('img/logo.png') }}" alt="Logo" style="width: 40px">
+         <span class="app-brand-logo demo d-flex align-items-center">
+            <img src="{{ asset('storage/logo.png') }}" alt="CPH Tyre" style="max-height: 38px; width: auto; object-fit: contain;">
          </span>
          <span class="app-brand-text demo menu-text fw-bold ms-2">CPH TYRE</span>
       </a>

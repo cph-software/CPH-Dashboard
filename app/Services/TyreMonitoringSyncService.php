@@ -107,11 +107,19 @@ class TyreMonitoringSyncService
     public static function syncInstallation($vehicleId, $positionId, $tyreId, array $data)
     {
         try {
+            $odoReading = $data['odometer_reading'] ?? ($data['odometer'] ?? null);
+            $hmReading = $data['hour_meter_reading'] ?? ($data['hour_meter'] ?? null);
+            $notes = ($data['notes'] ?? '') . ' ' . ($data['remarks'] ?? '');
+            if ((($odoReading === null || $odoReading === '') && ($hmReading === null || $hmReading === '')) || strpos($notes, '[Odometer Rusak]') !== false) {
+                // Odometer rusak / dikosongkan saat pasang: tidak masuk langsung ke monitoring pertama
+                return;
+            }
+
             $session = self::getOrCreateActiveSession(
                 $vehicleId,
                 $data['movement_date'] ?? null,
-                $data['odometer_reading'] ?? ($data['odometer'] ?? 0),
-                $data['hour_meter_reading'] ?? ($data['hour_meter'] ?? 0)
+                $odoReading ?? 0,
+                $hmReading ?? 0
             );
 
             if (!$session) {
