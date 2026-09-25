@@ -2013,8 +2013,24 @@ class DashboardController extends Controller
             ? round($tyresWithCpk->total_price / $tyresWithCpk->total_km, 2)
             : 0;
 
-        // 4. Movement Summary in period
-        $movCounts = TyreMovement::whereBetween('movement_date', [$startDate, $endDate])
+        // 4. Movement Summary in period (strictly scoped to company)
+        $movQuery = TyreMovement::whereBetween('movement_date', [$startDate, $endDate]);
+
+        if ($companyId && $companyId !== 'ALL_CLIENTS') {
+            if (is_array($companyId)) {
+                $movQuery->where(function($q) use ($companyId) {
+                    $q->whereIn('tyre_company_id', $companyId)
+                      ->orWhereHas('vehicle', fn($vq) => $vq->whereIn('tyre_company_id', $companyId));
+                });
+            } else {
+                $movQuery->where(function($q) use ($companyId) {
+                    $q->where('tyre_company_id', $companyId)
+                      ->orWhereHas('vehicle', fn($vq) => $vq->where('tyre_company_id', $companyId));
+                });
+            }
+        }
+
+        $movCounts = (clone $movQuery)
             ->selectRaw("movement_type, COUNT(*) as total")
             ->groupBy('movement_type')
             ->pluck('total', 'movement_type')
@@ -2023,12 +2039,12 @@ class DashboardController extends Controller
         $totalPemasangan = $movCounts['Installation'] ?? 0;
         $totalPelepasan = $movCounts['Removal'] ?? 0;
         $totalRotasi = $movCounts['Rotation'] ?? 0;
-        $totalInspeksi = TyreMovement::whereIn('movement_type', ['Examination', 'Inspection'])
-            ->whereBetween('movement_date', [$startDate, $endDate])
+        $totalInspeksi = (clone $movQuery)
+            ->whereIn('movement_type', ['Examination', 'Inspection'])
             ->count();
 
-        // Riwayat Transaksi Pergerakan Ban dalam Periode
-        $movements = TyreMovement::whereBetween('movement_date', [$startDate, $endDate])
+        // Riwayat Transaksi Pergerakan Ban dalam Periode - LENGKAP SEMUANYA (NO LIMIT 7)
+        $movements = (clone $movQuery)
             ->with([
                 'tyre.brand', 
                 'tyre.size', 
@@ -2039,12 +2055,11 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('movement_date')
             ->orderByDesc('id')
-            ->limit(7)
             ->get();
 
         // Top Failure Modes (Pelepasan Ban)
-        $topFailures = TyreMovement::where('movement_type', 'Removal')
-            ->whereBetween('movement_date', [$startDate, $endDate])
+        $topFailures = (clone $movQuery)
+            ->where('movement_type', 'Removal')
             ->whereNotNull('failure_code_id')
             ->with('failureCode')
             ->select('failure_code_id', DB::raw('count(*) as count'))

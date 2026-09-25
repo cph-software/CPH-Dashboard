@@ -147,6 +147,16 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 8px;
+            page-break-inside: auto;
+        }
+
+        .details-table thead {
+            display: table-header-group;
+        }
+
+        .details-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
 
         .details-table th {
@@ -305,21 +315,25 @@
     <!-- Summary Bar Transaksi -->
     <table class="info-table" style="margin-bottom: 5px;">
         <tr>
-            <td style="width: 25%; text-align: center;">
+            <td style="width: 20%; text-align: center;">
                 <span class="label">TOTAL PERGERAKAN</span>
                 <span class="value">{{ number_format($totalPemasangan + $totalPelepasan + $totalRotasi + $totalInspeksi) }} Transaksi</span>
             </td>
-            <td style="width: 25%; text-align: center;">
+            <td style="width: 20%; text-align: center;">
                 <span class="label">PEMASANGAN (INSTALL)</span>
                 <span class="value" style="color: #27ae60;">{{ number_format($totalPemasangan) }} Ban</span>
             </td>
-            <td style="width: 25%; text-align: center;">
+            <td style="width: 20%; text-align: center;">
                 <span class="label">PELEPASAN (REMOVAL)</span>
                 <span class="value" style="color: #c0392b;">{{ number_format($totalPelepasan) }} Ban</span>
             </td>
-            <td style="width: 25%; text-align: center;">
+            <td style="width: 20%; text-align: center;">
                 <span class="label">ROTASI POSISI</span>
                 <span class="value" style="color: #d97706;">{{ number_format($totalRotasi) }} Ban</span>
+            </td>
+            <td style="width: 20%; text-align: center;">
+                <span class="label">INSPEKSI / CEK</span>
+                <span class="value" style="color: #2980b9;">{{ number_format($totalInspeksi) }} Kali</span>
             </td>
         </tr>
     </table>
@@ -369,8 +383,10 @@
                             <span class="badge badge-danger">Pelepasan</span>
                         @elseif ($m->movement_type === 'Rotation')
                             <span class="badge badge-warning">Rotasi</span>
+                        @elseif (in_array($m->movement_type, ['Inspection', 'Examination']))
+                            <span class="badge badge-info">Inspeksi</span>
                         @else
-                            <span class="badge badge-info">{{ $m->movement_type }}</span>
+                            <span class="badge badge-secondary">{{ $m->movement_type }}</span>
                         @endif
                     </td>
                     <td class="text-right" style="padding-right: 5px;">

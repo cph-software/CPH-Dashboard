@@ -809,7 +809,7 @@ class MonitoringController extends Controller
 
         $newCheckNumber = ($lastCheckRecord->check_number ?? 0) + 1;
         $user = auth()->user();
-        $isAdmin = ($user->role_id == 1);
+        $isAdmin = ($user->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin());
 
         // Validation Rule: 1 Axle = Must check all wheels in that axle (if it's a dual axle)
         $checksForAxles = [];
