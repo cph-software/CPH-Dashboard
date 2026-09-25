@@ -1964,9 +1964,19 @@ class DashboardController extends Controller
         $startDate = $request->filled('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subYear()->startOfDay();
         $endDate = $request->filled('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
-        // 1. Logo Base64 from public/storage/logo.png
-        $logoPath = public_path('storage/logo.png');
-        $logoBase64 = file_exists($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
+        // 1. Logo Base64 (check multiple fallback locations)
+        $logoPath = null;
+        foreach ([
+            public_path('storage/logo.png'),
+            public_path('img/logo.png'),
+            storage_path('app/public/logo.png'),
+        ] as $p) {
+            if (file_exists($p)) {
+                $logoPath = $p;
+                break;
+            }
+        }
+        $logoBase64 = $logoPath ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
 
         // 2. Company Name Context
         $companyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();

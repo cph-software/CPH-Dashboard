@@ -5,372 +5,451 @@
     <title>Executive Summary Report - CPH Tyre Performance</title>
     <style>
         @page {
-            margin: 12mm 14mm 14mm 14mm;
+            margin: 10mm 12mm 10mm 12mm;
+            size: A4 portrait;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 9pt;
-            line-height: 1.35;
-            color: #2d3748;
+            font-size: 8.5pt;
+            line-height: 1.3;
+            color: #1e293b;
             margin: 0;
             padding: 0;
         }
+
+        /* HEADER AREA */
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #2b6cb0;
-            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #0f2942;
+            padding-bottom: 6px;
         }
         .header-table td {
             vertical-align: middle;
         }
         .logo-img {
-            max-height: 46px;
-            max-width: 140px;
+            max-height: 48px;
+            max-width: 150px;
         }
-        .header-title {
+        .doc-title {
             font-size: 15pt;
             font-weight: bold;
-            color: #1a365d;
-            margin: 0;
+            color: #0f2942;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin: 0;
         }
-        .header-subtitle {
-            font-size: 9pt;
-            color: #4a5568;
+        .doc-subtitle {
+            font-size: 8.5pt;
+            font-weight: 600;
+            color: #2563eb;
             margin: 2px 0 0 0;
-            font-weight: 500;
+            letter-spacing: 0.2px;
         }
-        .meta-box {
-            background-color: #ebf8ff;
-            border: 1px solid #bee3f8;
-            border-radius: 4px;
-            padding: 6px 10px;
-            margin-bottom: 12px;
-        }
-        .meta-table {
+
+        /* METADATA BAR */
+        .meta-container {
             width: 100%;
             border-collapse: collapse;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            margin-bottom: 10px;
         }
-        .meta-table td {
+        .meta-container td {
+            padding: 5px 8px;
             font-size: 8pt;
-            padding: 2px 4px;
+            vertical-align: middle;
         }
         .meta-label {
-            color: #4a5568;
+            color: #64748b;
             font-weight: bold;
-            width: 16%;
+            width: 17%;
         }
-        .meta-value {
-            color: #1a202c;
-            width: 34%;
+        .meta-val {
+            color: #0f172a;
+            font-weight: 600;
+            width: 33%;
         }
 
-        /* SECTION STYLING */
+        /* SECTION TITLES */
+        .section-header {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 5px 0;
+        }
+        .section-header td {
+            padding: 0;
+            vertical-align: middle;
+        }
         .section-title {
-            font-size: 10.5pt;
+            font-size: 9.5pt;
             font-weight: bold;
-            color: #2b6cb0;
-            margin: 12px 0 6px 0;
+            color: #0f2942;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 3px;
+            letter-spacing: 0.4px;
+            border-left: 3.5px solid #2563eb;
+            padding-left: 6px;
+            margin: 0;
         }
 
-        /* KPI CARDS */
+        /* KPI METRIC CARDS */
         .kpi-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 6px 0;
-            margin-bottom: 12px;
+            border-spacing: 5px 0;
+            margin-bottom: 10px;
         }
         .kpi-card {
-            background-color: #f7fafc;
+            background-color: #ffffff;
             border: 1px solid #e2e8f0;
-            border-top: 3px solid #3182ce;
+            border-top: 3px solid #2563eb;
             border-radius: 4px;
-            padding: 6px 8px;
+            padding: 6px 4px;
             text-align: center;
         }
-        .kpi-card.green { border-top-color: #38a169; }
-        .kpi-card.purple { border-top-color: #805ad5; }
-        .kpi-card.orange { border-top-color: #dd6b20; }
-        .kpi-card.teal { border-top-color: #319795; }
-        .kpi-title {
-            font-size: 7.5pt;
-            font-weight: bold;
-            color: #718096;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-        .kpi-value {
-            font-size: 13pt;
-            font-weight: bold;
-            color: #1a202c;
-            margin: 0;
-        }
-        .kpi-sub {
+        .kpi-card.emerald { border-top-color: #059669; }
+        .kpi-card.indigo  { border-top-color: #4f46e5; }
+        .kpi-card.purple  { border-top-color: #7c3aed; }
+        .kpi-card.amber   { border-top-color: #d97706; }
+
+        .kpi-label {
             font-size: 7pt;
-            color: #a0aec0;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+        }
+        .kpi-number {
+            font-size: 13.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.1;
+        }
+        .kpi-unit {
+            font-size: 7.5pt;
+            font-weight: normal;
+            color: #64748b;
+        }
+        .kpi-footnote {
+            font-size: 6.8pt;
+            color: #94a3b8;
             margin-top: 2px;
         }
 
-        /* TWO COLUMN LAYOUT */
-        .columns-table {
+        /* DUAL COLUMN SECTION */
+        .dual-col-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .columns-table td {
+        .dual-col-table td {
             vertical-align: top;
         }
 
-        /* GENERAL DATA TABLES */
-        .data-table {
+        /* TABLES */
+        .report-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .data-table th {
-            background-color: #edf2f7;
-            color: #2d3748;
+        .report-table th {
+            background-color: #1e293b;
+            color: #ffffff;
             font-weight: bold;
             text-align: left;
             padding: 5px 6px;
-            border: 1px solid #cbd5e0;
+            border: 1px solid #0f172a;
             font-size: 7.5pt;
             text-transform: uppercase;
+            letter-spacing: 0.2px;
         }
-        .data-table td {
+        .report-table td {
             padding: 4px 6px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             vertical-align: middle;
         }
-        .data-table tr:nth-child(even) td {
-            background-color: #f7fafc;
+        .report-table tr:nth-child(even) td {
+            background-color: #f8fafc;
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .fw-bold { font-weight: bold; }
 
-        /* BADGES */
+        /* PERCENTAGE BAR */
+        .progress-track {
+            background-color: #e2e8f0;
+            border-radius: 3px;
+            width: 100%;
+            height: 8px;
+            overflow: hidden;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .progress-fill {
+            background-color: #2563eb;
+            height: 8px;
+            border-radius: 3px;
+        }
+
+        /* RECOMMENDATION HIGHLIGHT BOXES */
+        .recom-cards-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 6px 0;
+            margin-bottom: 8px;
+        }
+        .recom-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+        .recom-box.best-cpk {
+            background-color: #f0fdf4;
+            border-color: #86efac;
+            border-left: 3.5px solid #16a34a;
+        }
+        .recom-box.best-life {
+            background-color: #eff6ff;
+            border-color: #93c5fd;
+            border-left: 3.5px solid #2563eb;
+        }
+        .recom-tag {
+            font-size: 6.8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+        }
+        .recom-title {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+        }
+        .recom-desc {
+            font-size: 7.5pt;
+            color: #334155;
+            margin: 0;
+            line-height: 1.25;
+        }
+
+        /* STATUS BADGES */
         .badge {
             display: inline-block;
             padding: 2px 6px;
-            font-size: 7pt;
+            font-size: 6.8pt;
             font-weight: bold;
             border-radius: 3px;
+            text-align: center;
         }
-        .badge-success { background-color: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-        .badge-info { background-color: #bee3f8; color: #2a4365; border: 1px solid #90cdf4; }
-        .badge-warning { background-color: #feebc8; color: #744210; border: 1px solid #fbd38d; }
-        .badge-secondary { background-color: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; }
+        .badge-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-info    { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .badge-warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-secondary { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
-        /* HIGHLIGHT CALLOUT */
-        .callout-box {
-            background-color: #f0fff4;
-            border: 1px solid #9ae6b4;
-            border-left: 4px solid #38a169;
-            padding: 7px 10px;
-            border-radius: 3px;
-            margin-bottom: 10px;
-        }
-        .callout-title {
-            font-size: 8.5pt;
-            font-weight: bold;
-            color: #22543d;
-            margin: 0 0 3px 0;
-        }
-        .callout-desc {
-            font-size: 8pt;
-            color: #276749;
-            margin: 0;
-        }
-
-        /* SIGNATURE SECTION */
-        .signature-table {
+        /* SIGNATURE BOXES */
+        .sig-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 25px;
+            margin-top: 15px;
             page-break-inside: avoid;
         }
-        .signature-box {
-            width: 32%;
+        .sig-cell {
+            width: 33.33%;
             text-align: center;
             vertical-align: top;
-            padding: 0 8px;
+            padding: 0 10px;
         }
-        .signature-role {
-            font-size: 8pt;
+        .sig-role {
+            font-size: 7.8pt;
             font-weight: bold;
-            color: #4a5568;
-            margin-bottom: 50px;
+            color: #475569;
+            margin-bottom: 45px;
+            line-height: 1.25;
         }
-        .signature-line {
-            border-bottom: 1px solid #4a5568;
+        .sig-line {
+            border-bottom: 1px solid #334155;
             margin-bottom: 3px;
         }
-        .signature-name {
+        .sig-name {
             font-size: 8pt;
             font-weight: bold;
-            color: #1a202c;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+        .sig-sub {
+            font-size: 7pt;
+            color: #64748b;
         }
 
         /* FOOTER */
-        .report-footer {
-            margin-top: 15px;
-            padding-top: 6px;
+        .footer-note {
+            margin-top: 12px;
+            padding-top: 4px;
             border-top: 1px solid #e2e8f0;
-            font-size: 7pt;
-            color: #a0aec0;
+            font-size: 6.8pt;
+            color: #94a3b8;
             text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
+    <!-- HEADER BRANDING -->
     <table class="header-table">
         <tr>
-            <td style="width: 25%;">
+            <td style="width: 28%;">
                 @if ($logoBase64)
                     <img src="{{ $logoBase64 }}" class="logo-img" alt="CPH Tyre">
                 @else
-                    <span style="font-size: 16pt; font-weight: bold; color: #2b6cb0;">CPH TYRE</span>
+                    <div style="font-size: 16pt; font-weight: bold; color: #0f2942; letter-spacing: 0.5px;">CPH TYRE</div>
                 @endif
             </td>
-            <td style="width: 75%; text-align: right;">
-                <div class="header-title">Executive Performance Report</div>
-                <div class="header-subtitle">Analisis Pergerakan, Umur Pakai & Rekomendasi Efektivitas Ban</div>
+            <td style="width: 72%; text-align: right;">
+                <div class="doc-title">Executive Performance Report</div>
+                <div class="doc-subtitle">Analisis Pergerakan, Umur Pakai &amp; Rekomendasi Efektivitas Ban</div>
             </td>
         </tr>
     </table>
 
     <!-- METADATA BOX -->
-    <div class="meta-box">
-        <table class="meta-table">
-            <tr>
-                <td class="meta-label">Entitas / Perusahaan:</td>
-                <td class="meta-value"><strong>{{ $companyName }}</strong></td>
-                <td class="meta-label">Periode Analisis:</td>
-                <td class="meta-value">{{ $startDate->format('d/m/Y') }} &ndash; {{ $endDate->format('d/m/Y') }}</td>
-            </tr>
-            <tr>
-                <td class="meta-label">Waktu Unduh:</td>
-                <td class="meta-value">{{ $printDate }}</td>
-                <td class="meta-label">Disiapkan Oleh:</td>
-                <td class="meta-value">{{ $user->name ?? 'User Sistem' }} ({{ $user->role->name ?? 'Admin' }})</td>
-            </tr>
-        </table>
-    </div>
+    <table class="meta-container">
+        <tr>
+            <td class="meta-label">Entitas / Perusahaan:</td>
+            <td class="meta-val">{{ $companyName }}</td>
+            <td class="meta-label">Periode Analisis:</td>
+            <td class="meta-val">{{ $startDate->format('d/m/Y') }} &ndash; {{ $endDate->format('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td class="meta-label">Waktu Unduh:</td>
+            <td class="meta-val">{{ $printDate }}</td>
+            <td class="meta-label">Disiapkan Oleh:</td>
+            <td class="meta-val">{{ $user->name ?? 'User Sistem' }} ({{ $user->role->name ?? 'Admin' }})</td>
+        </tr>
+    </table>
 
-    <!-- ROW 1: EXECUTIVE KPI SUMMARY -->
-    <div class="section-title">1. Ringkasan Eksekutif & Key Performance Indicators (KPI)</div>
+    <!-- 1. KEY PERFORMANCE INDICATORS (KPI) -->
+    <table class="section-header">
+        <tr>
+            <td><div class="section-title">1. Ringkasan Eksekutif &amp; Key Performance Indicators (KPI)</div></td>
+        </tr>
+    </table>
     <table class="kpi-table">
         <tr>
             <td style="width: 20%;">
                 <div class="kpi-card">
-                    <div class="kpi-title">Total Populasi Ban</div>
-                    <div class="kpi-value">{{ number_format($totalTyres, 0, ',', '.') }}</div>
-                    <div class="kpi-sub">{{ $installedTyres }} Pasang &bull; {{ $inStockTyres }} Gudang</div>
+                    <div class="kpi-label">Populasi Ban</div>
+                    <div class="kpi-number">{{ number_format($totalTyres, 0, ',', '.') }}</div>
+                    <div class="kpi-footnote">{{ $installedTyres }} Pasang &bull; {{ $inStockTyres }} Gudang</div>
                 </div>
             </td>
             <td style="width: 20%;">
-                <div class="kpi-card green">
-                    <div class="kpi-title">Rata-rata Umur Pakai</div>
-                    <div class="kpi-value">{{ number_format($avgKm, 0, ',', '.') }} <span style="font-size:8pt; font-weight:normal;">KM</span></div>
-                    <div class="kpi-sub">atau {{ number_format($avgHm, 0, ',', '.') }} HM</div>
+                <div class="kpi-card emerald">
+                    <div class="kpi-label">Rata-rata Lifetime</div>
+                    <div class="kpi-number">{{ number_format($avgKm, 0, ',', '.') }} <span class="kpi-unit">KM</span></div>
+                    <div class="kpi-footnote">atau {{ number_format($avgHm, 0, ',', '.') }} HM</div>
                 </div>
             </td>
             <td style="width: 20%;">
-                <div class="kpi-card orange">
-                    <div class="kpi-title">Cost Per KM (CPK)</div>
-                    <div class="kpi-value">Rp {{ number_format($avgCpk, 0, ',', '.') }}</div>
-                    <div class="kpi-sub">Rata-rata Biaya / KM</div>
+                <div class="kpi-card indigo">
+                    <div class="kpi-label">Cost Per KM (CPK)</div>
+                    <div class="kpi-number"><span style="font-size: 9pt; font-weight: normal;">Rp</span> {{ number_format($avgCpk, 0, ',', '.') }}</div>
+                    <div class="kpi-footnote">Rata-rata Biaya Operasional/KM</div>
                 </div>
             </td>
             <td style="width: 20%;">
                 <div class="kpi-card purple">
-                    <div class="kpi-title">Total Investasi Ban</div>
-                    <div class="kpi-value">Rp {{ number_format($totalInvestment / 1000000, 1, ',', '.') }}<span style="font-size:8pt; font-weight:normal;"> Jt</span></div>
-                    <div class="kpi-sub">Nilai Perolehan Aset Ban</div>
+                    <div class="kpi-label">Total Investasi Ban</div>
+                    <div class="kpi-number"><span style="font-size: 9pt; font-weight: normal;">Rp</span> {{ number_format($totalInvestment / 1000000, 1, ',', '.') }}<span class="kpi-unit"> Jt</span></div>
+                    <div class="kpi-footnote">Nilai Perolehan Seluruh Ban</div>
                 </div>
             </td>
             <td style="width: 20%;">
-                <div class="kpi-card teal">
-                    <div class="kpi-title">Kondisi Ban Kritis</div>
-                    <div class="kpi-value" style="color: {{ $criticalTyres->count() > 0 ? '#c53030' : '#2f855a' }};">
-                        {{ $criticalTyres->count() }} <span style="font-size:8pt; font-weight:normal;">Unit Ban</span>
+                <div class="kpi-card amber">
+                    <div class="kpi-label">Status Kritis (RTD &lt; 5mm)</div>
+                    <div class="kpi-number" style="color: {{ $criticalTyres->count() > 0 ? '#dc2626' : '#15803d' }};">
+                        {{ $criticalTyres->count() }} <span class="kpi-unit">Ban</span>
                     </div>
-                    <div class="kpi-sub">RTD &lt; 5 mm (Perlu Peremajaan)</div>
+                    <div class="kpi-footnote">{{ $criticalTyres->count() > 0 ? 'Perlu Penggantian Segera' : 'Kondisi Tapak Terjaga Baik' }}</div>
                 </div>
             </td>
         </tr>
     </table>
 
-    <!-- ROW 2: KONDISI PERGERAKAN BAN & KERUSAKAN -->
-    <div class="section-title">2. Kondisi Pergerakan Ban & Analisis Kerusakan</div>
-    <table class="columns-table">
+    <!-- 2. KONDISI PERGERAKAN BAN & KERUSAKAN -->
+    <table class="section-header">
         <tr>
-            <!-- Left Column: Aktivitas Pergerakan -->
-            <td style="width: 48%; padding-right: 8px;">
-                <table class="data-table">
+            <td><div class="section-title">2. Kondisi Pergerakan Ban &amp; Analisis Kerusakan (Pelepasan)</div></td>
+        </tr>
+    </table>
+    <table class="dual-col-table">
+        <tr>
+            <!-- Left Panel: Aktivitas Pergerakan -->
+            <td style="width: 48%; padding-right: 5px;">
+                <table class="report-table">
                     <thead>
                         <tr>
                             <th>Aktivitas Pergerakan Periode Ini</th>
-                            <th class="text-center" style="width: 30%;">Jumlah Transaksi</th>
+                            <th class="text-center" style="width: 32%;">Jumlah Ban</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong style="color: #2f855a;">&bull; Pemasangan (Installation)</strong></td>
+                            <td><strong style="color: #15803d;">&bull; Pemasangan (Installation)</strong></td>
                             <td class="text-center fw-bold">{{ number_format($totalPemasangan) }} ban</td>
                         </tr>
                         <tr>
-                            <td><strong style="color: #c53030;">&bull; Pelepasan (Removal)</strong></td>
+                            <td><strong style="color: #dc2626;">&bull; Pelepasan (Removal)</strong></td>
                             <td class="text-center fw-bold">{{ number_format($totalPelepasan) }} ban</td>
                         </tr>
                         <tr>
-                            <td><strong style="color: #dd6b20;">&bull; Rotasi Posisi (Rotation)</strong></td>
+                            <td><strong style="color: #d97706;">&bull; Rotasi Posisi (Rotation)</strong></td>
                             <td class="text-center fw-bold">{{ number_format($totalRotasi) }} ban</td>
                         </tr>
                         <tr>
-                            <td><strong style="color: #3182ce;">&bull; Inspeksi / Monitoring Berkala</strong></td>
+                            <td><strong style="color: #2563eb;">&bull; Inspeksi / Monitoring Berkala</strong></td>
                             <td class="text-center fw-bold">{{ number_format($totalInspeksi) }} ban</td>
                         </tr>
-                        <tr style="background-color: #edf2f7;">
-                            <td class="fw-bold">Total Transaksi Operasional</td>
+                        <tr style="background-color: #f1f5f9;">
+                            <td class="fw-bold">Total Transaksi Pergerakan</td>
                             <td class="text-center fw-bold">{{ number_format($totalPemasangan + $totalPelepasan + $totalRotasi + $totalInspeksi) }}</td>
                         </tr>
                     </tbody>
                 </table>
             </td>
 
-            <!-- Right Column: Top Mode Kerusakan -->
-            <td style="width: 52%; padding-left: 8px;">
-                <table class="data-table">
+            <!-- Right Panel: Analisis Kerusakan -->
+            <td style="width: 52%; padding-left: 5px;">
+                <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Penyebab Kerusakan Terbanyak (Pelepasan)</th>
-                            <th class="text-center" style="width: 22%;">Kasus</th>
-                            <th class="text-center" style="width: 25%;">Persentase</th>
+                            <th>Penyebab Pelepasan Ban Terbanyak</th>
+                            <th class="text-center" style="width: 20%;">Kasus</th>
+                            <th class="text-center" style="width: 24%;">Persentase</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($topFailures as $fail)
                             <tr>
-                                <td><strong>{{ $fail['code'] }}</strong> &ndash; {{ $fail['name'] }}</td>
+                                <td>
+                                    <strong>{{ $fail['code'] }}</strong> &ndash; {{ $fail['name'] }}
+                                    <div class="progress-track">
+                                        <div class="progress-fill" style="width: {{ min(100, $fail['percentage']) }}%;"></div>
+                                    </div>
+                                </td>
                                 <td class="text-center fw-bold">{{ $fail['count'] }}</td>
-                                <td class="text-center">{{ $fail['percentage'] }}%</td>
+                                <td class="text-center fw-bold">{{ $fail['percentage'] }}%</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-center" style="color:#718096; padding: 10px;">
-                                    Tidak ada data kerusakan pelepasan ban pada periode ini.
+                                <td colspan="3" class="text-center" style="color: #64748b; padding: 12px;">
+                                    Tidak ada catatan pelepasan karena kerusakan pada periode ini.
                                 </td>
                             </tr>
                         @endforelse
@@ -380,49 +459,71 @@
         </tr>
     </table>
 
-    <!-- ROW 3: REKOMENDASI BAN PALING EFEKTIF -->
-    <div class="section-title">3. Rekomendasi Ban Paling Efektif Berdasarkan Data Monitoring</div>
+    <!-- 3. REKOMENDASI BAN PALING EFEKTIF -->
+    <table class="section-header">
+        <tr>
+            <td><div class="section-title">3. Rekomendasi Ban Paling Efektif Berdasarkan Data Pemakaian</div></td>
+        </tr>
+    </table>
 
+    <!-- HIGHLIGHT REKOMENDASI UTAMA (DUAL TILES) -->
     @if ($bestCpkTyre || $bestLifeTyre)
-        <div class="callout-box">
-            <div class="callout-title">&#9733; Ringkasan Rekomendasi Utama (Executive Insight):</div>
-            <p class="callout-desc">
-                @if ($bestCpkTyre && $bestCpkTyre['cpk'] > 0)
-                    &bull; <strong>Ban Paling Hemat Biaya (Best CPK):</strong> 
-                    Merk <strong>{{ $bestCpkTyre['brand'] }}</strong> (Pattern: {{ $bestCpkTyre['pattern'] }}, Size: {{ $bestCpkTyre['size'] }}) dengan biaya operasional hanya <strong>Rp {{ number_format($bestCpkTyre['cpk'], 0, ',', '.') }}/KM</strong>.
-                @endif
-                <br>
-                @if ($bestLifeTyre && $bestLifeTyre['avg_km'] > 0)
-                    &bull; <strong>Ban Paling Tahan Lama (Best Durability):</strong> 
-                    Merk <strong>{{ $bestLifeTyre['brand'] }}</strong> (Pattern: {{ $bestLifeTyre['pattern'] }}) mencapai umur pakai rata-rata <strong>{{ number_format($bestLifeTyre['avg_km'], 0, ',', '.') }} KM</strong>.
-                @endif
-            </p>
-        </div>
+        <table class="recom-cards-table">
+            <tr>
+                <td style="width: 50%;">
+                    <div class="recom-box best-cpk">
+                        <div class="recom-tag" style="color: #16a34a;">[REKOMENDASI BIAYA TERBAIK]</div>
+                        <div class="recom-title">
+                            {{ $bestCpkTyre['brand'] ?? '-' }} &bull; Pattern {{ $bestCpkTyre['pattern'] ?? '-' }}
+                        </div>
+                        <div class="recom-desc">
+                            Ukuran <strong>{{ $bestCpkTyre['size'] ?? '-' }}</strong> membukukan biaya operasional terendah sebesar 
+                            <strong style="color: #15803d;">Rp {{ number_format($bestCpkTyre['cpk'] ?? 0, 0, ',', '.') }}/KM</strong> 
+                            dengan laju keausan yang sangat ekonomis.
+                        </div>
+                    </div>
+                </td>
+                <td style="width: 50%;">
+                    <div class="recom-box best-life">
+                        <div class="recom-tag" style="color: #2563eb;">[REKOMENDASI DURABILITAS TERTINGGI]</div>
+                        <div class="recom-title">
+                            {{ $bestLifeTyre['brand'] ?? '-' }} &bull; Pattern {{ $bestLifeTyre['pattern'] ?? '-' }}
+                        </div>
+                        <div class="recom-desc">
+                            Tercatat sebagai ban paling awet dengan rata-rata umur pakai mencapai 
+                            <strong style="color: #1d4ed8;">{{ number_format($bestLifeTyre['avg_km'] ?? 0, 0, ',', '.') }} KM</strong>, 
+                            sangat direkomendasikan untuk armada operasional jarak jauh.
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     @endif
 
-    <table class="data-table">
+    <!-- TABEL PERINGKAT & REKOMENDASI -->
+    <table class="report-table">
         <thead>
             <tr>
-                <th style="width: 5%;" class="text-center">No</th>
-                <th style="width: 18%;">Merk Ban</th>
+                <th style="width: 4%;" class="text-center">No</th>
+                <th style="width: 17%;">Merk Ban</th>
                 <th style="width: 15%;">Pola Tapak (Pattern)</th>
                 <th style="width: 14%;">Ukuran (Size)</th>
                 <th style="width: 8%;" class="text-center">Populasi</th>
                 <th style="width: 14%;" class="text-right">Rata-rata KM</th>
                 <th style="width: 12%;" class="text-right">Biaya/KM (CPK)</th>
-                <th style="width: 14%;" class="text-center">Status Rekomendasi</th>
+                <th style="width: 16%;" class="text-center">Status Rekomendasi</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($effectiveTyres as $idx => $tyre)
                 <tr>
-                    <td class="text-center">{{ $idx + 1 }}</td>
+                    <td class="text-center fw-bold">{{ $idx + 1 }}</td>
                     <td><strong>{{ $tyre['brand'] }}</strong></td>
                     <td>{{ $tyre['pattern'] }}</td>
                     <td>{{ $tyre['size'] }}</td>
-                    <td class="text-center">{{ $tyre['count'] }}</td>
+                    <td class="text-center fw-bold">{{ $tyre['count'] }}</td>
                     <td class="text-right fw-bold">{{ $tyre['avg_km'] > 0 ? number_format($tyre['avg_km'], 0, ',', '.') . ' KM' : '-' }}</td>
-                    <td class="text-right fw-bold" style="color: {{ $tyre['cpk'] > 0 && $tyre['cpk'] <= ($avgCpk ?: 50) ? '#22543d' : '#2d3748' }};">
+                    <td class="text-right fw-bold" style="color: {{ $tyre['cpk'] > 0 && $tyre['cpk'] <= ($avgCpk ?: 50) ? '#15803d' : '#0f172a' }};">
                         {{ $tyre['cpk'] > 0 ? 'Rp ' . number_format($tyre['cpk'], 0, ',', '.') : '-' }}
                     </td>
                     <td class="text-center">
@@ -431,7 +532,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center" style="padding: 12px; color: #718096;">
+                    <td colspan="8" class="text-center" style="padding: 12px; color: #64748b;">
                         Belum ada data ban dengan rekaman operasional untuk dianalisis.
                     </td>
                 </tr>
@@ -439,30 +540,33 @@
         </tbody>
     </table>
 
-    <!-- LEMBAR PENGESAHAN / APPROVAL -->
-    <table class="signature-table">
+    <!-- LEMBAR PENGESAHAN & APPROVAL -->
+    <table class="sig-table">
         <tr>
-            <td class="signature-box">
-                <div class="signature-role">Dibuat & Dianalisis Oleh,<br><strong>PIC Tyreman / Staff</strong></div>
-                <div class="signature-line"></div>
-                <div class="signature-name">{{ $user->name ?? 'PIC Tyre' }}</div>
+            <td class="sig-cell">
+                <div class="sig-role">Dibuat &amp; Dianalisis Oleh,<br><strong>PIC Tyreman / Staff</strong></div>
+                <div class="sig-line"></div>
+                <div class="sig-name">{{ $user->name ?? 'PIC TYRE' }}</div>
+                <div class="sig-sub">Staff Operasional</div>
             </td>
-            <td class="signature-box">
-                <div class="signature-role">Diperiksa & Diverifikasi Oleh,<br><strong>Fleet / Workshop Supervisor</strong></div>
-                <div class="signature-line"></div>
-                <div class="signature-name">( ............................................ )</div>
+            <td class="sig-cell">
+                <div class="sig-role">Diperiksa &amp; Diverifikasi Oleh,<br><strong>Fleet / Workshop Supervisor</strong></div>
+                <div class="sig-line"></div>
+                <div class="sig-name">( ............................................ )</div>
+                <div class="sig-sub">Supervisor Lapangan</div>
             </td>
-            <td class="signature-box">
-                <div class="signature-role">Disetujui Oleh,<br><strong>Management / Direksi</strong></div>
-                <div class="signature-line"></div>
-                <div class="signature-name">( ............................................ )</div>
+            <td class="sig-cell">
+                <div class="sig-role">Disetujui Oleh,<br><strong>Management / Direksi</strong></div>
+                <div class="sig-line"></div>
+                <div class="sig-name">( ............................................ )</div>
+                <div class="sig-sub">Fleet Management / Owner</div>
             </td>
         </tr>
     </table>
 
-    <!-- FOOTER -->
-    <div class="report-footer">
-        Laporan Eksekutif CPH Tyre Performance &bull; Dokumen resmi internal perusahaan &bull; Digenerate pada {{ $printDate }}
+    <!-- REPORT FOOTER -->
+    <div class="footer-note">
+        CPH Tyre Performance System &bull; Laporan Resmi Eksekutif &bull; Digenerate pada {{ $printDate }} &bull; Dokumen Rahasia Internal
     </div>
 
 </body>
