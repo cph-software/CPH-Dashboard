@@ -158,14 +158,14 @@
                         <div class="col-md-4 mb-3" id="odometer_container">
                            <label class="form-label fw-bold">KM Saat Rotasi</label>
                            <input type="number" name="odometer" id="odometer" class="form-control"
-                              placeholder="KM Odometer" required>
+                              placeholder="KM Odometer">
                            <small class="text-muted extra-small d-block mt-1">Last KM: <span id="last_odo_display"
                                  class="fw-bold">-</span></small>
                         </div>
                         <div class="col-md-4 mb-3" id="hour_meter_container">
                            <label class="form-label fw-bold">HM Saat Rotasi</label>
                            <input type="number" name="hour_meter" id="hour_meter" class="form-control"
-                              placeholder="Hour Meter" required>
+                              placeholder="Hour Meter">
                            <small class="text-muted extra-small d-block mt-1">Last HM: <span id="last_hm_display"
                                  class="fw-bold">-</span></small>
                         </div>
@@ -359,22 +359,16 @@
                   }
                   if (mode === 'HM') {
                       $('#odometer_container').hide();
-                      $('#odometer').removeAttr('required');
                       $('#hour_meter_container').show();
-                      $('#hour_meter').attr('required', 'required');
                   } else {
                       $('#hour_meter_container').hide();
-                      $('#hour_meter').removeAttr('required');
                       $('#odometer_container').show();
-                      $('#odometer').attr('required', 'required');
                   }
                   $('#vehicle_type_display').val(data.jenis_kendaraan || '-');
                   $('#last_odo_display').text((res.last_odometer || 0).toLocaleString());
                   $('#last_hm_display').text((res.last_hour_meter || 0).toLocaleString());
                   $('#odometer').attr('placeholder', 'Previous: ' + (res.last_odometer || 0));
                   $('#hour_meter').attr('placeholder', 'Previous: ' + (res.last_hour_meter || 0));
-                  $('#odometer').val(res.last_odometer || 0);
-                  $('#hour_meter').val(res.last_hour_meter || 0);
                   if (data.operational_segment_id) $('#operational_segment_id').val(data.operational_segment_id).trigger('change');
                   if (data.area) {
                      const locOption = $('#work_location_id option').filter(function() {

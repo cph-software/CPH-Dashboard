@@ -671,7 +671,7 @@ class TyreMovementController extends Controller
                     ->first();
                 
                 $kmDiffSrc = 0; $hmDiffSrc = 0;
-                if ($lastMovSrc) {
+                if ($lastMovSrc && !$isOdoEmpty) {
                     $kmDiffSrc = $this->calculateLifetimeDiff($request->odometer, $lastMovSrc->odometer_reading);
                     $hmDiffSrc = $this->calculateLifetimeDiff($request->hour_meter, $lastMovSrc->hour_meter_reading);
                 }
@@ -697,7 +697,7 @@ class TyreMovementController extends Controller
                         ->first();
                     
                     $kmDiffTgt = 0; $hmDiffTgt = 0;
-                    if ($lastMovTgt) {
+                    if ($lastMovTgt && !$isOdoEmpty) {
                         $kmDiffTgt = $this->calculateLifetimeDiff($request->odometer, $lastMovTgt->odometer_reading);
                         $hmDiffTgt = $this->calculateLifetimeDiff($request->hour_meter, $lastMovTgt->hour_meter_reading);
                     }
@@ -709,8 +709,8 @@ class TyreMovementController extends Controller
                         'position_id' => $request->target_position_id,
                         'movement_type' => 'Rotation',
                         'movement_date' => $request->movement_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
+                        'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                        'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                         'running_km' => $kmDiffSrc,
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
@@ -737,8 +737,8 @@ class TyreMovementController extends Controller
                         'position_id' => $request->position_id,
                         'movement_type' => 'Rotation',
                         'movement_date' => $request->movement_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
+                        'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                        'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                         'running_km' => $kmDiffTgt,
                         'running_hm' => $hmDiffTgt,
                         'psi_reading' => $request->target_psi_reading,
@@ -764,8 +764,8 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                         'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
-                        'current_km' => $request->odometer ?? 0,
-                        'current_hm' => $request->hour_meter ?? 0,
+                        'current_km' => $isOdoEmpty ? ($sourceTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                        'current_hm' => $isOdoEmpty ? ($sourceTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                     ]);
 
                     $targetTyre->update([
@@ -773,8 +773,8 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
                         'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
                         'current_tread_depth' => $request->target_rtd_reading ?? $targetTyre->current_tread_depth,
-                        'current_km' => $request->odometer ?? 0,
-                        'current_hm' => $request->hour_meter ?? 0,
+                        'current_km' => $isOdoEmpty ? ($targetTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                        'current_hm' => $isOdoEmpty ? ($targetTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                     ]);
 
                     // 4. Update Position Details
@@ -788,8 +788,8 @@ class TyreMovementController extends Controller
                         'position_id' => $request->target_position_id,
                         'movement_type' => 'Rotation',
                         'movement_date' => $request->movement_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
+                        'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                        'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                         'running_km' => $kmDiffSrc,
                         'running_hm' => $hmDiffSrc,
                         'psi_reading' => $request->psi_reading,
@@ -815,8 +815,8 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                         'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                         'current_tread_depth' => $request->rtd_reading ?? $sourceTyre->current_tread_depth,
-                        'current_km' => $request->odometer ?? 0,
-                        'current_hm' => $request->hour_meter ?? 0,
+                        'current_km' => $isOdoEmpty ? ($sourceTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                        'current_hm' => $isOdoEmpty ? ($sourceTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                     ]);
 
                     // 3. Update Position Details
@@ -1027,9 +1027,16 @@ class TyreMovementController extends Controller
                 $kmDiff = 0;
                 $hmDiff = 0;
 
-                if ($lastMov) {
+                if ($lastMov && !$isOdoEmpty) {
                     $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
                     $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
+                }
+
+                $remarksRem = $request->remarks;
+                $notesRem = $request->notes;
+                if ($isOdoEmpty) {
+                    $remarksRem = !empty($remarksRem) ? trim('[Odometer Rusak] ' . $remarksRem) : '[Odometer Rusak]';
+                    $notesRem = !empty($notesRem) ? trim('[Odometer Rusak] ' . $notesRem) : '[Odometer Rusak]';
                 }
                 // ------------------------------------
 
@@ -1056,12 +1063,12 @@ class TyreMovementController extends Controller
                     'target_status' => $request->target_status,
                     'failure_code_id' => $request->failure_code_id,
                     'movement_date' => $request->movement_date,
-                    'odometer_reading' => $request->odometer,
-                    'hour_meter_reading' => $request->hour_meter,
+                    'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                    'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                     'running_km' => $kmDiff,
                     'running_hm' => $hmDiff,
-                    'remarks' => $request->remarks,
-                    'notes' => $request->notes,
+                    'remarks' => $remarksRem,
+                    'notes' => $notesRem,
                     'created_by' => Auth::id(),
                     'photo' => $photoPath,
                 ]);
@@ -1102,8 +1109,8 @@ class TyreMovementController extends Controller
                     'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                     'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                     'current_tread_depth' => $request->rtd_reading ?? $tyre->current_tread_depth,
-                    'current_km' => $request->odometer ?? 0,
-                    'current_hm' => $request->hour_meter ?? 0,
+                    'current_km' => $isOdoEmpty ? ($tyre->current_km ?? 0) : ($request->odometer ?? 0),
+                    'current_hm' => $isOdoEmpty ? ($tyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                 ];
                 
                 if ($resolvedCompanyId) {
@@ -1286,6 +1293,8 @@ class TyreMovementController extends Controller
             );
             $warnings = array_merge($warnings, $odoWarnings);
 
+            $isOdoEmpty = ($request->odometer === null || $request->odometer === '') && ($request->hour_meter === null || $request->hour_meter === '');
+
             $allPositions = TyrePositionDetail::where('configuration_id', $vehicle->tyre_position_configuration_id)->get()->keyBy('id');
 
             // --- VALIDASI MULTI-TENANT PADA BAN ---
@@ -1332,7 +1341,6 @@ class TyreMovementController extends Controller
                 }
 
                 if ($type === 'Installation') {
-                    $isOdoEmpty = ($request->odometer === null || $request->odometer === '') && ($request->hour_meter === null || $request->hour_meter === '');
 
                     // Cek jika posisi sudah ada bannya (Fitur Auto-Replace)
                     $isReplacement = false;
@@ -1473,9 +1481,16 @@ class TyreMovementController extends Controller
                         ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
 
                     $kmDiff = 0; $hmDiff = 0;
-                    if ($lastMov) {
+                    if ($lastMov && !$isOdoEmpty) {
                         $kmDiff = $this->calculateLifetimeDiff($request->odometer, $lastMov->odometer_reading);
                         $hmDiff = $this->calculateLifetimeDiff($request->hour_meter, $lastMov->hour_meter_reading);
+                    }
+
+                    $movRemRemarks = $mov['remarks'] ?? null;
+                    $movRemNotes = $mov['notes'] ?? null;
+                    if ($isOdoEmpty) {
+                        $movRemRemarks = !empty($movRemRemarks) ? trim('[Odometer Rusak] ' . $movRemRemarks) : '[Odometer Rusak]';
+                        $movRemNotes = !empty($movRemNotes) ? trim('[Odometer Rusak] ' . $movRemNotes) : '[Odometer Rusak]';
                     }
 
                     $finalStatus = $mov['target_status'] ?? 'Repaired';
@@ -1495,12 +1510,12 @@ class TyreMovementController extends Controller
                         'target_status' => $finalStatus,
                         'failure_code_id' => $mov['failure_code_id'] ?? null,
                         'movement_date' => $request->movement_date,
-                        'odometer_reading' => $request->odometer,
-                        'hour_meter_reading' => $request->hour_meter,
+                        'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                        'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                         'running_km' => $kmDiff,
                         'running_hm' => $hmDiff,
-                        'remarks' => $mov['remarks'] ?? null,
-                        'notes' => $mov['notes'] ?? null,
+                        'remarks' => $movRemRemarks,
+                        'notes' => $movRemNotes,
                         'created_by' => Auth::id(),
                         'photo' => $photoPath,
                     ]);
@@ -1527,8 +1542,8 @@ class TyreMovementController extends Controller
                         'total_lifetime_km' => ($tyre->total_lifetime_km ?? 0) + $kmDiff,
                         'total_lifetime_hm' => ($tyre->total_lifetime_hm ?? 0) + $hmDiff,
                         'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $tyre->current_tread_depth,
-                        'current_km' => $request->odometer ?? 0,
-                        'current_hm' => $request->hour_meter ?? 0,
+                        'current_km' => $isOdoEmpty ? ($tyre->current_km ?? 0) : ($request->odometer ?? 0),
+                        'current_hm' => $isOdoEmpty ? ($tyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                     ];
                     
                     if ($resolvedCompanyId) {
@@ -1560,7 +1575,7 @@ class TyreMovementController extends Controller
                         ->where('movement_date', '<=', $request->movement_date)
                         ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
                     $kmDiffSrc = 0; $hmDiffSrc = 0;
-                    if ($lastMovSrc) {
+                    if ($lastMovSrc && !$isOdoEmpty) {
                         $kmDiffSrc = $this->calculateLifetimeDiff($request->odometer, $lastMovSrc->odometer_reading);
                         $hmDiffSrc = $this->calculateLifetimeDiff($request->hour_meter, $lastMovSrc->hour_meter_reading);
                     }
@@ -1581,9 +1596,14 @@ class TyreMovementController extends Controller
                             ->where('movement_date', '<=', $request->movement_date)
                             ->orderBy('movement_date', 'desc')->orderBy('id', 'desc')->first();
                         $kmDiffTgt = 0; $hmDiffTgt = 0;
-                        if ($lastMovTgt) {
+                        if ($lastMovTgt && !$isOdoEmpty) {
                             $kmDiffTgt = $this->calculateLifetimeDiff($request->odometer, $lastMovTgt->odometer_reading);
                             $hmDiffTgt = $this->calculateLifetimeDiff($request->hour_meter, $lastMovTgt->hour_meter_reading);
+                        }
+
+                        $rotNotesSrc = 'Rotation Swap ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? '');
+                        if ($isOdoEmpty) {
+                            $rotNotesSrc = trim('[Odometer Rusak] ' . $rotNotesSrc);
                         }
 
                         TyreMovement::create([
@@ -1592,8 +1612,8 @@ class TyreMovementController extends Controller
                             'position_id' => $mov['target_position_id'],
                             'movement_type' => 'Rotation',
                             'movement_date' => $request->movement_date,
-                            'odometer_reading' => $request->odometer,
-                            'hour_meter_reading' => $request->hour_meter,
+                            'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                            'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                             'running_km' => $kmDiffSrc,
                             'running_hm' => $hmDiffSrc,
                             'psi_reading' => $mov['psi'] ?? null,
@@ -1603,10 +1623,15 @@ class TyreMovementController extends Controller
                             'operational_segment_id' => $request->operational_segment_id ?? null,
                             'tyreman_1' => $request->tyreman_1 ?? null,
                             'tyreman_2' => $request->tyreman_2 ?? null,
-                            'notes' => 'Rotation Swap ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? ''),
+                            'notes' => $rotNotesSrc,
                             'created_by' => Auth::id(),
                             'photo' => $photoPath,
                         ]);
+
+                        $rotNotesTgt = 'Rotation Swap ke ' . $position->position_code . '.';
+                        if ($isOdoEmpty) {
+                            $rotNotesTgt = trim('[Odometer Rusak] ' . $rotNotesTgt);
+                        }
 
                         TyreMovement::create([
                             'tyre_id' => $targetTyre->id,
@@ -1614,8 +1639,8 @@ class TyreMovementController extends Controller
                             'position_id' => $mov['position_id'],
                             'movement_type' => 'Rotation',
                             'movement_date' => $request->movement_date,
-                            'odometer_reading' => $request->odometer,
-                            'hour_meter_reading' => $request->hour_meter,
+                            'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                            'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                             'running_km' => $kmDiffTgt,
                             'running_hm' => $hmDiffTgt,
                             'psi_reading' => $mov['target_psi'] ?? null,
@@ -1625,7 +1650,7 @@ class TyreMovementController extends Controller
                             'operational_segment_id' => $request->operational_segment_id ?? null,
                             'tyreman_1' => $request->tyreman_1 ?? null,
                             'tyreman_2' => $request->tyreman_2 ?? null,
-                            'notes' => 'Rotation Swap ke ' . $position->position_code . '.',
+                            'notes' => $rotNotesTgt,
                             'created_by' => Auth::id(),
                             'photo' => $photoTargetPath,
                         ]);
@@ -1635,8 +1660,8 @@ class TyreMovementController extends Controller
                             'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                             'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                             'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $sourceTyre->current_tread_depth,
-                            'current_km' => $request->odometer ?? 0,
-                            'current_hm' => $request->hour_meter ?? 0,
+                            'current_km' => $isOdoEmpty ? ($sourceTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                            'current_hm' => $isOdoEmpty ? ($sourceTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                         ]);
 
                         $targetTyre->update([
@@ -1644,21 +1669,26 @@ class TyreMovementController extends Controller
                             'total_lifetime_km' => ($targetTyre->total_lifetime_km ?? 0) + $kmDiffTgt,
                             'total_lifetime_hm' => ($targetTyre->total_lifetime_hm ?? 0) + $hmDiffTgt,
                             'current_tread_depth' => isset($mov['target_rtd']) && $mov['target_rtd'] !== '' ? $mov['target_rtd'] : $targetTyre->current_tread_depth,
-                            'current_km' => $request->odometer ?? 0,
-                            'current_hm' => $request->hour_meter ?? 0,
+                            'current_km' => $isOdoEmpty ? ($targetTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                            'current_hm' => $isOdoEmpty ? ($targetTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                         ]);
 
 
                     } else {
                         // MOVE
+                        $rotNotesMove = 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? '');
+                        if ($isOdoEmpty) {
+                            $rotNotesMove = trim('[Odometer Rusak] ' . $rotNotesMove);
+                        }
+
                         TyreMovement::create([
                             'tyre_id' => $sourceTyre->id,
                             'vehicle_id' => $request->vehicle_id,
                             'position_id' => $mov['target_position_id'],
                             'movement_type' => 'Rotation',
                             'movement_date' => $request->movement_date,
-                            'odometer_reading' => $request->odometer,
-                            'hour_meter_reading' => $request->hour_meter,
+                            'odometer_reading' => $isOdoEmpty ? null : $request->odometer,
+                            'hour_meter_reading' => $isOdoEmpty ? null : $request->hour_meter,
                             'running_km' => $kmDiffSrc,
                             'running_hm' => $hmDiffSrc,
                             'psi_reading' => $mov['psi'] ?? null,
@@ -1668,7 +1698,7 @@ class TyreMovementController extends Controller
                             'operational_segment_id' => $request->operational_segment_id ?? null,
                             'tyreman_1' => $request->tyreman_1 ?? null,
                             'tyreman_2' => $request->tyreman_2 ?? null,
-                            'notes' => 'Rotation Pindah ke ' . $targetPosition->position_code . '. ' . ($mov['notes'] ?? ''),
+                            'notes' => $rotNotesMove,
                             'created_by' => Auth::id(),
                             'photo' => $photoPath,
                         ]);
@@ -1678,8 +1708,8 @@ class TyreMovementController extends Controller
                             'total_lifetime_km' => ($sourceTyre->total_lifetime_km ?? 0) + $kmDiffSrc,
                             'total_lifetime_hm' => ($sourceTyre->total_lifetime_hm ?? 0) + $hmDiffSrc,
                             'current_tread_depth' => isset($mov['rtd']) && $mov['rtd'] !== '' ? $mov['rtd'] : $sourceTyre->current_tread_depth,
-                            'current_km' => $request->odometer ?? 0,
-                            'current_hm' => $request->hour_meter ?? 0,
+                            'current_km' => $isOdoEmpty ? ($sourceTyre->current_km ?? 0) : ($request->odometer ?? 0),
+                            'current_hm' => $isOdoEmpty ? ($sourceTyre->current_hm ?? 0) : ($request->hour_meter ?? 0),
                         ]);
 
                     }
