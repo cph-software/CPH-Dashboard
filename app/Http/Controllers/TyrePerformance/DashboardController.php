@@ -2136,7 +2136,7 @@ class DashboardController extends Controller
             'totalInspeksi' => $totalInspeksi,
             'topFailures' => $topFailures,
             'criticalTyres' => $criticalTyres,
-            'effectiveTyres' => $effectiveTyres->take(12),
+            'effectiveTyres' => $effectiveTyres->take(8),
             'bestCpkTyre' => $bestCpkTyre,
             'bestLifeTyre' => $bestLifeTyre,
         ];
