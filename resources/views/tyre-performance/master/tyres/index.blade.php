@@ -951,8 +951,107 @@
             filterDropdownsDOM($(this).val(), 'edit_');
          });
 
+         // ── Company Change → Reload Brand / Size / Pattern via AJAX ──────────
+         const optionsByCompanyUrl = '{{ route("tyre-master.options-by-company") }}';
 
-         // Currency Formatting Logic
+         function reloadOptionsForCompany(companyId, prefix) {
+            const brandSel   = `#${prefix}brand_id`;
+            const sizeSel    = `#${prefix}size_id`;
+            const patternSel = prefix === 'tyre_' ? '#tyre_pattern_id' : `#${prefix}pattern_id`;
+
+            if (!companyId) return;
+
+            $.get(optionsByCompanyUrl, { company_id: companyId }, function(data) {
+               // ── Update cache arrays for filterDropdownsDOM ──
+               const targetSizeOpts = prefix === 'edit_' ? editSizeOptions : sizeOptions;
+               const targetPatternOpts = prefix === 'edit_' ? editPatternOptions : patternOptions;
+               targetSizeOpts.length = 0;
+               targetPatternOpts.length = 0;
+               data.sizes.forEach(s => {
+                  targetSizeOpts.push({
+                     val: s.id,
+                     text: s.name,
+                     brandId: s.brand_id,
+                     otd: s.otd,
+                     ply: s.ply
+                  });
+               });
+               data.patterns.forEach(p => {
+                  targetPatternOpts.push({
+                     val: p.id,
+                     text: p.name,
+                     brandId: p.brand_id
+                  });
+               });
+
+               // ── Reset & rebuild brand dropdown ──
+               const $brand = $(brandSel);
+               const prevBrand = $brand.val();
+               if ($brand.data('select2')) $brand.select2('destroy');
+               $brand.find('option:not(:first)').remove();
+               data.brands.forEach(b => {
+                  $brand.append(new Option(b.name, b.id, false, false));
+               });
+               // restore if still valid
+               if (prevBrand && $brand.find(`option[value="${prevBrand}"]`).length) {
+                  $brand.val(prevBrand);
+               }
+               $brand.trigger('change');
+
+               // ── Reset & rebuild size dropdown ──
+               const $size = $(sizeSel);
+               const prevSize = $size.val();
+               if ($size.data('select2')) $size.select2('destroy');
+               $size.find('option:not(:first)').remove();
+               data.sizes.forEach(s => {
+                  const opt = new Option(s.name, s.id, false, false);
+                  $(opt).attr('data-brand-id', s.brand_id || '').attr('data-otd', s.otd || '').attr('data-ply', s.ply || '');
+                  $size.append(opt);
+               });
+               if (prevSize && $size.find(`option[value="${prevSize}"]`).length) {
+                  $size.val(prevSize);
+               }
+
+               // ── Reset & rebuild pattern dropdown ──
+               const $pattern = $(patternSel);
+               const prevPattern = $pattern.val();
+               if ($pattern.data('select2')) $pattern.select2('destroy');
+               $pattern.find('option:not(:first)').remove();
+               data.patterns.forEach(p => {
+                  const opt = new Option(p.name, p.id, false, false);
+                  $(opt).attr('data-brand-id', p.brand_id || '');
+                  $pattern.append(opt);
+               });
+               if (prevPattern && $pattern.find(`option[value="${prevPattern}"]`).length) {
+                  $pattern.val(prevPattern);
+               }
+
+               // Reinit Select2 for all three
+               initSelect2Tags(brandSel);
+               initSelect2Tags(sizeSel);
+               initSelect2Tags(patternSel);
+            });
+         }
+
+         // Add Tyre modal: company selector changes
+         $(document).on('change', '#tyre_company_id', function() {
+            reloadOptionsForCompany($(this).val(), 'tyre_');
+         });
+
+         // Edit Tyre modal: company selector changes
+         $(document).on('change', '#edit_tyre_company_id', function() {
+            reloadOptionsForCompany($(this).val(), 'edit_');
+         });
+
+         // If admin and a company is already pre-selected, load options on modal open
+         $('#addTyreModal').on('shown.bs.modal', function () {
+            const preselectedCompany = $('#tyre_company_id').val();
+            if (preselectedCompany) {
+               reloadOptionsForCompany(preselectedCompany, 'tyre_');
+            }
+         });
+
+
          function formatCurrency(input) {
             let value = input.value.replace(/\D/g, ''); // Remove non-digits
             if (value) {

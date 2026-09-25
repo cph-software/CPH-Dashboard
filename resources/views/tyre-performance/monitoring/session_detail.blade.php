@@ -686,9 +686,14 @@
             @endif
 
             {{-- Check Events --}}
+            @php $inspectionIndex = 0; @endphp
             @foreach ($checkGroups as $checkNumber => $group)
                @php
                   $first = $group->first();
+                  $isBaseline = ($checkNumber == 1);
+                  if (!$isBaseline) $inspectionIndex++;
+                  $checkLabel = $isBaseline ? 'Baseline (Install)' : 'Inspeksi #' . $inspectionIndex;
+                  $checkBadgeColor = $isBaseline ? 'bg-warning text-dark' : 'bg-info';
                   $avgRtd = $group->avg(function ($c) {
                       return ($c->rtd_1 + $c->rtd_2 + $c->rtd_3 + ($c->rtd_4 ?? 0)) / ($c->rtd_4 ? 4 : 3);
                   });
@@ -701,7 +706,7 @@
                      <div class="flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                            <h6 class="fw-bold mb-0">
-                              <span class="badge bg-info me-1">Check #{{ $checkNumber }}</span>
+                              <span class="badge {{ $checkBadgeColor }} me-1">{{ $checkLabel }}</span>
                               {{ $checkDate->format('d M Y') }}
                               <small class="text-muted ms-1">({{ $days }} days)</small>
 

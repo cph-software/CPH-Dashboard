@@ -51,6 +51,46 @@ class TyreMasterController extends Controller
     }
 
     /**
+     * AJAX: Get brands, sizes, patterns filtered by a specific company ID.
+     * Used by Add Tyre modal when the company selector changes.
+     */
+    public function getOptionsByCompany(Request $request)
+    {
+        $companyId = (int) $request->input('company_id');
+
+        $brandQuery = TyreBrand::where('status', 'Active')->orderBy('brand_name');
+        $sizeQuery  = TyreSize::with('brand')->orderBy('size');
+        $patternQuery = TyrePattern::with('brand')->orderBy('name');
+
+        if ($companyId) {
+            $hasBrandMapping = \DB::table('tyre_company_brands')->where('tyre_company_id', $companyId)->exists();
+            if ($hasBrandMapping) {
+                $brandQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $companyId));
+            }
+
+            $hasSizeMapping = \DB::table('tyre_company_sizes')->where('tyre_company_id', $companyId)->exists();
+            if ($hasSizeMapping) {
+                $sizeQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $companyId));
+            }
+
+            $hasPatternMapping = \DB::table('tyre_company_patterns')->where('tyre_company_id', $companyId)->exists();
+            if ($hasPatternMapping) {
+                $patternQuery->whereHas('companies', fn($q) => $q->where('tyre_company_id', $companyId));
+            }
+        }
+
+        $brands   = $brandQuery->get(['id', 'brand_name']);
+        $sizes    = $sizeQuery->get(['id', 'size', 'tyre_brand_id', 'std_otd', 'ply_rating']);
+        $patterns = $patternQuery->get(['id', 'name', 'tyre_brand_id']);
+
+        return response()->json([
+            'brands'   => $brands->map(fn($b) => ['id' => $b->id, 'name' => $b->brand_name]),
+            'sizes'    => $sizes->map(fn($s) => ['id' => $s->id, 'name' => $s->size, 'brand_id' => $s->tyre_brand_id, 'otd' => $s->std_otd, 'ply' => $s->ply_rating]),
+            'patterns' => $patterns->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'brand_id' => $p->tyre_brand_id]),
+        ]);
+    }
+
+    /**
      * Data for Server-Side DataTables
      */
     public function data(Request $request)
