@@ -303,19 +303,54 @@
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Rata-rata HM yang ditempuh setiap penipisan ban 1 mm' : 'Rata-rata KM yang ditempuh setiap penipisan ban 1 mm' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-speed-up-line me-1"></i>{{ $activeUnit === 'HM' ? 'HM / mm' : 'KM / mm' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_mm'] > 0 ? number_format($summary['km_per_mm']) : 'N/A' }}</h4>
+                  @if ($summary['km_per_mm'] > 0)
+                     <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_mm']) }}</h4>
+                  @elseif (($dynamicBaseline - $summary['avg_rtd']) < 0.1)
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Belum Aus</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Keausan &lt; 0.1 mm</div>
+                  @else
+                     <h4 class="mb-0 text-white fw-bold">-</h4>
+                  @endif
                </div>
                <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Rata-rata HM yang ditempuh per harinya' : 'Rata-rata KM yang ditempuh per harinya' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-roadster-line me-1"></i>{{ $activeUnit === 'HM' ? 'HM / Day' : 'KM / Day' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['km_per_day'] > 0 ? number_format($summary['km_per_day']) : 'N/A' }}</h4>
+                  @if ($summary['km_per_day'] > 0)
+                     <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['km_per_day']) }}</h4>
+                  @else
+                     <h4 class="mb-0 text-white fw-bold">0</h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Belum ada ritme</div>
+                  @endif
                </div>
-               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Estimasi SISA HM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' : 'Estimasi SISA KM sampai ban mencapai batas aman (3mm). Angka ini akan BERKURANG seiring ban makin tipis.' }}">
+               <div class="col-md-2 col-6 border-end border-white border-opacity-25" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ $activeUnit === 'HM' ? 'Estimasi SISA HM sampai ban mencapai batas aman (3mm)' : 'Estimasi SISA KM sampai ban mencapai batas aman (3mm)' }}">
                   <p class="mb-1 opacity-75 small"><i class="ri ri-dashboard-line me-1"></i>{{ $activeUnit === 'HM' ? 'Sisa HM' : 'Sisa KM' }}</p>
-                  <h4 class="mb-0 text-white fw-bold">{{ $summary['proj_life_km'] > 0 ? number_format($summary['proj_life_km']) : 'N/A' }}</h4>
+                  @if ($summary['proj_life_km'] > 0)
+                     <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_km']) }} <small>{{ $activeUnit === 'HM' ? 'HM' : 'KM' }}</small></h4>
+                  @elseif (($dynamicBaseline - $summary['avg_rtd']) < 0.1)
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Tapak Utuh</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Tersisa {{ number_format(max(0, $summary['avg_rtd'] - 3), 1) }} mm</div>
+                  @else
+                     <h4 class="mb-0 text-white fw-bold">-</h4>
+                  @endif
                </div>
-               <div class="col-md-2 col-6" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estimasi sisa umur pakai ban dalam bulan dengan ritme pemakaian saat ini">
-                  <p class="mb-1 opacity-75 small"><i class="ri ri-calendar-check-line me-1"></i>Remaining</p>
-                  <h4 class="mb-0 text-white fw-bold">{!! $summary['proj_life_month'] > 0 ? $summary['proj_life_month'] . ' <small>Mo</small>' : 'N/A' !!}</h4>
+               <div class="col-md-2 col-6" data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                    title="{{ $summary['proj_life_day'] > 0 ? 'Estimasi sisa umur pakai: ' . number_format($summary['proj_life_day']) . ' Hari (± ' . $summary['proj_life_month'] . ' Bulan) dengan ritme pemakaian saat ini' : 'Estimasi sisa waktu (Hari & Bulan) akan otomatis terkalkulasi setelah ban menempuh jarak operasional dan mengalami keausan terukur (≥ 0.1 mm)' }}">
+                  <p class="mb-1 opacity-75 small"><i class="ri ri-calendar-check-line me-1"></i>Remaining (Sisa Waktu)</p>
+                  @if ($summary['proj_life_day'] > 0)
+                     <h4 class="mb-0 text-white fw-bold">{{ number_format($summary['proj_life_day']) }} <small style="font-size: 0.6em;">Hari</small></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">± {{ $summary['proj_life_month'] }} Bulan</div>
+                  @elseif ($summary['avg_rtd'] <= 3.0)
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-danger fs-6 px-2 py-1">0 Hari</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Batas Kritis (≤ 3mm)</div>
+                  @elseif (($dynamicBaseline - $summary['avg_rtd']) < 0.1)
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Kondisi Baru</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Tapak Utuh (Aus &lt; 0.1 mm)</div>
+                  @elseif ($runningKm <= 0 && $runningHm <= 0)
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Belum Ada KM</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Odometer berjalan: 0</div>
+                  @else
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Menunggu Data</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Perlu data cek berkala</div>
+                  @endif
                </div>
             </div>
          </div>
