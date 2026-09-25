@@ -5,26 +5,26 @@
     <title>Executive Performance Report - CPH Tyre Performance</title>
     <style>
         @page {
-            margin: 12mm 15mm 12mm 15mm;
+            margin: 10mm 12mm 10mm 12mm;
             size: A4 portrait;
         }
 
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9px;
+            font-size: 8.5px;
             color: #333;
             margin: 0;
             padding: 0;
-            line-height: 1.3;
+            line-height: 1.25;
         }
 
         /* HEADER */
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             border-bottom: 2px solid #c0392b;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .header-table td {
@@ -32,29 +32,29 @@
         }
 
         .logo-img {
-            max-height: 44px;
-            max-width: 150px;
+            max-height: 40px;
+            max-width: 140px;
         }
 
         .doc-title {
             margin: 0;
             color: #000;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .doc-subtitle {
-            margin: 3px 0 0 0;
-            font-size: 9px;
+            margin: 2px 0 0 0;
+            font-size: 8.5px;
             color: #c0392b;
             font-weight: bold;
         }
 
         .doc-module {
-            margin: 2px 0 0 0;
-            font-size: 8px;
+            margin: 1px 0 0 0;
+            font-size: 7.5px;
             color: #777;
         }
 
@@ -62,11 +62,11 @@
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .info-table td {
-            padding: 5px 8px;
+            padding: 4px 6px;
             vertical-align: top;
             border: 1px solid #e0e0e0;
             background: #fafafa;
@@ -74,16 +74,16 @@
 
         .label {
             color: #666;
-            font-size: 7.5px;
+            font-size: 7px;
             text-transform: uppercase;
             font-weight: bold;
             display: block;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .value {
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 9px;
             color: #111;
         }
 
@@ -91,78 +91,78 @@
         .section-title {
             background: #c0392b;
             color: #fff;
-            padding: 4px 8px;
+            padding: 3.5px 7px;
             font-weight: bold;
-            margin: 10px 0 6px 0;
-            font-size: 9.5px;
+            margin: 8px 0 5px 0;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
         }
 
         /* KPI METRIC TABLE */
         .kpi-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .kpi-table td {
             width: 20%;
             border: 1px solid #ccc;
             background: #fff;
-            padding: 6px 4px;
+            padding: 5px 3px;
             text-align: center;
             vertical-align: middle;
         }
 
         .kpi-label {
             color: #666;
-            font-size: 7.5px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 2px;
         }
 
         .kpi-value {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #111;
-            line-height: 1.2;
+            line-height: 1.15;
         }
 
         .kpi-unit {
-            font-size: 8px;
+            font-size: 7.5px;
             font-weight: normal;
             color: #666;
         }
 
         .kpi-sub {
-            font-size: 7px;
+            font-size: 6.8px;
             color: #888;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         /* TABLES */
         .details-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .details-table th {
             background-color: #2c3e50;
             color: #fff;
-            padding: 5px 4px;
+            padding: 4.5px 4px;
             text-align: center;
-            font-size: 8.5px;
+            font-size: 8px;
             border: 1px solid #2c3e50;
             text-transform: uppercase;
         }
 
         .details-table td {
-            padding: 4.5px 5px;
+            padding: 4px 5px;
             border: 1px solid #ccc;
-            font-size: 8.5px;
+            font-size: 8px;
             text-align: center;
             vertical-align: middle;
         }
@@ -179,27 +179,15 @@
             background-color: #f9f9f9;
         }
 
-        /* DUAL COLUMN CONTAINER */
-        .dual-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-
-        .dual-table td {
-            vertical-align: top;
-            padding: 0;
-        }
-
         /* RECOMMENDATION HIGHLIGHT STRIP */
         .recom-highlight {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .recom-highlight td {
-            padding: 6px 8px;
+            padding: 5px 7px;
             vertical-align: top;
             background: #fdfdfd;
             border: 1px solid #ddd;
@@ -208,13 +196,15 @@
         /* STATUS BADGES */
         .badge {
             display: inline-block;
-            padding: 2px 5px;
-            font-size: 7.5px;
+            padding: 1.5px 4px;
+            font-size: 7px;
             font-weight: bold;
             border-radius: 2px;
+            white-space: nowrap;
         }
 
         .badge-success   { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-danger    { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .badge-info      { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
         .badge-warning   { background-color: #fff8e1; color: #f57f17; border: 1px solid #ffecb3; }
         .badge-secondary { background-color: #f5f5f5; color: #616161; border: 1px solid #e0e0e0; }
@@ -225,11 +215,11 @@
             bottom: -15px;
             left: 0;
             right: 0;
-            font-size: 7.5px;
+            font-size: 7px;
             color: #888;
             text-align: center;
             border-top: 1px solid #ddd;
-            padding-top: 4px;
+            padding-top: 3px;
         }
     </style>
 </head>
@@ -242,7 +232,7 @@
                 @if ($logoBase64)
                     <img src="{{ $logoBase64 }}" class="logo-img" alt="CPH Tyre">
                 @else
-                    <div style="font-size: 16px; font-weight: bold; color: #c0392b;">CPH TYRE</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #c0392b;">CPH TYRE</div>
                 @endif
             </td>
             <td style="width: 75%; text-align: right;">
@@ -309,81 +299,108 @@
         </tr>
     </table>
 
-    <!-- 4. KONDISI PERGERAKAN BAN & ANALISIS PELEPASAN -->
-    <div class="section-title">2. KONDISI PERGERAKAN BAN &amp; ANALISIS PELEPASAN</div>
-    <table class="dual-table">
-        <tr>
-            <!-- Left: Aktivitas Pergerakan -->
-            <td style="width: 48%; padding-right: 5px;">
-                <table class="details-table" style="margin-bottom: 0;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: left; padding-left: 8px;">Aktivitas Pergerakan</th>
-                            <th style="width: 32%;">Jumlah Ban</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-left" style="padding-left: 8px;">&bull; Pemasangan (Installation)</td>
-                            <td><strong>{{ number_format($totalPemasangan) }}</strong> ban</td>
-                        </tr>
-                        <tr class="bg-light">
-                            <td class="text-left" style="padding-left: 8px;">&bull; Pelepasan (Removal)</td>
-                            <td><strong>{{ number_format($totalPelepasan) }}</strong> ban</td>
-                        </tr>
-                        <tr>
-                            <td class="text-left" style="padding-left: 8px;">&bull; Rotasi Posisi (Rotation)</td>
-                            <td><strong>{{ number_format($totalRotasi) }}</strong> ban</td>
-                        </tr>
-                        <tr class="bg-light">
-                            <td class="text-left" style="padding-left: 8px;">&bull; Inspeksi / Monitoring Berkala</td>
-                            <td><strong>{{ number_format($totalInspeksi) }}</strong> ban</td>
-                        </tr>
-                        <tr style="background: #eef2f5;">
-                            <td class="text-left" style="padding-left: 8px; font-weight: bold;">Total Transaksi Pergerakan</td>
-                            <td><strong>{{ number_format($totalPemasangan + $totalPelepasan + $totalRotasi + $totalInspeksi) }}</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
+    <!-- 4. RIWAYAT PERGERAKAN BAN (MOVEMENT HISTORY) -->
+    <div class="section-title">2. RIWAYAT PERGERAKAN BAN (MOVEMENT HISTORY)</div>
 
-            <!-- Right: Analisis Kerusakan Pelepasan -->
-            <td style="width: 52%; padding-left: 5px;">
-                <table class="details-table" style="margin-bottom: 0;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: left; padding-left: 8px;">Penyebab Pelepasan Ban Terbanyak</th>
-                            <th style="width: 20%;">Kasus</th>
-                            <th style="width: 25%;">Persentase</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($topFailures as $idx => $fail)
-                            <tr class="{{ $idx % 2 == 1 ? 'bg-light' : '' }}">
-                                <td class="text-left" style="padding-left: 8px;">
-                                    <strong>{{ $fail['code'] }}</strong> &ndash; {{ $fail['name'] }}
-                                </td>
-                                <td><strong>{{ $fail['count'] }}</strong></td>
-                                <td><strong>{{ $fail['percentage'] }}%</strong></td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" style="color: #888; padding: 10px;">Tidak ada pelepasan ban karena kerusakan pada periode ini.</td>
-                            </tr>
-                        @endforelse
-                        @if (count($topFailures) > 0 && count($topFailures) < 4)
-                            @for ($i = count($topFailures); $i < 4; $i++)
-                                <tr class="{{ $i % 2 == 1 ? 'bg-light' : '' }}">
-                                    <td class="text-left" style="color: #bbb; padding-left: 8px;">-</td>
-                                    <td style="color: #bbb;">-</td>
-                                    <td style="color: #bbb;">-</td>
-                                </tr>
-                            @endfor
-                        @endif
-                    </tbody>
-                </table>
+    <!-- Summary Bar Transaksi -->
+    <table class="info-table" style="margin-bottom: 5px;">
+        <tr>
+            <td style="width: 25%; text-align: center;">
+                <span class="label">TOTAL PERGERAKAN</span>
+                <span class="value">{{ number_format($totalPemasangan + $totalPelepasan + $totalRotasi + $totalInspeksi) }} Transaksi</span>
+            </td>
+            <td style="width: 25%; text-align: center;">
+                <span class="label">PEMASANGAN (INSTALL)</span>
+                <span class="value" style="color: #27ae60;">{{ number_format($totalPemasangan) }} Ban</span>
+            </td>
+            <td style="width: 25%; text-align: center;">
+                <span class="label">PELEPASAN (REMOVAL)</span>
+                <span class="value" style="color: #c0392b;">{{ number_format($totalPelepasan) }} Ban</span>
+            </td>
+            <td style="width: 25%; text-align: center;">
+                <span class="label">ROTASI POSISI</span>
+                <span class="value" style="color: #d97706;">{{ number_format($totalRotasi) }} Ban</span>
             </td>
         </tr>
+    </table>
+
+    <!-- Tabel Riwayat Pergerakan Ban -->
+    <table class="details-table" style="margin-bottom: 7px;">
+        <thead>
+            <tr>
+                <th style="width: 4%;">NO</th>
+                <th style="width: 10%;">TANGGAL</th>
+                <th style="width: 16%; text-align: left; padding-left: 5px;">SN BAN</th>
+                <th style="width: 17%; text-align: left; padding-left: 5px;">MERK / UKURAN</th>
+                <th style="width: 15%; text-align: left; padding-left: 5px;">KENDARAAN</th>
+                <th style="width: 7%;">POSISI</th>
+                <th style="width: 11%;">TIPE</th>
+                <th style="width: 9%; text-align: right; padding-right: 5px;">ODOMETER</th>
+                <th style="width: 11%; text-align: left; padding-left: 5px;">KETERANGAN</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($movements as $idx => $m)
+                <tr class="{{ $idx % 2 == 1 ? 'bg-light' : '' }}">
+                    <td>{{ $idx + 1 }}</td>
+                    <td>{{ $m->movement_date ? \Carbon\Carbon::parse($m->movement_date)->format('d/m/Y') : '-' }}</td>
+                    <td class="text-left" style="padding-left: 5px;">
+                        <strong>{{ optional($m->tyre)->serial_number ?? '-' }}</strong>
+                    </td>
+                    <td class="text-left" style="padding-left: 5px;">
+                        {{ optional(optional($m->tyre)->brand)->brand_name ?? '-' }}<br>
+                        <span style="font-size: 7px; color: #666;">
+                            {{ optional(optional($m->tyre)->size)->size ?? '' }}
+                            @if (optional($m->tyre)->pattern)
+                                &bull; {{ $m->tyre->pattern->name }}
+                            @endif
+                        </span>
+                    </td>
+                    <td class="text-left" style="padding-left: 5px;">
+                        <strong>{{ optional($m->vehicle)->no_polisi ?? optional($m->vehicle)->kode_kendaraan ?? '-' }}</strong>
+                    </td>
+                    <td>
+                        <strong>{{ optional($m->position)->position_code ?? '-' }}</strong>
+                    </td>
+                    <td>
+                        @if ($m->movement_type === 'Installation')
+                            <span class="badge badge-success">Pemasangan</span>
+                        @elseif ($m->movement_type === 'Removal')
+                            <span class="badge badge-danger">Pelepasan</span>
+                        @elseif ($m->movement_type === 'Rotation')
+                            <span class="badge badge-warning">Rotasi</span>
+                        @else
+                            <span class="badge badge-info">{{ $m->movement_type }}</span>
+                        @endif
+                    </td>
+                    <td class="text-right" style="padding-right: 5px;">
+                        @if ($m->odometer_reading > 0)
+                            {{ number_format($m->odometer_reading, 0, ',', '.') }} KM
+                        @elseif ($m->hour_meter_reading > 0)
+                            {{ number_format($m->hour_meter_reading, 0, ',', '.') }} HM
+                        @elseif (str_contains(strtolower($m->notes ?? ''), 'odometer rusak'))
+                            <span style="color: #c0392b; font-size: 7px;">Odo Rusak</span>
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td class="text-left" style="padding-left: 5px;">
+                        @if ($m->failureCode)
+                            <strong style="color: #c0392b;">{{ $m->failureCode->failure_code }}</strong>
+                            <span style="font-size: 7px; color: #555;">({{ $m->failureCode->failure_name }})</span>
+                        @elseif ($m->notes)
+                            <span style="font-size: 7px; color: #555;">{{ Str::limit($m->notes, 25) }}</span>
+                        @else
+                            <span style="color: #999;">-</span>
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="9" style="padding: 8px; color: #888;">Tidak ada riwayat pergerakan ban pada periode ini.</td>
+                </tr>
+            @endforelse
+        </tbody>
     </table>
 
     <!-- 5. REKOMENDASI BAN PALING EFEKTIF -->
@@ -397,8 +414,8 @@
                     <td style="width: 50%; border-left: 3px solid #27ae60;">
                         <span class="label" style="color: #27ae60;">[REKOMENDASI BIAYA TERBAIK / BEST CPK]</span>
                         <span class="value">{{ $bestCpkTyre['brand'] }} &bull; Pattern {{ $bestCpkTyre['pattern'] }} ({{ $bestCpkTyre['size'] }})</span>
-                        <div style="font-size: 8px; color: #555; margin-top: 2px;">
-                            Biaya operasional terendah <strong>Rp {{ number_format($bestCpkTyre['cpk'], 0, ',', '.') }}/KM</strong> dengan laju keausan yang ekonomis.
+                        <div style="font-size: 7.5px; color: #555; margin-top: 1px;">
+                            Biaya operasional terendah <strong>Rp {{ number_format($bestCpkTyre['cpk'], 0, ',', '.') }}/KM</strong> dengan laju keausan ekonomis.
                         </div>
                     </td>
                 @endif
@@ -406,7 +423,7 @@
                     <td style="width: 50%; border-left: 3px solid #2980b9;">
                         <span class="label" style="color: #2980b9;">[REKOMENDASI DURABILITAS TERTINGGI / BEST LIFETIME]</span>
                         <span class="value">{{ $bestLifeTyre['brand'] }} &bull; Pattern {{ $bestLifeTyre['pattern'] }} ({{ $bestLifeTyre['size'] }})</span>
-                        <div style="font-size: 8px; color: #555; margin-top: 2px;">
+                        <div style="font-size: 7.5px; color: #555; margin-top: 1px;">
                             Daya tahan paling awet dengan rata-rata umur pakai mencapai <strong>{{ number_format($bestLifeTyre['avg_km'], 0, ',', '.') }} KM</strong>.
                         </div>
                     </td>
@@ -416,16 +433,16 @@
     @endif
 
     <!-- Tabel Rincian Rekomendasi Ban -->
-    <table class="details-table" style="margin-bottom: 6px;">
+    <table class="details-table" style="margin-bottom: 5px;">
         <thead>
             <tr>
                 <th style="width: 4%;">NO</th>
-                <th style="width: 17%; text-align: left; padding-left: 6px;">MERK BAN</th>
-                <th style="width: 16%; text-align: left; padding-left: 6px;">POLA TAPAK (PATTERN)</th>
+                <th style="width: 17%; text-align: left; padding-left: 5px;">MERK BAN</th>
+                <th style="width: 16%; text-align: left; padding-left: 5px;">POLA TAPAK (PATTERN)</th>
                 <th style="width: 14%;">UKURAN (SIZE)</th>
                 <th style="width: 8%;">POPULASI</th>
-                <th style="width: 14%; text-align: right; padding-right: 6px;">RATA-RATA KM</th>
-                <th style="width: 12%; text-align: right; padding-right: 6px;">BIAYA/KM (CPK)</th>
+                <th style="width: 14%; text-align: right; padding-right: 5px;">RATA-RATA KM</th>
+                <th style="width: 12%; text-align: right; padding-right: 5px;">BIAYA/KM (CPK)</th>
                 <th style="width: 15%;">STATUS REKOMENDASI</th>
             </tr>
         </thead>
@@ -433,14 +450,14 @@
             @forelse ($effectiveTyres as $idx => $tyre)
                 <tr class="{{ $idx % 2 == 1 ? 'bg-light' : '' }}">
                     <td>{{ $idx + 1 }}</td>
-                    <td class="text-left" style="padding-left: 6px;"><strong>{{ $tyre['brand'] }}</strong></td>
-                    <td class="text-left" style="padding-left: 6px;">{{ $tyre['pattern'] }}</td>
+                    <td class="text-left" style="padding-left: 5px;"><strong>{{ $tyre['brand'] }}</strong></td>
+                    <td class="text-left" style="padding-left: 5px;">{{ $tyre['pattern'] }}</td>
                     <td>{{ $tyre['size'] }}</td>
                     <td><strong>{{ $tyre['count'] }}</strong></td>
-                    <td class="text-right" style="padding-right: 6px;">
+                    <td class="text-right" style="padding-right: 5px;">
                         <strong>{{ $tyre['avg_km'] > 0 ? number_format($tyre['avg_km'], 0, ',', '.') . ' KM' : '-' }}</strong>
                     </td>
-                    <td class="text-right" style="padding-right: 6px; color: {{ $tyre['cpk'] > 0 && $tyre['cpk'] <= ($avgCpk ?: 50) ? '#27ae60' : '#222' }};">
+                    <td class="text-right" style="padding-right: 5px; color: {{ $tyre['cpk'] > 0 && $tyre['cpk'] <= ($avgCpk ?: 50) ? '#27ae60' : '#222' }};">
                         <strong>{{ $tyre['cpk'] > 0 ? 'Rp ' . number_format($tyre['cpk'], 0, ',', '.') : '-' }}</strong>
                     </td>
                     <td>
@@ -449,7 +466,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" style="padding: 10px; color: #888;">Belum ada data ban dengan rekaman operasional untuk dianalisis.</td>
+                    <td colspan="8" style="padding: 8px; color: #888;">Belum ada data ban dengan rekaman operasional untuk dianalisis.</td>
                 </tr>
             @endforelse
         </tbody>

@@ -2027,6 +2027,21 @@ class DashboardController extends Controller
             ->whereBetween('movement_date', [$startDate, $endDate])
             ->count();
 
+        // Riwayat Transaksi Pergerakan Ban dalam Periode
+        $movements = TyreMovement::whereBetween('movement_date', [$startDate, $endDate])
+            ->with([
+                'tyre.brand', 
+                'tyre.size', 
+                'tyre.pattern',
+                'vehicle', 
+                'position', 
+                'failureCode'
+            ])
+            ->orderByDesc('movement_date')
+            ->orderByDesc('id')
+            ->limit(7)
+            ->get();
+
         // Top Failure Modes (Pelepasan Ban)
         $topFailures = TyreMovement::where('movement_type', 'Removal')
             ->whereBetween('movement_date', [$startDate, $endDate])
@@ -2135,8 +2150,9 @@ class DashboardController extends Controller
             'totalRotasi' => $totalRotasi,
             'totalInspeksi' => $totalInspeksi,
             'topFailures' => $topFailures,
+            'movements' => $movements,
             'criticalTyres' => $criticalTyres,
-            'effectiveTyres' => $effectiveTyres->take(8),
+            'effectiveTyres' => $effectiveTyres->take(6),
             'bestCpkTyre' => $bestCpkTyre,
             'bestLifeTyre' => $bestLifeTyre,
         ];
