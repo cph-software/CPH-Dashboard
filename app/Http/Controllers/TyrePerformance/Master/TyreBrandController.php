@@ -13,10 +13,21 @@ class TyreBrandController extends Controller
         $query = TyreBrand::latest();
         
         if (auth()->user()->role_id != 1) {
-            $companyId = auth()->user()->tyre_company_id;
-            $query->whereHas('companies', function($q) use ($companyId) {
-                $q->where('tyre_company_id', $companyId);
-            });
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId() ?? auth()->user()->tyre_company_id;
+            $companyIds = is_array($activeCompanyId) ? $activeCompanyId : [$activeCompanyId];
+            if (auth()->user()->tyre_company_id) {
+                $companyIds[] = auth()->user()->tyre_company_id;
+            }
+            $companyIds = array_values(array_unique(array_filter($companyIds)));
+
+            if (!empty($companyIds)) {
+                $hasMapping = \DB::table('tyre_company_brands')->whereIn('tyre_company_id', $companyIds)->exists();
+                if ($hasMapping) {
+                    $query->whereHas('companies', function($q) use ($companyIds) {
+                        $q->whereIn('tyre_company_id', $companyIds);
+                    });
+                }
+            }
         }
         
         $brands = $query->get();
@@ -33,9 +44,23 @@ class TyreBrandController extends Controller
 
         $brand = TyreBrand::create($request->all());
 
-        // Automatically map to user's company if not Super Admin
-        if (auth()->user()->role_id != 1 && auth()->user()->tyre_company_id) {
-            $brand->companies()->syncWithoutDetaching([auth()->user()->tyre_company_id]);
+        // Automatically map to active company (e.g. customer) AND user's company
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $targetCompanyIds = [];
+        if ($activeCompanyId) {
+            if (is_array($activeCompanyId)) {
+                $targetCompanyIds = array_merge($targetCompanyIds, $activeCompanyId);
+            } else {
+                $targetCompanyIds[] = (int) $activeCompanyId;
+            }
+        }
+        if (auth()->user()->tyre_company_id) {
+            $targetCompanyIds[] = (int) auth()->user()->tyre_company_id;
+        }
+        $targetCompanyIds = array_values(array_unique(array_filter($targetCompanyIds)));
+
+        if (!empty($targetCompanyIds)) {
+            $brand->companies()->syncWithoutDetaching($targetCompanyIds);
         }
 
         setLogActivity(auth()->id(), 'Menambah brand ban: ' . $request->brand_name, [

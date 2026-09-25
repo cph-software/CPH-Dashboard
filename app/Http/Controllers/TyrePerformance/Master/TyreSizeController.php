@@ -16,15 +16,28 @@ class TyreSizeController extends Controller
         $brandQuery = TyreBrand::where('status', 'Active');
 
         if (auth()->user()->role_id != 1) {
-            $companyId = auth()->user()->tyre_company_id;
-            
-            $sizeQuery->whereHas('companies', function($q) use ($companyId) {
-                $q->where('tyre_company_id', $companyId);
-            });
-            
-            $brandQuery->whereHas('companies', function($q) use ($companyId) {
-                $q->where('tyre_company_id', $companyId);
-            });
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId() ?? auth()->user()->tyre_company_id;
+            $companyIds = is_array($activeCompanyId) ? $activeCompanyId : [$activeCompanyId];
+            if (auth()->user()->tyre_company_id) {
+                $companyIds[] = auth()->user()->tyre_company_id;
+            }
+            $companyIds = array_values(array_unique(array_filter($companyIds)));
+
+            if (!empty($companyIds)) {
+                $hasSizeMap = \DB::table('tyre_company_sizes')->whereIn('tyre_company_id', $companyIds)->exists();
+                if ($hasSizeMap) {
+                    $sizeQuery->whereHas('companies', function($q) use ($companyIds) {
+                        $q->whereIn('tyre_company_id', $companyIds);
+                    });
+                }
+                
+                $hasBrandMap = \DB::table('tyre_company_brands')->whereIn('tyre_company_id', $companyIds)->exists();
+                if ($hasBrandMap) {
+                    $brandQuery->whereHas('companies', function($q) use ($companyIds) {
+                        $q->whereIn('tyre_company_id', $companyIds);
+                    });
+                }
+            }
         }
 
         $sizes = $sizeQuery->get();
@@ -50,9 +63,23 @@ class TyreSizeController extends Controller
         $size = TyreSize::create($data);
         $size->load(['brand', 'pattern']);
 
-        // Automatically map to user's company if not Super Admin
-        if (auth()->user()->role_id != 1 && auth()->user()->tyre_company_id) {
-            $size->companies()->syncWithoutDetaching([auth()->user()->tyre_company_id]);
+        // Automatically map to active company (e.g. customer) AND user's company
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $targetCompanyIds = [];
+        if ($activeCompanyId) {
+            if (is_array($activeCompanyId)) {
+                $targetCompanyIds = array_merge($targetCompanyIds, $activeCompanyId);
+            } else {
+                $targetCompanyIds[] = (int) $activeCompanyId;
+            }
+        }
+        if (auth()->user()->tyre_company_id) {
+            $targetCompanyIds[] = (int) auth()->user()->tyre_company_id;
+        }
+        $targetCompanyIds = array_values(array_unique(array_filter($targetCompanyIds)));
+
+        if (!empty($targetCompanyIds)) {
+            $size->companies()->syncWithoutDetaching($targetCompanyIds);
         }
 
         setLogActivity(auth()->id(), 'Menambah ukuran ban: ' . $request->size, [

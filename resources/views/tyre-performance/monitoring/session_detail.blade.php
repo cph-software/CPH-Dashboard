@@ -174,6 +174,10 @@
    @php
       use App\Services\TyreMonitoringCalculator;
       $checkGroups = $session->checks->groupBy('check_number')->sortKeys();
+      $actualChecksCount = $checkGroups->reject(function($group) {
+          $first = $group->first();
+          return str_contains(strtolower($first->notes ?? ''), 'baseline') || str_contains(strtolower($first->notes ?? ''), 'start session');
+      })->count();
       $lastCheckGroup = $checkGroups->last();
       
       $runningKm = $lastCheckGroup ? $lastCheckGroup->first()->operation_mileage : 0;
@@ -256,7 +260,7 @@
          <div class="card h-100">
             <div class="card-body py-3">
                <p class="text-muted small mb-1">Checks Done</p>
-               <h4 class="mb-0 fw-bold">{{ $checkGroups->count() }} <small class="text-muted fw-normal">kali</small></h4>
+               <h4 class="mb-0 fw-bold">{{ $actualChecksCount }} <small class="text-muted fw-normal">kali</small></h4>
             </div>
          </div>
       </div>
@@ -690,7 +694,7 @@
             @foreach ($checkGroups as $checkNumber => $group)
                @php
                   $first = $group->first();
-                  $isBaseline = ($checkNumber == 1);
+                  $isBaseline = str_contains(strtolower($first->notes ?? ''), 'baseline') || str_contains(strtolower($first->notes ?? ''), 'start session');
                   if (!$isBaseline) $inspectionIndex++;
                   $checkLabel = $isBaseline ? 'Baseline (Install)' : 'Inspeksi #' . $inspectionIndex;
                   $checkBadgeColor = $isBaseline ? 'bg-warning text-dark' : 'bg-info';

@@ -535,80 +535,33 @@ class MonitoringController extends Controller
                         'notes' => $c['notes'] ?? 'Bulk Installation',
                     ]);
 
-                    // 2. Initial Check (Cek 1) if serial exists
-                    if ($serial) {
-                        $check = TyreMonitoringCheck::create([
-                            'session_id' => $session->session_id,
-                            'check_number' => 1,
-                            'serial_number' => $serial,
-                            'tyre_id' => $tyreId,
-                            'position' => $posName,
-                            'position_id' => $posId,
-                            'check_date' => $request->install_date,
-                            'odometer_reading' => $request->odometer_start,
-                            'hm_reading' => $request->hm_start,
-                            'operation_mileage' => 0,
-                            'operation_hm' => 0,
-                            'inf_press_recommended' => $c['inf_press_recommended'] ?? 0,
-                            'inf_press_actual' => $c['inf_press_actual'] ?? 0,
-                            'date_assembly' => $c['date_assembly'] ?? null,
-                            'date_inspection' => $request->install_date,
-                            'rtd_1' => $r1,
-                            'rtd_2' => $r2,
-                            'rtd_3' => $r3,
-                            'rtd_4' => $r4,
-                            'worn_percentage' => $wornPct,
-                            'km_per_mm' => 0,
-                            'projected_life_km' => 0,
-                            'condition' => $c['condition'] ?? 'ok',
-                            'recommendation' => $c['recommendation'] ?? null,
-                            'notes' => $c['notes'] ?? 'Cek 1 (Start Session)',
-                            'approval_status' => (auth()->user()->role_id == 1) ? 'Approved' : 'Pending',
-                            'approved_by' => (auth()->user()->role_id == 1) ? auth()->id() : null,
-                        ]);
+                    // Sync Master Tyre & Record Movement (if new installation)
+                    if ($tyreId) {
+                        $tyre = Tyre::find($tyreId);
+                        if ($tyre) {
+                            // Determine if this is a new installation or existing tyre on vehicle
+                            $isNewInstallation = ($tyre->current_vehicle_id != $vehicle->master_vehicle_id);
 
-                        // Link images to this check
-                        TyreMonitoringImage::where('session_id', $session->session_id)
-                            ->where(function($q) use ($serial, $request) {
-                                $q->where('serial_number', $serial)
-                                  ->orWhere(function($sub) use ($request) {
-                                      $sub->whereNull('serial_number')
-                                          ->where('notes', $request->temp_id); // Using notes as temp session identifier
-                                  });
-                            })
-                            ->whereNull('check_id')
-                            ->update(['check_id' => $check->check_id, 'uploaded_by' => \Auth::id()]);
+                            // 1. Update Master Tyre Record
+                            $tyre->current_tread_depth = $avgRtd;
+                            $tyre->last_inspection_date = $request->install_date;
+                            
+                            if ($isNewInstallation) {
+                                $tyre->update([
+                                    'status' => 'Installed',
+                                    'current_vehicle_id' => $vehicle->master_vehicle_id,
+                                    'current_position_id' => $posId,
+                                    'current_tread_depth' => $avgRtd,
+                                    'last_inspection_date' => $request->install_date,
+                                    'last_hm_reading' => $request->hm_start,
+                                ]);
 
-                        // Sync Master Tyre
-                        if ($tyreId) {
-                            $tyre = Tyre::find($tyreId);
-                            if ($tyre) {
-                                // Determine if this is a new installation or just a check for existing tyre
-                                $isNewInstallation = ($tyre->current_vehicle_id != $vehicle->master_vehicle_id);
-
-                                // 1. Update Master Tyre Record
-                                $tyre->current_tread_depth = $avgRtd;
-                                $tyre->last_inspection_date = $request->install_date;
-                                
-                                if ($isNewInstallation) {
-                                    $tyre->update([
-                                        'status' => 'Installed',
-                                        'current_vehicle_id' => $vehicle->master_vehicle_id,
-                                        'current_position_id' => $posId,
-                                        'current_tread_depth' => $avgRtd,
-                                        'last_inspection_date' => $request->install_date,
-                                        'last_hm_reading' => $request->hm_start,
-                                    ]);
-                                } else {
-                                    $tyre->save(); // Save changes if not a new installation
-                                }
-
-                                // 2. Record Movement Log
+                                // 2. Record Installation Movement Log ONLY if new installation
                                 TyreMovement::create([
                                     'tyre_id' => $tyre->id,
                                     'vehicle_id' => $vehicle->master_vehicle_id,
                                     'movement_date' => $request->install_date,
-                                    'movement_type' => $isNewInstallation ? 'Installation' : 'Inspection',
+                                    'movement_type' => 'Installation',
                                     'odometer_reading' => $request->odometer_start,
                                     'hour_meter_reading' => $request->hm_start,
                                     'position_id' => $posId,
@@ -619,50 +572,22 @@ class MonitoringController extends Controller
                                     'rtd_4' => $r4,
                                     'start_time' => now()->format('H:i:s'),
                                     'end_time' => now()->format('H:i:s'),
-                                    'notes' => $isNewInstallation ? "Monitoring Sesi Start - New Installation" : "Monitoring Sesi Start - Periodic Check #1",
+                                    'notes' => "Monitoring Sesi Start - New Installation",
                                     'tyre_company_id' => $tyre->tyre_company_id,
                                     'created_by' => \Auth::id()
                                 ]);
 
                                 // 3. Sync Stock if it's a new installation from a location
-                                if ($isNewInstallation && $tyre->current_location_id) {
+                                if ($tyre->current_location_id) {
                                     DB::table('tyre_locations')
                                         ->where('id', $tyre->current_location_id)
                                         ->decrement('current_stock');
                                 }
-
-                                // 4. Sync Position Detail
-                                if ($posId) {
-                                }
+                            } else {
+                                $tyre->save(); // Save changes if not a new installation (NO fake inspection movement created)
                             }
                         }
                     }
-                }
-            }
-
-            // --- Kirim Notifikasi untuk Cek 1 jika Submitter bukan SuperAdmin ---
-            if (auth()->user()->role_id != 1) {
-                try {
-                    $approvers = \App\Models\User::getApprovers(auth()->user()->tyre_company_id, 'Tyre Monitoring', 'approve')
-                        ->reject(function ($u) { return $u->id === auth()->id(); });
-                    $submitterName = auth()->user()->display_name ?? auth()->user()->name;
-                    $actionUrl = route('monitoring.sessions.show', $session->session_id);
-                    
-                    if ($approvers->count() > 0) {
-                        \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ApprovalRequiredNotification('Monitoring Check', $submitterName, $actionUrl));
-                    }
-
-                    // --- Send Notification to Uploader (Admin Tyre) that it is Pending ---
-                    \Illuminate\Support\Facades\Notification::send(auth()->user(), 
-                        new \App\Notifications\ApprovalStatusNotification(
-                            'Monitoring Check', 
-                            'Pending', 
-                            'Sistem (Menunggu Approver)', 
-                            $actionUrl
-                        )
-                    );
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to send Monitoring Check 1 Notification: " . $e->getMessage());
                 }
             }
 
@@ -1337,12 +1262,23 @@ class MonitoringController extends Controller
             ->get()
             ->keyBy('image_type');
 
+        // Determine user-friendly display check number (handle legacy sessions that had check 1 as baseline)
+        $hasLegacyBaseline = TyreMonitoringCheck::where('session_id', $sessionId)
+            ->where('check_number', 1)
+            ->where(function($q) {
+                $q->where('notes', 'like', '%start session%')
+                  ->orWhere('notes', 'like', '%baseline%');
+            })->exists();
+
+        $displayCheckNumber = ($hasLegacyBaseline && $checkNumber > 1) ? ($checkNumber - 1) : $checkNumber;
+
         $data = [
             'session' => $session,
             'vehicle' => $session->vehicle,
             'masterVehicle' => $session->masterVehicle,
             'checks' => $checks,
             'checkNumber' => $checkNumber,
+            'displayCheckNumber' => $displayCheckNumber,
             'images' => $images,
             'generalImages' => $generalImages,
             'date' => date('d M Y'),

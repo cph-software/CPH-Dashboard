@@ -31,10 +31,20 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
-        TyreLocation::create($request->all());
+        $data = $request->all();
+        if (empty($data['tyre_company_id'])) {
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+            if ($activeCompanyId && !is_array($activeCompanyId)) {
+                $data['tyre_company_id'] = (int) $activeCompanyId;
+            } elseif (auth()->user()->tyre_company_id) {
+                $data['tyre_company_id'] = (int) auth()->user()->tyre_company_id;
+            }
+        }
+
+        TyreLocation::create($data);
 
         setLogActivity(auth()->id(), 'Menambah lokasi: ' . $request->location_name, [
             'action_type' => 'create',
@@ -51,7 +61,7 @@ class TyreLocationController extends Controller
             'location_name' => 'required|string|max:255',
             'location_type' => 'required|string|max:255',
             'capacity' => 'nullable|integer',
-            'tyre_company_id' => auth()->user()->role_id == 1 ? 'required|exists:tyre_companies,id' : 'nullable',
+            'tyre_company_id' => 'nullable|exists:tyre_companies,id',
         ]);
 
         $location = TyreLocation::findOrFail($id);

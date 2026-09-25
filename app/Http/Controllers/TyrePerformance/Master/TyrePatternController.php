@@ -14,13 +14,28 @@ class TyrePatternController extends Controller
         $brandQuery = \App\Models\TyreBrand::where('status', 'Active')->orderBy('brand_name');
         
         if (auth()->user()->role_id != 1) {
-            $companyId = auth()->user()->tyre_company_id;
-            $query->whereHas('companies', function($q) use ($companyId) {
-                $q->where('tyre_company_id', $companyId);
-            });
-            $brandQuery->whereHas('companies', function($q) use ($companyId) {
-                $q->where('tyre_company_id', $companyId);
-            });
+            $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId() ?? auth()->user()->tyre_company_id;
+            $companyIds = is_array($activeCompanyId) ? $activeCompanyId : [$activeCompanyId];
+            if (auth()->user()->tyre_company_id) {
+                $companyIds[] = auth()->user()->tyre_company_id;
+            }
+            $companyIds = array_values(array_unique(array_filter($companyIds)));
+
+            if (!empty($companyIds)) {
+                $hasPatternMap = \DB::table('tyre_company_patterns')->whereIn('tyre_company_id', $companyIds)->exists();
+                if ($hasPatternMap) {
+                    $query->whereHas('companies', function($q) use ($companyIds) {
+                        $q->whereIn('tyre_company_id', $companyIds);
+                    });
+                }
+                
+                $hasBrandMap = \DB::table('tyre_company_brands')->whereIn('tyre_company_id', $companyIds)->exists();
+                if ($hasBrandMap) {
+                    $brandQuery->whereHas('companies', function($q) use ($companyIds) {
+                        $q->whereIn('tyre_company_id', $companyIds);
+                    });
+                }
+            }
         }
         
         $patterns = $query->get();
@@ -40,9 +55,23 @@ class TyrePatternController extends Controller
         $pattern = TyrePattern::create($request->all());
         $pattern->load('brand');
 
-        // Automatically map to user's company if not Super Admin
-        if (auth()->user()->role_id != 1 && auth()->user()->tyre_company_id) {
-            $pattern->companies()->syncWithoutDetaching([auth()->user()->tyre_company_id]);
+        // Automatically map to active company (e.g. customer) AND user's company
+        $activeCompanyId = \App\Helpers\SessionCompanyHelper::getActiveCompanyId();
+        $targetCompanyIds = [];
+        if ($activeCompanyId) {
+            if (is_array($activeCompanyId)) {
+                $targetCompanyIds = array_merge($targetCompanyIds, $activeCompanyId);
+            } else {
+                $targetCompanyIds[] = (int) $activeCompanyId;
+            }
+        }
+        if (auth()->user()->tyre_company_id) {
+            $targetCompanyIds[] = (int) auth()->user()->tyre_company_id;
+        }
+        $targetCompanyIds = array_values(array_unique(array_filter($targetCompanyIds)));
+
+        if (!empty($targetCompanyIds)) {
+            $pattern->companies()->syncWithoutDetaching($targetCompanyIds);
         }
 
         setLogActivity(auth()->id(), 'Menambah pattern ban: ' . $request->name, [

@@ -118,14 +118,14 @@
                         <input type="text" id="location_name" name="location_name" class="form-control"
                            placeholder="e.g. Workshop Store" required>
                      </div>
-                     @if (auth()->user()->role_id == 1)
+                     @if (auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
                         <div class="col mb-3">
                            <label for="tyre_company_id" class="form-label">Company</label>
                            <select name="tyre_company_id" class="form-select select2" data-placeholder="Select Company">
-                              <option value=""></option>
+                              <option value="">Global / Umum</option>
                               @foreach ($companies as $comp)
                                  <option value="{{ $comp->id }}"
-                                    {{ session('active_company_id') == $comp->id ? 'selected' : '' }}>
+                                    {{ (session('active_company_id') == $comp->id || (!session('active_company_id') && auth()->user()->tyre_company_id == $comp->id)) ? 'selected' : '' }}>
                                     {{ $comp->company_name }}
                                  </option>
                               @endforeach
@@ -176,12 +176,12 @@
                         <input type="text" id="edit_location_name" name="location_name" class="form-control"
                            required>
                      </div>
-                     @if (auth()->user()->role_id == 1)
+                     @if (auth()->user()->role_id == 1 || \App\Helpers\SessionCompanyHelper::isWorkshopAdmin())
                         <div class="col mb-3">
                            <label for="edit_tyre_company_id" class="form-label">Company</label>
                            <select id="edit_tyre_company_id" name="tyre_company_id" class="form-select select2"
                               data-placeholder="Select Company">
-                              <option value=""></option>
+                              <option value="">Global / Umum</option>
                               @foreach ($companies as $comp)
                                  <option value="{{ $comp->id }}">{{ $comp->company_name }}</option>
                               @endforeach

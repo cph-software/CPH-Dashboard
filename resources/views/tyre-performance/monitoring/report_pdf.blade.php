@@ -178,7 +178,7 @@
    @endphp
 
    <div class="header">
-      <h2>TYRE MONITORING REPORT (CHECK #{{ $checkNumber }})</h2>
+      <h2>TYRE MONITORING REPORT (CHECK #{{ $displayCheckNumber ?? $checkNumber }})</h2>
       <div style="font-size: 10px; margin-top: 5px;">CPH Dashboard - Tyre Performance Module</div>
    </div>
 

@@ -1022,11 +1022,23 @@
                   $(opt).attr('data-brand-id', p.brand_id || '');
                   $pattern.append(opt);
                });
-               if (prevPattern && $pattern.find(`option[value="${prevPattern}"]`).length) {
-                  $pattern.val(prevPattern);
+               // ── Reset & rebuild location dropdown ──
+               const locSel = prefix === 'edit_' ? '#edit_current_location_id' : '#current_location_id';
+               if (data.locations) {
+                  const $loc = $(locSel);
+                  const prevLoc = $loc.val();
+                  if ($loc.data('select2')) $loc.select2('destroy');
+                  $loc.find('option:not(:first)').remove();
+                  data.locations.forEach(l => {
+                     $loc.append(new Option(l.name, l.id, false, false));
+                  });
+                  if (prevLoc && $loc.find(`option[value="${prevLoc}"]`).length) {
+                     $loc.val(prevLoc);
+                  }
+                  initSelect2Tags(locSel);
                }
 
-               // Reinit Select2 for all three
+               // Reinit Select2 for brand, size, pattern
                initSelect2Tags(brandSel);
                initSelect2Tags(sizeSel);
                initSelect2Tags(patternSel);

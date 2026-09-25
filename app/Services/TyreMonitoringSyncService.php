@@ -192,40 +192,6 @@ class TyreMonitoringSyncService
                     'tyre_company_id' => $session->tyre_company_id,
                 ]
             );
-
-            // 2. Create or update Check 1 (Baseline Check)
-            TyreMonitoringCheck::withoutGlobalScopes()->updateOrCreate(
-                [
-                    'session_id' => $session->session_id,
-                    'check_number' => 1,
-                    'position_id' => $positionId,
-                ],
-                [
-                    'serial_number' => $tyre->serial_number,
-                    'tyre_id' => $tyre->id,
-                    'position' => $posCode,
-                    'check_date' => $data['movement_date'] ?? date('Y-m-d'),
-                    'odometer_reading' => (int)($data['odometer_reading'] ?? ($data['odometer'] ?? 0)),
-                    'hm_reading' => (int)($data['hour_meter_reading'] ?? ($data['hour_meter'] ?? 0)),
-                    'operation_mileage' => 0,
-                    'operation_hm' => 0,
-                    'inf_press_recommended' => 0,
-                    'inf_press_actual' => (int)($data['psi_reading'] ?? ($data['psi'] ?? 0)),
-                    'date_inspection' => $data['movement_date'] ?? date('Y-m-d'),
-                    'rtd_1' => (float)($r1 ?? $avgRtd),
-                    'rtd_2' => (float)($r2 ?? $avgRtd),
-                    'rtd_3' => (float)($r3 ?? $avgRtd),
-                    'rtd_4' => $r4,
-                    'worn_percentage' => 0,
-                    'km_per_mm' => 0,
-                    'projected_life_km' => 0,
-                    'condition' => 'ok',
-                    'notes' => 'Baseline Cek 1 (Auto-created from Installation Movement)',
-                    'approval_status' => 'Approved',
-                    'approved_by' => auth()->id() ?? 1,
-                    'tyre_company_id' => $session->tyre_company_id,
-                ]
-            );
         } catch (\Exception $e) {
             Log::error("TyreMonitoringSyncService::syncInstallation error: " . $e->getMessage());
         }
