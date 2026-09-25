@@ -210,10 +210,7 @@
       $installedOtds = $session->installations->pluck('original_rtd')->filter(fn($v) => $v > 0);
       $dynamicBaseline = $installedOtds->count() > 0 ? round($installedOtds->avg(), 2) : $session->original_rtd;
 
-      $activeUnit = $measurementMode;
-      if ($measurementMode === 'BOTH') {
-          $activeUnit = $session->vehicle->measurement_unit ?? 'KM';
-      }
+      $activeUnit = $session->vehicle->measurement_unit ?? ($measurementMode === 'HM' ? 'HM' : 'KM');
 
       $summary = TyreMonitoringCalculator::calculate($dynamicBaseline, $session->install_date, $mockCheckData, $activeUnit);
    @endphp

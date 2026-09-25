@@ -108,16 +108,14 @@
                         @enderror
                      </div>
                      @php
-                        $activeUnit = $measurementMode;
-                        if ($measurementMode === 'BOTH') {
-                            $activeUnit = $vehicle->measurement_unit ?? 'KM';
-                        }
+                        $activeUnit = $vehicle->measurement_unit ?? ($measurementMode === 'HM' ? 'HM' : 'KM');
+                        $isBoth = ($measurementMode === 'BOTH');
                      @endphp
-                     @if ($activeUnit !== 'HM')
+                     @if ($activeUnit === 'KM' || $isBoth)
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Odometer Check (KM)</label>
+                        <label class="form-label fw-bold">Odometer Check (KM) @if($activeUnit === 'KM') <span class="text-danger">*</span> @else <small class="text-muted fw-normal">(Opsional)</small> @endif</label>
                         <input type="number" name="odometer"
-                           class="form-control form-control-lg @error('odometer') is-invalid @enderror" required
+                           class="form-control form-control-lg @error('odometer') is-invalid @enderror" {{ $activeUnit === 'KM' ? 'required' : '' }}
                            placeholder="KM" value="{{ old('odometer', $currentKM) }}">
                         <div class="form-text text-muted" style="font-size: 11px;">
                            Start Sesi: <strong>{{ number_format($session->odometer_start ?? 0) }} KM</strong>. Masukkan odometer terkini unit.
@@ -130,11 +128,11 @@
                      <input type="hidden" name="odometer" value="{{ old('odometer', 0) }}">
                      @endif
                      
-                     @if ($activeUnit !== 'KM')
+                     @if ($activeUnit === 'HM' || $isBoth)
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Hour Meter Check (HM)</label>
+                        <label class="form-label fw-bold">Hour Meter Check (HM) @if($activeUnit === 'HM') <span class="text-danger">*</span> @else <small class="text-muted fw-normal">(Opsional)</small> @endif</label>
                         <input type="number" name="hour_meter"
-                           class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM" required
+                           class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM" {{ $activeUnit === 'HM' ? 'required' : '' }}
                            value="{{ old('hour_meter', $currentHM) }}">
                         <div class="form-text text-muted" style="font-size: 11px;">
                            Start Sesi: <strong>{{ number_format($session->hm_start ?? 0) }} HM</strong>. Masukkan HM terkini unit.

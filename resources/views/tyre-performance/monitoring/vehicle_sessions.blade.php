@@ -399,7 +399,7 @@
                            {{ $tyreSizeDisplay }}
                         @endif
                      </td>
-                     <td>{{ $measurementMode === 'HM' ? number_format($session->hm_start) . ' HM' : number_format($session->odometer_start) . ' KM' }}</td>
+                     <td>{{ ($vehicle->measurement_unit ?? $measurementMode) === 'HM' ? number_format($session->hm_start) . ' HM' : number_format($session->odometer_start) . ' KM' }}</td>
                      <td>
                         <div class="d-flex align-items-center gap-1">
                            <span class="badge bg-label-warning" title="Installations">

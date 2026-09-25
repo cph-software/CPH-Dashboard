@@ -170,25 +170,23 @@
                            value="{{ date('Y-m-d') }}">
                      </div>
                      @php
-                        $activeUnit = $measurementMode;
-                        if ($measurementMode === 'BOTH') {
-                            $activeUnit = $vehicle->measurement_unit ?? 'KM';
-                        }
+                        $activeUnit = $vehicle->measurement_unit ?? ($measurementMode === 'HM' ? 'HM' : 'KM');
+                        $isBoth = ($measurementMode === 'BOTH');
                      @endphp
-                     @if ($activeUnit !== 'HM')
+                     @if ($activeUnit === 'KM' || $isBoth)
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Odometer Saat Ini (KM)</label>
-                        <input type="number" name="odometer_start" class="form-control form-control-lg" required
+                        <label class="form-label fw-bold">Odometer Saat Ini (KM) @if($activeUnit === 'KM') <span class="text-danger">*</span> @else <small class="text-muted fw-normal">(Opsional)</small> @endif</label>
+                        <input type="number" name="odometer_start" class="form-control form-control-lg" {{ $activeUnit === 'KM' ? 'required' : '' }}
                            placeholder="KM" value="{{ old('odometer_start', $currentKM) }}">
                      </div>
                      @else
                      <input type="hidden" name="odometer_start" value="{{ old('odometer_start', 0) }}">
                      @endif
                      
-                     @if ($activeUnit !== 'KM')
+                     @if ($activeUnit === 'HM' || $isBoth)
                      <div class="col-md-3">
-                        <label class="form-label fw-bold">Hour Meter Saat Ini (HM)</label>
-                        <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM" required
+                        <label class="form-label fw-bold">Hour Meter Saat Ini (HM) @if($activeUnit === 'HM') <span class="text-danger">*</span> @else <small class="text-muted fw-normal">(Opsional)</small> @endif</label>
+                        <input type="number" name="hm_start" class="form-control form-control-lg" placeholder="HM" {{ $activeUnit === 'HM' ? 'required' : '' }}
                            value="{{ old('hm_start', $currentHM) }}">
                      </div>
                      @else

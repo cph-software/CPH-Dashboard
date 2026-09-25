@@ -747,10 +747,7 @@ class MonitoringController extends Controller
         $mode = $this->getMeasurementMode();
         $session = TyreMonitoringSession::with('vehicle')->findOrFail($request->session_id);
         $vehicle = $session->vehicle;
-        $activeUnit = $mode;
-        if ($mode === 'BOTH') {
-            $activeUnit = $vehicle->measurement_unit ?? 'KM';
-        }
+        $activeUnit = $vehicle->measurement_unit ?? ($mode === 'HM' ? 'HM' : 'KM');
 
         $rules = [
             'session_id' => 'required|exists:tyre_monitoring_session,session_id',
