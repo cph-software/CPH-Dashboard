@@ -345,8 +345,8 @@
                      <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Kondisi Baru</span></h4>
                      <div class="text-white-50 small mt-1" style="font-size: 11px;">Tapak Utuh (Aus &lt; 0.1 mm)</div>
                   @elseif ($runningKm <= 0 && $runningHm <= 0)
-                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Belum Ada KM</span></h4>
-                     <div class="text-white-50 small mt-1" style="font-size: 11px;">Odometer berjalan: 0</div>
+                     <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Belum Ada {{ $activeUnit === 'HM' ? 'HM' : 'KM' }}</span></h4>
+                     <div class="text-white-50 small mt-1" style="font-size: 11px;">{{ $activeUnit === 'HM' ? 'HM berjalan: 0' : 'Odometer berjalan: 0' }}</div>
                   @else
                      <h4 class="mb-0 text-white fw-bold"><span class="badge bg-white text-primary fs-6 px-2 py-1">Menunggu Data</span></h4>
                      <div class="text-white-50 small mt-1" style="font-size: 11px;">Perlu data cek berkala</div>

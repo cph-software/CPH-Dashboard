@@ -119,6 +119,9 @@
                         <input type="number" name="odometer"
                            class="form-control form-control-lg @error('odometer') is-invalid @enderror" required
                            placeholder="KM" value="{{ old('odometer', $currentKM) }}">
+                        <div class="form-text text-muted" style="font-size: 11px;">
+                           Start Sesi: <strong>{{ number_format($session->odometer_start ?? 0) }} KM</strong>. Masukkan odometer terkini unit.
+                        </div>
                         @error('odometer')
                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -133,6 +136,9 @@
                         <input type="number" name="hour_meter"
                            class="form-control form-control-lg @error('hour_meter') is-invalid @enderror" placeholder="HM" required
                            value="{{ old('hour_meter', $currentHM) }}">
+                        <div class="form-text text-muted" style="font-size: 11px;">
+                           Start Sesi: <strong>{{ number_format($session->hm_start ?? 0) }} HM</strong>. Masukkan HM terkini unit.
+                        </div>
                         @error('hour_meter')
                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

@@ -31,11 +31,13 @@ class TyreMonitoringCalculator
         
         $wearAmount = $originalRtd - $avgRtd;
 
-        // Determine the primary operation metric based on mode
+        // Determine the primary operation metric based on mode (with smart fallback between KM and HM)
         if ($measurementMode === 'HM') {
-            $primaryOp = $operationHm;
+            $primaryOp = ($operationHm > 0 || $operationMileage <= 0) ? $operationHm : $operationMileage;
+        } elseif ($measurementMode === 'KM') {
+            $primaryOp = ($operationMileage > 0 || $operationHm <= 0) ? $operationMileage : $operationHm;
         } else {
-            $primaryOp = $operationMileage;
+            $primaryOp = $operationMileage > 0 ? $operationMileage : $operationHm;
         }
         
         // Minimum usable tread depth (safety limit)
@@ -51,7 +53,7 @@ class TyreMonitoringCalculator
             $wornPct = ($wearAmount > 0 && $originalRtd > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
         } else {
             $wornPct = ($originalRtd > 0) ? ($wearAmount / $originalRtd) * 100 : 0;
-            $perMm = $primaryOp / $wearAmount;
+            $perMm = ($primaryOp > 0) ? ($primaryOp / $wearAmount) : 0;
             
             // REMAINING life = rate × remaining usable tread
             // This DECREASES as tyre wears down (intuitive for operators)
@@ -63,15 +65,30 @@ class TyreMonitoringCalculator
         
         // Elapsed days since INSTALLATION
         $daysSinceInstall = $installDateCarbon->diffInDays($checkDateCarbon);
-        if ($daysSinceInstall <= 0) $daysSinceInstall = 1;
+        if ($daysSinceInstall <= 0) {
+            $daysSinceInstall = max(1, $installDateCarbon->diffInDays(Carbon::now()));
+        }
         
         // Elapsed days since ASSEMBLY (for the user's Day/Month columns)
         $asmDateRaw = is_object($checkData) ? ($checkData->date_assembly ?? null) : ($checkData['date_assembly'] ?? null);
         $asmDateCarbon = $asmDateRaw ? Carbon::parse($asmDateRaw) : $installDateCarbon;
         $daysSinceAsm = $asmDateCarbon->diffInDays($checkDateCarbon);
+        if ($daysSinceAsm <= 0) {
+            $daysSinceAsm = max(1, $asmDateCarbon->diffInDays(Carbon::now()));
+        }
 
-        $perDay = $primaryOp / $daysSinceInstall;
-        $projRemainingDays = ($perDay > 0) ? ($projRemainingLife / $perDay) : 0;
+        $perDay = ($daysSinceInstall > 0 && $primaryOp > 0) ? ($primaryOp / $daysSinceInstall) : 0;
+        
+        if ($perDay > 0 && $projRemainingLife > 0) {
+            $projRemainingDays = $projRemainingLife / $perDay;
+        } elseif ($wearAmount >= 0.1 && $remainingTread > 0 && $daysSinceInstall > 0) {
+            // Time-based wear rate calculation (mm aus per hari)
+            // Berguna jika odometer/HM tidak bertambah namun keausan ban nyata terukur
+            $wearRatePerDay = $wearAmount / $daysSinceInstall;
+            $projRemainingDays = ($wearRatePerDay > 0) ? ($remainingTread / $wearRatePerDay) : 0;
+        } else {
+            $projRemainingDays = 0;
+        }
 
         // Build result with mode-aware keys
         $result = [

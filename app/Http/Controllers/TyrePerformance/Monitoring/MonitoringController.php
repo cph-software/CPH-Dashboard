@@ -893,19 +893,27 @@ class MonitoringController extends Controller
                 $hmPerMm = 0;
                 $projectedLifeHm = 0;
 
-                if ($activeUnit === 'HM') {
-                    $opMileage = $this->calculateLifetimeDiff($request->hour_meter, $session->hm_start);
-                    if ($lossRtd >= 0.1) {
-                        $hmPerMm = $opMileage / $lossRtd;
-                        $remainingTread = max(0, $avgRtd - 3);
-                        $projectedLifeHm = $hmPerMm * $remainingTread;
-                    }
-                } else {
+                // Calculate KM delta independently
+                $opMileage = 0;
+                if ($request->filled('odometer') && $session->odometer_start !== null) {
                     $opMileage = $this->calculateLifetimeDiff($request->odometer, $session->odometer_start);
-                    if ($lossRtd >= 0.1) {
+                }
+
+                // Calculate HM delta independently
+                $opHm = 0;
+                if ($request->filled('hour_meter') && $session->hm_start !== null) {
+                    $opHm = $this->calculateLifetimeDiff($request->hour_meter, $session->hm_start);
+                }
+
+                $remainingTread = max(0, $avgRtd - 3);
+                if ($lossRtd >= 0.1) {
+                    if ($opMileage > 0) {
                         $kmPerMm = $opMileage / $lossRtd;
-                        $remainingTread = max(0, $avgRtd - 3);
                         $projectedLifeKm = $kmPerMm * $remainingTread;
+                    }
+                    if ($opHm > 0) {
+                        $hmPerMm = $opHm / $lossRtd;
+                        $projectedLifeHm = $hmPerMm * $remainingTread;
                     }
                 }
 
@@ -915,8 +923,8 @@ class MonitoringController extends Controller
                     'check_date' => $request->check_date,
                     'odometer_reading' => $request->odometer,
                     'hm_reading' => $request->hour_meter,
-                    'operation_mileage' => ($activeUnit === 'HM') ? 0 : $opMileage,
-                    'operation_hm' => ($activeUnit === 'HM') ? $opMileage : $opHm,
+                    'operation_mileage' => $opMileage,
+                    'operation_hm' => $opHm,
                     'driver_name' => $request->driver_name,
                     'phone_number' => $request->phone_number,
                     'position' => $inst ? $inst->position : '?',
